@@ -184,6 +184,48 @@ class OllamaClient:
         except Exception:
             return False
     
+    async def is_model_loaded(self, server_url: str, model_name: str) -> bool:
+        """
+        Check if a model is currently loaded in GPU
+        
+        Args:
+            server_url: Ollama server URL (with or without /v1)
+            model_name: Model name to check
+            
+        Returns:
+            True if model is loaded, False otherwise
+        """
+        try:
+            # Normalize server URL
+            base_url = server_url
+            if base_url.endswith("/v1"):
+                base_url = base_url[:-3]
+            elif base_url.endswith("/v1/"):
+                base_url = base_url[:-4]
+            
+            # Create temporary client for check
+            async with httpx.AsyncClient(base_url=base_url, timeout=5.0) as client:
+                # Check loaded models via /api/ps
+                response = await client.get("/api/ps", timeout=5.0)
+                if response.status_code != 200:
+                    return False
+                
+                data = response.json()
+                loaded_models = data.get("models", [])
+                
+                # Check if our model is in the list
+                for model in loaded_models:
+                    if model.get("name") == model_name:
+                        return True
+                
+                return False
+        except Exception as e:
+            # Log error but don't fail - assume model is not loaded
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error checking if model {model_name} is loaded: {e}")
+            return False
+    
     def _normalize_server_url(self, url: str) -> str:
         """Normalize server URL to standard format"""
         url = url.strip()
@@ -330,6 +372,13 @@ class OllamaClient:
             # For dynamic instances, always check health but don't fallback
             if not await self.health_check(instance):
                 raise OllamaError(f"Ollama server {instance.url} is not available")
+        
+        # Check if model is loaded (to avoid queues)
+        model_loaded = await self.is_model_loaded(instance.url, model_to_use)
+        if not model_loaded:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Model {model_to_use} is not loaded in GPU. It will be loaded on first request (may cause delay).")
         
         # Prepare messages for chat API
         messages = []
