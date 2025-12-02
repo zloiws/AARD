@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Детали утверждения - AARD{% endblock %}
+
+{% block extra_css %}
+<style>
+    .approval-detail-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .approval-detail-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .detail-title {
+        font-size: 28px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .detail-status {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    .detail-status.pending {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+    
+    .detail-section {
+        margin-bottom: 30px;
+    }
+    
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #333;
+    }
+    
+    .section-content {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    
+    .code-block {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 20px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    
+    .code-block code {
+        background: none;
+        padding: 0;
+        color: inherit;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        padding-top: 30px;
+        border-top: 2px solid #f0f0f0;
+    }
+    
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-approve {
+        background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+        color: white;
+    }
+    
+    .btn-reject {
+        background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        color: white;
+    }
+    
+    .btn-modify {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        color: white;
+    }
+    
+    .feedback-form {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 8px;
+    }
+    
+    .feedback-form textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        resize: vertical;
+        min-height: 100px;
+        margin-bottom: 15px;
+    }
+    
+    .risk-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    
+    .risk-item {
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .risk-item-label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    
+    .risk-item-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="approval-detail-container">
+    <a href="/approvals" class="back-link">← Назад к очереди</a>
+    
+    <div class="approval-detail-card">
+        <div class="detail-header">
+            <div>
+                <div class="detail-title">
+                    {% if approval.artifact_id %}
+                        Артефакт: {{ approval.request_data.get('name', 'N/A') if approval.request_data else 'N/A' }}
+                    {% elif approval.prompt_id %}
+                        Промпт: {{ approval.request_data.get('name', 'N/A') if approval.request_data else 'N/A' }}
+                    {% else %}
+                        Запрос на утверждение
+                    {% endif %}
+                </div>
+                <div style="margin-top: 10px;">
+                    <span class="approval-type {{ approval.request_type.replace('_', '-') }}">
+                        {{ approval.request_type.replace('_', ' ').title() }}
+                    </span>
+                    <span class="detail-status {{ approval.status }}">
+                        {{ approval.status.title() }}
+                    </span>
+                </div>
+            </div>
+            <div style="text-align: right; color: #666; font-size: 14px;">
+                <div>Создан: {{ approval.created_at.strftime('%d.%m.%Y %H:%M') if approval.created_at else 'N/A' }}</div>
+                {% if approval.decision_timeout %}
+                    <div>Таймаут: {{ approval.decision_timeout.strftime('%d.%m.%Y %H:%M') }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if approval.request_data %}
+        <div class="detail-section">
+            <div class="section-title">Описание</div>
+            <div class="section-content">
+                {{ approval.request_data.get('description', 'Нет описания') }}
+            </div>
+        </div>
+        
+        {% if approval.request_data.get('code') %}
+        <div class="detail-section">
+            <div class="section-title">Код</div>
+            <div class="code-block">
+                <pre><code>{{ approval.request_data.get('code') }}</code></pre>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if approval.request_data.get('prompt') %}
+        <div class="detail-section">
+            <div class="section-title">Промпт</div>
+            <div class="section-content">
+                <pre style="white-space: pre-wrap;">{{ approval.request_data.get('prompt') }}</pre>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+        
+        {% if approval.risk_assessment %}
+        <div class="detail-section">
+            <div class="section-title">Оценка безопасности</div>
+            <div class="risk-info">
+                <div class="risk-item">
+                    <div class="risk-item-label">Рейтинг безопасности</div>
+                    <div class="risk-item-value">
+                        {{ "%.1f"|format(approval.risk_assessment.get('rating', 0) * 10) }}/10
+                    </div>
+                </div>
+                {% if approval.risk_assessment.get('risks') %}
+                <div class="risk-item">
+                    <div class="risk-item-label">Риски</div>
+                    <div class="risk-item-value">{{ approval.risk_assessment.get('risks')|length }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% if approval.risk_assessment.get('risks') %}
+            <div class="section-content" style="margin-top: 15px;">
+                <strong>Обнаруженные риски:</strong>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    {% for risk in approval.risk_assessment.get('risks', []) %}
+                    <li>{{ risk }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if approval.risk_assessment.get('recommendations') %}
+            <div class="section-content" style="margin-top: 15px;">
+                <strong>Рекомендации:</strong>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    {% for rec in approval.risk_assessment.get('recommendations', []) %}
+                    <li>{{ rec }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if approval.recommendation %}
+        <div class="detail-section">
+            <div class="section-title">Рекомендация</div>
+            <div class="section-content">
+                {{ approval.recommendation }}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if approval.status == 'pending' %}
+        <div class="action-buttons">
+            <div style="flex: 1;">
+                <div class="feedback-form">
+                    <textarea id="approve-feedback" placeholder="Комментарий (необязательно)"></textarea>
+                    <button onclick="approveRequest('{{ approval.id }}')" class="btn btn-approve">✓ Утвердить</button>
+                </div>
+            </div>
+            
+            <div style="flex: 1;">
+                <div class="feedback-form">
+                    <textarea id="reject-feedback" placeholder="Причина отклонения (обязательно)" required></textarea>
+                    <button onclick="rejectRequest('{{ approval.id }}')" class="btn btn-reject">✗ Отклонить</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="result-message" style="margin-top: 20px; padding: 15px; border-radius: 8px; display: none;"></div>
+        {% else %}
+        <div class="detail-section">
+            <div class="section-title">Решение</div>
+            <div class="section-content">
+                <strong>Статус:</strong> {{ approval.status.title() }}<br>
+                {% if approval.approved_by %}
+                    <strong>Одобрено/Отклонено:</strong> {{ approval.approved_by }}<br>
+                {% endif %}
+                {% if approval.approved_at %}
+                    <strong>Дата:</strong> {{ approval.approved_at.strftime('%d.%m.%Y %H:%M') }}<br>
+                {% endif %}
+                {% if approval.human_feedback %}
+                    <strong>Комментарий:</strong> {{ approval.human_feedback }}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function approveRequest(approvalId) {
+        const feedback = document.getElementById('approve-feedback').value;
+        const messageDiv = document.getElementById('result-message');
+        
+        fetch(`/api/approvals/${approvalId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ feedback: feedback })
+        })
+        .then(response => response.json())
+        .then(data => {
+            messageDiv.style.display = 'block';
+            messageDiv.style.background = '#e8f5e9';
+            messageDiv.style.color = '#2e7d32';
+            messageDiv.innerHTML = '✓ ' + (data.message || 'Утверждение успешно обработано');
+            setTimeout(() => {
+                window.location.href = '/approvals';
+            }, 1500);
+        })
+        .catch(error => {
+            messageDiv.style.display = 'block';
+            messageDiv.style.background = '#ffebee';
+            messageDiv.style.color = '#c62828';
+            messageDiv.innerHTML = '✗ Ошибка: ' + error.message;
+        });
+    }
+    
+    function rejectRequest(approvalId) {
+        const feedback = document.getElementById('reject-feedback').value;
+        if (!feedback.trim()) {
+            alert('Пожалуйста, укажите причину отклонения');
+            return;
+        }
+        
+        const messageDiv = document.getElementById('result-message');
+        
+        fetch(`/api/approvals/${approvalId}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ feedback: feedback })
+        })
+        .then(response => response.json())
+        .then(data => {
+            messageDiv.style.display = 'block';
+            messageDiv.style.background = '#fff3e0';
+            messageDiv.style.color = '#e65100';
+            messageDiv.innerHTML = '✗ ' + (data.message || 'Запрос отклонен');
+            setTimeout(() => {
+                window.location.href = '/approvals';
+            }, 1500);
+        })
+        .catch(error => {
+            messageDiv.style.display = 'block';
+            messageDiv.style.background = '#ffebee';
+            messageDiv.style.color = '#c62828';
+            messageDiv.innerHTML = '✗ Ошибка: ' + error.message;
+        });
+    }
+</script>
+{% endblock %}
+

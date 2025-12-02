@@ -1,0 +1,836 @@
+{% extends "base.html" %}
+
+{% block title %}AARD Chat{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Tab styles */
+    .tabs {
+        display: flex;
+        gap: 0;
+        padding: 0;
+        background: #f8f9fa;
+        border-bottom: 2px solid #e9ecef;
+        flex-shrink: 0;
+    }
+    
+    .tab {
+        padding: 14px 24px;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 500;
+        color: #6c757d;
+        transition: all 0.2s;
+        position: relative;
+    }
+    
+    .tab:hover {
+        background: #e9ecef;
+        color: #495057;
+    }
+    
+    .tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+        background: white;
+    }
+    
+    .tab-content {
+        display: none;
+        flex: 1;
+        overflow: hidden;
+        min-height: 0;
+    }
+    
+    .tab-content.active {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Chat container - fixed layout */
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+    
+    /* Messages area - scrollable */
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px;
+        background: #f8f9fa;
+        min-height: 0;
+        scroll-behavior: smooth;
+    }
+    
+    /* Input area - fixed at bottom */
+    .chat-input-container {
+        flex-shrink: 0;
+        background: white;
+        border-top: 1px solid #e9ecef;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    /* Model selection panel - collapsible */
+    .model-selection-panel {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .model-selection-panel.collapsed {
+        display: none;
+    }
+    
+    .model-selection-panel label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #495057;
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .model-selection-panel select,
+    .model-selection-panel input[type="number"] {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+        transition: border-color 0.2s;
+    }
+    
+    .model-selection-panel select:focus,
+    .model-selection-panel input[type="number"]:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .toggle-panel-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        background: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        cursor: pointer;
+        color: #495057;
+        transition: all 0.2s;
+    }
+    
+    .toggle-panel-btn:hover {
+        background: #dee2e6;
+    }
+    
+    /* Input form */
+    .input-form-wrapper {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+    }
+    
+    .input-wrapper {
+        flex: 1;
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+    }
+    
+    textarea {
+        flex: 1;
+        padding: 12px 16px;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        font-size: 15px;
+        font-family: inherit;
+        resize: none;
+        min-height: 50px;
+        max-height: 150px;
+        transition: border-color 0.2s;
+        line-height: 1.5;
+    }
+    
+    textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    
+    button[type="submit"] {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        white-space: nowrap;
+    }
+    
+    button[type="submit"]:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    button[type="submit"]:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .stop-button {
+        padding: 12px 20px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    
+    .stop-button:hover:not(:disabled) {
+        background: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+    }
+    
+    .stop-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* Loading indicator */
+    .loading {
+        display: none;
+        padding: 12px 16px;
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin: 0 20px 20px 20px;
+    }
+    
+    .loading.show {
+        display: block;
+    }
+    
+    .loading-dots {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+    }
+    
+    .loading-dots span {
+        width: 8px;
+        height: 8px;
+        background: #667eea;
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+    
+    .loading-dots span:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+    
+    .loading-dots span:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+    
+    @keyframes bounce {
+        0%, 80%, 100% {
+            transform: scale(0);
+        }
+        40% {
+            transform: scale(1);
+        }
+    }
+    
+    /* Message styles */
+    .message {
+        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .message.user {
+        align-items: flex-end;
+    }
+    
+    .message.assistant {
+        align-items: flex-start;
+    }
+    
+    .message-content {
+        max-width: 75%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        word-wrap: break-word;
+        word-break: break-word;
+        line-height: 1.5;
+    }
+    
+    .message.user .message-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .message.assistant .message-content {
+        background: white;
+        color: #212529;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-bottom-left-radius: 4px;
+    }
+    
+    .message-meta {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 4px;
+        padding: 0 8px;
+    }
+    
+    .message.user .message-meta {
+        text-align: right;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .model-selection-panel {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .model-selection-panel label {
+            min-width: 100%;
+        }
+        
+        .input-form-wrapper {
+            flex-direction: column;
+        }
+        
+        .action-buttons {
+            width: 100%;
+        }
+        
+        button[type="submit"],
+        .stop-button {
+            flex: 1;
+        }
+    }
+    
+    /* Other tabs */
+    .tab-content > div {
+        padding: 20px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>AARD Chat</h1>
+            <div class="status" id="status">Autonomous Agentic Recursive Development</div>
+        </div>
+        <div>
+            <span id="model-status">Загрузка...</span>
+        </div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('chat')">💬 Чат</div>
+        <div class="tab" onclick="switchTab('models')">🤖 Модели</div>
+        <div class="tab" onclick="switchTab('multi-model')">🔄 Мульти-модель</div>
+        <div class="tab" onclick="switchTab('metrics')">📊 Метрики</div>
+    </div>
+    
+    <!-- Chat Tab -->
+    <div id="chat-tab" class="tab-content active">
+        <div class="chat-container">
+            <div class="chat-messages" id="messages">
+                <div class="message assistant">
+                    <div class="message-content">
+                        Привет! Я AARD - ваш AI-ассистент. Загружаю доступные модели...
+                    </div>
+                    <div class="message-meta">Система</div>
+                </div>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <!-- Model selection panel -->
+                <div class="model-selection-panel" id="model-panel">
+                    <label>
+                        Сервер:
+                        <select name="server" id="server_select" onchange="loadServerModels()">
+                            <option value="">Загрузка...</option>
+                        </select>
+                    </label>
+                    <label>
+                        Модель:
+                        <select name="model" id="model_select">
+                            <option value="">Автоматический выбор</option>
+                        </select>
+                    </label>
+                    <label>
+                        Тип задачи:
+                        <select name="task_type" id="task_type">
+                            <option value="general_chat">Общий чат</option>
+                            <option value="code_generation">Генерация кода</option>
+                            <option value="code_analysis">Анализ кода</option>
+                            <option value="reasoning">Рассуждения</option>
+                            <option value="planning">Планирование</option>
+                            <option value="text_generation">Генерация текста</option>
+                        </select>
+                    </label>
+                    <label>
+                        Temperature:
+                        <input type="number" name="temperature" id="temperature" value="0.7" min="0" max="2" step="0.1">
+                    </label>
+                </div>
+                
+                <!-- Main input form -->
+                <form 
+                    id="chat-form"
+                    hx-post="/api/chat/"
+                    hx-target="#messages"
+                    hx-swap="beforeend"
+                    hx-indicator="#loading"
+                    hx-trigger="submit"
+                    hx-ext="json-enc"
+                    hx-timeout="120000"
+                    onsubmit="return handleSubmit(event)"
+                >
+                    <div class="input-form-wrapper">
+                        <div class="input-wrapper">
+                            <textarea 
+                                name="message" 
+                                id="message-input" 
+                                placeholder="Введите ваше сообщение..."
+                                required
+                                rows="1"
+                                onkeydown="handleTextareaKeydown(event)"
+                            ></textarea>
+                        </div>
+                        <div class="action-buttons">
+                            <button type="button" class="toggle-panel-btn" onclick="toggleModelPanel()" title="Показать/скрыть настройки">
+                                ⚙️
+                            </button>
+                            <button type="submit" id="submit-btn">Отправить</button>
+                            <button type="button" class="stop-button" id="stop-btn" onclick="stopGeneration()" disabled>⏹ Остановить</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Other tabs -->
+    <div id="models-tab" class="tab-content">
+        <div>
+            <h2>Управление моделями</h2>
+            <div id="models-container">
+                <p>Загрузка серверов и моделей...</p>
+            </div>
+        </div>
+    </div>
+    
+    <div id="multi-model-tab" class="tab-content">
+        <div>
+            <h2>Чат между моделями</h2>
+            <p>Настройка в разработке...</p>
+        </div>
+    </div>
+    
+    <div id="metrics-tab" class="tab-content">
+        <div>
+            <h2>Метрики и статистика</h2>
+            <p>Раздел в разработке...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentSessionId = null;
+    let activeGeneration = null;
+    let modelPanelCollapsed = false;
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadServers();
+        loadAvailableModels();
+        
+        // Restore session
+        const savedSession = localStorage.getItem('aard_session_id');
+        if (savedSession) {
+            currentSessionId = savedSession;
+        }
+        
+        // Auto-resize textarea
+        const textarea = document.getElementById('message-input');
+        if (textarea) {
+            textarea.addEventListener('input', autoResizeTextarea);
+        }
+        
+        // Focus textarea
+        textarea.focus();
+    });
+
+    // Tab switching
+    function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected tab
+        const targetTab = document.getElementById(tabName + '-tab');
+        if (targetTab) {
+            targetTab.classList.add('active');
+        }
+        
+        // Activate tab button
+        event.target.classList.add('active');
+    }
+
+    // Toggle model selection panel
+    function toggleModelPanel() {
+        const panel = document.getElementById('model-panel');
+        modelPanelCollapsed = !modelPanelCollapsed;
+        panel.classList.toggle('collapsed', modelPanelCollapsed);
+    }
+
+    // Load servers
+    async function loadServers() {
+        try {
+            const response = await fetch('/api/models/servers');
+            const data = await response.json();
+            
+            const serverSelect = document.getElementById('server_select');
+            if (!serverSelect) return;
+            
+            serverSelect.innerHTML = '<option value="">Выберите сервер...</option>';
+            
+            data.servers.forEach(server => {
+                const option = document.createElement('option');
+                option.value = server.url;
+                option.textContent = `${server.url.replace('http://', '').replace('/v1', '')} ${server.available ? '✓' : '✗'} (${server.models.length} моделей)`;
+                option.dataset.available = server.available;
+                serverSelect.appendChild(option);
+            });
+            
+            if (data.servers.length > 0) {
+                loadServerModels();
+            }
+        } catch (error) {
+            console.error('Error loading servers:', error);
+        }
+    }
+
+    // Load models for selected server
+    async function loadServerModels() {
+        const serverSelect = document.getElementById('server_select');
+        const modelSelect = document.getElementById('model_select');
+        
+        if (!serverSelect || !modelSelect) return;
+        
+        const selectedServer = serverSelect.value;
+        
+        if (!selectedServer) {
+            modelSelect.innerHTML = '<option value="">Автоматический выбор</option>';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/models/server/models?server_url=${encodeURIComponent(selectedServer)}`);
+            const data = await response.json();
+            
+            modelSelect.innerHTML = '<option value="">Автоматический выбор</option>';
+            
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.model;
+                option.textContent = `${model.name || model.model} (${formatBytes(model.size)})`;
+                modelSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading models:', error);
+            modelSelect.innerHTML = '<option value="">Ошибка загрузки</option>';
+        }
+    }
+
+    // Format bytes
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Auto-resize textarea
+    function autoResizeTextarea() {
+        const textarea = document.getElementById('message-input');
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+        }
+    }
+
+    // Handle textarea keydown (Enter to submit, Shift+Enter for new line)
+    function handleTextareaKeydown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            const form = document.getElementById('chat-form');
+            if (form && !event.target.form.querySelector('#submit-btn').disabled) {
+                form.requestSubmit();
+            }
+        }
+    }
+
+    // Scroll to bottom
+    function scrollToBottom() {
+        const messagesDiv = document.getElementById('messages');
+        if (messagesDiv) {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    }
+
+    // Form submission handler
+    function handleSubmit(event) {
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput ? messageInput.value.trim() : '';
+        
+        if (!message) {
+            event.preventDefault();
+            return false;
+        }
+        
+        // Show loading
+        const loading = document.getElementById('loading');
+        const submitBtn = document.getElementById('submit-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        
+        if (loading) loading.classList.add('show');
+        if (submitBtn) submitBtn.disabled = true;
+        if (stopBtn) stopBtn.disabled = false;
+        
+        // Don't clear input yet - HTMX needs to collect form data first
+        return true;
+    }
+    
+    // Add user message after HTMX collects form data
+    document.body.addEventListener('htmx:beforeRequest', function(event) {
+        if (event.detail.target.id === 'messages') {
+            const messageInput = document.getElementById('message-input');
+            const message = messageInput ? messageInput.value.trim() : '';
+            
+            if (message) {
+                // Get form values
+                const modelSelect = document.getElementById('model_select');
+                const serverSelect = document.getElementById('server_select');
+                const selectedModel = modelSelect ? modelSelect.value : '';
+                const selectedServer = serverSelect ? serverSelect.value : '';
+                
+                // Add user message to chat
+                const messagesDiv = document.getElementById('messages');
+                if (messagesDiv) {
+                    const userMessage = document.createElement('div');
+                    userMessage.className = 'message user';
+                    userMessage.innerHTML = `
+                        <div class="message-content">${escapeHtml(message)}</div>
+                        <div class="message-meta">Вы ${selectedModel ? `(${escapeHtml(selectedModel)})` : ''}</div>
+                    `;
+                    messagesDiv.appendChild(userMessage);
+                    
+                    // Show loading message if model selected
+                    if (selectedModel) {
+                        const loadingMsg = document.createElement('div');
+                        loadingMsg.id = 'model-loading-msg';
+                        loadingMsg.className = 'message assistant';
+                        loadingMsg.innerHTML = `
+                            <div class="message-content" style="color: #6c757d; font-style: italic;">
+                                Загрузка модели ${escapeHtml(selectedModel)} в GPU... Это может занять 15-20 секунд при первом запросе.
+                            </div>
+                        `;
+                        messagesDiv.appendChild(loadingMsg);
+                    }
+                    
+                    // Clear input now (after HTMX collected data)
+                    messageInput.value = '';
+                    autoResizeTextarea();
+                    
+                    // Scroll to bottom
+                    setTimeout(scrollToBottom, 100);
+                }
+            }
+        }
+    });
+    
+    // Handle HTMX response
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'messages') {
+            // Remove loading message
+            const loadingMsg = document.getElementById('model-loading-msg');
+            if (loadingMsg) loadingMsg.remove();
+            
+            // Reset UI
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = true;
+            
+            // Scroll and focus
+            scrollToBottom();
+            document.getElementById('message-input').focus();
+        }
+    });
+    
+    // Handle errors
+    document.body.addEventListener('htmx:responseError', function(event) {
+        console.error('HTMX Error:', event.detail);
+        
+        const loadingMsg = document.getElementById('model-loading-msg');
+        if (loadingMsg) loadingMsg.remove();
+        
+        document.getElementById('loading').classList.remove('show');
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('stop-btn').disabled = true;
+        
+        const messagesDiv = document.getElementById('messages');
+        let errorText = 'Ошибка при генерации ответа';
+        
+        if (event.detail.xhr) {
+            try {
+                const errorData = JSON.parse(event.detail.xhr.responseText);
+                errorText = errorData.detail || errorText;
+            } catch {
+                errorText = event.detail.xhr.responseText || errorText;
+            }
+        }
+        
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'message assistant';
+        errorMsg.innerHTML = `
+            <div class="message-content" style="color: #dc3545;">
+                ✗ ${escapeHtml(errorText)}
+            </div>
+            <div class="message-meta">Ошибка</div>
+        `;
+        messagesDiv.appendChild(errorMsg);
+        scrollToBottom();
+    });
+    
+    // Handle timeout
+    document.body.addEventListener('htmx:timeout', function(event) {
+        if (event.detail.target.id === 'messages') {
+            const loadingMsg = document.getElementById('model-loading-msg');
+            if (loadingMsg) loadingMsg.remove();
+            
+            const messagesDiv = document.getElementById('messages');
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'message assistant';
+            errorMsg.innerHTML = `
+                <div class="message-content" style="color: #dc3545;">
+                    ⚠ Таймаут запроса (120 секунд). Модель может загружаться в GPU. Попробуйте еще раз.
+                </div>
+            `;
+            messagesDiv.appendChild(errorMsg);
+            
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = true;
+            scrollToBottom();
+        }
+    });
+
+    // Stop generation
+    function stopGeneration() {
+        alert('Остановка генерации в разработке');
+        document.getElementById('stop-btn').disabled = true;
+        document.getElementById('submit-btn').disabled = false;
+    }
+
+    // Load available models for models tab
+    async function loadAvailableModels() {
+        try {
+            const response = await fetch('/api/models/servers');
+            const data = await response.json();
+            
+            const container = document.getElementById('models-container');
+            if (!container) return;
+            
+            let html = '<div class="model-list">';
+            data.servers.forEach(server => {
+                html += `<div class="model-card ${server.available ? '' : 'unavailable'}">`;
+                html += `<h4>${server.url}</h4>`;
+                html += `<div class="model-info">Доступен: ${server.available ? '✓' : '✗'}</div>`;
+                html += `<div class="model-info">Моделей: ${server.models.length}</div>`;
+                html += '</div>';
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading available models:', error);
+        }
+    }
+</script>
+{% endblock %}

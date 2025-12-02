@@ -1,0 +1,952 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки - AARD{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        font-size: 32px;
+        margin: 0;
+    }
+    
+    .servers-list {
+        display: grid;
+        gap: 20px;
+    }
+    
+    .server-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .server-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .server-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .server-status {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .status-badge.available {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+    
+    .status-badge.unavailable {
+        background: #ffebee;
+        color: #c62828;
+    }
+    
+    .status-badge.default {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+    
+    .server-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-success {
+        background: #4caf50;
+        color: white;
+    }
+    
+    .btn-danger {
+        background: #f44336;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #757575;
+        color: white;
+    }
+    
+    .models-section {
+        margin-top: 20px;
+    }
+    
+    .models-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .models-list {
+        display: grid;
+        gap: 10px;
+    }
+    
+    .model-item {
+        padding: 12px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .model-name {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .model-capabilities {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+    }
+    
+    .add-server-form {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    /* Modal styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .modal-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: #999;
+    }
+    
+    .close-btn:hover {
+        color: #333;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+    
+    .checkbox-item label {
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .server-toggle, #add-server-toggle {
+        transition: transform 0.3s;
+        user-select: none;
+    }
+    
+    .server-toggle.rotated, #add-server-toggle.rotated {
+        transform: rotate(180deg);
+    }
+    
+    .server-content {
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            max-height: 0;
+        }
+        to {
+            opacity: 1;
+            max-height: 1000px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="page-header">
+        <h1>⚙️ Настройки</h1>
+        <p>Управление серверами Ollama и моделями</p>
+    </div>
+    
+    <!-- Add Server Form -->
+    <div class="add-server-form">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; cursor: pointer;" onclick="toggleAddServerForm()">
+            <h2 style="margin: 0;">Добавить новый сервер</h2>
+            <span id="add-server-toggle" style="font-size: 20px;">▼</span>
+        </div>
+        <div id="add-server-form-content" style="display: none;">
+        <form id="add-server-form" onsubmit="addServer(event)">
+            <div class="form-group">
+                <label class="form-label">Название сервера *</label>
+                <input type="text" class="form-input" name="name" required placeholder="Например: Ollama Local">
+            </div>
+            <div class="form-group">
+                <label class="form-label">URL сервера *</label>
+                <input type="text" class="form-input" name="url" required placeholder="http://10.39.0.6:11434">
+            </div>
+            <div class="form-group">
+                <label class="form-label">API версия</label>
+                <input type="text" class="form-input" name="api_version" value="v1" placeholder="v1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Тип сервера</label>
+                <select class="form-input" name="server_type" id="server-type" onchange="toggleApiKeyField()">
+                    <option value="ollama">Ollama</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="custom">Другой (Custom)</option>
+                </select>
+            </div>
+            <div class="form-group" id="api-key-group" style="display: none;">
+                <label class="form-label">API ключ</label>
+                <input type="password" class="form-input" name="api_key" placeholder="Введите API ключ (опционально)">
+                <div class="form-help" style="font-size: 12px; color: #666; margin-top: 5px;">
+                    API ключ будет сохранен в зашифрованном виде
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Добавить сервер</button>
+        </form>
+        </div>
+    </div>
+    
+    <!-- Servers List -->
+    <div class="servers-list">
+        {% for server in servers %}
+        <div class="server-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; cursor: pointer;" onclick="toggleServerCard('{{ server.id }}')">
+                <div style="flex: 1;">
+                    <div class="server-title">{{ server.name }}</div>
+                    <div style="font-size: 14px; color: #666; margin-top: 5px;">{{ server.url }}</div>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="server-status">
+                        {% if server.is_available %}
+                            <span class="status-badge available">✓ Доступен</span>
+                        {% else %}
+                            <span class="status-badge unavailable">✗ Недоступен</span>
+                        {% endif %}
+                        {% if server.is_default %}
+                            <span class="status-badge default">По умолчанию</span>
+                        {% endif %}
+                    </div>
+                    <span class="server-toggle" id="toggle-{{ server.id }}" style="font-size: 20px;">▼</span>
+                </div>
+            </div>
+            
+            <div class="server-content" id="content-{{ server.id }}" style="display: none;">
+            <div class="server-actions">
+                <button class="btn btn-success" onclick="syncModels('{{ server.id }}')">
+                    🔄 Синхронизировать модели
+                </button>
+                <button class="btn btn-secondary" onclick="checkAllModels('{{ server.id }}')">
+                    🔍 Проверить все модели
+                </button>
+                <button class="btn btn-secondary" onclick="checkServer('{{ server.id }}')">
+                    🔍 Проверить сервер
+                </button>
+                {% if not server.is_default %}
+                <button class="btn btn-primary" onclick="setDefault('{{ server.id }}')">
+                    ⭐ Установить по умолчанию
+                </button>
+                {% endif %}
+                <button class="btn btn-danger" onclick="deleteServer('{{ server.id }}')">
+                    🗑️ Удалить
+                </button>
+            </div>
+            
+            <div class="models-section">
+                <div class="models-header">
+                    <h3>Модели ({{ server.models_count }})</h3>
+                </div>
+                <div class="models-list">
+                    {% if server.models %}
+                        {% for model in server.models %}
+                        <div class="model-item" data-model-id="{{ model.id }}">
+                            <div style="flex: 1;">
+                                <div class="model-name" id="model-name-{{ model.id }}">{{ model.name }}</div>
+                                <div class="model-capabilities" id="capabilities-{{ model.id }}">
+                                    {% if model.capabilities and model.capabilities|length > 0 %}
+                                        {{ model.capabilities|join(', ') }}
+                                    {% else %}
+                                        Нет настроенных возможностей
+                                    {% endif %}
+                                </div>
+                                <div style="font-size: 11px; color: #999; margin-top: 4px;" id="priority-{{ model.id }}">
+                                    Приоритет: {{ model.priority or 0 }}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                {% if model.is_active %}
+                                    <span class="status-badge available">✓ Доступна</span>
+                                {% else %}
+                                    <span class="status-badge unavailable">✗ Недоступна</span>
+                                {% endif %}
+                                {% if model.capabilities and model.capabilities|length > 0 %}
+                                    <span class="status-badge" style="background: #e3f2fd; color: #1976d2;">⚙️ Настроено</span>
+                                {% endif %}
+                                <button class="btn btn-secondary edit-model-btn" style="padding: 4px 8px; font-size: 12px;" 
+                                        data-model-id="{{ model.id }}"
+                                        data-model-name="{{ model.name }}"
+                                        data-model-capabilities="{{ (model.capabilities or [])|tojson }}"
+                                        data-model-priority="{{ model.priority or 0 }}"
+                                        data-model-active="{{ 'true' if model.is_active else 'false' }}"
+                                        onclick="editModelFromButton(this)">
+                                    ✏️ Редактировать
+                                </button>
+                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" 
+                                        onclick="checkModel('{{ model.id }}')">
+                                    🔍 Проверить
+                                </button>
+                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" 
+                                        onclick="unloadModel('{{ model.id }}')" title="Выгрузить модель из GPU">
+                                    📤 Выгрузить
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="padding: 20px; text-align: center; color: #999;">
+                            Нет моделей. Нажмите "Синхронизировать модели" для загрузки.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Edit Model Modal -->
+<div id="edit-model-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Редактировать модель</h2>
+            <button class="close-btn" onclick="closeEditModal()">&times;</button>
+        </div>
+        <form id="edit-model-form" onsubmit="saveModel(event)">
+            <input type="hidden" id="edit-model-id" name="model_id">
+            <div class="form-group">
+                <label class="form-label">Название модели</label>
+                <input type="text" class="form-input" id="edit-model-name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Возможности (capabilities)</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="cap-code" value="code_generation">
+                        <label for="cap-code">Генерация кода</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="cap-reasoning" value="reasoning">
+                        <label for="cap-reasoning">Рассуждения</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="cap-planning" value="planning">
+                        <label for="cap-planning">Планирование</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="cap-chat" value="general_chat">
+                        <label for="cap-chat">Общий чат</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="cap-analysis" value="code_analysis">
+                        <label for="cap-analysis">Анализ кода</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="cap-text" value="text_generation">
+                        <label for="cap-text">Генерация текста</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Приоритет (чем выше, тем приоритетнее)</label>
+                <input type="number" class="form-input" id="edit-model-priority" name="priority" value="0" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="edit-model-active" name="is_active">
+                    <label for="edit-model-active">Модель доступна на сервере</label>
+                </div>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    Примечание: этот статус обновляется автоматически при проверке доступности модели на сервере.
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Отмена</button>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleAddServerForm() {
+        const content = document.getElementById('add-server-form-content');
+        const toggle = document.getElementById('add-server-toggle');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggle.classList.add('rotated');
+        } else {
+            content.style.display = 'none';
+            toggle.classList.remove('rotated');
+        }
+    }
+    
+    function toggleServerCard(serverId) {
+        const content = document.getElementById(`content-${serverId}`);
+        const toggle = document.getElementById(`toggle-${serverId}`);
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggle.classList.add('rotated');
+        } else {
+            content.style.display = 'none';
+            toggle.classList.remove('rotated');
+        }
+    }
+    
+    function toggleApiKeyField() {
+        const serverType = document.getElementById('server-type').value;
+        const apiKeyGroup = document.getElementById('api-key-group');
+        if (serverType === 'ollama') {
+            apiKeyGroup.style.display = 'none';
+        } else {
+            apiKeyGroup.style.display = 'block';
+        }
+    }
+    
+    async function addServer(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        const data = {
+            name: formData.get('name'),
+            url: formData.get('url'),
+            api_version: formData.get('api_version') || 'v1',
+            server_type: formData.get('server_type') || 'ollama'
+        };
+        
+        // Добавить API ключ если указан
+        const apiKey = formData.get('api_key');
+        if (apiKey && apiKey.trim()) {
+            data.auth_type = 'api_key';
+            data.auth_config = {
+                'api_key': apiKey.trim(),
+                'server_type': formData.get('server_type')
+            };
+        }
+        
+        try {
+            const response = await fetch('/api/servers/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                alert('Сервер успешно добавлен!');
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert('Ошибка: ' + (error.detail || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+    
+    async function syncModels(serverId) {
+        try {
+            const response = await fetch(`/api/servers/${serverId}/discover`, {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                alert(`Синхронизация завершена! Найдено моделей: ${result.models_found}, добавлено: ${result.models_added}`);
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert('Ошибка: ' + (error.detail || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+    
+    async function checkServer(serverId) {
+        try {
+            const response = await fetch(`/api/servers/${serverId}`);
+            const server = await response.json();
+            
+            if (server.is_available) {
+                alert('Сервер доступен!');
+            } else {
+                alert('Сервер недоступен');
+            }
+            location.reload();
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+    
+    async function setDefault(serverId) {
+        try {
+            const response = await fetch(`/api/servers/${serverId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ is_default: true })
+            });
+            
+            if (response.ok) {
+                alert('Сервер установлен по умолчанию!');
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert('Ошибка: ' + (error.detail || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+    
+    async function deleteServer(serverId) {
+        if (!confirm('Вы уверены, что хотите удалить этот сервер?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/servers/${serverId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                alert('Сервер удален!');
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert('Ошибка: ' + (error.detail || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+    
+    function editModelFromButton(button) {
+        try {
+            const modelId = button.getAttribute('data-model-id');
+            const name = button.getAttribute('data-model-name');
+            let capabilities = button.getAttribute('data-model-capabilities');
+            const priority = parseInt(button.getAttribute('data-model-priority') || '0');
+            const isActive = button.getAttribute('data-model-active') === 'true';
+            
+            // Parse capabilities safely
+            if (!capabilities || capabilities === 'null' || capabilities === '') {
+                capabilities = [];
+            } else {
+                try {
+                    capabilities = JSON.parse(capabilities);
+                } catch (e) {
+                    console.error('Error parsing capabilities:', e, 'Raw value:', capabilities);
+                    capabilities = [];
+                }
+            }
+            
+            if (!modelId || !name) {
+                console.error('Missing required model data:', { modelId, name });
+                alert('Ошибка: не удалось загрузить данные модели. Попробуйте обновить страницу.');
+                return;
+            }
+            
+            editModel(modelId, name, capabilities, priority, isActive);
+        } catch (error) {
+            console.error('Error in editModelFromButton:', error);
+            alert('Ошибка при открытии формы редактирования: ' + error.message);
+        }
+    }
+    
+    function editModel(modelId, name, capabilities, priority, isActive) {
+        document.getElementById('edit-model-id').value = modelId;
+        document.getElementById('edit-model-name').value = name;
+        document.getElementById('edit-model-priority').value = priority;
+        document.getElementById('edit-model-active').checked = isActive === 'true' || isActive === true;
+        
+        // Clear all checkboxes
+        document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
+        
+        // Set capabilities
+        // Handle both string (from template) and array (from JSON)
+        let caps = capabilities;
+        if (typeof capabilities === 'string') {
+            try {
+                caps = JSON.parse(capabilities);
+            } catch (e) {
+                caps = [];
+            }
+        }
+        
+        if (caps && Array.isArray(caps) && caps.length > 0) {
+            caps.forEach(cap => {
+                // Map capability names to checkbox IDs
+                const capMap = {
+                    'code_generation': 'cap-code',
+                    'reasoning': 'cap-reasoning',
+                    'planning': 'cap-planning',
+                    'general_chat': 'cap-chat',
+                    'code_analysis': 'cap-analysis',
+                    'text_generation': 'cap-text'
+                };
+                const checkboxId = capMap[cap] || `cap-${cap.replace(/_/g, '-')}`;
+                const checkbox = document.getElementById(checkboxId);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+        
+        document.getElementById('edit-model-modal').classList.add('show');
+    }
+    
+    function closeEditModal() {
+        document.getElementById('edit-model-modal').classList.remove('show');
+    }
+    
+    async function saveModel(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        const modelId = formData.get('model_id');
+        const capabilities = [];
+        document.querySelectorAll('.checkbox-item input[type="checkbox"]:checked').forEach(cb => {
+            capabilities.push(cb.value);
+        });
+        
+        const data = {
+            name: formData.get('name'),
+            capabilities: capabilities.length > 0 ? capabilities : null,
+            priority: parseInt(formData.get('priority')) || 0,
+            is_active: formData.get('is_active') === 'on'
+        };
+        
+        try {
+            const response = await fetch(`/api/models/${modelId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                const updatedModel = await response.json();
+                alert('Модель успешно обновлена!');
+                closeEditModal();
+                
+                // Обновить отображение модели без перезагрузки страницы
+                updateModelDisplay(modelId, updatedModel);
+            } else {
+                const error = await response.json();
+                alert('Ошибка: ' + (error.detail || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+    
+    function updateModelDisplay(modelId, modelData) {
+        // Найти элемент модели по data-model-id
+        const modelItem = document.querySelector(`.model-item[data-model-id="${modelId}"]`);
+        if (!modelItem) {
+            // Если не нашли, перезагрузить страницу
+            location.reload();
+            return;
+        }
+        
+        // Обновить название
+        const nameElement = document.getElementById(`model-name-${modelId}`);
+        if (nameElement) {
+            nameElement.textContent = modelData.name;
+        }
+        
+        // Обновить capabilities
+        const capabilitiesElement = document.getElementById(`capabilities-${modelId}`);
+        if (capabilitiesElement) {
+            if (modelData.capabilities && modelData.capabilities.length > 0) {
+                capabilitiesElement.textContent = modelData.capabilities.join(', ');
+            } else {
+                capabilitiesElement.textContent = 'Нет настроенных возможностей';
+            }
+        }
+        
+        // Обновить приоритет
+        const priorityElement = document.getElementById(`priority-${modelId}`);
+        if (priorityElement) {
+            priorityElement.textContent = 'Приоритет: ' + (modelData.priority || 0);
+        }
+        
+        // Обновить статусы
+        const statusContainer = modelItem.querySelector('div:last-child');
+        if (statusContainer) {
+            // Удалить старые статусы (badges)
+            const oldBadges = statusContainer.querySelectorAll('.status-badge');
+            oldBadges.forEach(badge => badge.remove());
+            
+            // Сохранить кнопки
+            const buttons = statusContainer.querySelectorAll('button');
+            
+            // Добавить новые статусы
+            if (modelData.is_active) {
+                const availableBadge = document.createElement('span');
+                availableBadge.className = 'status-badge available';
+                availableBadge.textContent = '✓ Доступна';
+                statusContainer.insertBefore(availableBadge, buttons[0]);
+            } else {
+                const unavailableBadge = document.createElement('span');
+                unavailableBadge.className = 'status-badge unavailable';
+                unavailableBadge.textContent = '✗ Недоступна';
+                statusContainer.insertBefore(unavailableBadge, buttons[0]);
+            }
+            
+            if (modelData.capabilities && modelData.capabilities.length > 0) {
+                const configuredBadge = document.createElement('span');
+                configuredBadge.className = 'status-badge';
+                configuredBadge.style.background = '#e3f2fd';
+                configuredBadge.style.color = '#1976d2';
+                configuredBadge.textContent = '⚙️ Настроено';
+                // Вставить после первого badge (доступна/недоступна)
+                const firstBadge = statusContainer.querySelector('.status-badge');
+                if (firstBadge && buttons.length > 0) {
+                    // Вставить после первого badge, перед кнопками
+                    statusContainer.insertBefore(configuredBadge, buttons[0]);
+                } else if (buttons.length > 0) {
+                    // Если нет badge, вставить перед кнопками
+                    statusContainer.insertBefore(configuredBadge, buttons[0]);
+                } else {
+                    // Если нет кнопок, просто добавить
+                    statusContainer.appendChild(configuredBadge);
+                }
+            }
+            
+            // Обновить data-атрибуты для кнопки редактирования
+            const editButton = statusContainer.querySelector('.edit-model-btn');
+            if (editButton) {
+                const capsJson = JSON.stringify(modelData.capabilities || []);
+                editButton.setAttribute('data-model-id', modelId);
+                editButton.setAttribute('data-model-name', modelData.name);
+                editButton.setAttribute('data-model-capabilities', capsJson);
+                editButton.setAttribute('data-model-priority', modelData.priority || 0);
+                editButton.setAttribute('data-model-active', modelData.is_active);
+                // onclick уже установлен через editModelFromButton, не нужно обновлять
+            }
+        }
+    }
+    
+    async function unloadModel(modelId) {
+        if (!confirm('Выгрузить модель из GPU памяти? Это освободит ресурсы, но модель может загрузиться автоматически при следующем запросе.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/models/${modelId}/unload`, {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert(`Статус: ${result.status}\n${result.message || ''}\n${result.note || ''}`);
+            } else {
+                alert('Ошибка: ' + (result.detail || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+    
+    async function checkModel(modelId) {
+        try {
+            const response = await fetch(`/api/models/${modelId}/check-availability`, {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+            if (result.available) {
+                alert('Модель доступна на сервере!');
+            } else {
+                alert('Модель недоступна: ' + (result.reason || 'Не найдена на сервере'));
+            }
+            location.reload();
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+    
+    async function checkAllModels(serverId) {
+        if (!confirm('Проверить доступность всех моделей на этом сервере?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/models/server/${serverId}/check-all`, {
+                method: 'GET'
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                alert(`Проверка завершена!\nПроверено: ${result.checked}\nДоступно: ${result.available}`);
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert('Ошибка: ' + (error.detail || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+    
+    // Close modal on outside click
+    window.onclick = function(event) {
+        const modal = document.getElementById('edit-model-modal');
+        if (event.target === modal) {
+            closeEditModal();
+        }
+    }
+</script>
+{% endblock %}
+

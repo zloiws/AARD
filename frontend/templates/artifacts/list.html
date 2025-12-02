@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Артефакты - AARD{% endblock %}
+
+{% block extra_css %}
+<style>
+    .artifacts-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .page-header h1 {
+        font-size: 32px;
+        margin: 0;
+    }
+    
+    .btn-create {
+        padding: 12px 24px;
+        background: white;
+        color: #667eea;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-create:hover {
+        background: #f5f5f5;
+    }
+    
+    .artifacts-list {
+        display: grid;
+        gap: 20px;
+    }
+    
+    .artifact-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    
+    .artifact-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .artifact-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 15px;
+    }
+    
+    .artifact-type {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .artifact-type.tool {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+    
+    .artifact-type.agent {
+        background: #f3e5f5;
+        color: #7b1fa2;
+    }
+    
+    .artifact-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .artifact-status.waiting_approval {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+    
+    .artifact-status.active {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+    
+    .artifact-status.deprecated {
+        background: #f5f5f5;
+        color: #757575;
+    }
+    
+    .artifact-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    
+    .artifact-description {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 15px;
+    }
+    
+    .artifact-meta {
+        display: flex;
+        gap: 20px;
+        font-size: 12px;
+        color: #999;
+        padding-top: 15px;
+        border-top: 1px solid #f0f0f0;
+    }
+    
+    .nav-links {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .nav-link {
+        padding: 10px 20px;
+        background: white;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #667eea;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    
+    .nav-link:hover {
+        background: #f5f5f5;
+    }
+    
+    .nav-link.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+    
+    .filters {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+    }
+    
+    .filters select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="artifacts-container">
+    <div class="nav-links">
+        <a href="/" class="nav-link">Чат</a>
+        <a href="/approvals" class="nav-link">Утверждения</a>
+        <a href="/artifacts" class="nav-link active">Артефакты</a>
+    </div>
+    
+    <div class="page-header">
+        <h1>Артефакты</h1>
+        <a href="/artifacts/create" class="btn-create">+ Создать артефакт</a>
+    </div>
+    
+    <div class="filters">
+        <select onchange="filterArtifacts(this.value, 'type')">
+            <option value="">Все типы</option>
+            <option value="tool">Инструменты</option>
+            <option value="agent">Агенты</option>
+        </select>
+        <select onchange="filterArtifacts(this.value, 'status')">
+            <option value="">Все статусы</option>
+            <option value="active">Активные</option>
+            <option value="waiting_approval">Ожидают утверждения</option>
+            <option value="deprecated">Устаревшие</option>
+        </select>
+    </div>
+    
+    <div class="artifacts-list" id="artifacts-list">
+        {% if artifacts %}
+            {% for artifact in artifacts %}
+            <div class="artifact-card" onclick="window.location.href='/artifacts/{{ artifact.id }}'">
+                <div class="artifact-header">
+                    <div>
+                        <span class="artifact-type {{ artifact.type }}">
+                            {{ artifact.type.title() }}
+                        </span>
+                        <span class="artifact-status {{ artifact.status }}">
+                            {{ artifact.status.replace('_', ' ').title() }}
+                        </span>
+                    </div>
+                    <div style="font-size: 12px; color: #666;">
+                        v{{ artifact.version }}
+                    </div>
+                </div>
+                
+                <div class="artifact-title">{{ artifact.name }}</div>
+                <div class="artifact-description">
+                    {{ artifact.description or 'Нет описания' }}
+                </div>
+                
+                <div class="artifact-meta">
+                    <span>Создан: {{ artifact.created_at.strftime('%d.%m.%Y %H:%M') if artifact.created_at else 'N/A' }}</span>
+                    {% if artifact.security_rating %}
+                        <span>Безопасность: {{ "%.1f"|format(artifact.security_rating * 10) }}/10</span>
+                    {% endif %}
+                    {% if artifact.created_by %}
+                        <span>Автор: {{ artifact.created_by }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📦</div>
+                <h2>Нет артефактов</h2>
+                <p>Создайте первый артефакт (агент или инструмент)</p>
+                <a href="/artifacts/create" class="btn-create" style="margin-top: 20px;">Создать артефакт</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function filterArtifacts(value, type) {
+        // Simple client-side filtering
+        const cards = document.querySelectorAll('.artifact-card');
+        cards.forEach(card => {
+            if (!value) {
+                card.style.display = 'block';
+                return;
+            }
+            
+            if (type === 'type') {
+                const artifactType = card.querySelector('.artifact-type').textContent.toLowerCase();
+                card.style.display = artifactType.includes(value) ? 'block' : 'none';
+            } else if (type === 'status') {
+                const status = card.querySelector('.artifact-status').textContent.toLowerCase().replace(/\s/g, '_');
+                card.style.display = status.includes(value) ? 'block' : 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}
+

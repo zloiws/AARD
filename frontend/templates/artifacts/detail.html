@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Артефакт: {{ artifact.name }} - AARD{% endblock %}
+
+{% block extra_css %}
+<style>
+    .artifact-detail-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .artifact-detail-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .detail-title {
+        font-size: 28px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .detail-meta {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+    }
+    
+    .detail-section {
+        margin-bottom: 30px;
+    }
+    
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #333;
+    }
+    
+    .section-content {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    
+    .code-block {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 20px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    
+    .code-block code {
+        background: none;
+        padding: 0;
+        color: inherit;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    
+    .info-item {
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .info-item-label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    
+    .info-item-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="artifact-detail-container">
+    <a href="/artifacts" class="back-link">← Назад к списку артефактов</a>
+    
+    <div class="artifact-detail-card">
+        <div class="detail-header">
+            <div>
+                <div class="detail-title">{{ artifact.name }}</div>
+                <div class="detail-meta">
+                    <span class="artifact-type {{ artifact.type }}">
+                        {{ artifact.type.title() }}
+                    </span>
+                    <span class="artifact-status {{ artifact.status }}">
+                        {{ artifact.status.replace('_', ' ').title() }}
+                    </span>
+                    <span>v{{ artifact.version }}</span>
+                </div>
+            </div>
+            <div style="text-align: right; color: #666; font-size: 14px;">
+                <div>Создан: {{ artifact.created_at.strftime('%d.%m.%Y %H:%M') if artifact.created_at else 'N/A' }}</div>
+                {% if artifact.created_by %}
+                    <div>Автор: {{ artifact.created_by }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if artifact.description %}
+        <div class="detail-section">
+            <div class="section-title">Описание</div>
+            <div class="section-content">
+                {{ artifact.description }}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if artifact.code %}
+        <div class="detail-section">
+            <div class="section-title">Код</div>
+            <div class="code-block">
+                <pre><code>{{ artifact.code }}</code></pre>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if artifact.prompt %}
+        <div class="detail-section">
+            <div class="section-title">Промпт</div>
+            <div class="section-content">
+                <pre style="white-space: pre-wrap;">{{ artifact.prompt }}</pre>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="detail-section">
+            <div class="section-title">Информация</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-item-label">Статус</div>
+                    <div class="info-item-value">{{ artifact.status.replace('_', ' ').title() }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-item-label">Версия</div>
+                    <div class="info-item-value">{{ artifact.version }}</div>
+                </div>
+                {% if artifact.security_rating %}
+                <div class="info-item">
+                    <div class="info-item-label">Безопасность</div>
+                    <div class="info-item-value">{{ "%.1f"|format(artifact.security_rating * 10) }}/10</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if artifact.test_results %}
+        <div class="detail-section">
+            <div class="section-title">Результаты тестирования</div>
+            <div class="section-content">
+                <pre>{{ artifact.test_results|tojson(indent=2) if artifact.test_results else 'Нет данных' }}</pre>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if artifact.status == 'waiting_approval' %}
+        <div class="detail-section" style="background: #fff3e0; padding: 20px; border-radius: 8px; border-left: 4px solid #f57c00;">
+            <div class="section-title">Ожидает утверждения</div>
+            <div class="section-content" style="background: white;">
+                Этот артефакт ожидает утверждения. Перейдите в <a href="/approvals">очередь утверждений</a> для просмотра и обработки запроса.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

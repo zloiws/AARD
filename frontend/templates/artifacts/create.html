@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Создать артефакт - AARD{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .create-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 25px;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+    }
+    
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .form-textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+    
+    .form-help {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .btn-submit {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .btn-submit:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .loading-indicator {
+        display: none;
+        text-align: center;
+        padding: 20px;
+        color: #667eea;
+    }
+    
+    .loading-indicator.show {
+        display: block;
+    }
+    
+    .result-message {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        display: none;
+    }
+    
+    .result-message.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+        display: block;
+    }
+    
+    .result-message.error {
+        background: #ffebee;
+        color: #c62828;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    <a href="/artifacts" class="back-link">← Назад к списку артефактов</a>
+    
+    <div class="create-card">
+        <h1 style="font-size: 28px; margin-bottom: 30px;">Создать новый артефакт</h1>
+        
+        <form id="create-artifact-form" onsubmit="createArtifact(event)">
+            <div class="form-group">
+                <label class="form-label">Тип артефакта *</label>
+                <select class="form-select" name="artifact_type" required>
+                    <option value="">Выберите тип</option>
+                    <option value="tool">Инструмент (Tool)</option>
+                    <option value="agent">Агент (Agent)</option>
+                </select>
+                <div class="form-help">
+                    Инструмент - выполняет конкретные задачи. Агент - использует инструменты для решения задач.
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Описание *</label>
+                <textarea 
+                    class="form-textarea" 
+                    name="description" 
+                    placeholder="Опишите, что должен делать артефакт. Например: 'Создать инструмент для поиска файлов по имени и расширению'"
+                    required></textarea>
+                <div class="form-help">
+                    Чем подробнее описание, тем лучше будет результат. Система использует LLM для генерации кода или промпта.
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Дополнительный контекст (необязательно)</label>
+                <textarea 
+                    class="form-textarea" 
+                    name="context" 
+                    placeholder='JSON объект с дополнительной информацией. Например: {"requirements": ["async", "error handling"], "similar_tools": ["file_search"]}'
+                    style="font-family: monospace; font-size: 12px;"></textarea>
+                <div class="form-help">
+                    Дополнительная информация для генерации (требования, примеры похожих артефактов и т.д.)
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-submit" id="submit-btn">
+                Создать артефакт
+            </button>
+        </form>
+        
+        <div class="loading-indicator" id="loading">
+            <div>⏳ Генерация артефакта... Это может занять 30-60 секунд</div>
+        </div>
+        
+        <div class="result-message" id="result-message"></div>
+    </div>
+</div>
+
+<script>
+    function createArtifact(event) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const submitBtn = document.getElementById('submit-btn');
+        const loading = document.getElementById('loading');
+        const resultMessage = document.getElementById('result-message');
+        
+        // Get form data
+        const formData = new FormData(form);
+        const artifactType = formData.get('artifact_type');
+        const description = formData.get('description');
+        let context = {};
+        
+        try {
+            const contextText = formData.get('context');
+            if (contextText && contextText.trim()) {
+                context = JSON.parse(contextText);
+            }
+        } catch (e) {
+            resultMessage.className = 'result-message error';
+            resultMessage.textContent = 'Ошибка в JSON контексте: ' + e.message;
+            return;
+        }
+        
+        // Disable form
+        submitBtn.disabled = true;
+        loading.classList.add('show');
+        resultMessage.className = 'result-message';
+        resultMessage.style.display = 'none';
+        
+        // Send request
+        fetch('/api/artifacts/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                description: description,
+                artifact_type: artifactType,
+                context: context
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            loading.classList.remove('show');
+            resultMessage.className = 'result-message success';
+            resultMessage.textContent = '✓ Артефакт успешно создан! ID: ' + data.id + '. Переход к деталям...';
+            
+            setTimeout(() => {
+                window.location.href = '/artifacts/' + data.id;
+            }, 2000);
+        })
+        .catch(error => {
+            loading.classList.remove('show');
+            submitBtn.disabled = false;
+            resultMessage.className = 'result-message error';
+            resultMessage.textContent = '✗ Ошибка: ' + error.message;
+        });
+    }
+</script>
+{% endblock %}
+

@@ -1,0 +1,25 @@
+<div class="message assistant">
+    <div class="message-content markdown-body" data-markdown>{{ message }}</div>
+    <div class="message-meta">
+        {{ model }} • {{ "%.1f"|format(duration_ms / 1000) }}s
+    </div>
+</div>
+<script>
+    // Process markdown and syntax highlighting
+    (function() {
+        const content = document.currentScript.previousElementSibling;
+        if (content && content.hasAttribute('data-markdown')) {
+            const rawText = content.textContent || content.innerText;
+            if (typeof marked !== 'undefined') {
+                content.innerHTML = marked.parse(rawText);
+                // Highlight code blocks
+                if (typeof hljs !== 'undefined') {
+                    content.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+                }
+            }
+        }
+    })();
+</script>
+

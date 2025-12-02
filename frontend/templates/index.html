@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}AARD Chat{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>AARD Chat</h1>
+            <div class="status" id="status">Autonomous Agentic Recursive Development</div>
+        </div>
+        <div>
+            <span id="model-status">
+                {% set available_count = models|selectattr("available")|list|length %}
+                Модели: {{ available_count }}/{{ models|length }} доступны
+            </span>
+        </div>
+    </div>
+    
+    <div class="chat-container">
+        <div class="chat-messages" id="messages">
+            <div class="message assistant">
+                <div class="message-content">
+                    Привет! Я AARD - ваш AI-ассистент для разработки. 
+                    Я могу помочь с генерацией кода, анализом, рассуждениями и планированием.
+                    <br><br>
+                    <strong>Доступные модели:</strong>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        {% for model in models %}
+                        <li>
+                            <strong>{{ model.model }}</strong> 
+                            {% if model.available %}
+                            <span style="color: #4caf50;">✓ Доступна</span>
+                            {% else %}
+                            <span style="color: #f44336;">✗ Недоступна</span>
+                            {% endif %}
+                            <br>
+                            <small>Возможности: {{ model.capabilities|join(", ") }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <br>
+                    Выберите модель вручную или используйте автоматический выбор на основе типа задачи.
+                </div>
+                <div class="message-meta">Система</div>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <form 
+                id="chat-form"
+                hx-post="/api/chat/"
+                hx-target="#messages"
+                hx-swap="beforeend"
+                hx-indicator="#loading"
+                hx-trigger="submit"
+                hx-ext="json-enc"
+                onsubmit="handleSubmit(event)"
+            >
+                <div class="input-wrapper">
+                    <div class="input-controls">
+                        <label>
+                            Модель:
+                            <select name="model" id="model_select" style="min-width: 280px;">
+                                <option value="">Автоматический выбор (по типу задачи)</option>
+                                {% for model in models %}
+                                <option value="{{ model.model }}" data-available="{{ 'true' if model.available else 'false' }}" {% if not model.available %}style="color: #999;"{% endif %}>
+                                    {{ model.model }} {% if model.available %}(✓ доступна){% else %}(✗ недоступна){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            Тип задачи:
+                            <select name="task_type" id="task_type">
+                                <option value="general_chat">Общий чат</option>
+                                <option value="code_generation">Генерация кода</option>
+                                <option value="code_analysis">Анализ кода</option>
+                                <option value="reasoning">Рассуждения</option>
+                                <option value="planning">Планирование</option>
+                                <option value="text_generation">Генерация текста</option>
+                            </select>
+                        </label>
+                        <label>
+                            Temperature:
+                            <input type="number" name="temperature" value="0.7" min="0" max="2" step="0.1" style="width: 80px;">
+                        </label>
+                    </div>
+                    <textarea 
+                        name="message" 
+                        id="message-input" 
+                        placeholder="Введите ваше сообщение..."
+                        required
+                        rows="1"
+                    ></textarea>
+                </div>
+                <button type="submit" id="submit-btn">Отправить</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function handleSubmit(event) {
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value.trim();
+        
+        if (!message) {
+            event.preventDefault();
+            return;
+        }
+        
+        // Add user message to chat immediately
+        const messagesDiv = document.getElementById('messages');
+        const userMessage = document.createElement('div');
+        userMessage.className = 'message user';
+        userMessage.innerHTML = `
+            <div class="message-content">${escapeHtml(message)}</div>
+            <div class="message-meta">Вы</div>
+        `;
+        messagesDiv.appendChild(userMessage);
+        
+        // Clear input
+        messageInput.value = '';
+        
+        // Show loading
+        document.getElementById('loading').classList.add('show');
+        document.getElementById('submit-btn').disabled = true;
+        
+        // Scroll to bottom
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        
+        // Auto-resize textarea
+        messageInput.style.height = 'auto';
+    }
+    
+    // Handle HTMX response
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'messages') {
+            // Hide loading
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('submit-btn').disabled = false;
+            
+            // Scroll to bottom
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    });
+    
+    // Show warning if selected model is unavailable
+    document.getElementById('model_select').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const isAvailable = selectedOption.getAttribute('data-available') === 'true';
+        const modelName = selectedOption.value;
+        
+        if (modelName && !isAvailable) {
+            // Show warning
+            let warning = document.getElementById('model-warning');
+            if (!warning) {
+                warning = document.createElement('div');
+                warning.id = 'model-warning';
+                warning.className = 'model-status unavailable';
+                warning.style.marginTop = '5px';
+                this.parentElement.appendChild(warning);
+            }
+            warning.textContent = `⚠ Модель ${modelName} недоступна. Запрос может не выполниться.`;
+        } else {
+            // Remove warning
+            const warning = document.getElementById('model-warning');
+            if (warning) {
+                warning.remove();
+            }
+        }
+    });
+    
+    // Handle HTMX errors
+    document.body.addEventListener('htmx:responseError', function(event) {
+        document.getElementById('loading').classList.remove('show');
+        document.getElementById('submit-btn').disabled = false;
+        
+        const messagesDiv = document.getElementById('messages');
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'message assistant';
+        errorMessage.innerHTML = `
+            <div class="message-content" style="color: #d32f2f;">
+                Ошибка: ${escapeHtml(event.detail.xhr.responseText || 'Неизвестная ошибка')}
+            </div>
+            <div class="message-meta">Система</div>
+        `;
+        messagesDiv.appendChild(errorMessage);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+    
+    // Auto-resize textarea
+    document.getElementById('message-input').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+    });
+    
+    // Enter to submit (Shift+Enter for new line)
+    document.getElementById('message-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+        }
+    });
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Format code blocks in messages
+    function formatMessage(content) {
+        // Simple markdown-like formatting
+        content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, lang, code) {
+            return `<pre><code>${escapeHtml(code)}</code></pre>`;
+        });
+        content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
+        content = content.replace(/\n/g, '<br>');
+        return content;
+    }
+</script>
+{% endblock %}
+
