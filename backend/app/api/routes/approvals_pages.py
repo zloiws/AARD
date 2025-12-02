@@ -54,6 +54,8 @@ async def approvals_queue(
             limit=100
         )
     
+    from datetime import datetime
+    
     return templates.TemplateResponse(
         "approvals/queue.html",
         {
@@ -61,7 +63,8 @@ async def approvals_queue(
             "approvals": approvals,
             "statistics": stats,
             "current_filter_type": request_type,
-            "current_filter_status": status or "pending"
+            "current_filter_status": status or "pending",
+            "now": datetime.utcnow()
         }
     )
 

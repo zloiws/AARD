@@ -166,10 +166,58 @@
     <div class="page-header">
         <h1>Очередь утверждений</h1>
         <div class="stats">
+            {% if statistics %}
+            <div class="stat-item">
+                <div class="stat-value">{{ statistics.total }}</div>
+                <div class="stat-label">Всего</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" style="color: #ff9800;">{{ statistics.pending }}</div>
+                <div class="stat-label">Ожидают</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" style="color: #4caf50;">{{ statistics.approved }}</div>
+                <div class="stat-label">Утверждено</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" style="color: #f44336;">{{ statistics.rejected }}</div>
+                <div class="stat-label">Отклонено</div>
+            </div>
+            {% if statistics.urgent > 0 %}
+            <div class="stat-item">
+                <div class="stat-value" style="color: #ff1744; animation: pulse 2s infinite;">{{ statistics.urgent }}</div>
+                <div class="stat-label">Срочно</div>
+            </div>
+            {% endif %}
+            {% else %}
             <div class="stat-item">
                 <div class="stat-value" id="pending-count">{{ approvals|length }}</div>
                 <div class="stat-label">Ожидают утверждения</div>
             </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+            <label style="font-weight: 600;">Статус:</label>
+            <select id="status-filter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                <option value="pending" {% if current_filter_status == 'pending' %}selected{% endif %}>Ожидают</option>
+                <option value="approved" {% if current_filter_status == 'approved' %}selected{% endif %}>Утверждено</option>
+                <option value="rejected" {% if current_filter_status == 'rejected' %}selected{% endif %}>Отклонено</option>
+                <option value="all" {% if current_filter_status == 'all' %}selected{% endif %}>Все</option>
+            </select>
+            
+            <label style="font-weight: 600; margin-left: 20px;">Тип:</label>
+            <select id="type-filter" onchange="applyFilters()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                <option value="">Все типы</option>
+                <option value="plan_approval" {% if current_filter_type == 'plan_approval' %}selected{% endif %}>Планы</option>
+                <option value="new_artifact" {% if current_filter_type == 'new_artifact' %}selected{% endif %}>Новые артефакты</option>
+                <option value="artifact_update" {% if current_filter_type == 'artifact_update' %}selected{% endif %}>Обновления артефактов</option>
+                <option value="prompt_change" {% if current_filter_type == 'prompt_change' %}selected{% endif %}>Изменения промптов</option>
+                <option value="execution_step" {% if current_filter_type == 'execution_step' %}selected{% endif %}>Шаги выполнения</option>
+            </select>
         </div>
     </div>
     
@@ -228,8 +276,20 @@
                 
                 <div class="approval-meta">
                     <span>ID: {{ approval.id }}</span>
-                    {% if approval.decision_timeout %}
+                    {% if approval.decision_timeout and now %}
+                        {% set time_left = (approval.decision_timeout - now) %}
+                        {% if time_left.total_seconds() < 7200 and approval.status == 'pending' %}
+                            <span style="color: #f44336; font-weight: bold;">⚠️ Срочно! Таймаут: {{ approval.decision_timeout.strftime('%d.%m.%Y %H:%M') }}</span>
+                        {% else %}
+                            <span>Таймаут: {{ approval.decision_timeout.strftime('%d.%m.%Y %H:%M') }}</span>
+                        {% endif %}
+                    {% elif approval.decision_timeout %}
                         <span>Таймаут: {{ approval.decision_timeout.strftime('%d.%m.%Y %H:%M') }}</span>
+                    {% endif %}
+                    {% if approval.status == 'approved' and approval.approved_by %}
+                        <span style="color: #4caf50;">✓ Утверждено: {{ approval.approved_by }}</span>
+                    {% elif approval.status == 'rejected' %}
+                        <span style="color: #f44336;">✗ Отклонено</span>
                     {% endif %}
                 </div>
             </div>
@@ -245,13 +305,37 @@
 </div>
 
 <script>
-    // Auto-refresh every 30 seconds
+    function applyFilters() {
+        const status = document.getElementById('status-filter').value;
+        const type = document.getElementById('type-filter').value;
+        
+        let url = '/approvals?';
+        if (status && status !== 'pending') {
+            url += 'status=' + status + '&';
+        }
+        if (type) {
+            url += 'request_type=' + type + '&';
+        }
+        
+        window.location.href = url.replace(/&$/, '');
+    }
+    
+    // Auto-refresh every 30 seconds (only if on pending view)
+    {% if current_filter_status == 'pending' or not current_filter_status %}
     setInterval(function() {
         htmx.ajax('GET', '/approvals', {
             target: '#approvals-list',
             swap: 'innerHTML'
         });
     }, 30000);
+    {% endif %}
 </script>
+
+<style>
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+</style>
 {% endblock %}
 
