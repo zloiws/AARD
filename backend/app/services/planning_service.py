@@ -1,0 +1,464 @@
+"""
+Planning service for generating and managing task plans
+"""
+from typing import Dict, Any, Optional, List
+from uuid import UUID, uuid4
+from datetime import datetime
+import json
+import re
+
+from sqlalchemy.orm import Session
+
+from app.models.plan import Plan, PlanStatus
+from app.models.task import Task
+from app.core.ollama_client import OllamaClient, TaskType
+from app.services.ollama_service import OllamaService
+
+
+class PlanningService:
+    """Service for generating and managing task plans"""
+    
+    def __init__(self, db: Session):
+        self.db = db
+        # OllamaClient will be created dynamically when needed
+        # to use database-backed server/model selection
+    
+    async def generate_plan(
+        self,
+        task_description: str,
+        task_id: Optional[UUID] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Plan:
+        """
+        Generate a plan for a task using LLM
+        
+        Args:
+            task_description: Description of the task
+            task_id: Optional task ID to link plan to
+            context: Additional context (existing artifacts, constraints, etc.)
+            
+        Returns:
+            Created plan in DRAFT status
+        """
+        
+        # 1. Analyze task and create strategy
+        strategy = await self._analyze_task(task_description, context)
+        
+        # 2. Decompose task into steps
+        steps = await self._decompose_task(task_description, strategy, context)
+        
+        # 3. Assess risks
+        risks = await self._assess_risks(steps, strategy)
+        
+        # 4. Create alternatives if needed
+        alternatives = await self._create_alternatives(steps, strategy, risks)
+        
+        # 5. Create plan object
+        if not task_id:
+            # Create a task if not provided
+            task = Task(
+                description=task_description,
+                status="pending"
+            )
+            self.db.add(task)
+            self.db.flush()
+            task_id = task.id
+        
+        plan = Plan(
+            task_id=task_id,
+            version=1,
+            goal=task_description,
+            strategy=strategy,
+            steps=steps,
+            alternatives=alternatives,
+            status="draft",  # Use lowercase string to match DB constraint
+            current_step=0,
+            estimated_duration=self._estimate_duration(steps)
+        )
+        
+        self.db.add(plan)
+        self.db.commit()
+        self.db.refresh(plan)
+        
+        return plan
+    
+    async def _analyze_task(
+        self,
+        task_description: str,
+        context: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Analyze task and create strategy"""
+        
+        system_prompt = """You are an expert at task analysis and strategic planning.
+Analyze the task and create a strategy that includes:
+1. approach: General approach to solving the task
+2. assumptions: List of assumptions made
+3. constraints: List of constraints and limitations
+4. success_criteria: List of criteria for successful completion
+
+Return a JSON object with these fields."""
+        
+        context_str = ""
+        if context:
+            context_str = f"\n\nContext:\n{json.dumps(context, indent=2, ensure_ascii=False)}"
+        
+        user_prompt = f"""Task: {task_description}{context_str}
+
+Analyze this task and create a strategic plan. Return only valid JSON."""
+        
+        try:
+            # Get planning model from database
+            from app.services.ollama_service import OllamaService
+            
+            # Find model with planning capability
+            default_server = OllamaService.get_default_server(self.db)
+            if not default_server:
+                raise ValueError("No default server found")
+            
+            # Get models with planning capability
+            models = OllamaService.get_models_for_server(self.db, str(default_server.id))
+            planning_model = None
+            for model in models:
+                if model.capabilities and "planning" in model.capabilities:
+                    planning_model = model
+                    break
+            
+            # Fallback to reasoning model
+            if not planning_model:
+                for model in models:
+                    if model.capabilities and "reasoning" in model.capabilities:
+                        planning_model = model
+                        break
+            
+            # Fallback to first model
+            if not planning_model and models:
+                planning_model = models[0]
+            
+            if not planning_model:
+                raise ValueError("No suitable model found for planning")
+            
+            # Create OllamaClient
+            ollama_client = OllamaClient()
+            
+            # IMPORTANT: Add timeout to prevent infinite loops
+            import asyncio
+            try:
+                response = await asyncio.wait_for(
+                    ollama_client.generate(
+                        prompt=user_prompt,
+                        system_prompt=system_prompt,
+                        task_type=TaskType.PLANNING,
+                        model=planning_model.model_name,
+                        server_url=default_server.get_api_url()
+                    ),
+                    timeout=300.0  # 5 minutes max for strategy analysis
+                )
+            except asyncio.TimeoutError:
+                raise ValueError("Strategy analysis timed out after 5 minutes. Task may be too complex or model is stuck.")
+            
+            # Parse JSON from response
+            strategy = self._parse_json_from_response(response.response)
+            
+            # Ensure required fields
+            if not isinstance(strategy, dict):
+                strategy = {}
+            
+            strategy.setdefault("approach", "Standard approach")
+            strategy.setdefault("assumptions", [])
+            strategy.setdefault("constraints", [])
+            strategy.setdefault("success_criteria", [])
+            
+            return strategy
+            
+        except Exception as e:
+            # Fallback strategy
+            return {
+                "approach": "Standard step-by-step approach",
+                "assumptions": ["All required resources are available"],
+                "constraints": ["Must follow system constraints"],
+                "success_criteria": ["Task completed successfully"]
+            }
+    
+    async def _decompose_task(
+        self,
+        task_description: str,
+        strategy: Dict[str, Any],
+        context: Optional[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Decompose task into executable steps"""
+        
+        system_prompt = """You are an expert at breaking down complex tasks into executable steps.
+Create a detailed plan with steps. Each step should have:
+- step_id: unique identifier (e.g., "step_1", "step_2")
+- description: clear description of what to do
+- type: one of "action", "decision", "validation", "approval"
+- inputs: what inputs are needed (object)
+- expected_outputs: what outputs are expected (object)
+- timeout: timeout in seconds (integer)
+- retry_policy: {max_attempts: 3, delay: 10}
+- dependencies: list of step_ids that must complete first (array)
+- approval_required: boolean
+- risk_level: "low", "medium", or "high"
+
+Return a JSON array of steps."""
+        
+        context_str = ""
+        if context:
+            context_str = f"\n\nContext:\n{json.dumps(context, indent=2, ensure_ascii=False)}"
+        
+        strategy_str = json.dumps(strategy, indent=2, ensure_ascii=False)
+        
+        user_prompt = f"""Task: {task_description}
+
+Strategy:
+{strategy_str}{context_str}
+
+Break down this task into executable steps. Return only a valid JSON array."""
+        
+        try:
+            # Get planning model from database
+            from app.services.ollama_service import OllamaService
+            
+            # Find model with planning capability
+            default_server = OllamaService.get_default_server(self.db)
+            if not default_server:
+                raise ValueError("No default server found")
+            
+            # Get models with planning capability
+            models = OllamaService.get_models_for_server(self.db, str(default_server.id))
+            planning_model = None
+            for model in models:
+                if model.capabilities and "planning" in model.capabilities:
+                    planning_model = model
+                    break
+            
+            # Fallback to reasoning model
+            if not planning_model:
+                for model in models:
+                    if model.capabilities and "reasoning" in model.capabilities:
+                        planning_model = model
+                        break
+            
+            # Fallback to first model
+            if not planning_model and models:
+                planning_model = models[0]
+            
+            if not planning_model:
+                raise ValueError("No suitable model found for planning")
+            
+            # Create OllamaClient
+            ollama_client = OllamaClient()
+            
+            # IMPORTANT: Add timeout to prevent infinite loops
+            import asyncio
+            try:
+                response = await asyncio.wait_for(
+                    ollama_client.generate(
+                        prompt=user_prompt,
+                        system_prompt=system_prompt,
+                        task_type=TaskType.PLANNING,
+                        model=planning_model.model_name,
+                        server_url=default_server.get_api_url()
+                    ),
+                    timeout=300.0  # 5 minutes max for task decomposition
+                )
+            except asyncio.TimeoutError:
+                raise ValueError("Task decomposition timed out after 5 minutes. Task may be too complex or model is stuck.")
+            
+            # Parse JSON from response
+            steps = self._parse_json_from_response(response.response)
+            
+            # Ensure it's a list
+            if not isinstance(steps, list):
+                steps = []
+            
+            # Validate and fix steps
+            validated_steps = []
+            for i, step in enumerate(steps):
+                if not isinstance(step, dict):
+                    continue
+                
+                # Ensure required fields
+                step.setdefault("step_id", f"step_{i+1}")
+                step.setdefault("description", f"Step {i+1}")
+                step.setdefault("type", "action")
+                step.setdefault("inputs", {})
+                step.setdefault("expected_outputs", {})
+                step.setdefault("timeout", 300)
+                step.setdefault("retry_policy", {"max_attempts": 3, "delay": 10})
+                step.setdefault("dependencies", [])
+                step.setdefault("approval_required", False)
+                step.setdefault("risk_level", "low")
+                step.setdefault("agent", None)
+                step.setdefault("tool", None)
+                
+                validated_steps.append(step)
+            
+            # If no steps generated, create a default one
+            if not validated_steps:
+                validated_steps = [{
+                    "step_id": "step_1",
+                    "description": task_description,
+                    "type": "action",
+                    "inputs": {},
+                    "expected_outputs": {},
+                    "timeout": 300,
+                    "retry_policy": {"max_attempts": 3, "delay": 10},
+                    "dependencies": [],
+                    "approval_required": False,
+                    "risk_level": "medium",
+                    "agent": None,
+                    "tool": None
+                }]
+            
+            return validated_steps
+            
+        except Exception as e:
+            # Fallback to single step
+            return [{
+                "step_id": "step_1",
+                "description": task_description,
+                "type": "action",
+                "inputs": {},
+                "expected_outputs": {},
+                "timeout": 300,
+                "retry_policy": {"max_attempts": 3, "delay": 10},
+                "dependencies": [],
+                "approval_required": False,
+                "risk_level": "medium",
+                "agent": None,
+                "tool": None
+            }]
+    
+    async def _assess_risks(
+        self,
+        steps: List[Dict[str, Any]],
+        strategy: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Assess risks for the plan"""
+        
+        # Simple risk assessment based on steps
+        high_risk_steps = [s for s in steps if s.get("risk_level") == "high"]
+        approval_steps = [s for s in steps if s.get("approval_required")]
+        
+        return {
+            "overall_risk": "high" if high_risk_steps else "medium" if approval_steps else "low",
+            "high_risk_steps": len(high_risk_steps),
+            "approval_points": len(approval_steps),
+            "total_steps": len(steps)
+        }
+    
+    async def _create_alternatives(
+        self,
+        steps: List[Dict[str, Any]],
+        strategy: Dict[str, Any],
+        risks: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Create alternative approaches if needed"""
+        
+        # For now, return empty alternatives
+        # Can be enhanced with LLM-based alternative generation
+        return []
+    
+    def _estimate_duration(self, steps: List[Dict[str, Any]]) -> int:
+        """Estimate total duration in seconds"""
+        total = 0
+        for step in steps:
+            total += step.get("timeout", 300)
+        return total
+    
+    def _parse_json_from_response(self, response_text: str) -> Any:
+        """Parse JSON from LLM response"""
+        # Try to find JSON in response
+        # Look for JSON object or array
+        json_match = re.search(r'\{.*\}|\[.*\]', response_text, re.DOTALL)
+        if json_match:
+            try:
+                return json.loads(json_match.group())
+            except json.JSONDecodeError:
+                pass
+        
+        # Try to parse entire response
+        try:
+            return json.loads(response_text)
+        except json.JSONDecodeError:
+            # Return empty structure
+            return {}
+    
+    def get_plan(self, plan_id: UUID) -> Optional[Plan]:
+        """Get plan by ID"""
+        return self.db.query(Plan).filter(Plan.id == plan_id).first()
+    
+    def get_plans_for_task(self, task_id: UUID) -> List[Plan]:
+        """Get all plans for a task"""
+        return self.db.query(Plan).filter(Plan.task_id == task_id).order_by(
+            Plan.version.desc()
+        ).all()
+    
+    def approve_plan(self, plan_id: UUID) -> Plan:
+        """Approve a plan"""
+        plan = self.get_plan(plan_id)
+        if not plan:
+            raise ValueError(f"Plan {plan_id} not found")
+        
+        plan.status = "approved"  # Use lowercase string to match DB constraint
+        plan.approved_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(plan)
+        
+        return plan
+    
+    def start_execution(self, plan_id: UUID) -> Plan:
+        """Start plan execution"""
+        plan = self.get_plan(plan_id)
+        if not plan:
+            raise ValueError(f"Plan {plan_id} not found")
+        
+        if plan.status != "approved":  # Use lowercase string
+            raise ValueError(f"Plan must be approved before execution")
+        
+        plan.status = "executing"  # Use lowercase string to match DB constraint
+        plan.current_step = 0
+        self.db.commit()
+        self.db.refresh(plan)
+        
+        return plan
+    
+    async def replan(
+        self,
+        plan_id: UUID,
+        reason: str,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Plan:
+        """Create a new version of the plan based on feedback"""
+        original_plan = self.get_plan(plan_id)
+        if not original_plan:
+            raise ValueError(f"Plan {plan_id} not found")
+        
+        # Get task
+        task = self.db.query(Task).filter(Task.id == original_plan.task_id).first()
+        if not task:
+            raise ValueError(f"Task {original_plan.task_id} not found")
+        
+        # Create new plan version
+        new_plan = await self.generate_plan(
+            task_description=task.description,
+            task_id=task.id,
+            context={
+                **(context or {}),
+                "previous_plan": {
+                    "version": original_plan.version,
+                    "steps": original_plan.steps,
+                    "reason_for_replan": reason
+                }
+            }
+        )
+        
+        # Increment version
+        new_plan.version = original_plan.version + 1
+        
+        self.db.commit()
+        self.db.refresh(new_plan)
+        
+        return new_plan
+

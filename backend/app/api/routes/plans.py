@@ -1,0 +1,326 @@
+"""
+API routes for task planning
+"""
+from typing import Optional, List
+from uuid import UUID
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel, Field
+from datetime import datetime
+
+from app.core.database import get_db
+from app.models.plan import Plan, PlanStatus
+from app.models.task import Task
+from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
+
+router = APIRouter(prefix="/api/plans", tags=["plans"])
+
+
+class PlanCreateRequest(BaseModel):
+    """Request to create a plan"""
+    task_description: str = Field(..., description="Description of the task")
+    task_id: Optional[UUID] = Field(None, description="Optional task ID to link plan to")
+    context: Optional[dict] = Field(None, description="Additional context")
+
+
+class PlanResponse(BaseModel):
+    """Plan response model"""
+    id: UUID
+    task_id: UUID
+    version: int
+    goal: str
+    strategy: Optional[dict]
+    steps: List[dict]
+    alternatives: Optional[List[dict]]
+    status: str
+    current_step: int
+    estimated_duration: Optional[int]
+    actual_duration: Optional[int]
+    created_at: datetime
+    approved_at: Optional[datetime]
+    
+    class Config:
+        from_attributes = True
+
+
+class PlanUpdateRequest(BaseModel):
+    """Request to update a plan"""
+    goal: Optional[str] = None
+    strategy: Optional[dict] = None
+    steps: Optional[List[dict]] = None
+    alternatives: Optional[List[dict]] = None
+
+
+class ReplanRequest(BaseModel):
+    """Request to replan"""
+    reason: str = Field(..., description="Reason for replanning")
+    context: Optional[dict] = None
+
+
+@router.post("/", response_model=PlanResponse)
+async def create_plan(
+    request: PlanCreateRequest,
+    db: Session = Depends(get_db)
+):
+    """Create a new plan for a task"""
+    try:
+        planning_service = PlanningService(db)
+        plan = await planning_service.generate_plan(
+            task_description=request.task_description,
+            task_id=request.task_id,
+            context=request.context
+        )
+        
+        return PlanResponse(
+            id=plan.id,
+            task_id=plan.task_id,
+            version=plan.version,
+            goal=plan.goal,
+            strategy=plan.strategy,
+            steps=plan.steps,
+            alternatives=plan.alternatives,
+            status=plan.status,
+            current_step=plan.current_step,
+            estimated_duration=plan.estimated_duration,
+            actual_duration=plan.actual_duration,
+            created_at=plan.created_at,
+            approved_at=plan.approved_at
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating plan: {str(e)}")
+
+
+@router.get("/", response_model=List[PlanResponse])
+async def list_plans(
+    task_id: Optional[UUID] = None,
+    status: Optional[str] = None,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """List plans, optionally filtered by task_id or status"""
+    query = db.query(Plan)
+    
+    if task_id:
+        query = query.filter(Plan.task_id == task_id)
+    
+    if status:
+        # Use lowercase string to match DB constraint
+        query = query.filter(Plan.status == status.lower())
+    
+    plans = query.order_by(Plan.created_at.desc()).limit(limit).all()
+    
+    return [
+        PlanResponse(
+            id=plan.id,
+            task_id=plan.task_id,
+            version=plan.version,
+            goal=plan.goal,
+            strategy=plan.strategy,
+            steps=plan.steps,
+            alternatives=plan.alternatives,
+            status=plan.status,
+            current_step=plan.current_step,
+            estimated_duration=plan.estimated_duration,
+            actual_duration=plan.actual_duration,
+            created_at=plan.created_at,
+            approved_at=plan.approved_at
+        )
+        for plan in plans
+    ]
+
+
+@router.get("/{plan_id}", response_model=PlanResponse)
+async def get_plan(
+    plan_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get plan by ID"""
+    planning_service = PlanningService(db)
+    plan = planning_service.get_plan(plan_id)
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    return PlanResponse(
+        id=plan.id,
+        task_id=plan.task_id,
+        version=plan.version,
+        goal=plan.goal,
+        strategy=plan.strategy,
+        steps=plan.steps,
+        alternatives=plan.alternatives,
+        status=plan.status.value,
+        current_step=plan.current_step,
+        estimated_duration=plan.estimated_duration,
+        actual_duration=plan.actual_duration,
+        created_at=plan.created_at,
+        approved_at=plan.approved_at
+    )
+
+
+@router.put("/{plan_id}", response_model=PlanResponse)
+async def update_plan(
+    plan_id: UUID,
+    request: PlanUpdateRequest,
+    db: Session = Depends(get_db)
+):
+    """Update a plan"""
+    plan = db.query(Plan).filter(Plan.id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    if plan.status != "draft":  # Use lowercase string to match DB constraint
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot update plan in {plan.status} status"
+        )
+    
+    if request.goal is not None:
+        plan.goal = request.goal
+    if request.strategy is not None:
+        plan.strategy = request.strategy
+    if request.steps is not None:
+        plan.steps = request.steps
+    if request.alternatives is not None:
+        plan.alternatives = request.alternatives
+    
+    db.commit()
+    db.refresh(plan)
+    
+    return PlanResponse(
+        id=plan.id,
+        task_id=plan.task_id,
+        version=plan.version,
+        goal=plan.goal,
+        strategy=plan.strategy,
+        steps=plan.steps,
+        alternatives=plan.alternatives,
+        status=plan.status.value,
+        current_step=plan.current_step,
+        estimated_duration=plan.estimated_duration,
+        actual_duration=plan.actual_duration,
+        created_at=plan.created_at,
+        approved_at=plan.approved_at
+    )
+
+
+@router.post("/{plan_id}/approve", response_model=PlanResponse)
+async def approve_plan(
+    plan_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Approve a plan"""
+    planning_service = PlanningService(db)
+    
+    try:
+        plan = planning_service.approve_plan(plan_id)
+        
+        return PlanResponse(
+            id=plan.id,
+            task_id=plan.task_id,
+            version=plan.version,
+            goal=plan.goal,
+            strategy=plan.strategy,
+            steps=plan.steps,
+            alternatives=plan.alternatives,
+            status=plan.status,
+            current_step=plan.current_step,
+            estimated_duration=plan.estimated_duration,
+            actual_duration=plan.actual_duration,
+            created_at=plan.created_at,
+            approved_at=plan.approved_at
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{plan_id}/execute", response_model=PlanResponse)
+async def execute_plan(
+    plan_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Start plan execution"""
+    planning_service = PlanningService(db)
+    
+    try:
+        plan = planning_service.start_execution(plan_id)
+        
+        return PlanResponse(
+            id=plan.id,
+            task_id=plan.task_id,
+            version=plan.version,
+            goal=plan.goal,
+            strategy=plan.strategy,
+            steps=plan.steps,
+            alternatives=plan.alternatives,
+            status=plan.status,
+            current_step=plan.current_step,
+            estimated_duration=plan.estimated_duration,
+            actual_duration=plan.actual_duration,
+            created_at=plan.created_at,
+            approved_at=plan.approved_at
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{plan_id}/replan", response_model=PlanResponse)
+async def replan(
+    plan_id: UUID,
+    request: ReplanRequest,
+    db: Session = Depends(get_db)
+):
+    """Create a new version of the plan"""
+    planning_service = PlanningService(db)
+    
+    try:
+        new_plan = await planning_service.replan(
+            plan_id=plan_id,
+            reason=request.reason,
+            context=request.context
+        )
+        
+        return PlanResponse(
+            id=new_plan.id,
+            task_id=new_plan.task_id,
+            version=new_plan.version,
+            goal=new_plan.goal,
+            strategy=new_plan.strategy,
+            steps=new_plan.steps,
+            alternatives=new_plan.alternatives,
+            status=new_plan.status.value,
+            current_step=new_plan.current_step,
+            estimated_duration=new_plan.estimated_duration,
+            actual_duration=new_plan.actual_duration,
+            created_at=new_plan.created_at,
+            approved_at=new_plan.approved_at
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{plan_id}/status", response_model=dict)
+async def get_plan_status(
+    plan_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get plan execution status"""
+    planning_service = PlanningService(db)
+    plan = planning_service.get_plan(plan_id)
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    total_steps = len(plan.steps) if plan.steps else 0
+    completed_steps = plan.current_step
+    
+    return {
+        "plan_id": str(plan.id),
+        "status": plan.status,
+        "current_step": plan.current_step,
+        "total_steps": total_steps,
+        "progress": (completed_steps / total_steps * 100) if total_steps > 0 else 0,
+        "estimated_duration": plan.estimated_duration,
+        "actual_duration": plan.actual_duration
+    }
+

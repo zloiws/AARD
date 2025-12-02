@@ -363,9 +363,12 @@ class OllamaClient:
         print(f"[OllamaClient] DEBUG: Payload model field: {payload['model']}")
         
         # Make request
+        # Use longer timeout for planning tasks (10 minutes)
+        timeout_value = 600.0 if task_type == TaskType.PLANNING else 300.0
+        
         async with httpx.AsyncClient(
             base_url=request_base_url,
-            timeout=300.0,
+            timeout=timeout_value,
             limits=httpx.Limits(
                 max_keepalive_connections=5,
                 max_connections=10,
@@ -376,10 +379,13 @@ class OllamaClient:
             
             for attempt in range(max_retries):
                 try:
+                    if task_type == TaskType.PLANNING:
+                        print(f"[OllamaClient] INFO: Planning request, timeout={timeout_value}s, attempt {attempt+1}/{max_retries}")
+                    
                     response = await request_client.post(
                         "/api/chat",
                         json=payload,
-                        timeout=300.0
+                        timeout=timeout_value
                     )
                     response.raise_for_status()
                     

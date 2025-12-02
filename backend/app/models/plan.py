@@ -37,8 +37,8 @@ class Plan(Base):
     steps = Column(JSON, nullable=False)  # array of steps
     alternatives = Column(JSON, nullable=True)  # alternative approaches
     
-    # Status
-    status = Column(SQLEnum(PlanStatus), nullable=False, default=PlanStatus.DRAFT)
+    # Status - use String instead of SQLEnum to match DB constraint (lowercase)
+    status = Column(String, nullable=False, default="draft")
     current_step = Column(Integer, nullable=False, default=0)
     
     # Metrics

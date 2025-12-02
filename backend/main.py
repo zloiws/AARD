@@ -84,10 +84,11 @@ app.include_router(models.router)
 app.include_router(servers.router)
 
 # Evolution system routers
-from app.api.routes import approvals, artifacts, prompts
+from app.api.routes import approvals, artifacts, prompts, plans
 app.include_router(approvals.router)
 app.include_router(artifacts.router)
 app.include_router(prompts.router)
+app.include_router(plans.router)
 
 # Evolution system web pages
 app.include_router(approvals_pages.router)
