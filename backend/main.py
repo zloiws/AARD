@@ -98,6 +98,8 @@ from app.api.routes import settings_pages
 app.include_router(settings_pages.router)
 from app.api.routes import models_management
 app.include_router(models_management.router)
+from app.api.routes import plans_pages
+app.include_router(plans_pages.router)
 
 
 @app.get("/")

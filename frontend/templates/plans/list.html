@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Планы{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .card-title {
+        color: #212529;
+        font-weight: 600;
+    }
+    .text-muted {
+        color: #6c757d !important;
+    }
+    .badge {
+        font-weight: 500;
+    }
+    .table {
+        background: white;
+    }
+    .table th {
+        background-color: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .table td {
+        color: #212529;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .btn-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .btn-primary:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+    }
+    .progress-bar {
+        background-color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>📋 Планы</h1>
+        <a href="/plans/create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Создать план
+        </a>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ total_plans }}</h5>
+                    <p class="card-text text-muted">Всего планов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">{{ plans_by_status.draft|length }}</h5>
+                    <p class="card-text text-muted">Черновики</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-info">{{ plans_by_status.approved|length }}</h5>
+                    <p class="card-text text-muted">Утверждено</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ plans_by_status.executing|length }}</h5>
+                    <p class="card-text text-muted">Выполняется</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-success">{{ plans_by_status.completed|length }}</h5>
+                    <p class="card-text text-muted">Завершено</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">{{ plans_by_status.failed|length }}</h5>
+                    <p class="card-text text-muted">Ошибки</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" onclick="filterPlans('all')">
+                    Все
+                </button>
+                <button type="button" class="btn btn-outline-warning" onclick="filterPlans('draft')">
+                    Черновики
+                </button>
+                <button type="button" class="btn btn-outline-info" onclick="filterPlans('approved')">
+                    Утверждено
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="filterPlans('executing')">
+                    Выполняется
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="filterPlans('completed')">
+                    Завершено
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список планов -->
+    <div class="card">
+        <div class="card-body">
+            {% if plans %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Цель</th>
+                            <th>Статус</th>
+                            <th>Версия</th>
+                            <th>Прогресс</th>
+                            <th>Создан</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for plan in plans %}
+                        <tr data-status="{{ plan.status }}">
+                            <td>
+                                <a href="/plans/{{ plan.id }}" class="text-decoration-none">
+                                    {{ plan.goal[:80] }}{% if plan.goal|length > 80 %}...{% endif %}
+                                </a>
+                            </td>
+                            <td>
+                                {% if plan.status == 'draft' %}
+                                    <span class="badge bg-warning">Черновик</span>
+                                {% elif plan.status == 'approved' %}
+                                    <span class="badge bg-info">Утвержден</span>
+                                {% elif plan.status == 'executing' %}
+                                    <span class="badge bg-primary">Выполняется</span>
+                                {% elif plan.status == 'completed' %}
+                                    <span class="badge bg-success">Завершен</span>
+                                {% elif plan.status == 'failed' %}
+                                    <span class="badge bg-danger">Ошибка</span>
+                                {% elif plan.status == 'cancelled' %}
+                                    <span class="badge bg-secondary">Отменен</span>
+                                {% endif %}
+                            </td>
+                            <td>v{{ plan.version }}</td>
+                            <td>
+                                {% set total = plan.steps|length if plan.steps else 0 %}
+                                {% set current = plan.current_step %}
+                                {% set percent = (current / total * 100) if total > 0 else 0 %}
+                                <div class="progress" style="width: 100px; height: 20px;">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ percent }}%">
+                                        {{ current }}/{{ total }}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ plan.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <a href="/plans/{{ plan.id }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Просмотр
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted">Планов не найдено</p>
+                <a href="/plans/create" class="btn btn-primary">Создать первый план</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function filterPlans(status) {
+    const rows = document.querySelectorAll('tbody tr');
+    const buttons = document.querySelectorAll('.btn-group button');
+    
+    // Update active button
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Filter rows
+    rows.forEach(row => {
+        if (status === 'all' || row.dataset.status === status) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}
+

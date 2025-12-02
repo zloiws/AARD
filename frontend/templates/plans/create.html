@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Создать план{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">📋 Создать новый план</h4>
+                </div>
+                <div class="card-body">
+                    <form id="createPlanForm" onsubmit="createPlan(event)">
+                        <div class="mb-3">
+                            <label for="task_description" class="form-label">Описание задачи *</label>
+                            <textarea 
+                                class="form-control" 
+                                id="task_description" 
+                                name="task_description" 
+                                rows="5" 
+                                required
+                                placeholder="Опишите задачу, для которой нужно создать план..."></textarea>
+                            <div class="form-text">
+                                Чем подробнее описание, тем лучше будет план
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="context" class="form-label">Дополнительный контекст (JSON, опционально)</label>
+                            <textarea 
+                                class="form-control font-monospace" 
+                                id="context" 
+                                name="context" 
+                                rows="3"
+                                placeholder='{"language": "Python", "requirements": "..."}'></textarea>
+                            <div class="form-text">
+                                Дополнительная информация в формате JSON
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Внимание:</strong> Создание плана может занять 1-5 минут. 
+                            Пожалуйста, не закрывайте страницу до завершения.
+                        </div>
+
+                        <div id="progressContainer" style="display: none;">
+                            <div class="progress mb-3">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%">
+                                    Генерация плана...
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/plans" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-plus-circle"></i> Создать план
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function createPlan(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitBtn = document.getElementById('submitBtn');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    
+    // Get form data
+    const taskDescription = document.getElementById('task_description').value;
+    const contextText = document.getElementById('context').value;
+    
+    let context = null;
+    if (contextText.trim()) {
+        try {
+            context = JSON.parse(contextText);
+        } catch (e) {
+            alert('Ошибка в JSON контексте: ' + e.message);
+            return;
+        }
+    }
+    
+    // Disable form
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Создание...';
+    progressContainer.style.display = 'block';
+    
+    // Simulate progress (since we can't track real progress easily)
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += 2;
+        if (progress > 90) progress = 90;
+        progressBar.style.width = progress + '%';
+    }, 1000);
+    
+    try {
+        const response = await fetch('/api/plans/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                task_description: taskDescription,
+                context: context
+            })
+        });
+        
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        progressBar.textContent = 'Завершено!';
+        
+        if (response.ok) {
+            const plan = await response.json();
+            // Redirect to plan detail page
+            window.location.href = `/plans/${plan.id}`;
+        } else {
+            const error = await response.json();
+            alert('Ошибка создания плана: ' + error.detail);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Создать план';
+            progressContainer.style.display = 'none';
+        }
+    } catch (error) {
+        clearInterval(progressInterval);
+        alert('Ошибка: ' + error.message);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Создать план';
+        progressContainer.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}
+

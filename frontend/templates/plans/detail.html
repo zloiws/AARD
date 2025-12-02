@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}План: {{ plan.goal[:50] }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        background: white;
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        color: #212529;
+        font-weight: 600;
+    }
+    .card-body {
+        color: #212529;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.75em;
+    }
+    .btn-success {
+        background-color: #198754;
+        border-color: #198754;
+    }
+    .btn-success:hover {
+        background-color: #157347;
+        border-color: #146c43;
+    }
+    .btn-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .btn-primary:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+    }
+    .list-group-item {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        color: #212529;
+    }
+    .text-muted {
+        color: #6c757d !important;
+    }
+    .progress-bar {
+        background-color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>📋 План</h1>
+            <p class="text-muted mb-0">ID: {{ plan.id }}</p>
+        </div>
+        <div>
+            {% if can_approve %}
+            <button class="btn btn-success" onclick="approvePlan('{{ plan.id }}')">
+                <i class="bi bi-check-circle"></i> Утвердить
+            </button>
+            {% endif %}
+            {% if can_execute %}
+            <button class="btn btn-primary" onclick="executePlan('{{ plan.id }}')">
+                <i class="bi bi-play-circle"></i> Начать выполнение
+            </button>
+            {% endif %}
+            <a href="/plans" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Назад к списку
+            </a>
+        </div>
+    </div>
+
+    <!-- Статус и прогресс -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Статус</h5>
+                    <div class="d-flex align-items-center mb-3">
+                        {% if plan.status == 'draft' %}
+                            <span class="badge bg-warning fs-6 me-3">Черновик</span>
+                        {% elif plan.status == 'approved' %}
+                            <span class="badge bg-info fs-6 me-3">Утвержден</span>
+                        {% elif plan.status == 'executing' %}
+                            <span class="badge bg-primary fs-6 me-3">Выполняется</span>
+                        {% elif plan.status == 'completed' %}
+                            <span class="badge bg-success fs-6 me-3">Завершен</span>
+                        {% elif plan.status == 'failed' %}
+                            <span class="badge bg-danger fs-6 me-3">Ошибка</span>
+                        {% elif plan.status == 'cancelled' %}
+                            <span class="badge bg-secondary fs-6 me-3">Отменен</span>
+                        {% endif %}
+                        <span class="text-muted">Версия: {{ plan.version }}</span>
+                    </div>
+                    
+                    {% if plan.status == 'executing' %}
+                    <div class="mb-3">
+                        <label class="form-label">Прогресс выполнения</label>
+                        <div class="progress" style="height: 30px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" 
+                                 style="width: {{ progress }}%">
+                                {{ plan.current_step }} / {{ total_steps }} шагов ({{ "%.1f"|format(progress) }}%)
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Информация</h5>
+                    <p class="mb-2"><strong>Создан:</strong> {{ plan.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                    {% if plan.approved_at %}
+                    <p class="mb-2"><strong>Утвержден:</strong> {{ plan.approved_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                    {% endif %}
+                    <p class="mb-2"><strong>Шагов:</strong> {{ total_steps }}</p>
+                    {% if plan.estimated_duration %}
+                    <p class="mb-0"><strong>Оценка времени:</strong> {{ (plan.estimated_duration / 60)|round(1) }} минут</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Цель -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">🎯 Цель</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">{{ plan.goal }}</p>
+        </div>
+    </div>
+
+    <!-- Стратегия -->
+    {% if strategy %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">📊 Стратегия</h5>
+        </div>
+        <div class="card-body">
+            {% if strategy.approach %}
+            <div class="mb-3">
+                <h6>Подход</h6>
+                <p class="mb-0">{{ strategy.approach }}</p>
+            </div>
+            {% endif %}
+            {% if strategy.assumptions %}
+            <div class="mb-3">
+                <h6>Предположения</h6>
+                <ul>
+                    {% for assumption in strategy.assumptions %}
+                    <li>{{ assumption }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if strategy.constraints %}
+            <div class="mb-3">
+                <h6>Ограничения</h6>
+                <ul>
+                    {% for constraint in strategy.constraints %}
+                    <li>{{ constraint }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if strategy.success_criteria %}
+            <div>
+                <h6>Критерии успеха</h6>
+                <ul>
+                    {% for criterion in strategy.success_criteria %}
+                    <li>{{ criterion }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Шаги плана -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">📝 Шаги выполнения</h5>
+        </div>
+        <div class="card-body">
+            {% if steps %}
+            <div class="list-group">
+                {% for step in steps %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-secondary me-2">{{ step.step_id }}</span>
+                                {% if step.risk_level == 'high' %}
+                                    <span class="badge bg-danger me-2">Высокий риск</span>
+                                {% elif step.risk_level == 'medium' %}
+                                    <span class="badge bg-warning me-2">Средний риск</span>
+                                {% else %}
+                                    <span class="badge bg-success me-2">Низкий риск</span>
+                                {% endif %}
+                                {% if step.approval_required %}
+                                    <span class="badge bg-info">Требует утверждения</span>
+                                {% endif %}
+                            </div>
+                            <h6 class="mb-1">{{ step.description }}</h6>
+                            <p class="text-muted mb-1">
+                                <small>Тип: {{ step.type }} | Таймаут: {{ step.timeout }} сек</small>
+                            </p>
+                            {% if step.dependencies %}
+                            <p class="text-muted mb-0">
+                                <small>Зависит от: {{ step.dependencies|join(', ') }}</small>
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if loop.index0 < plan.current_step %}
+                                <span class="badge bg-success">✓ Выполнен</span>
+                            {% elif loop.index0 == plan.current_step and plan.status == 'executing' %}
+                                <span class="badge bg-primary">→ В процессе</span>
+                            {% else %}
+                                <span class="badge bg-secondary">○ Ожидает</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">Шаги не определены</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Альтернативы -->
+    {% if alternatives %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">🔄 Альтернативные подходы</h5>
+        </div>
+        <div class="card-body">
+            {% for alt in alternatives %}
+            <div class="card mb-2">
+                <div class="card-body">
+                    <h6>{{ alt.description }}</h6>
+                    {% if alt.trigger_conditions %}
+                    <p class="text-muted mb-0">
+                        <small>Условия: {{ alt.trigger_conditions|join(', ') }}</small>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+async function approvePlan(planId) {
+    if (!confirm('Утвердить этот план?')) return;
+    
+    try {
+        const response = await fetch(`/api/plans/${planId}/approve`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        if (response.ok) {
+            alert('План утвержден');
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Ошибка: ' + error.detail);
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function executePlan(planId) {
+    if (!confirm('Начать выполнение этого плана?')) return;
+    
+    try {
+        const response = await fetch(`/api/plans/${planId}/execute`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        if (response.ok) {
+            alert('Выполнение начато');
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Ошибка: ' + error.detail);
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+</script>
+{% endblock %}
+
