@@ -11,7 +11,9 @@ import logging
 
 from app.core.config import get_settings
 from app.core.logging_config import LoggingConfig
-from app.api.routes import chat, pages, models, servers, approvals_pages
+from app.core.middleware import LoggingContextMiddleware
+from app.core.tracing import configure_tracing
+from app.api.routes import chat, pages, models, servers, approvals_pages, logging as logging_routes, traces, requests, queues, checkpoints
 
 # Configure logging first
 LoggingConfig.configure()
@@ -43,6 +45,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Configure OpenTelemetry tracing (after app creation for instrumentation)
+configure_tracing(app)
+
+# Add logging context middleware (before CORS to capture all requests)
+app.add_middleware(LoggingContextMiddleware)
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -66,8 +74,16 @@ async def global_exception_handler(request: Request, exc: Exception):
     error_traceback = traceback.format_exc()
     error_msg = str(exc)
     
-    logger.error(f"Unhandled exception: {error_msg}")
-    logger.error(f"Traceback:\n{error_traceback}")
+    logger.error(
+        "Unhandled exception",
+        exc_info=True,
+        extra={
+            "error": error_msg,
+            "error_type": type(exc).__name__,
+            "path": request.url.path,
+            "method": request.method,
+        }
+    )
     
     return JSONResponse(
         status_code=500,
@@ -82,6 +98,11 @@ app.include_router(pages.router)
 app.include_router(chat.router)
 app.include_router(models.router)
 app.include_router(servers.router)
+app.include_router(logging_routes.router)
+app.include_router(traces.router)
+app.include_router(requests.router)
+app.include_router(queues.router)
+app.include_router(checkpoints.router)
 
 # Evolution system routers
 from app.api.routes import approvals, artifacts, prompts, plans

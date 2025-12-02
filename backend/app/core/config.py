@@ -64,6 +64,28 @@ class Settings(BaseSettings):
         default=None,
         description="Module-specific log levels (JSON string, e.g., '{\"app.api\": \"DEBUG\"}')"
     )
+    log_format: str = Field(
+        default="json",
+        description="Log format: 'json' for structured logging, 'text' for plain text"
+    )
+    log_file_enabled: bool = Field(default=True, description="Enable file logging")
+    log_file_path: str = Field(
+        default="logs/aard.log",
+        description="Path to log file (relative to project root)"
+    )
+    log_file_rotation: str = Field(
+        default="midnight",
+        description="Log file rotation: 'midnight', 'W0' (weekly), or size like '10MB'"
+    )
+    log_file_retention: int = Field(
+        default=30,
+        ge=1,
+        description="Number of days to keep log files"
+    )
+    log_sensitive_data: bool = Field(
+        default=False,
+        description="Enable logging of sensitive data (passwords, tokens) - NOT RECOMMENDED"
+    )
     
     # Database
     postgres_host: str = Field(..., description="PostgreSQL host")
@@ -90,7 +112,16 @@ class Settings(BaseSettings):
     enable_agent_ops: bool = Field(default=False, description="Enable Agent Ops features")
     enable_a2a: bool = Field(default=False, description="Enable A2A communication")
     enable_planning: bool = Field(default=False, description="Enable planning system")
-    enable_tracing: bool = Field(default=False, description="Enable OpenTelemetry tracing")
+    enable_tracing: bool = Field(default=True, description="Enable OpenTelemetry tracing")
+    tracing_service_name: str = Field(default="aard", description="Service name for tracing")
+    tracing_exporter: str = Field(
+        default="console",
+        description="Tracing exporter: 'console', 'otlp', 'database'"
+    )
+    tracing_otlp_endpoint: Optional[str] = Field(
+        default=None,
+        description="OTLP endpoint URL (e.g., http://localhost:4318/v1/traces)"
+    )
     enable_caching: bool = Field(default=True, description="Enable caching")
     
     @property

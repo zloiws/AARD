@@ -15,6 +15,8 @@ from app.core.ollama_client import OllamaClient, TaskType
 from app.services.ollama_service import OllamaService
 from app.services.approval_service import ApprovalService
 from app.models.approval import ApprovalRequestType
+from app.core.tracing import get_tracer, add_span_attributes, get_current_trace_id
+from app.services.request_logger import RequestLogger
 
 
 class PlanningService:
@@ -22,6 +24,7 @@ class PlanningService:
     
     def __init__(self, db: Session):
         self.db = db
+        self.tracer = get_tracer(__name__)
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
     
@@ -83,7 +86,49 @@ class PlanningService:
         self.db.refresh(plan)
         
         # Automatically create approval request for the plan
-        await self._create_plan_approval_request(plan, risks)
+        approval_request = await self._create_plan_approval_request(plan, risks)
+        
+        # Log request
+        try:
+            request_logger = RequestLogger(self.db)
+            trace_id = get_current_trace_id()
+            request_log = request_logger.log_request(
+                request_type="plan_generation",
+                request_data={
+                    "task_description": task_description[:500],
+                    "task_id": str(task_id) if task_id else None,
+                },
+                status="success",
+                duration_ms=None,  # Could calculate if needed
+                trace_id=trace_id,
+            )
+            
+            # Add consequences
+            request_logger.add_consequence(
+                request_id=request_log.id,
+                consequence_type="plan_created",
+                entity_type="plan",
+                entity_id=plan.id,
+                impact_type="positive",
+                impact_score=0.7,
+            )
+            
+            if approval_request:
+                request_logger.add_consequence(
+                    request_id=request_log.id,
+                    consequence_type="approval_created",
+                    entity_type="approval",
+                    entity_id=approval_request.id,
+                    impact_type="positive",
+                    impact_score=0.3,
+                )
+            
+            # Update rank after adding consequences
+            request_logger.update_rank(request_log.id)
+        except Exception as e:
+            from app.core.logging_config import LoggingConfig
+            logger = LoggingConfig.get_logger(__name__)
+            logger.warning(f"Failed to log plan generation: {e}", exc_info=True)
         
         return plan
     
@@ -93,8 +138,12 @@ class PlanningService:
         context: Optional[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Analyze task and create strategy"""
-        
-        system_prompt = """You are an expert at task analysis and strategic planning.
+        with self.tracer.start_as_current_span("planning.analyze_task") as span:
+            add_span_attributes(
+                task_description=task_description[:100],
+            )
+            
+            system_prompt = """You are an expert at task analysis and strategic planning.
 Analyze the task and create a strategy that includes:
 1. approach: General approach to solving the task
 2. assumptions: List of assumptions made
@@ -191,8 +240,12 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
         context: Optional[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Decompose task into executable steps"""
-        
-        system_prompt = """You are an expert at breaking down complex tasks into executable steps.
+        with self.tracer.start_as_current_span("planning.decompose_task") as span:
+            add_span_attributes(
+                task_description=task_description[:100],
+            )
+            
+            system_prompt = """You are an expert at breaking down complex tasks into executable steps.
 Create a detailed plan with steps. Each step should have:
 - step_id: unique identifier (e.g., "step_1", "step_2")
 - description: clear description of what to do

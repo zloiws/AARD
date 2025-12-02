@@ -13,9 +13,13 @@ from app.core.ollama_client import get_ollama_client, OllamaClient, TaskType
 from app.core.templates import templates
 from app.core.chat_session import get_session_manager, ChatSessionManager
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.core.tracing import get_current_trace_id
+from app.services.request_logger import RequestLogger
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+logger = LoggingConfig.get_logger(__name__)
 
 # Store active generation tasks for cancellation
 _active_tasks: dict[str, asyncio.Task] = {}
@@ -85,18 +89,20 @@ async def chat(
     - general_chat: uses general model (deepseek-r1)
     """
     import time
-    import sys
-    
-    # Force flush to ensure logs are visible
-    sys.stdout.flush()
-    sys.stderr.flush()
     
     try:
-        # DEBUG: Log incoming request - FIRST THING
-        print(f"[CHAT] DEBUG: Received request - message='{chat_message.message[:50] if chat_message.message else 'None'}...', "
-              f"server_id={chat_message.server_id}, model={chat_message.model}, "
-              f"task_type={chat_message.task_type}", flush=True)
-        sys.stdout.flush()
+        # Log incoming request
+        logger.debug(
+            "Chat request received",
+            extra={
+                "message_preview": chat_message.message[:50] if chat_message.message else None,
+                "server_id": chat_message.server_id,
+                "model": chat_message.model,
+                "task_type": chat_message.task_type,
+                "stream": chat_message.stream,
+                "session_id": chat_message.session_id,
+            }
+        )
         
         # Get or create session
         session_id = chat_message.session_id
@@ -136,14 +142,24 @@ async def chat(
             if not selected_server:
                 raise HTTPException(status_code=404, detail=f"Server {chat_message.server_id} not found")
             selected_server_url = selected_server.get_api_url()
-            print(f"[CHAT] Using server {selected_server.name} ({selected_server.url})")
+            logger.info(
+                "Using specified server",
+                extra={
+                    "server_id": str(selected_server.id),
+                    "server_name": selected_server.name,
+                    "server_url": selected_server.url,
+                }
+            )
         
         # PRIORITY 2: If model is provided, use it
         if chat_message.model and chat_message.model.strip():
             selected_model = chat_message.model.strip()
-            print(f"[CHAT] DEBUG: Explicitly selected model from request: {selected_model}")
+            logger.debug(
+                "Model explicitly selected from request",
+                extra={"model": selected_model}
+            )
         else:
-            print(f"[CHAT] DEBUG: No model provided in request, will auto-select")
+            logger.debug("No model provided in request, will auto-select")
         
         # PRIORITY 3: Auto-select from database (NOT from .env!)
         if not selected_server_url or not selected_model:
@@ -151,11 +167,19 @@ async def chat(
             if not selected_server:
                 try:
                     selected_server = OllamaService.get_default_server(db)
-                    print(f"[CHAT] DEBUG: Default server lookup result: {selected_server}")
+                    logger.debug(
+                        "Default server lookup",
+                        extra={
+                            "server_id": str(selected_server.id) if selected_server else None,
+                            "server_name": selected_server.name if selected_server else None,
+                        }
+                    )
                 except Exception as e:
-                    print(f"[CHAT] ERROR: Failed to get default server: {e}")
-                    import traceback
-                    traceback.print_exc()
+                    logger.error(
+                        "Failed to get default server",
+                        exc_info=True,
+                        extra={"error": str(e)}
+                    )
                     raise HTTPException(
                         status_code=500,
                         detail=f"Database error while getting default server: {str(e)}"
@@ -165,11 +189,16 @@ async def chat(
                     # Fallback to first active server
                     try:
                         servers = OllamaService.get_all_active_servers(db)
-                        print(f"[CHAT] DEBUG: Active servers found: {len(servers) if servers else 0}")
+                        logger.debug(
+                            "Active servers lookup",
+                            extra={"count": len(servers) if servers else 0}
+                        )
                     except Exception as e:
-                        print(f"[CHAT] ERROR: Failed to get active servers: {e}")
-                        import traceback
-                        traceback.print_exc()
+                        logger.error(
+                            "Failed to get active servers",
+                            exc_info=True,
+                            extra={"error": str(e)}
+                        )
                         raise HTTPException(
                             status_code=500,
                             detail=f"Database error while getting active servers: {str(e)}"
@@ -185,11 +214,23 @@ async def chat(
                 
                 try:
                     selected_server_url = selected_server.get_api_url()
-                    print(f"[CHAT] Auto-selected server: {selected_server.name} ({selected_server.url})")
+                    logger.info(
+                        "Auto-selected server",
+                        extra={
+                            "server_id": str(selected_server.id),
+                            "server_name": selected_server.name,
+                            "server_url": selected_server.url,
+                        }
+                    )
                 except Exception as e:
-                    print(f"[CHAT] ERROR: Failed to get API URL: {e}")
-                    import traceback
-                    traceback.print_exc()
+                    logger.error(
+                        "Failed to get API URL",
+                        exc_info=True,
+                        extra={
+                            "server_id": str(selected_server.id),
+                            "error": str(e)
+                        }
+                    )
                     raise HTTPException(
                         status_code=500,
                         detail=f"Error getting server API URL: {str(e)}"
@@ -208,8 +249,14 @@ async def chat(
                 # For now, just use first active model
                 # TODO: Implement smart selection based on task_type and model capabilities
                 selected_model = models[0].model_name
-                print(f"[CHAT] DEBUG: Auto-selected model: {selected_model} (from {len(models)} available models)")
-                print(f"[CHAT] DEBUG: Available models: {[m.model_name for m in models]}")
+                logger.debug(
+                    "Auto-selected model",
+                    extra={
+                        "model": selected_model,
+                        "available_models_count": len(models),
+                        "available_models": [m.model_name for m in models],
+                    }
+                )
         
         # Ensure we have both server_url and model
         if not selected_server_url:
@@ -217,8 +264,15 @@ async def chat(
         if not selected_model:
             raise HTTPException(status_code=500, detail="Failed to determine model")
         
-        # DEBUG: Log final selection
-        print(f"[CHAT] DEBUG: Final selection - server_url={selected_server_url}, model={selected_model}")
+        # Log final selection
+        logger.info(
+            "Model and server selected",
+            extra={
+                "server_url": selected_server_url,
+                "model": selected_model,
+                "task_type": task_type.value,
+            }
+        )
         
         # Prepare prompt with system prompt if provided
         prompt = chat_message.message
@@ -271,6 +325,35 @@ async def chat(
             
             duration_ms = int((time.time() - start_time) * 1000)
             
+            # Log request to request_logs
+            try:
+                request_logger = RequestLogger(db)
+                trace_id = get_current_trace_id()
+                request_log = request_logger.log_request(
+                    request_type="chat",
+                    request_data={
+                        "message": chat_message.message[:500],  # Truncate for storage
+                        "task_type": task_type.value,
+                        "temperature": chat_message.temperature,
+                    },
+                    status="success",
+                    model_used=ollama_response.model,
+                    server_url=selected_server_url,
+                    response_data={
+                        "response_length": len(ollama_response.response),
+                        "task_type": task_type.value,
+                    },
+                    duration_ms=duration_ms,
+                    session_id=session_id,
+                    trace_id=trace_id,
+                )
+                logger.debug(
+                    "Request logged",
+                    extra={"request_log_id": str(request_log.id), "rank": request_log.overall_rank}
+                )
+            except Exception as e:
+                logger.warning(f"Failed to log request: {e}", exc_info=True)
+            
             # Add assistant response to session
             session_manager.add_message(
                 session_id, 
@@ -307,9 +390,36 @@ async def chat(
     except Exception as e:
         import traceback
         error_msg = f"Error generating response: {str(e)}"
-        error_traceback = traceback.format_exc()
-        print(f"[CHAT] ERROR: {error_msg}")
-        print(f"[CHAT] TRACEBACK:\n{error_traceback}")
+        
+        # Log failed request
+        try:
+            duration_ms = int((time.time() - start_time) * 1000) if 'start_time' in locals() else None
+            request_logger = RequestLogger(db)
+            trace_id = get_current_trace_id()
+            request_log = request_logger.log_request(
+                request_type="chat",
+                request_data={
+                    "message": chat_message.message[:500] if chat_message else None,
+                    "task_type": chat_message.task_type if chat_message else None,
+                },
+                status="failed",
+                error_message=str(e)[:1000],
+                duration_ms=duration_ms,
+                session_id=chat_message.session_id if chat_message else None,
+                trace_id=trace_id,
+            )
+        except Exception as log_error:
+            logger.warning(f"Failed to log failed request: {log_error}", exc_info=True)
+        
+        logger.error(
+            "Chat request failed",
+            exc_info=True,
+            extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "task_type": chat_message.task_type if chat_message else None,
+            }
+        )
         
         if request and "text/html" in request.headers.get("accept", ""):
             raise HTTPException(

@@ -10,10 +10,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
 from app.models.prompt import Prompt, PromptType, PromptStatus
 
-
 router = APIRouter(prefix="/api/prompts", tags=["prompts"])
+logger = LoggingConfig.get_logger(__name__)
 
 
 class PromptResponse(BaseModel):
@@ -98,8 +99,15 @@ async def create_prompt(
         prompt_type_str = request.prompt_type.value.lower() if hasattr(request.prompt_type, 'value') else str(request.prompt_type).lower()
         status_str = "active"  # Always lowercase
         
-        # Debug: print values before creation
-        print(f"DEBUG: Creating prompt with type='{prompt_type_str}', status='{status_str}'")
+        logger.debug(
+            "Creating prompt",
+            extra={
+                "prompt_type": prompt_type_str,
+                "status": status_str,
+                "name": request.name,
+                "level": request.level,
+            }
+        )
         
         prompt = Prompt(
             name=request.name,
@@ -116,7 +124,14 @@ async def create_prompt(
         if hasattr(prompt.prompt_type, 'upper') and prompt.prompt_type.upper() == prompt.prompt_type:
             prompt.prompt_type = prompt.prompt_type.lower()
         
-        print(f"DEBUG: Prompt object - type='{prompt.prompt_type}', status='{prompt.status}'")
+        logger.debug(
+            "Prompt object created",
+            extra={
+                "prompt_id": str(prompt.id) if hasattr(prompt, 'id') and prompt.id else None,
+                "prompt_type": prompt.prompt_type,
+                "status": prompt.status,
+            }
+        )
         
         db.add(prompt)
         db.commit()

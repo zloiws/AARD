@@ -25,10 +25,17 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-dateutil==2.8.2
 
-# Observability (для будущего использования)
+# Observability - OpenTelemetry
 opentelemetry-api==1.21.0
 opentelemetry-sdk==1.21.0
 opentelemetry-instrumentation-fastapi==0.42b0
+opentelemetry-instrumentation-sqlalchemy==0.42b0
+opentelemetry-instrumentation-httpx==0.42b0
+opentelemetry-instrumentation-aiohttp-client==0.42b0
+opentelemetry-exporter-otlp-proto-http==1.21.0
+
+# Logging
+python-json-logger==2.0.7
 
 # Testing
 pytest==7.4.3

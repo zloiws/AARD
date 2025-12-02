@@ -12,6 +12,10 @@ from app.models.prompt import Prompt, PromptType, PromptStatus  # noqa: F401
 from app.models.approval import ApprovalRequest, ApprovalRequestType, ApprovalRequestStatus  # noqa: F401
 from app.models.evolution import EvolutionHistory, Feedback, EntityType, ChangeType, TriggerType, FeedbackType  # noqa: F401
 from app.models.plan import Plan, PlanStatus  # noqa: F401
+from app.models.trace import ExecutionTrace  # noqa: F401
+from app.models.request_log import RequestLog, RequestConsequence  # noqa: F401
+from app.models.task_queue import TaskQueue, QueueTask  # noqa: F401
+from app.models.checkpoint import Checkpoint  # noqa: F401
 
 __all__ = [
     "Base",
@@ -44,5 +48,15 @@ __all__ = [
     # Plans
     "Plan",
     "PlanStatus",
+    # Traces
+    "ExecutionTrace",
+    # Request Logs
+    "RequestLog",
+    "RequestConsequence",
+    # Task Queues
+    "TaskQueue",
+    "QueueTask",
+    # Checkpoints
+    "Checkpoint",
 ]
 

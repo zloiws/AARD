@@ -41,6 +41,7 @@ class Task(Base):
     
     # Relationships
     parent_task = relationship("Task", remote_side=[id], backref="subtasks")
+    traces = relationship("ExecutionTrace", foreign_keys="ExecutionTrace.task_id")
     
     def __repr__(self):
         return f"<Task(id={self.id}, status={self.status}, description={self.description[:50]}...)>"

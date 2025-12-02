@@ -14,6 +14,11 @@ import httpx
 from pydantic import BaseModel
 
 from app.core.config import get_settings, OllamaInstanceConfig
+from app.core.logging_config import LoggingConfig
+from app.core.tracing import get_tracer, add_span_attributes
+
+logger = LoggingConfig.get_logger(__name__)
+tracer = get_tracer(__name__)
 
 
 class TaskType(str, Enum):
@@ -221,9 +226,11 @@ class OllamaClient:
                 return False
         except Exception as e:
             # Log error but don't fail - assume model is not loaded
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Error checking if model {model_name} is loaded: {e}")
+            logger.warning(
+                "Error checking if model is loaded",
+                exc_info=True,
+                extra={"model_name": model_name, "server_url": server_url, "error": str(e)}
+            )
             return False
     
     def _normalize_server_url(self, url: str) -> str:
@@ -304,7 +311,10 @@ class OllamaClient:
                 instance = self._create_dynamic_instance(server_url, model)
                 actual_model_name = model
                 is_dynamic_instance = True
-                print(f"[OllamaClient] Created dynamic instance: {server_url} / {model}")
+                logger.debug(
+                    "Created dynamic Ollama instance",
+                    extra={"server_url": server_url, "model": model}
+                )
             else:
                 # Only server_url provided - this should not happen in new logic
                 # But if it does, require model
@@ -315,7 +325,10 @@ class OllamaClient:
         # But keep for backward compatibility
         elif model:
             model = model.strip()
-            print(f"[OllamaClient] WARNING: Model {model} specified but no server_url. This should not happen.")
+            logger.warning(
+                "Model specified but no server_url",
+                extra={"model": model}
+            )
             raise OllamaError(
                 f"Server URL required when model is specified. "
                 f"Please ensure server_id is provided in the request."
@@ -325,7 +338,7 @@ class OllamaClient:
         # This should not happen in new logic - server_url and model should always be provided
         # But keep for backward compatibility
         else:
-            print(f"[OllamaClient] WARNING: No server_url and no model specified. This should not happen.")
+            logger.warning("No server_url and no model specified")
             raise OllamaError(
                 "Server URL and model must be provided. "
                 "Please ensure server_id and model are provided in the request, "
@@ -339,15 +352,26 @@ class OllamaClient:
         # Determine final model name
         model_to_use = actual_model_name if actual_model_name else instance.model
         
-        # DEBUG: Log model selection
-        print(f"[OllamaClient] DEBUG: actual_model_name={actual_model_name}, instance.model={instance.model}, model_to_use={model_to_use}")
-        print(f"[OllamaClient] DEBUG: server_url={server_url}, is_dynamic_instance={is_dynamic_instance}")
+        # Log model selection
+        logger.debug(
+            "Model selection",
+            extra={
+                "actual_model_name": actual_model_name,
+                "instance_model": instance.model if instance else None,
+                "model_to_use": model_to_use,
+                "server_url": server_url,
+                "is_dynamic_instance": is_dynamic_instance,
+            }
+        )
         
         # Check cache
         cache_key = self._get_cache_key(prompt, model_to_use, **kwargs)
         cached_response = self._get_from_cache(cache_key)
         if cached_response:
-            print(f"[OllamaClient] DEBUG: Using cached response for model={model_to_use}")
+            logger.debug(
+                "Using cached response",
+                extra={"model": model_to_use, "cache_key": cache_key[:20]}
+            )
             return OllamaResponse(
                 model=model_to_use,
                 response=cached_response,
@@ -376,9 +400,13 @@ class OllamaClient:
         # Check if model is loaded (to avoid queues)
         model_loaded = await self.is_model_loaded(instance.url, model_to_use)
         if not model_loaded:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.info(f"Model {model_to_use} is not loaded in GPU. It will be loaded on first request (may cause delay).")
+            logger.info(
+                "Model not loaded in GPU, will be loaded on first request",
+                extra={
+                    "model": model_to_use,
+                    "server_url": instance.url,
+                }
+            )
         
         # Prepare messages for chat API
         messages = []
@@ -407,9 +435,16 @@ class OllamaClient:
         elif request_base_url.endswith("/v1/"):
             request_base_url = request_base_url[:-4]
         
-        # DEBUG: Log payload (after request_base_url is defined)
-        print(f"[OllamaClient] DEBUG: Sending request to {request_base_url}/api/chat with model={model_to_use}")
-        print(f"[OllamaClient] DEBUG: Payload model field: {payload['model']}")
+        # Log request
+        logger.debug(
+            "Sending request to Ollama",
+            extra={
+                "url": f"{request_base_url}/api/chat",
+                "model": model_to_use,
+                "payload_model": payload.get('model'),
+                "task_type": task_type.value if hasattr(task_type, 'value') else str(task_type),
+            }
+        )
         
         # Make request
         # Use longer timeout for planning tasks (10 minutes)
@@ -429,7 +464,14 @@ class OllamaClient:
             for attempt in range(max_retries):
                 try:
                     if task_type == TaskType.PLANNING:
-                        print(f"[OllamaClient] INFO: Planning request, timeout={timeout_value}s, attempt {attempt+1}/{max_retries}")
+                        logger.info(
+                            "Planning request",
+                            extra={
+                                "timeout": timeout_value,
+                                "attempt": attempt + 1,
+                                "max_retries": max_retries,
+                            }
+                        )
                     
                     response = await request_client.post(
                         "/api/chat",
@@ -446,8 +488,13 @@ class OllamaClient:
                     # DEBUG: Check what model Ollama returned
                     ollama_returned_model = data.get("model")
                     if ollama_returned_model and ollama_returned_model != model_to_use:
-                        print(f"[OllamaClient] WARNING: Ollama returned model '{ollama_returned_model}' but we requested '{model_to_use}'")
-                        print(f"[OllamaClient] DEBUG: Using requested model '{model_to_use}' in response")
+                        logger.warning(
+                            "Model mismatch: Ollama returned different model",
+                            extra={
+                                "requested_model": model_to_use,
+                                "returned_model": ollama_returned_model,
+                            }
+                        )
                     
                     # Save to cache
                     if data.get("done") and response_text:

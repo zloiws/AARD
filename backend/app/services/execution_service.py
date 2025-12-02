@@ -12,7 +12,12 @@ from sqlalchemy.orm import Session
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
 from app.core.ollama_client import OllamaClient
+from app.core.logging_config import LoggingConfig
+from app.core.tracing import get_tracer, add_span_attributes
 from app.services.ollama_service import OllamaService
+from app.services.checkpoint_service import CheckpointService
+
+logger = LoggingConfig.get_logger(__name__)
 
 
 class StepExecutor:
@@ -20,6 +25,7 @@ class StepExecutor:
     
     def __init__(self, db: Session):
         self.db = db
+        self.tracer = get_tracer(__name__)
     
     async def execute_step(
         self,
@@ -51,11 +57,15 @@ class StepExecutor:
             "duration": None
         }
         
-        import logging
-        logger = logging.getLogger(__name__)
-        
         try:
-            logger.info(f"Executing step {step_id} of type {step_type}")
+            logger.info(
+                "Executing plan step",
+                extra={
+                    "step_id": step_id,
+                    "step_type": step_type,
+                    "plan_id": str(plan.id),
+                }
+            )
             
             # Check if step requires approval
             if step.get("approval_required", False):
@@ -98,9 +108,16 @@ class StepExecutor:
                 result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
             
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Exception in step execution: {e}", exc_info=True)
+            logger.error(
+                "Exception in step execution",
+                exc_info=True,
+                extra={
+                    "step_id": step_id,
+                    "step_type": step_type,
+                    "plan_id": str(plan.id),
+                    "error": str(e),
+                }
+            )
             
             result["status"] = "failed"
             result["error"] = str(e)
@@ -257,6 +274,7 @@ class ExecutionService:
     def __init__(self, db: Session):
         self.db = db
         self.step_executor = StepExecutor(db)
+        self.checkpoint_service = CheckpointService(db)
     
     async def execute_plan(self, plan_id: UUID) -> Plan:
         """
@@ -303,6 +321,23 @@ class ExecutionService:
         
         # Execute steps in order
         for i, step in enumerate(steps):
+            # Create checkpoint before each step
+            try:
+                checkpoint = self.checkpoint_service.create_plan_checkpoint(
+                    plan,
+                    reason=f"Checkpoint before step {i + 1}: {step.get('description', 'unknown')[:50]}"
+                )
+                logger.debug(
+                    f"Created checkpoint before step {i + 1}",
+                    extra={
+                        "checkpoint_id": str(checkpoint.id),
+                        "plan_id": str(plan.id),
+                        "step": i + 1,
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create checkpoint: {e}", exc_info=True)
+            
             plan.current_step = i
             self.db.commit()
             self.db.refresh(plan)
@@ -327,9 +362,15 @@ class ExecutionService:
                 )
             except Exception as e:
                 # Log error and mark step as failed
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error executing step {step.get('step_id')}: {e}")
+                logger.error(
+                    "Error executing step",
+                    exc_info=True,
+                    extra={
+                        "step_id": step.get('step_id'),
+                        "plan_id": str(plan.id),
+                        "error": str(e),
+                    }
+                )
                 
                 step_result = {
                     "step_id": step.get("step_id"),
@@ -344,14 +385,40 @@ class ExecutionService:
             
             # Check if step failed
             if step_result.get("status") == "failed":
+                # Try to rollback to last checkpoint
+                try:
+                    latest_checkpoint = self.checkpoint_service.get_latest_checkpoint("plan", plan.id)
+                    if latest_checkpoint:
+                        logger.info(
+                            f"Rolling back plan {plan.id} to checkpoint {latest_checkpoint.id}",
+                            extra={
+                                "plan_id": str(plan.id),
+                                "checkpoint_id": str(latest_checkpoint.id),
+                                "error": step_result.get('error', 'Unknown error'),
+                            }
+                        )
+                        self.checkpoint_service.rollback_entity("plan", plan.id, latest_checkpoint.id)
+                        plan = self.db.query(Plan).filter(Plan.id == plan.id).first()
+                except Exception as rollback_error:
+                    logger.error(
+                        f"Failed to rollback plan: {rollback_error}",
+                        exc_info=True
+                    )
+                
                 plan.status = "failed"
                 plan.current_step = i
                 self.db.commit()
                 
                 # Log failure
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Plan {plan.id} failed at step {i}: {step_result.get('error', 'Unknown error')}")
+                logger.error(
+                    "Plan failed at step",
+                    extra={
+                        "plan_id": str(plan.id),
+                        "step_index": i,
+                        "step_id": step.get('step_id'),
+                        "error": step_result.get('error', 'Unknown error'),
+                    }
+                )
                 break
             
             # Check if step is waiting for approval

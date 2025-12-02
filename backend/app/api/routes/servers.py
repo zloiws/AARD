@@ -8,12 +8,14 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
 from app.models.ollama_server import OllamaServer
 from app.models.ollama_model import OllamaModel
 from app.services.ollama_service import OllamaService
 import httpx
 
 router = APIRouter(prefix="/api/servers", tags=["servers"])
+logger = LoggingConfig.get_logger(__name__)
 
 
 class ServerCreate(BaseModel):
@@ -147,7 +149,15 @@ async def create_server(
         await discover_server_models(server.id, db)
     except Exception as e:
         # Log error but don't fail creation
-        print(f"Warning: Could not discover models for server {server.id}: {e}")
+        logger.warning(
+            "Could not discover models for server",
+            exc_info=True,
+            extra={
+                "server_id": str(server.id),
+                "server_name": server.name,
+                "error": str(e),
+            }
+        )
     
     return ServerResponse(
         id=str(server.id),
