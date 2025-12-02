@@ -1,0 +1,412 @@
+"""
+Execution service for plan execution
+"""
+from typing import Dict, Any, Optional, List
+from uuid import UUID
+from datetime import datetime
+import json
+import asyncio
+
+from sqlalchemy.orm import Session
+
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from app.core.ollama_client import OllamaClient
+from app.services.ollama_service import OllamaService
+
+
+class StepExecutor:
+    """Executor for individual plan steps"""
+    
+    def __init__(self, db: Session):
+        self.db = db
+    
+    async def execute_step(
+        self,
+        step: Dict[str, Any],
+        plan: Plan,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute a single plan step
+        
+        Args:
+            step: Step definition from plan
+            plan: Plan being executed
+            context: Execution context (results from previous steps)
+            
+        Returns:
+            Execution result with status, output, and metadata
+        """
+        step_id = step.get("step_id", "unknown")
+        step_type = step.get("type", "action")
+        description = step.get("description", "")
+        
+        result = {
+            "step_id": step_id,
+            "status": "pending",
+            "started_at": datetime.utcnow(),
+            "output": None,
+            "error": None,
+            "duration": None
+        }
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            logger.info(f"Executing step {step_id} of type {step_type}")
+            
+            # Check if step requires approval
+            if step.get("approval_required", False):
+                # Create approval request for this step
+                from app.services.approval_service import ApprovalService
+                from app.models.approval import ApprovalRequestType
+                
+                approval_service = ApprovalService(self.db)
+                approval = approval_service.create_approval_request(
+                    request_type=ApprovalRequestType.EXECUTION_STEP,
+                    request_data={
+                        "plan_id": str(plan.id),
+                        "step_id": step_id,
+                        "description": description,
+                        "step": step
+                    },
+                    plan_id=plan.id,
+                    task_id=plan.task_id,
+                    recommendation=f"Шаг '{description[:100]}...' требует утверждения перед выполнением"
+                )
+                
+                result["status"] = "waiting_approval"
+                result["approval_id"] = str(approval.id)
+                result["message"] = "Ожидает утверждения"
+                return result
+            
+            # Execute based on step type
+            if step_type == "action":
+                result = await self._execute_action_step(step, plan, context, result)
+            elif step_type == "decision":
+                result = await self._execute_decision_step(step, plan, context, result)
+            elif step_type == "validation":
+                result = await self._execute_validation_step(step, plan, context, result)
+            else:
+                result["status"] = "skipped"
+                result["message"] = f"Unknown step type: {step_type}"
+            
+            result["completed_at"] = datetime.utcnow()
+            if result["started_at"]:
+                result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Exception in step execution: {e}", exc_info=True)
+            
+            result["status"] = "failed"
+            result["error"] = str(e)
+            result["completed_at"] = datetime.utcnow()
+            if result["started_at"]:
+                result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
+        
+        return result
+    
+    async def _execute_action_step(
+        self,
+        step: Dict[str, Any],
+        plan: Plan,
+        context: Optional[Dict[str, Any]],
+        result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute an action step"""
+        description = step.get("description", "")
+        
+        # For now, use LLM to execute the step
+        # In future, this will use agents and tools
+        
+        # Get appropriate model
+        default_server = OllamaService.get_default_server(self.db)
+        if not default_server:
+            raise ValueError("No default server found")
+        
+        models = OllamaService.get_models_for_server(self.db, str(default_server.id))
+        execution_model = None
+        
+        # Prefer code generation models
+        for model in models:
+            if model.capabilities and "code_generation" in model.capabilities:
+                execution_model = model
+                break
+        
+        # Fallback to general chat
+        if not execution_model and models:
+            execution_model = models[0]
+        
+        if not execution_model:
+            raise ValueError("No suitable model found for execution")
+        
+        # Create OllamaClient
+        ollama_client = OllamaClient()
+        
+        # Prepare prompt
+        context_str = ""
+        if context:
+            # Convert datetime objects to strings for JSON serialization
+            def json_serial(obj):
+                """JSON serializer for objects not serializable by default json code"""
+                if isinstance(obj, datetime):
+                    return obj.isoformat()
+                raise TypeError(f"Type {type(obj)} not serializable")
+            
+            try:
+                context_str = f"\n\nКонтекст выполнения:\n{json.dumps(context, indent=2, ensure_ascii=False, default=json_serial)}"
+            except (TypeError, ValueError) as e:
+                # Fallback: convert to string representation
+                context_str = f"\n\nКонтекст выполнения:\n{str(context)}"
+        
+        system_prompt = """You are an execution engine for task plans.
+Execute the given step and return the result in JSON format:
+{
+    "status": "completed|failed",
+    "output": "result of execution",
+    "metadata": {}
+}"""
+        
+        user_prompt = f"""Выполни следующий шаг плана:
+
+{description}{context_str}
+
+Верни результат выполнения в формате JSON."""
+        
+        # Execute with timeout
+        timeout = step.get("timeout", 300)
+        try:
+            response = await asyncio.wait_for(
+                ollama_client.generate(
+                    prompt=user_prompt,
+                    server_url=f"{default_server.url}/v1",
+                    model=execution_model.model_name or execution_model.name,
+                    system_prompt=system_prompt,
+                    task_type="code_generation"
+                ),
+                timeout=timeout
+            )
+            
+            # Parse response - OllamaResponse has .response attribute
+            response_text = response.response if hasattr(response, "response") else str(response)
+            
+            # Try to extract JSON from response
+            try:
+                # Try to find JSON in response
+                import re
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                if json_match:
+                    step_result = json.loads(json_match.group())
+                    result["status"] = step_result.get("status", "completed")
+                    result["output"] = step_result.get("output", response_text)
+                    result["metadata"] = step_result.get("metadata", {})
+                else:
+                    result["status"] = "completed"
+                    result["output"] = response_text
+            except json.JSONDecodeError:
+                result["status"] = "completed"
+                result["output"] = response_text
+            
+        except asyncio.TimeoutError:
+            result["status"] = "failed"
+            result["error"] = f"Step execution timeout after {timeout} seconds"
+        
+        return result
+    
+    async def _execute_decision_step(
+        self,
+        step: Dict[str, Any],
+        plan: Plan,
+        context: Optional[Dict[str, Any]],
+        result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute a decision step"""
+        # Decision steps require LLM reasoning
+        # Similar to action but focused on decision making
+        
+        result["status"] = "completed"
+        result["output"] = "Decision made"
+        result["message"] = "Decision step executed (placeholder)"
+        
+        return result
+    
+    async def _execute_validation_step(
+        self,
+        step: Dict[str, Any],
+        plan: Plan,
+        context: Optional[Dict[str, Any]],
+        result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute a validation step"""
+        # Validation steps check if conditions are met
+        
+        result["status"] = "completed"
+        result["output"] = "Validation passed"
+        result["message"] = "Validation step executed (placeholder)"
+        
+        return result
+
+
+class ExecutionService:
+    """Service for executing plans"""
+    
+    def __init__(self, db: Session):
+        self.db = db
+        self.step_executor = StepExecutor(db)
+    
+    async def execute_plan(self, plan_id: UUID) -> Plan:
+        """
+        Execute a plan step by step
+        
+        Args:
+            plan_id: ID of the plan to execute
+            
+        Returns:
+            Updated plan with execution results
+        """
+        from app.services.planning_service import PlanningService
+        
+        planning_service = PlanningService(self.db)
+        plan = planning_service.get_plan(plan_id)
+        
+        if not plan:
+            raise ValueError(f"Plan {plan_id} not found")
+        
+        if plan.status != "approved":
+            raise ValueError(f"Plan must be approved before execution (current: {plan.status})")
+        
+        # Start execution
+        plan.status = "executing"
+        plan.current_step = 0
+        self.db.commit()
+        self.db.refresh(plan)
+        
+        # Parse steps
+        steps = plan.steps
+        if isinstance(steps, str):
+            try:
+                steps = json.loads(steps)
+            except:
+                steps = []
+        
+        if not steps:
+            plan.status = "failed"
+            self.db.commit()
+            return plan
+        
+        # Execution context (results from previous steps)
+        execution_context = {}
+        
+        # Execute steps in order
+        for i, step in enumerate(steps):
+            plan.current_step = i
+            self.db.commit()
+            self.db.refresh(plan)
+            
+            # Check dependencies
+            dependencies = step.get("dependencies", [])
+            if dependencies:
+                # Verify all dependencies are completed
+                for dep_id in dependencies:
+                    if dep_id not in execution_context:
+                        plan.status = "failed"
+                        plan.current_step = i
+                        self.db.commit()
+                        raise ValueError(f"Dependency {dep_id} not found in execution context")
+            
+            # Execute step
+            try:
+                step_result = await self.step_executor.execute_step(
+                    step=step,
+                    plan=plan,
+                    context=execution_context
+                )
+            except Exception as e:
+                # Log error and mark step as failed
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error executing step {step.get('step_id')}: {e}")
+                
+                step_result = {
+                    "step_id": step.get("step_id"),
+                    "status": "failed",
+                    "error": str(e),
+                    "started_at": datetime.utcnow(),
+                    "completed_at": datetime.utcnow()
+                }
+            
+            # Store result in context
+            execution_context[step.get("step_id")] = step_result
+            
+            # Check if step failed
+            if step_result.get("status") == "failed":
+                plan.status = "failed"
+                plan.current_step = i
+                self.db.commit()
+                
+                # Log failure
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Plan {plan.id} failed at step {i}: {step_result.get('error', 'Unknown error')}")
+                break
+            
+            # Check if step is waiting for approval
+            if step_result.get("status") == "waiting_approval":
+                plan.status = "executing"
+                plan.current_step = i
+                self.db.commit()
+                # Plan will continue after approval
+                break
+            
+            # Step completed successfully
+            # Continue to next step
+        
+        # Check if all steps completed
+        if plan.status == "executing" and plan.current_step >= len(steps) - 1:
+            plan.status = "completed"
+            plan.current_step = len(steps)
+        
+        # Calculate actual duration
+        if plan.created_at:
+            plan.actual_duration = int((datetime.utcnow() - plan.created_at).total_seconds())
+        
+        self.db.commit()
+        self.db.refresh(plan)
+        
+        return plan
+    
+    def get_execution_status(self, plan_id: UUID) -> Dict[str, Any]:
+        """Get current execution status of a plan"""
+        from app.services.planning_service import PlanningService
+        
+        planning_service = PlanningService(self.db)
+        plan = planning_service.get_plan(plan_id)
+        
+        if not plan:
+            raise ValueError(f"Plan {plan_id} not found")
+        
+        # Parse steps
+        steps = plan.steps
+        if isinstance(steps, str):
+            try:
+                steps = json.loads(steps)
+            except:
+                steps = []
+        
+        total_steps = len(steps) if steps else 0
+        progress = (plan.current_step / total_steps * 100) if total_steps > 0 else 0
+        
+        return {
+            "plan_id": str(plan.id),
+            "status": plan.status,
+            "current_step": plan.current_step,
+            "total_steps": total_steps,
+            "progress": progress,
+            "estimated_duration": plan.estimated_duration,
+            "actual_duration": plan.actual_duration
+        }
+

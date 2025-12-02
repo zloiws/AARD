@@ -198,7 +198,7 @@
             <div>
                 <div class="detail-title">
                     {% if approval.plan_id %}
-                        План: {{ approval.request_data.get('goal', 'N/A')[:80] if approval.request_data else 'N/A' }}{% if approval.request_data and approval.request_data.get('goal')|length > 80 %}...{% endif %}
+                        План: {% set goal = approval.request_data.get('goal') if approval.request_data else None %}{{ (goal[:80] if goal and goal|length > 80 else goal) if goal else 'N/A' }}{% if goal and goal|length > 80 %}...{% endif %}
                     {% elif approval.artifact_id %}
                         Артефакт: {{ approval.request_data.get('name', 'N/A') if approval.request_data else 'N/A' }}
                     {% elif approval.prompt_id %}

@@ -240,10 +240,13 @@ async def execute_plan(
     db: Session = Depends(get_db)
 ):
     """Start plan execution"""
-    planning_service = PlanningService(db)
+    from app.services.execution_service import ExecutionService
+    
+    execution_service = ExecutionService(db)
     
     try:
-        plan = planning_service.start_execution(plan_id)
+        # Execute plan asynchronously
+        plan = await execution_service.execute_plan(plan_id)
         
         return PlanResponse(
             id=plan.id,
@@ -305,22 +308,12 @@ async def get_plan_status(
     db: Session = Depends(get_db)
 ):
     """Get plan execution status"""
-    planning_service = PlanningService(db)
-    plan = planning_service.get_plan(plan_id)
+    from app.services.execution_service import ExecutionService
     
-    if not plan:
-        raise HTTPException(status_code=404, detail="Plan not found")
+    execution_service = ExecutionService(db)
     
-    total_steps = len(plan.steps) if plan.steps else 0
-    completed_steps = plan.current_step
-    
-    return {
-        "plan_id": str(plan.id),
-        "status": plan.status,
-        "current_step": plan.current_step,
-        "total_steps": total_steps,
-        "progress": (completed_steps / total_steps * 100) if total_steps > 0 else 0,
-        "estimated_duration": plan.estimated_duration,
-        "actual_duration": plan.actual_duration
-    }
+    try:
+        return execution_service.get_execution_status(plan_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
