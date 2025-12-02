@@ -19,12 +19,16 @@ router = APIRouter(tags=["approvals_pages"])
 async def approvals_queue(
     request: Request,
     request_type: str = None,
+    status: str = None,
     db: Session = Depends(get_db)
 ):
-    """Approval queue page"""
+    """Approval queue page with statistics and filters"""
     service = ApprovalService(db)
     
-    # Parse request type if provided
+    # Get statistics
+    stats = service.get_approval_statistics()
+    
+    # Parse filters
     approval_type = None
     if request_type:
         try:
@@ -32,13 +36,32 @@ async def approvals_queue(
         except ValueError:
             approval_type = None
     
-    approvals = service.get_pending_requests(limit=100, request_type=approval_type)
+    # Get approvals based on filters
+    if status == "all" or status is None:
+        # Show all if status is "all" or not specified, but default to pending
+        if status == "all":
+            approvals = service.get_all_requests(
+                request_type=request_type,
+                limit=100
+            )
+        else:
+            # Default: show pending
+            approvals = service.get_pending_requests(limit=100, request_type=approval_type)
+    else:
+        approvals = service.get_all_requests(
+            status=status,
+            request_type=request_type,
+            limit=100
+        )
     
     return templates.TemplateResponse(
         "approvals/queue.html",
         {
             "request": request,
-            "approvals": approvals
+            "approvals": approvals,
+            "statistics": stats,
+            "current_filter_type": request_type,
+            "current_filter_status": status or "pending"
         }
     )
 

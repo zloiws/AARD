@@ -179,6 +179,66 @@ class ApprovalService:
             ApprovalRequest.prompt_id == prompt_id
         ).order_by(ApprovalRequest.created_at.desc()).all()
     
+    def get_approval_statistics(self) -> Dict[str, Any]:
+        """Get statistics about approval requests"""
+        from sqlalchemy import func
+        
+        total = self.db.query(func.count(ApprovalRequest.id)).scalar() or 0
+        pending = self.db.query(func.count(ApprovalRequest.id)).filter(
+            ApprovalRequest.status == "pending"
+        ).scalar() or 0
+        approved = self.db.query(func.count(ApprovalRequest.id)).filter(
+            ApprovalRequest.status == "approved"
+        ).scalar() or 0
+        rejected = self.db.query(func.count(ApprovalRequest.id)).filter(
+            ApprovalRequest.status == "rejected"
+        ).scalar() or 0
+        
+        # Count by type
+        type_counts = {}
+        for req_type in ApprovalRequestType:
+            count = self.db.query(func.count(ApprovalRequest.id)).filter(
+                ApprovalRequest.request_type == req_type.value.lower()
+            ).scalar() or 0
+            type_counts[req_type.value] = count
+        
+        # Count urgent (expiring soon)
+        now = datetime.utcnow()
+        urgent = self.db.query(func.count(ApprovalRequest.id)).filter(
+            and_(
+                ApprovalRequest.status == "pending",
+                ApprovalRequest.decision_timeout.isnot(None),
+                ApprovalRequest.decision_timeout <= now + timedelta(hours=2)
+            )
+        ).scalar() or 0
+        
+        return {
+            "total": total,
+            "pending": pending,
+            "approved": approved,
+            "rejected": rejected,
+            "urgent": urgent,
+            "by_type": type_counts
+        }
+    
+    def get_all_requests(
+        self,
+        status: Optional[str] = None,
+        request_type: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[ApprovalRequest]:
+        """Get all approval requests with optional filters"""
+        query = self.db.query(ApprovalRequest)
+        
+        if status:
+            query = query.filter(ApprovalRequest.status == status.lower())
+        
+        if request_type:
+            query = query.filter(ApprovalRequest.request_type == request_type.lower())
+        
+        return query.order_by(ApprovalRequest.created_at.desc()).offset(offset).limit(limit).all()
+    
     def _activate_artifact(self, artifact_id: Optional[UUID]):
         """Activate an artifact after approval"""
         if not artifact_id:
