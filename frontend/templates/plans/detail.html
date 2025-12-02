@@ -102,6 +102,22 @@
                         <span class="text-muted">Версия: {{ plan.version }}</span>
                     </div>
                     
+                    {% if approval_request %}
+                    <div class="mb-3">
+                        <strong>Запрос на утверждение:</strong>
+                        <a href="/approvals/{{ approval_request.id }}" class="btn btn-sm btn-outline-primary ms-2">
+                            <i class="bi bi-eye"></i> Просмотр запроса
+                        </a>
+                        {% if approval_request.status == 'pending' %}
+                            <span class="badge bg-warning ms-2">Ожидает утверждения</span>
+                        {% elif approval_request.status == 'approved' %}
+                            <span class="badge bg-success ms-2">Утвержден</span>
+                        {% elif approval_request.status == 'rejected' %}
+                            <span class="badge bg-danger ms-2">Отклонен</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
                     {% if plan.status == 'executing' %}
                     <div class="mb-3">
                         <label class="form-label">Прогресс выполнения</label>

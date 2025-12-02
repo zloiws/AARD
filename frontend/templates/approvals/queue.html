@@ -199,7 +199,16 @@
                 </div>
                 
                 <div class="approval-content">
-                    {% if approval.artifact_id %}
+                    {% if approval.plan_id %}
+                        <div class="approval-title">📋 План: {{ approval.request_data.get('goal', 'N/A')[:80] if approval.request_data else 'N/A' }}{% if approval.request_data and approval.request_data.get('goal')|length > 80 %}...{% endif %}</div>
+                        <div class="approval-description">
+                            Версия: {{ approval.request_data.get('version', 'N/A') if approval.request_data else 'N/A' }} | 
+                            Шагов: {{ approval.request_data.get('total_steps', 'N/A') if approval.request_data else 'N/A' }}
+                            {% if approval.request_data and approval.request_data.get('estimated_duration') %}
+                                | Время: {{ (approval.request_data.get('estimated_duration') / 60)|round(1) }} мин
+                            {% endif %}
+                        </div>
+                    {% elif approval.artifact_id %}
                         <div class="approval-title">Артефакт: {{ approval.request_data.get('name', 'N/A') if approval.request_data else 'N/A' }}</div>
                         <div class="approval-description">
                             {{ approval.request_data.get('description', '')[:200] if approval.request_data else '' }}

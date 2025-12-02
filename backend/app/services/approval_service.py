@@ -43,6 +43,7 @@ class ApprovalService:
             artifact_id=artifact_id,
             prompt_id=prompt_id,
             task_id=task_id,
+            plan_id=plan_id,
             request_data=request_data,
             risk_assessment=risk_assessment,
             recommendation=recommendation,
@@ -93,7 +94,7 @@ class ApprovalService:
         elif request_type_lower == "prompt_change":
             self._update_prompt(approval.prompt_id, approval.request_data)
         elif request_type_lower == "plan_approval":
-            self._approve_plan(approval.task_id, approval.request_data)
+            self._approve_plan(approval.plan_id, approval.request_data)
         
         self.db.commit()
         self.db.refresh(approval)
@@ -218,15 +219,17 @@ class ApprovalService:
             prompt.last_improved_at = datetime.utcnow()
             self.db.commit()
     
-    def _approve_plan(self, task_id: Optional[UUID], request_data: Dict[str, Any]):
+    def _approve_plan(self, plan_id: Optional[UUID], request_data: Dict[str, Any]):
         """Approve a plan after approval"""
-        if not task_id:
-            return
-        plan_id = request_data.get("plan_id")
-        if plan_id:
-            plan = self.db.query(Plan).filter(Plan.id == plan_id).first()
-            if plan:
-                plan.status = PlanStatus.APPROVED
-                plan.approved_at = datetime.utcnow()
-                self.db.commit()
+        if not plan_id:
+            # Fallback: try to get from request_data
+            plan_id = request_data.get("plan_id")
+            if not plan_id:
+                return
+        
+        plan = self.db.query(Plan).filter(Plan.id == plan_id).first()
+        if plan:
+            plan.status = "approved"  # Use lowercase string to match DB constraint
+            plan.approved_at = datetime.utcnow()
+            self.db.commit()
 

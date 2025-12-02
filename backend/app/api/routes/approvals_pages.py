@@ -59,11 +59,19 @@ async def approval_detail(
             detail=f"Approval request {approval_id} not found"
         )
     
+    # Get related plan if this is a plan approval
+    plan = None
+    if approval.plan_id:
+        from app.services.planning_service import PlanningService
+        planning_service = PlanningService(db)
+        plan = planning_service.get_plan(approval.plan_id)
+    
     return templates.TemplateResponse(
         "approvals/detail.html",
         {
             "request": request,
-            "approval": approval
+            "approval": approval,
+            "plan": plan  # Pass related plan
         }
     )
 

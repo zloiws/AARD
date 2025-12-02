@@ -197,7 +197,9 @@
         <div class="detail-header">
             <div>
                 <div class="detail-title">
-                    {% if approval.artifact_id %}
+                    {% if approval.plan_id %}
+                        План: {{ approval.request_data.get('goal', 'N/A')[:80] if approval.request_data else 'N/A' }}{% if approval.request_data and approval.request_data.get('goal')|length > 80 %}...{% endif %}
+                    {% elif approval.artifact_id %}
                         Артефакт: {{ approval.request_data.get('name', 'N/A') if approval.request_data else 'N/A' }}
                     {% elif approval.prompt_id %}
                         Промпт: {{ approval.request_data.get('name', 'N/A') if approval.request_data else 'N/A' }}
@@ -222,11 +224,47 @@
             </div>
         </div>
         
+        {% if approval.plan_id and plan %}
+        <div class="detail-section">
+            <div class="section-title">Связанный план</div>
+            <div class="section-content">
+                <p><strong>Цель:</strong> {{ plan.goal }}</p>
+                <p><strong>Статус:</strong> 
+                    {% if plan.status == 'draft' %}
+                        <span class="badge bg-warning">Черновик</span>
+                    {% elif plan.status == 'approved' %}
+                        <span class="badge bg-info">Утвержден</span>
+                    {% elif plan.status == 'executing' %}
+                        <span class="badge bg-primary">Выполняется</span>
+                    {% elif plan.status == 'completed' %}
+                        <span class="badge bg-success">Завершен</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ plan.status }}</span>
+                    {% endif %}
+                </p>
+                <p><strong>Версия:</strong> {{ plan.version }}</p>
+                <p><strong>Шагов:</strong> {{ plan.steps|length if plan.steps else 0 }}</p>
+                <a href="/plans/{{ plan.id }}" class="btn btn-primary mt-2">
+                    <i class="bi bi-arrow-right"></i> Перейти к плану
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        
         {% if approval.request_data %}
         <div class="detail-section">
-            <div class="section-title">Описание</div>
+            <div class="section-title">{% if approval.plan_id %}Информация о плане{% else %}Описание{% endif %}</div>
             <div class="section-content">
-                {{ approval.request_data.get('description', 'Нет описания') }}
+                {% if approval.plan_id %}
+                    <p><strong>Цель:</strong> {{ approval.request_data.get('goal', 'N/A') }}</p>
+                    <p><strong>Версия:</strong> {{ approval.request_data.get('version', 'N/A') }}</p>
+                    <p><strong>Шагов:</strong> {{ approval.request_data.get('total_steps', 'N/A') }}</p>
+                    {% if approval.request_data.get('estimated_duration') %}
+                        <p><strong>Оценка времени:</strong> {{ (approval.request_data.get('estimated_duration') / 60)|round(1) }} минут</p>
+                    {% endif %}
+                {% else %}
+                    {{ approval.request_data.get('description', 'Нет описания') }}
+                {% endif %}
             </div>
         </div>
         

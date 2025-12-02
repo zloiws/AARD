@@ -136,6 +136,12 @@ async def plan_detail(
         except:
             alternatives = []
     
+    # Get approval request for this plan
+    from app.models.approval import ApprovalRequest
+    approval_request = db.query(ApprovalRequest).filter(
+        ApprovalRequest.plan_id == plan_id
+    ).order_by(ApprovalRequest.created_at.desc()).first()
+    
     return templates.TemplateResponse(
         "plans/detail.html",
         {
@@ -148,7 +154,8 @@ async def plan_detail(
             "progress": progress,
             "can_approve": plan.status == "draft",
             "can_execute": plan.status == "approved",
-            "can_update": plan.status == "draft"
+            "can_update": plan.status == "draft",
+            "approval_request": approval_request  # Pass approval request
         }
     )
 

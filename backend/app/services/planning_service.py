@@ -13,6 +13,8 @@ from app.models.plan import Plan, PlanStatus
 from app.models.task import Task
 from app.core.ollama_client import OllamaClient, TaskType
 from app.services.ollama_service import OllamaService
+from app.services.approval_service import ApprovalService
+from app.models.approval import ApprovalRequestType
 
 
 class PlanningService:
@@ -79,6 +81,9 @@ class PlanningService:
         self.db.add(plan)
         self.db.commit()
         self.db.refresh(plan)
+        
+        # Automatically create approval request for the plan
+        await self._create_plan_approval_request(plan, risks)
         
         return plan
     
@@ -341,8 +346,18 @@ Break down this task into executable steps. Return only a valid JSON array."""
         high_risk_steps = [s for s in steps if s.get("risk_level") == "high"]
         approval_steps = [s for s in steps if s.get("approval_required")]
         
+        # Calculate overall risk as float (0.0 to 1.0)
+        if high_risk_steps:
+            overall_risk = 0.8  # High risk
+        elif approval_steps:
+            overall_risk = 0.5  # Medium risk
+        else:
+            overall_risk = 0.2  # Low risk
+        
         return {
-            "overall_risk": "high" if high_risk_steps else "medium" if approval_steps else "low",
+            "overall_risk": overall_risk,
+            "identified_risks": [f"Step {s.get('step_id', 'unknown')} requires approval" for s in approval_steps],
+            "mitigation_strategies": ["Review high-risk steps before execution"] if high_risk_steps else [],
             "high_risk_steps": len(high_risk_steps),
             "approval_points": len(approval_steps),
             "total_steps": len(steps)
@@ -384,6 +399,57 @@ Break down this task into executable steps. Return only a valid JSON array."""
         except json.JSONDecodeError:
             # Return empty structure
             return {}
+    
+    async def _create_plan_approval_request(self, plan: Plan, risks: Dict[str, Any]):
+        """Create an approval request for a newly created plan"""
+        from app.services.approval_service import ApprovalService
+        
+        approval_service = ApprovalService(self.db)
+        
+        # Prepare request data
+        request_data = {
+            "plan_id": str(plan.id),
+            "goal": plan.goal,
+            "version": plan.version,
+            "total_steps": len(plan.steps) if isinstance(plan.steps, list) else 0,
+            "estimated_duration": plan.estimated_duration
+        }
+        
+        # Prepare risk assessment - ensure overall_risk is a float
+        overall_risk = risks.get("overall_risk", 0.5)
+        if isinstance(overall_risk, str):
+            try:
+                overall_risk = float(overall_risk)
+            except (ValueError, TypeError):
+                overall_risk = 0.5
+        elif not isinstance(overall_risk, (int, float)):
+            overall_risk = 0.5
+        
+        risk_assessment = {
+            "rating": overall_risk,
+            "risks": risks.get("identified_risks", []),
+            "recommendations": risks.get("mitigation_strategies", [])
+        }
+        
+        # Create recommendation
+        recommendation = f"План '{plan.goal[:100]}...' требует утверждения. "
+        if overall_risk > 0.7:
+            recommendation += "⚠️ Высокий уровень риска."
+        elif overall_risk > 0.4:
+            recommendation += "⚠️ Средний уровень риска."
+        else:
+            recommendation += "✅ Низкий уровень риска."
+        
+        # Create approval request
+        approval_service.create_approval_request(
+            request_type=ApprovalRequestType.PLAN_APPROVAL,
+            request_data=request_data,
+            plan_id=plan.id,
+            task_id=plan.task_id,
+            risk_assessment=risk_assessment,
+            recommendation=recommendation,
+            timeout_hours=48  # Plans can wait longer
+        )
     
     def get_plan(self, plan_id: UUID) -> Optional[Plan]:
         """Get plan by ID"""

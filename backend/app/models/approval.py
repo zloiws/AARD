@@ -39,6 +39,7 @@ class ApprovalRequest(Base):
     artifact_id = Column(PGUUID(as_uuid=True), ForeignKey("artifacts.id", ondelete="CASCADE"), nullable=True)
     prompt_id = Column(PGUUID(as_uuid=True), ForeignKey("prompts.id", ondelete="CASCADE"), nullable=True)
     task_id = Column(PGUUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True)
+    plan_id = Column(PGUUID(as_uuid=True), ForeignKey("plans.id", ondelete="CASCADE"), nullable=True)
     
     # Request data
     request_data = Column(JSON, nullable=False)
@@ -61,6 +62,7 @@ class ApprovalRequest(Base):
     artifact = relationship("Artifact", backref="approval_requests")
     prompt = relationship("Prompt", backref="approval_requests")
     task = relationship("Task", backref="approval_requests")
+    plan = relationship("Plan", backref="approval_requests")
     
     def __repr__(self):
         return f"<ApprovalRequest(id={self.id}, type={self.request_type}, status={self.status})>"
