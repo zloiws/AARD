@@ -270,19 +270,57 @@ class StepExecutor:
                     result["error"] = f"Function call validation failed: {', '.join(issues)}"
                     return result
                 
-                # Store function call in result for later execution
-                result["function_call"] = function_call.to_dict()
-                result["metadata"] = {
-                    "execution_method": "function_call",
-                    "function": function_call.function,
-                    "validation_passed": True
-                }
-                
-                # For now, return that function call is ready for execution
-                # Actual execution will be handled by CodeExecutionSandbox (to be implemented)
-                result["status"] = "pending_function_call"
-                result["message"] = f"Function call '{function_call.function}' validated and ready for execution"
-                return result
+                # Execute function call using CodeExecutionSandbox
+                if function_call.function == "code_execution_tool":
+                    from app.services.code_execution_sandbox import CodeExecutionSandbox
+                    
+                    sandbox = CodeExecutionSandbox()
+                    code = function_call.parameters.get("code", "")
+                    language = function_call.parameters.get("language", "python")
+                    constraints = {
+                        "timeout": function_call.parameters.get("timeout", 30),
+                        "memory_limit": function_call.parameters.get("memory_limit", 512)
+                    }
+                    
+                    execution_result = sandbox.execute_code_safely(
+                        code=code,
+                        language=language,
+                        constraints=constraints
+                    )
+                    
+                    # Map sandbox result to execution result
+                    result["status"] = "completed" if execution_result["status"] == "success" else "failed"
+                    result["output"] = execution_result.get("output", "")
+                    if execution_result.get("error"):
+                        result["error"] = execution_result["error"]
+                    result["metadata"] = {
+                        "execution_method": "code_execution_sandbox",
+                        "function": function_call.function,
+                        "language": language,
+                        "return_code": execution_result.get("return_code")
+                    }
+                    
+                    logger.info(
+                        f"Executed function call '{function_call.function}' via sandbox",
+                        extra={
+                            "function": function_call.function,
+                            "status": result["status"],
+                            "language": language
+                        }
+                    )
+                    
+                    return result
+                else:
+                    # Other function types - store for later execution
+                    result["function_call"] = function_call.to_dict()
+                    result["metadata"] = {
+                        "execution_method": "function_call",
+                        "function": function_call.function,
+                        "validation_passed": True
+                    }
+                    result["status"] = "pending_function_call"
+                    result["message"] = f"Function call '{function_call.function}' validated but execution not yet implemented"
+                    return result
         
         # Fallback to LLM-based execution if no function call
         system_prompt = """You are an execution engine for task plans.
