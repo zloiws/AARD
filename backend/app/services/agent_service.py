@@ -232,19 +232,51 @@ class AgentService:
         if not parent_agent:
             raise ValueError(f"Parent agent {agent_id} not found")
         
-        # Get parent's version
-        parent_version = parent_agent.version
+        # Find root agent to get the latest version number
+        root_agent = parent_agent
+        while root_agent.parent_agent_id:
+            root_agent = self.get_agent(root_agent.parent_agent_id)
+            if not root_agent:
+                break
+        
+        if not root_agent:
+            root_agent = parent_agent
+        
+        # Get the latest version number from all versions
+        latest_version = root_agent.version
+        child_versions = self.db.query(Agent).filter(
+            Agent.parent_agent_id == root_agent.id
+        ).all()
+        if child_versions:
+            latest_version = max(v.version for v in child_versions)
+        
+        new_version = latest_version + 1
+        
+        # Generate unique name if not provided
+        if not name:
+            base_name = root_agent.name
+            # Remove version suffix if exists
+            if base_name.endswith(f"_v{root_agent.version}"):
+                base_name = base_name[:-len(f"_v{root_agent.version}")]
+            name = f"{base_name}_v{new_version}"
+        
+        # Ensure name is unique
+        existing = self.db.query(Agent).filter(Agent.name == name).first()
+        if existing:
+            # Add timestamp to make it unique
+            import time
+            name = f"{name}_{int(time.time())}"
         
         # Create new agent based on parent
         new_agent = Agent(
-            name=name or f"{parent_agent.name}_v{parent_version + 1}",
+            name=name,
             description=description or parent_agent.description,
             system_prompt=system_prompt or parent_agent.system_prompt,
             capabilities=capabilities or parent_agent.capabilities,
             model_preference=model_preference or parent_agent.model_preference,
             temperature=kwargs.get('temperature', parent_agent.temperature),
-            parent_agent_id=agent_id,
-            version=parent_version + 1,
+            parent_agent_id=root_agent.id,
+            version=new_version,
             status=AgentStatus.DRAFT.value,
             created_by=kwargs.get('created_by', parent_agent.created_by),
             identity_id=parent_agent.identity_id,
