@@ -1,7 +1,7 @@
 """
 API routes for task planning
 """
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
@@ -316,4 +316,82 @@ async def get_plan_status(
         return execution_service.get_execution_status(plan_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+# Interactive Execution endpoints
+@router.post("/{plan_id}/pause")
+async def pause_execution(
+    plan_id: UUID,
+    step_id: str,
+    question: str,
+    db: Session = Depends(get_db)
+):
+    """Pause plan execution for clarification"""
+    from app.services.interactive_execution_service import InteractiveExecutionService
+    
+    service = InteractiveExecutionService(db)
+    
+    try:
+        result = service.pause_for_clarification(plan_id, step_id, question)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{plan_id}/apply-correction")
+async def apply_correction(
+    plan_id: UUID,
+    step_id: str,
+    correction: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """Apply human correction to execution step"""
+    from app.services.interactive_execution_service import InteractiveExecutionService
+    
+    service = InteractiveExecutionService(db)
+    
+    try:
+        result = service.apply_human_correction(plan_id, step_id, correction)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{plan_id}/resume")
+async def resume_execution(
+    plan_id: UUID,
+    feedback: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Resume plan execution after pause"""
+    from app.services.interactive_execution_service import InteractiveExecutionService
+    
+    service = InteractiveExecutionService(db)
+    
+    try:
+        result = service.resume_execution(plan_id, feedback)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{plan_id}/execution-state")
+async def get_execution_state(
+    plan_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get current interactive execution state"""
+    from app.services.interactive_execution_service import InteractiveExecutionService
+    
+    service = InteractiveExecutionService(db)
+    
+    try:
+        state = service.get_execution_state(plan_id)
+        if not state:
+            raise HTTPException(status_code=404, detail="Execution state not found")
+        return state
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
