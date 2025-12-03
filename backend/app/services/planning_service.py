@@ -86,6 +86,12 @@ class PlanningService:
         self.db.commit()
         self.db.refresh(plan)
         
+        # Save plan to episodic memory (history of plan changes)
+        await self._save_plan_to_episodic_memory(plan, task_id, "plan_created")
+        
+        # Save active ToDo list to working memory
+        await self._save_todo_to_working_memory(task_id, plan)
+        
         # Automatically create approval request for the plan
         approval_request = await self._create_plan_approval_request(plan, risks)
         
@@ -672,5 +678,266 @@ Break down this task into executable steps. Return only a valid JSON array."""
         self.db.commit()
         self.db.refresh(new_plan)
         
+        # Save replan to episodic memory
+        await self._save_plan_to_episodic_memory(
+            new_plan,
+            original_plan.task_id,
+            "plan_replanned",
+            context={
+                "original_plan_id": str(original_plan.id),
+                "original_version": original_plan.version,
+                "reason": reason,
+                **(context or {})
+            }
+        )
+        
+        # Update working memory with new plan
+        await self._save_todo_to_working_memory(original_plan.task_id, new_plan)
+        
         return new_plan
+    
+    async def _save_todo_to_working_memory(
+        self,
+        task_id: UUID,
+        plan: Plan
+    ) -> None:
+        """
+        Save active ToDo list to working memory
+        
+        Args:
+            task_id: Task ID
+            plan: Current plan
+        """
+        try:
+            from app.services.memory_service import MemoryService
+            from app.models.task import Task
+            from app.models.agent import Agent
+            
+            # Get task to find agent_id if available
+            task = self.db.query(Task).filter(Task.id == task_id).first()
+            if not task:
+                return
+            
+            # For working memory, we need an agent_id
+            # Try to get from plan metadata or use a system agent
+            agent_id = None
+            if plan.agent_metadata and isinstance(plan.agent_metadata, dict):
+                agent_id_str = plan.agent_metadata.get("agent_id")
+                if agent_id_str:
+                    try:
+                        agent_id = UUID(agent_id_str)
+                    except (ValueError, TypeError):
+                        pass
+            
+            # If no agent_id, we can't save to working memory (requires agent)
+            if not agent_id:
+                logger.debug(f"No agent_id for plan {plan.id}, skipping working memory save")
+                return
+            
+            memory_service = MemoryService(self.db)
+            
+            # Get steps as ToDo list
+            steps = plan.steps if isinstance(plan.steps, list) else []
+            todo_list = [
+                {
+                    "step_id": step.get("step_id", f"step_{i}"),
+                    "description": step.get("description", ""),
+                    "status": "pending",
+                    "completed": False
+                }
+                for i, step in enumerate(steps)
+            ]
+            
+            # Save to working memory using task_id as session
+            context_key = f"task_{task_id}_todo"
+            memory_service.save_context(
+                agent_id=agent_id,
+                context_key=context_key,
+                content={
+                    "task_id": str(task_id),
+                    "plan_id": str(plan.id),
+                    "plan_version": plan.version,
+                    "todo_list": todo_list,
+                    "total_steps": len(todo_list),
+                    "completed_steps": 0,
+                    "updated_at": datetime.utcnow().isoformat()
+                },
+                session_id=str(task_id),
+                ttl_seconds=86400 * 7  # 7 days
+            )
+            
+            logger.debug(
+                f"Saved ToDo list to working memory for task {task_id}",
+                extra={"task_id": str(task_id), "plan_id": str(plan.id), "steps_count": len(todo_list)}
+            )
+            
+        except Exception as e:
+            logger.warning(f"Error saving ToDo to working memory: {e}", exc_info=True)
+    
+    async def _save_plan_to_episodic_memory(
+        self,
+        plan: Plan,
+        task_id: UUID,
+        event_type: str,
+        context: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """
+        Save plan change to episodic memory (history of plan changes)
+        
+        Args:
+            plan: Plan to save
+            task_id: Task ID
+            event_type: Type of event (plan_created, plan_updated, plan_replanned, etc.)
+            context: Additional context
+        """
+        try:
+            from app.services.memory_service import MemoryService
+            from app.models.task import Task
+            from app.models.agent_memory import MemoryType
+            
+            # Get task
+            task = self.db.query(Task).filter(Task.id == task_id).first()
+            if not task:
+                return
+            
+            # Get agent_id from plan metadata if available
+            agent_id = None
+            if plan.agent_metadata and isinstance(plan.agent_metadata, dict):
+                agent_id_str = plan.agent_metadata.get("agent_id")
+                if agent_id_str:
+                    try:
+                        agent_id = UUID(agent_id_str)
+                    except (ValueError, TypeError):
+                        pass
+            
+            # If no agent_id, we can't save to episodic memory (requires agent)
+            if not agent_id:
+                logger.debug(f"No agent_id for plan {plan.id}, skipping episodic memory save")
+                return
+            
+            memory_service = MemoryService(self.db)
+            
+            # Save plan snapshot to episodic memory
+            episodic_content = {
+                "plan_id": str(plan.id),
+                "plan_version": plan.version,
+                "task_id": str(task_id),
+                "task_description": task.description,
+                "event_type": event_type,
+                "plan_goal": plan.goal,
+                "plan_steps": plan.steps if isinstance(plan.steps, list) else [],
+                "plan_status": plan.status,
+                "strategy": plan.strategy,
+                "timestamp": datetime.utcnow().isoformat(),
+                **(context or {})
+            }
+            
+            memory_service.save_memory(
+                agent_id=agent_id,
+                memory_type=MemoryType.EXPERIENCE.value,  # Use EXPERIENCE for episodic memory
+                content=episodic_content,
+                summary=f"Plan {event_type}: {plan.goal[:100]}",
+                importance=0.7,  # High importance for plan history
+                tags=["plan", "episodic", event_type, f"task_{task_id}"],
+                source=f"task_{task_id}"
+            )
+            
+            logger.debug(
+                f"Saved plan to episodic memory",
+                extra={
+                    "plan_id": str(plan.id),
+                    "task_id": str(task_id),
+                    "event_type": event_type,
+                    "agent_id": str(agent_id)
+                }
+            )
+            
+        except Exception as e:
+            logger.warning(f"Error saving plan to episodic memory: {e}", exc_info=True)
+    
+    async def _apply_procedural_memory_patterns(
+        self,
+        task_description: str,
+        agent_id: Optional[UUID] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Apply procedural memory patterns (successful plan templates) for similar tasks
+        
+        Args:
+            task_description: Task description
+            agent_id: Optional agent ID
+            
+        Returns:
+            Pattern data if found, None otherwise
+        """
+        try:
+            from app.services.memory_service import MemoryService
+            from app.services.meta_learning_service import MetaLearningService
+            from app.models.agent_memory import MemoryType
+            
+            if not agent_id:
+                return None
+            
+            memory_service = MemoryService(self.db)
+            meta_learning = MetaLearningService(self.db)
+            
+            # Search for similar successful plan patterns
+            similar_patterns = memory_service.search_memories(
+                agent_id=agent_id,
+                query_text=task_description,
+                memory_type=MemoryType.PATTERN.value,
+                limit=5
+            )
+            
+            # Also get patterns from MetaLearningService
+            learning_patterns = meta_learning.get_learning_patterns(
+                agent_id=agent_id,
+                pattern_type="strategy",
+                limit=5
+            )
+            
+            # Combine and rank patterns
+            all_patterns = []
+            
+            # Add memory patterns
+            for pattern in similar_patterns:
+                if pattern.content and pattern.content.get("success_rate", 0) > 0.7:
+                    all_patterns.append({
+                        "source": "memory",
+                        "pattern": pattern.content,
+                        "importance": pattern.importance,
+                        "success_rate": pattern.content.get("success_rate", 0)
+                    })
+            
+            # Add learning patterns
+            for pattern in learning_patterns:
+                if pattern.success_rate > 0.7:
+                    all_patterns.append({
+                        "source": "meta_learning",
+                        "pattern": pattern.pattern_data,
+                        "importance": 0.8,  # High importance for learned patterns
+                        "success_rate": pattern.success_rate
+                    })
+            
+            # Sort by success rate and importance
+            all_patterns.sort(key=lambda x: x["success_rate"] * x["importance"], reverse=True)
+            
+            # Return best matching pattern
+            if all_patterns:
+                best_pattern = all_patterns[0]
+                logger.info(
+                    f"Found procedural memory pattern for task",
+                    extra={
+                        "agent_id": str(agent_id),
+                        "pattern_source": best_pattern["source"],
+                        "success_rate": best_pattern["success_rate"]
+                    }
+                )
+                return best_pattern["pattern"]
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Error applying procedural memory patterns: {e}", exc_info=True)
+            return None
 
