@@ -435,8 +435,46 @@ Break down this task into executable steps. Return only a valid JSON array."""
     async def _create_plan_approval_request(self, plan: Plan, risks: Dict[str, Any]):
         """Create an approval request for a newly created plan"""
         from app.services.approval_service import ApprovalService
+        from app.services.adaptive_approval_service import AdaptiveApprovalService
         
         approval_service = ApprovalService(self.db)
+        adaptive_approval = AdaptiveApprovalService(self.db)
+        
+        # Check if approval is actually required using adaptive logic
+        # Try to get agent_id from plan context if available
+        agent_id = None
+        if plan.agent_metadata and isinstance(plan.agent_metadata, dict):
+            agent_id_str = plan.agent_metadata.get("agent_id")
+            if agent_id_str:
+                try:
+                    from uuid import UUID
+                    agent_id = UUID(agent_id_str)
+                except (ValueError, TypeError):
+                    pass
+        
+        # Use adaptive approval service to determine if approval is needed
+        requires_approval, decision_metadata = adaptive_approval.should_require_approval(
+            plan=plan,
+            agent_id=agent_id,
+            task_risk_level=risks.get("overall_risk")
+        )
+        
+        # If approval is not required, skip creating approval request
+        if not requires_approval:
+            logger.info(
+                f"Plan {plan.id} does not require approval based on adaptive logic",
+                extra={
+                    "plan_id": str(plan.id),
+                    "agent_id": str(agent_id) if agent_id else None,
+                    "decision_metadata": decision_metadata
+                }
+            )
+            # Mark plan as auto-approved
+            plan.status = "approved"
+            plan.approved_at = datetime.utcnow()
+            self.db.commit()
+            self.db.refresh(plan)
+            return None
         
         # Prepare request data
         request_data = {
@@ -444,7 +482,8 @@ Break down this task into executable steps. Return only a valid JSON array."""
             "goal": plan.goal,
             "version": plan.version,
             "total_steps": len(plan.steps) if isinstance(plan.steps, list) else 0,
-            "estimated_duration": plan.estimated_duration
+            "estimated_duration": plan.estimated_duration,
+            "adaptive_decision": decision_metadata  # Include decision metadata
         }
         
         # Prepare risk assessment - ensure overall_risk is a float
@@ -460,10 +499,11 @@ Break down this task into executable steps. Return only a valid JSON array."""
         risk_assessment = {
             "rating": overall_risk,
             "risks": risks.get("identified_risks", []),
-            "recommendations": risks.get("mitigation_strategies", [])
+            "recommendations": risks.get("mitigation_strategies", []),
+            "adaptive_metadata": decision_metadata
         }
         
-        # Create recommendation
+        # Create recommendation with adaptive information
         recommendation = f"План '{plan.goal[:100]}...' требует утверждения. "
         if overall_risk > 0.7:
             recommendation += "⚠️ Высокий уровень риска."
@@ -472,8 +512,13 @@ Break down this task into executable steps. Return only a valid JSON array."""
         else:
             recommendation += "✅ Низкий уровень риска."
         
+        # Add trust score info if available
+        if decision_metadata.get("agent_trust_score") is not None:
+            trust_score = decision_metadata["agent_trust_score"]
+            recommendation += f" Trust score агента: {trust_score:.2f}."
+        
         # Create approval request
-        approval_service.create_approval_request(
+        approval_request = approval_service.create_approval_request(
             request_type=ApprovalRequestType.PLAN_APPROVAL,
             request_data=request_data,
             plan_id=plan.id,
@@ -482,6 +527,8 @@ Break down this task into executable steps. Return only a valid JSON array."""
             recommendation=recommendation,
             timeout_hours=48  # Plans can wait longer
         )
+        
+        return approval_request
     
     def get_plan(self, plan_id: UUID) -> Optional[Plan]:
         """Get plan by ID"""
