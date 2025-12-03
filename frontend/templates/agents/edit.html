@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать агента - {{ agent.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">✏️ Редактировать агента: {{ agent.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form id="editAgentForm" onsubmit="updateAgent(event)">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Описание</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3">{{ agent.description or '' }}</textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="model_preference" class="form-label">Предпочитаемая модель</label>
+                                    <input type="text" class="form-control" id="model_preference" name="model_preference" 
+                                           value="{{ agent.model_preference or '' }}" placeholder="Оставьте пустым для автоматического выбора">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="system_prompt" class="form-label">Системный промпт</label>
+                            <textarea class="form-control" id="system_prompt" name="system_prompt" rows="4">{{ agent.system_prompt or '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="capabilities" class="form-label">Возможности (через запятую)</label>
+                                    <input type="text" class="form-control" id="capabilities" name="capabilities" 
+                                           value="{{ agent.capabilities|join(', ') if agent.capabilities else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="temperature" class="form-label">Temperature</label>
+                                    <input type="text" class="form-control" id="temperature" name="temperature" 
+                                           value="{{ agent.temperature or '0.7' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="max_concurrent_tasks" class="form-label">Макс. параллельных задач</label>
+                                    <input type="number" class="form-control" id="max_concurrent_tasks" 
+                                           name="max_concurrent_tasks" value="{{ agent.max_concurrent_tasks or 1 }}" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Теги (через запятую)</label>
+                            <input type="text" class="form-control" id="tags" name="tags" 
+                                   value="{{ agent.tags|join(', ') if agent.tags else '' }}">
+                        </div>
+
+                        <div id="errorAlert" class="alert alert-danger" style="display: none;"></div>
+                        <div id="successAlert" class="alert alert-success" style="display: none;"></div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/agents/{{ agent.id }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-save"></i> Сохранить изменения
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function updateAgent(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitBtn = document.getElementById('submitBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const successAlert = document.getElementById('successAlert');
+    
+    errorAlert.style.display = 'none';
+    successAlert.style.display = 'none';
+    
+    // Get form data
+    const formData = {
+        description: document.getElementById('description').value || null,
+        system_prompt: document.getElementById('system_prompt').value || null,
+        model_preference: document.getElementById('model_preference').value || null,
+        temperature: document.getElementById('temperature').value || null,
+        max_concurrent_tasks: parseInt(document.getElementById('max_concurrent_tasks').value) || 1,
+        capabilities: document.getElementById('capabilities').value 
+            ? document.getElementById('capabilities').value.split(',').map(s => s.trim()).filter(s => s)
+            : null,
+        tags: document.getElementById('tags').value 
+            ? document.getElementById('tags').value.split(',').map(s => s.trim()).filter(s => s)
+            : null
+    };
+    
+    // Remove null values
+    Object.keys(formData).forEach(key => {
+        if (formData[key] === null) {
+            delete formData[key];
+        }
+    });
+    
+    // Disable form
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Сохранение...';
+    
+    try {
+        const response = await fetch('/api/agents/{{ agent.id }}', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            successAlert.textContent = 'Изменения сохранены! Перенаправление...';
+            successAlert.style.display = 'block';
+            
+            setTimeout(() => {
+                window.location.href = `/agents/${data.id}`;
+            }, 1000);
+        } else {
+            errorAlert.textContent = data.detail || 'Ошибка при сохранении изменений';
+            errorAlert.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-save"></i> Сохранить изменения';
+        }
+    } catch (error) {
+        errorAlert.textContent = 'Ошибка: ' + error.message;
+        errorAlert.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-save"></i> Сохранить изменения';
+    }
+}
+</script>
+{% endblock %}
+

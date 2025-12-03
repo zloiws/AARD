@@ -24,7 +24,7 @@ from app.core.tracing import configure_tracing, shutdown_tracing
 from app.api.routes import (
     chat, pages, models, servers, approvals_pages, logging as logging_routes,
     traces, traces_pages, requests, queues, checkpoints, metrics, health,
-    artifacts_pages, settings_pages, models_management, plans_pages, agents, tools
+    artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages
 )
 
 # Configure logging first
@@ -137,6 +137,7 @@ app.include_router(artifacts_pages.router)
 app.include_router(settings_pages.router)
 app.include_router(models_management.router)
 app.include_router(plans_pages.router)
+app.include_router(agents_pages.router)
 app.include_router(traces_pages.router)
 
 

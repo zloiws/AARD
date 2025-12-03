@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Агенты{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .card-title {
+        color: #212529;
+        font-weight: 600;
+    }
+    .text-muted {
+        color: #6c757d !important;
+    }
+    .badge {
+        font-weight: 500;
+    }
+    .table {
+        background: white;
+    }
+    .table th {
+        background-color: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .table td {
+        color: #212529;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .btn-primary {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+    .btn-primary:hover {
+        background-color: #5568d3;
+        border-color: #5568d3;
+    }
+    .agent-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    .agent-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .capability-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #e9ecef;
+        border-radius: 4px;
+        font-size: 11px;
+    }
+    .metrics-row {
+        display: flex;
+        gap: 20px;
+        margin-top: 10px;
+    }
+    .metric-item {
+        flex: 1;
+        text-align: center;
+        padding: 8px;
+        background: #f8f9fa;
+        border-radius: 6px;
+    }
+    .metric-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #667eea;
+    }
+    .metric-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>🤖 Агенты</h1>
+        <a href="/agents/create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Создать агента
+        </a>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ total_agents }}</h5>
+                    <p class="card-text text-muted">Всего агентов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-success">{{ active_agents }}</h5>
+                    <p class="card-text text-muted">Активных</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">{{ agents_by_status.draft|length }}</h5>
+                    <p class="card-text text-muted">Черновики</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">{{ agents_by_status.paused|length }}</h5>
+                    <p class="card-text text-muted">На паузе</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" onclick="filterAgents('all')">
+                    Все
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="filterAgents('active')">
+                    Активные
+                </button>
+                <button type="button" class="btn btn-outline-warning" onclick="filterAgents('draft')">
+                    Черновики
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="filterAgents('paused')">
+                    На паузе
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список агентов -->
+    {% if agents %}
+    <div class="row">
+        {% for agent in agents %}
+        <div class="col-md-6 col-lg-4 mb-4 agent-card" data-status="{{ agent.status }}" onclick="window.location.href='/agents/{{ agent.id }}'">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ agent.name }}</h5>
+                        {% if agent.status == 'active' %}
+                            <span class="badge bg-success">Активен</span>
+                        {% elif agent.status == 'draft' %}
+                            <span class="badge bg-warning">Черновик</span>
+                        {% elif agent.status == 'paused' %}
+                            <span class="badge bg-secondary">На паузе</span>
+                        {% elif agent.status == 'waiting_approval' %}
+                            <span class="badge bg-info">Ожидает утверждения</span>
+                        {% elif agent.status == 'deprecated' %}
+                            <span class="badge bg-dark">Устарел</span>
+                        {% elif agent.status == 'failed' %}
+                            <span class="badge bg-danger">Ошибка</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if agent.description %}
+                    <p class="card-text text-muted small mb-2">{{ agent.description[:100] }}{% if agent.description|length > 100 %}...{% endif %}</p>
+                    {% endif %}
+                    
+                    {% if agent.capabilities %}
+                    <div class="mb-2">
+                        {% for capability in agent.capabilities[:3] %}
+                            <span class="capability-badge">{{ capability }}</span>
+                        {% endfor %}
+                        {% if agent.capabilities|length > 3 %}
+                            <span class="capability-badge">+{{ agent.capabilities|length - 3 }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="metrics-row">
+                        <div class="metric-item">
+                            <div class="metric-value">{{ agent.total_tasks_executed }}</div>
+                            <div class="metric-label">Задач</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">{{ agent.success_rate or '0%' }}</div>
+                            <div class="metric-label">Успешность</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">{{ (agent.average_execution_time / 1000)|round(1) if agent.average_execution_time else 0 }}s</div>
+                            <div class="metric-label">Среднее время</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-2 text-muted small">
+                        <i class="bi bi-clock"></i> Создан: {{ agent.created_at.strftime('%Y-%m-%d') }}
+                        {% if agent.last_used_at %}
+                        <br><i class="bi bi-activity"></i> Использован: {{ agent.last_used_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <h5 class="text-muted">Агенты не найдены</h5>
+            <p class="text-muted">Создайте первого агента для начала работы</p>
+            <a href="/agents/create" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-circle"></i> Создать агента
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function filterAgents(status) {
+    const cards = document.querySelectorAll('.agent-card');
+    const buttons = document.querySelectorAll('.btn-group button');
+    
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    cards.forEach(card => {
+        if (status === 'all' || card.dataset.status === status) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}
+
