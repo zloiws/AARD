@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Метрики планирования{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        background: white;
+        margin-bottom: 20px;
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        color: #212529;
+        font-weight: 600;
+    }
+    .metric-card {
+        text-align: center;
+        padding: 20px;
+    }
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+    .metric-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    .progress {
+        height: 25px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>📊 Метрики планирования</h1>
+        <a href="/plans" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Назад к планам
+        </a>
+    </div>
+
+    <!-- Общая статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="metric-value">{{ stats.total_plans }}</div>
+                <div class="metric-label">Всего планов</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="metric-value text-success">{{ stats.completed }}</div>
+                <div class="metric-label">Завершено</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="metric-value text-danger">{{ stats.failed }}</div>
+                <div class="metric-label">Провалено</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="metric-value text-info">{{ "%.1f"|format(stats.success_rate * 100) }}%</div>
+                <div class="metric-label">Успешность</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Качество планов -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Средняя оценка качества</h5>
+                </div>
+                <div class="card-body">
+                    {% set avg_quality = stats.average_quality_score %}
+                    {% set quality_percent = (avg_quality * 100)|round(1) %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span><strong>Оценка:</strong></span>
+                            <span class="badge {% if avg_quality >= 0.8 %}bg-success{% elif avg_quality >= 0.6 %}bg-info{% elif avg_quality >= 0.4 %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                                {{ quality_percent }}%
+                            </span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar {% if avg_quality >= 0.8 %}bg-success{% elif avg_quality >= 0.6 %}bg-info{% elif avg_quality >= 0.4 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ quality_percent }}%">
+                                {{ quality_percent }}%
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0">
+                        <small>На основе структуры, успешности выполнения и точности оценок</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Статистика выполнения</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Среднее количество шагов:</strong> {{ "%.1f"|format(stats.average_steps_per_plan) }}</p>
+                    {% if stats.average_duration_seconds %}
+                    <p class="mb-2"><strong>Средняя длительность:</strong> {{ (stats.average_duration_seconds / 60)|round(1) }} минут</p>
+                    {% else %}
+                    <p class="mb-2 text-muted"><strong>Средняя длительность:</strong> Нет данных</p>
+                    {% endif %}
+                    <p class="mb-0"><strong>Период анализа:</strong> {{ stats.time_range_days }} дней</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статусы планов -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Распределение по статусам</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="badge bg-warning fs-5">{{ stats.get('draft', 0) }}</div>
+                        <div class="text-muted small mt-1">Черновики</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="badge bg-info fs-5">{{ stats.approved }}</div>
+                        <div class="text-muted small mt-1">Утверждено</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="badge bg-primary fs-5">{{ stats.executing }}</div>
+                        <div class="text-muted small mt-1">Выполняется</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="badge bg-success fs-5">{{ stats.completed }}</div>
+                        <div class="text-muted small mt-1">Завершено</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="badge bg-danger fs-5">{{ stats.failed }}</div>
+                        <div class="text-muted small mt-1">Провалено</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -81,6 +81,45 @@ async def plans_list(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/plans/metrics", response_class=HTMLResponse)
+async def plans_metrics(
+    request: Request,
+    time_range_days: int = 30,
+    db: Session = Depends(get_db)
+):
+    """Planning metrics page"""
+    from app.services.planning_metrics_service import PlanningMetricsService
+    
+    try:
+        metrics_service = PlanningMetricsService(db)
+        stats = metrics_service.get_planning_statistics(
+            time_range_days=time_range_days
+        )
+        
+        # Add status breakdown
+        from app.models.plan import Plan
+        from datetime import datetime, timedelta
+        cutoff_date = datetime.utcnow() - timedelta(days=time_range_days)
+        
+        plans = db.query(Plan).filter(Plan.created_at >= cutoff_date).all()
+        status_counts = {}
+        for plan in plans:
+            status = plan.status
+            status_counts[status] = status_counts.get(status, 0) + 1
+        
+        stats.update(status_counts)
+        
+        return templates.TemplateResponse(
+            "plans/metrics.html",
+            {
+                "request": request,
+                "stats": stats
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/plans/{plan_id}", response_class=HTMLResponse)
 async def plan_detail(
     request: Request,
