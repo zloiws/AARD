@@ -4,7 +4,7 @@ Extracts patterns from approval/rejection feedback and applies them to future de
 """
 from typing import Dict, Any, List, Optional
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
