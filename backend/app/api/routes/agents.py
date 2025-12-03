@@ -241,3 +241,63 @@ async def get_agent_metrics(
         logger.error(f"Error getting agent metrics: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
+@router.post("/{agent_id}/heartbeat")
+async def register_agent_heartbeat(
+    agent_id: UUID,
+    endpoint: Optional[str] = None,
+    response_time_ms: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Register agent heartbeat"""
+    from app.services.agent_heartbeat_service import AgentHeartbeatService
+    
+    try:
+        heartbeat_service = AgentHeartbeatService(db)
+        success = await heartbeat_service.register_heartbeat(
+            agent_id=agent_id,
+            endpoint=endpoint,
+            response_time_ms=response_time_ms
+        )
+        
+        if success:
+            return {"status": "ok", "message": "Heartbeat registered"}
+        else:
+            raise HTTPException(status_code=404, detail="Agent not found")
+    except Exception as e:
+        logger.error(f"Error registering heartbeat: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{agent_id}/health")
+async def get_agent_health(
+    agent_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get agent health status"""
+    from app.services.agent_heartbeat_service import AgentHeartbeatService
+    
+    try:
+        heartbeat_service = AgentHeartbeatService(db)
+        health_result = await heartbeat_service.check_agent_health(agent_id)
+        return health_result
+    except Exception as e:
+        logger.error(f"Error checking agent health: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/health/all")
+async def get_all_agents_health(
+    db: Session = Depends(get_db)
+):
+    """Get health status of all agents"""
+    from app.services.agent_heartbeat_service import AgentHeartbeatService
+    
+    try:
+        heartbeat_service = AgentHeartbeatService(db)
+        health_results = await heartbeat_service.check_all_agents_health()
+        return health_results
+    except Exception as e:
+        logger.error(f"Error checking all agents health: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+

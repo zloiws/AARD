@@ -23,6 +23,14 @@ class AgentStatus(str, Enum):
     FAILED = "failed"
 
 
+class AgentHealthStatus(str, Enum):
+    """Agent health status enumeration"""
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+    UNKNOWN = "unknown"
+
+
 class AgentCapability(str, Enum):
     """Agent capability types"""
     CODE_GENERATION = "code_generation"
@@ -57,6 +65,13 @@ class Agent(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     activated_at = Column(DateTime, nullable=True)  # When agent was activated
     last_used_at = Column(DateTime, nullable=True)  # Last time agent was used
+    
+    # Heartbeat and health
+    endpoint = Column(String(255), nullable=True)  # Agent endpoint URL for A2A communication
+    last_heartbeat = Column(DateTime, nullable=True)  # Last heartbeat timestamp
+    health_status = Column(String(50), nullable=True, default="unknown")  # healthy, degraded, unhealthy, unknown
+    last_health_check = Column(DateTime, nullable=True)  # Last health check timestamp
+    response_time_ms = Column(Integer, nullable=True)  # Response time in milliseconds
     
     # Agent configuration
     system_prompt = Column(Text, nullable=True)  # System prompt for the agent
