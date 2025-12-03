@@ -658,6 +658,9 @@ class ExecutionService:
             plan_executions_total.labels(status="failed").inc()
             plan_execution_duration_seconds.labels(status="failed").observe(plan_duration)
             self.db.commit()
+            
+            # Automatic replanning on failure
+            await self._handle_plan_failure(plan, "Plan has no steps", {})
             return plan
         
         # Execution context (results from previous steps)
@@ -695,7 +698,10 @@ class ExecutionService:
                         plan.status = "failed"
                         plan.current_step = i
                         self.db.commit()
-                        raise ValueError(f"Dependency {dep_id} not found in execution context")
+                        error_msg = f"Dependency {dep_id} not found in execution context"
+                        # Automatic replanning on failure
+                        await self._handle_plan_failure(plan, error_msg, execution_context)
+                        raise ValueError(error_msg)
             
             # Execute step
             try:
@@ -763,6 +769,9 @@ class ExecutionService:
                         "error": step_result.get('error', 'Unknown error'),
                     }
                 )
+                
+                # Automatic replanning on failure
+                await self._handle_plan_failure(plan, step_result.get('error', 'Unknown error'), execution_context)
                 break
             
             # Check if step is waiting for approval
@@ -851,4 +860,137 @@ class ExecutionService:
             "estimated_duration": plan.estimated_duration,
             "actual_duration": plan.actual_duration
         }
+    
+    async def _handle_plan_failure(
+        self,
+        plan: Plan,
+        error_message: str,
+        execution_context: Dict[str, Any]
+    ) -> Optional[Plan]:
+        """
+        Handle plan failure by analyzing error and automatically replanning
+        
+        Args:
+            plan: Failed plan
+            error_message: Error message
+            execution_context: Execution context at time of failure
+            
+        Returns:
+            New plan if replanning was successful, None otherwise
+        """
+        from app.services.planning_service import PlanningService
+        from app.services.reflection_service import ReflectionService
+        from app.services.memory_service import MemoryService
+        from app.models.task import Task, TaskStatus
+        
+        try:
+            logger.info(
+                f"Handling plan failure for plan {plan.id}",
+                extra={
+                    "plan_id": str(plan.id),
+                    "error": error_message,
+                    "current_step": plan.current_step
+                }
+            )
+            
+            # Get task
+            task = self.db.query(Task).filter(Task.id == plan.task_id).first()
+            if not task:
+                logger.warning(f"Task {plan.task_id} not found for failed plan {plan.id}")
+                return None
+            
+            # Update task status to FAILED
+            task.status = TaskStatus.FAILED
+            self.db.commit()
+            
+            # Analyze failure using ReflectionService
+            reflection_service = ReflectionService(self.db)
+            
+            # Get agent_id from plan if available
+            agent_id = None
+            if plan.agent_metadata and isinstance(plan.agent_metadata, dict):
+                agent_id_str = plan.agent_metadata.get("agent_id")
+                if agent_id_str:
+                    try:
+                        agent_id = UUID(agent_id_str)
+                    except (ValueError, TypeError):
+                        pass
+            
+            # Analyze the failure
+            reflection_result = await reflection_service.analyze_failure(
+                task_description=task.description,
+                error=error_message,
+                context={
+                    "plan_id": str(plan.id),
+                    "plan_version": plan.version,
+                    "current_step": plan.current_step,
+                    "execution_context": execution_context,
+                    "steps": plan.steps if isinstance(plan.steps, list) else []
+                },
+                agent_id=agent_id
+            )
+            
+            # Generate fix suggestion
+            fix_suggestion = await reflection_service.generate_fix(
+                task_description=task.description,
+                error=error_message,
+                analysis=reflection_result.analysis,
+                context={
+                    "plan_id": str(plan.id),
+                    "current_step": plan.current_step,
+                    "execution_context": execution_context
+                },
+                similar_situations=reflection_result.similar_situations
+            )
+            
+            # Save learning pattern to memory
+            if agent_id:
+                await reflection_service.learn_from_mistake(
+                    agent_id=agent_id,
+                    task_description=task.description,
+                    error=error_message,
+                    fix=fix_suggestion,
+                    analysis=reflection_result.analysis
+                )
+            
+            # Create new plan using replan
+            planning_service = PlanningService(self.db)
+            new_plan = await planning_service.replan(
+                plan_id=plan.id,
+                reason=f"Plan failed: {error_message}",
+                context={
+                    "error_analysis": reflection_result.analysis,
+                    "fix_suggestion": fix_suggestion,
+                    "similar_situations": reflection_result.similar_situations,
+                    "execution_context": execution_context,
+                    "failed_at_step": plan.current_step
+                }
+            )
+            
+            logger.info(
+                f"Created new plan {new_plan.id} (version {new_plan.version}) after failure",
+                extra={
+                    "original_plan_id": str(plan.id),
+                    "new_plan_id": str(new_plan.id),
+                    "new_version": new_plan.version,
+                    "error_type": reflection_result.analysis.get("error_type", "unknown")
+                }
+            )
+            
+            # The new plan will automatically go through approval process
+            # (handled by _create_plan_approval_request in PlanningService)
+            # If critical steps detected, task will transition to PENDING_APPROVAL
+            
+            return new_plan
+            
+        except Exception as e:
+            logger.error(
+                f"Error handling plan failure: {e}",
+                exc_info=True,
+                extra={
+                    "plan_id": str(plan.id),
+                    "error": error_message
+                }
+            )
+            return None
 
