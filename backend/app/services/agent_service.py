@@ -203,6 +203,174 @@ class AgentService:
         
         return agent
     
+    def create_agent_version(
+        self,
+        agent_id: UUID,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        capabilities: Optional[List[str]] = None,
+        model_preference: Optional[str] = None,
+        **kwargs
+    ) -> Agent:
+        """
+        Create a new version of an existing agent
+        
+        Args:
+            agent_id: ID of the parent agent
+            name: New name (if different from parent)
+            description: New description (if different from parent)
+            system_prompt: New system prompt (if different from parent)
+            capabilities: New capabilities (if different from parent)
+            model_preference: New model preference (if different from parent)
+            **kwargs: Additional properties to override
+            
+        Returns:
+            New Agent version
+        """
+        parent_agent = self.get_agent(agent_id)
+        if not parent_agent:
+            raise ValueError(f"Parent agent {agent_id} not found")
+        
+        # Get parent's version
+        parent_version = parent_agent.version
+        
+        # Create new agent based on parent
+        new_agent = Agent(
+            name=name or f"{parent_agent.name}_v{parent_version + 1}",
+            description=description or parent_agent.description,
+            system_prompt=system_prompt or parent_agent.system_prompt,
+            capabilities=capabilities or parent_agent.capabilities,
+            model_preference=model_preference or parent_agent.model_preference,
+            temperature=kwargs.get('temperature', parent_agent.temperature),
+            parent_agent_id=agent_id,
+            version=parent_version + 1,
+            status=AgentStatus.DRAFT.value,
+            created_by=kwargs.get('created_by', parent_agent.created_by),
+            identity_id=parent_agent.identity_id,
+            security_policies=kwargs.get('security_policies', parent_agent.security_policies),
+            allowed_actions=kwargs.get('allowed_actions', parent_agent.allowed_actions),
+            forbidden_actions=kwargs.get('forbidden_actions', parent_agent.forbidden_actions),
+            max_concurrent_tasks=kwargs.get('max_concurrent_tasks', parent_agent.max_concurrent_tasks),
+            rate_limit_per_minute=kwargs.get('rate_limit_per_minute', parent_agent.rate_limit_per_minute),
+            memory_limit_mb=kwargs.get('memory_limit_mb', parent_agent.memory_limit_mb),
+            agent_metadata=kwargs.get('agent_metadata', parent_agent.agent_metadata),
+            tags=kwargs.get('tags', parent_agent.tags)
+        )
+        
+        self.db.add(new_agent)
+        self.db.commit()
+        self.db.refresh(new_agent)
+        
+        logger.info(
+            f"Created new version {new_agent.version} of agent {parent_agent.name}",
+            extra={
+                "parent_agent_id": str(agent_id),
+                "new_agent_id": str(new_agent.id),
+                "version": new_agent.version
+            }
+        )
+        
+        return new_agent
+    
+    def get_agent_versions(self, agent_id: UUID) -> List[Agent]:
+        """
+        Get all versions of an agent (including the agent itself)
+        
+        Args:
+            agent_id: Agent ID (can be any version)
+            
+        Returns:
+            List of agents ordered by version (oldest first)
+        """
+        agent = self.get_agent(agent_id)
+        if not agent:
+            return []
+        
+        # Find root agent (agent without parent)
+        root_agent = agent
+        while root_agent.parent_agent_id:
+            root_agent = self.get_agent(root_agent.parent_agent_id)
+            if not root_agent:
+                break
+        
+        if not root_agent:
+            root_agent = agent
+        
+        # Get all versions (root and all children)
+        versions = [root_agent]
+        
+        # Find all child versions
+        child_versions = self.db.query(Agent).filter(
+            Agent.parent_agent_id == root_agent.id
+        ).order_by(Agent.version.asc()).all()
+        
+        versions.extend(child_versions)
+        
+        return versions
+    
+    def rollback_to_version(self, agent_id: UUID, target_version: int) -> Agent:
+        """
+        Rollback agent to a previous version
+        
+        This creates a new version based on the target version
+        
+        Args:
+            agent_id: Current agent ID
+            target_version: Version to rollback to
+            
+        Returns:
+            New agent version based on target version
+        """
+        current_agent = self.get_agent(agent_id)
+        if not current_agent:
+            raise ValueError(f"Agent {agent_id} not found")
+        
+        # Get all versions
+        all_versions = self.get_agent_versions(agent_id)
+        
+        # Find target version
+        target_agent = None
+        for version_agent in all_versions:
+            if version_agent.version == target_version:
+                target_agent = version_agent
+                break
+        
+        if not target_agent:
+            raise ValueError(f"Version {target_version} not found for agent {agent_id}")
+        
+        # Create new version based on target
+        new_version = self.create_agent_version(
+            agent_id=current_agent.parent_agent_id or current_agent.id,
+            name=target_agent.name,
+            description=target_agent.description,
+            system_prompt=target_agent.system_prompt,
+            capabilities=target_agent.capabilities,
+            model_preference=target_agent.model_preference,
+            temperature=target_agent.temperature,
+            security_policies=target_agent.security_policies,
+            allowed_actions=target_agent.allowed_actions,
+            forbidden_actions=target_agent.forbidden_actions,
+            max_concurrent_tasks=target_agent.max_concurrent_tasks,
+            rate_limit_per_minute=target_agent.rate_limit_per_minute,
+            memory_limit_mb=target_agent.memory_limit_mb,
+            agent_metadata=target_agent.agent_metadata,
+            tags=target_agent.tags,
+            created_by=f"rollback_from_v{current_agent.version}"
+        )
+        
+        logger.info(
+            f"Rolled back agent {current_agent.name} from v{current_agent.version} to v{target_version} (created v{new_version.version})",
+            extra={
+                "current_agent_id": str(agent_id),
+                "target_version": target_version,
+                "new_version_id": str(new_version.id),
+                "new_version": new_version.version
+            }
+        )
+        
+        return new_version
+    
     def deprecate_agent(self, agent_id: UUID) -> Agent:
         """Deprecate an agent"""
         agent = self.get_agent(agent_id)

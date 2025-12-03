@@ -301,3 +301,65 @@ async def get_all_agents_health(
         logger.error(f"Error checking all agents health: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
+@router.post("/{agent_id}/versions", response_model=AgentResponse)
+async def create_agent_version(
+    agent_id: UUID,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    system_prompt: Optional[str] = None,
+    capabilities: Optional[List[str]] = None,
+    model_preference: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Create a new version of an agent"""
+    try:
+        service = AgentService(db)
+        new_version = service.create_agent_version(
+            agent_id=agent_id,
+            name=name,
+            description=description,
+            system_prompt=system_prompt,
+            capabilities=capabilities,
+            model_preference=model_preference
+        )
+        return AgentResponse(**new_version.to_dict())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating agent version: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{agent_id}/versions", response_model=List[AgentResponse])
+async def get_agent_versions(
+    agent_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get all versions of an agent"""
+    try:
+        service = AgentService(db)
+        versions = service.get_agent_versions(agent_id)
+        return [AgentResponse(**agent.to_dict()) for agent in versions]
+    except Exception as e:
+        logger.error(f"Error getting agent versions: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/{agent_id}/rollback/{target_version}", response_model=AgentResponse)
+async def rollback_agent_version(
+    agent_id: UUID,
+    target_version: int,
+    db: Session = Depends(get_db)
+):
+    """Rollback agent to a previous version"""
+    try:
+        service = AgentService(db)
+        new_version = service.rollback_to_version(agent_id, target_version)
+        return AgentResponse(**new_version.to_dict())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error rolling back agent version: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
