@@ -1,5 +1,17 @@
 # Adaptive Approval Service
 
+## Overview
+
+The Adaptive Approval Service provides intelligent approval decisions based on risk assessment, agent trust scores, and task complexity. It automatically detects critical steps that require mandatory approval and transitions tasks from DRAFT to PENDING_APPROVAL status.
+
+## Features
+
+1. **Intelligent Approval Decisions**: Determines if approval is required based on multiple factors
+2. **Critical Step Detection**: Automatically identifies steps that require mandatory approval
+3. **Automatic Task Transition**: Transitions tasks from DRAFT to PENDING_APPROVAL when critical steps are detected
+4. **Agent Trust Scoring**: Calculates trust scores based on execution history
+5. **Risk Assessment**: Evaluates task risk level based on complexity and operations
+
 ## Обзор
 
 AdaptiveApprovalService реализует интеллектуальную систему принятия решений об утверждении планов на основе:
@@ -41,6 +53,68 @@ trust_score = (
 - **Высокий trust**: > 0.8
 - **Средний trust**: 0.5 - 0.8
 - **Низкий trust**: < 0.5
+
+## Обнаружение критических шагов
+
+Система автоматически обнаруживает критические шаги, которые требуют обязательного утверждения:
+
+### Типы критических шагов
+
+1. **Создание агентов/инструментов** (`create_agent`, `create_tool`)
+   - Создание новых агентов
+   - Регистрация новых инструментов
+
+2. **Изменение артефактов** (`modify_agent`, `modify_tool`, `modify_artifact`)
+   - Модификация существующих агентов
+   - Обновление инструментов
+   - Изменение артефактов
+
+3. **Системные операции** (`system_operation`)
+   - Выполнение системных команд
+   - Доступ к shell
+   - Root-доступ
+
+4. **Доступ к защищенным данным** (`protected_data`)
+   - Доступ к базе данных
+   - Модификация данных
+   - Доступ к API ключам/секретам
+
+### Автоматический переход статуса задачи
+
+Когда обнаружены критические шаги, система автоматически:
+1. Переводит задачу из статуса `DRAFT` в `PENDING_APPROVAL`
+2. Создает запрос на утверждение
+3. Логирует причину перехода
+
+```python
+# В PlanningService._create_plan_approval_request:
+critical_info = adaptive_approval.detect_critical_steps(
+    steps=plan.steps,
+    task_description=plan.goal
+)
+
+if critical_info["requires_mandatory_approval"]:
+    task.status = TaskStatus.PENDING_APPROVAL
+    # Создать approval request
+```
+
+### Использование
+
+```python
+from app.services.adaptive_approval_service import AdaptiveApprovalService
+
+service = AdaptiveApprovalService(db)
+
+# Обнаружить критические шаги
+critical_info = service.detect_critical_steps(
+    steps=plan.steps,
+    task_description=plan.goal
+)
+
+if critical_info["requires_mandatory_approval"]:
+    print(f"Критические типы: {critical_info['critical_types']}")
+    print(f"Количество критических шагов: {len(critical_info['critical_steps'])}")
+```
 
 ## Уровень риска задачи
 

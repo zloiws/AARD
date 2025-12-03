@@ -458,9 +458,20 @@ Break down this task into executable steps. Return only a valid JSON array."""
         """Create an approval request for a newly created plan"""
         from app.services.approval_service import ApprovalService
         from app.services.adaptive_approval_service import AdaptiveApprovalService
+        from app.models.task import Task, TaskStatus
         
         approval_service = ApprovalService(self.db)
         adaptive_approval = AdaptiveApprovalService(self.db)
+        
+        # Get the task associated with this plan
+        task = self.db.query(Task).filter(Task.id == plan.task_id).first()
+        
+        # Detect critical steps that require mandatory approval
+        steps = plan.steps if isinstance(plan.steps, list) else []
+        critical_info = adaptive_approval.detect_critical_steps(
+            steps=steps,
+            task_description=plan.goal
+        )
         
         # Check if approval is actually required using adaptive logic
         # Try to get agent_id from plan context if available
@@ -481,6 +492,35 @@ Break down this task into executable steps. Return only a valid JSON array."""
             task_risk_level=risks.get("overall_risk")
         )
         
+        # If critical steps detected, mandatory approval is required
+        if critical_info["requires_mandatory_approval"]:
+            requires_approval = True
+            decision_metadata["reason"] = "critical_steps_detected"
+            decision_metadata["critical_types"] = critical_info["critical_types"]
+            logger.info(
+                f"Plan {plan.id} requires mandatory approval due to critical steps",
+                extra={
+                    "plan_id": str(plan.id),
+                    "critical_types": critical_info["critical_types"],
+                    "critical_steps_count": len(critical_info["critical_steps"])
+                }
+            )
+        
+        # Update task status to PENDING_APPROVAL if approval is required
+        if requires_approval and task:
+            if task.status == TaskStatus.DRAFT:
+                task.status = TaskStatus.PENDING_APPROVAL
+                self.db.commit()
+                self.db.refresh(task)
+                logger.info(
+                    f"Task {task.id} transitioned from DRAFT to PENDING_APPROVAL",
+                    extra={
+                        "task_id": str(task.id),
+                        "plan_id": str(plan.id),
+                        "reason": decision_metadata.get("reason", "approval_required")
+                    }
+                )
+        
         # If approval is not required, skip creating approval request
         if not requires_approval:
             logger.info(
@@ -494,6 +534,11 @@ Break down this task into executable steps. Return only a valid JSON array."""
             # Mark plan as auto-approved
             plan.status = "approved"
             plan.approved_at = datetime.utcnow()
+            # Also update task status if it's in DRAFT
+            if task and task.status == TaskStatus.DRAFT:
+                task.status = TaskStatus.APPROVED
+                self.db.commit()
+                self.db.refresh(task)
             self.db.commit()
             self.db.refresh(plan)
             return None
