@@ -142,6 +142,21 @@ async def plan_detail(
         ApprovalRequest.plan_id == plan_id
     ).order_by(ApprovalRequest.created_at.desc()).first()
     
+    # Get plan quality metrics
+    quality_data = None
+    try:
+        from app.services.planning_metrics_service import PlanningMetricsService
+        metrics_service = PlanningMetricsService(db)
+        quality_score = metrics_service.calculate_plan_quality_score(plan)
+        breakdown = metrics_service.get_plan_quality_breakdown(plan_id)
+        quality_data = {
+            "quality_score": quality_score,
+            "breakdown": breakdown
+        }
+    except Exception as e:
+        # If metrics fail, continue without them
+        pass
+    
     return templates.TemplateResponse(
         "plans/detail.html",
         {
@@ -155,7 +170,8 @@ async def plan_detail(
             "can_approve": plan.status == "draft",
             "can_execute": plan.status == "approved",
             "can_update": plan.status == "draft",
-            "approval_request": approval_request  # Pass approval request
+            "approval_request": approval_request,  # Pass approval request
+            "quality_data": quality_data  # Pass quality metrics
         }
     )
 
