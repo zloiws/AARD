@@ -43,9 +43,21 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info(f"Starting {settings.app_name} in {settings.app_env} mode...")
     configure_tracing(app)
+    
+    # Start agent heartbeat monitor
+    from app.services.agent_heartbeat_background import get_heartbeat_monitor
+    heartbeat_monitor = get_heartbeat_monitor()
+    await heartbeat_monitor.start()
+    
     yield
+    
     # Shutdown
     logger.info(f"Shutting down {settings.app_name}...")
+    
+    # Stop heartbeat monitor
+    await heartbeat_monitor.stop()
+    
+    # Shutdown tracing
     shutdown_tracing()
 
 
