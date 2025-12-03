@@ -269,9 +269,13 @@ class A2ARouter:
                 
             elif message.type == A2AMessageType.HEARTBEAT:
                 # Heartbeat message - update registry
-                self.registry.register_heartbeat(
-                    message.sender.agent_id,
-                    endpoint=None,  # Endpoint should be known from registration
+                # Use heartbeat service directly
+                from app.services.agent_heartbeat_service import AgentHeartbeatService
+                heartbeat_service = AgentHeartbeatService(self.db)
+                # Register heartbeat asynchronously
+                await heartbeat_service.register_heartbeat(
+                    agent_id=message.sender.agent_id,
+                    endpoint=None,
                     response_time_ms=None
                 )
                 return None
