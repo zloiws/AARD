@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Управление задачами{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 600;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .status-pending_approval {
+        background-color: #ffc107;
+        color: #000;
+    }
+    .status-in_progress, .status-executing {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+    .status-on_hold {
+        background-color: #6c757d;
+        color: #fff;
+    }
+    .status-failed {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    .status-draft {
+        background-color: #ffc107;
+        color: #000;
+    }
+    .progress {
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        height: 100%;
+        background-color: #0d6efd;
+        transition: width 0.3s;
+    }
+    .task-card {
+        border-left: 4px solid #0d6efd;
+        transition: box-shadow 0.2s;
+    }
+    .task-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .history-item {
+        padding: 8px 12px;
+        border-left: 3px solid #dee2e6;
+        margin-bottom: 8px;
+        background-color: #f8f9fa;
+    }
+    .history-item.plan_created {
+        border-left-color: #28a745;
+    }
+    .history-item.plan_replanned {
+        border-left-color: #ffc107;
+    }
+    .btn-sm {
+        padding: 4px 12px;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>📊 Dashboard - Управление задачами</h1>
+        <div>
+            <button class="btn btn-primary" onclick="showCreateTaskModal()">
+                <i class="bi bi-plus-circle"></i> Создать задачу
+            </button>
+            <a href="/plans" class="btn btn-outline-primary ms-2">
+                <i class="bi bi-list"></i> Все планы
+            </a>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">{{ statistics.pending_approval }}</h5>
+                    <p class="card-text text-muted">Ожидают утверждения</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ statistics.in_progress }}</h5>
+                    <p class="card-text text-muted">Выполняются</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">{{ statistics.on_hold }}</h5>
+                    <p class="card-text text-muted">На паузе</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">{{ statistics.failed }}</h5>
+                    <p class="card-text text-muted">Ошибки</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Активные задачи -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Активные задачи</h5>
+        </div>
+        <div class="card-body">
+            {% if tasks %}
+            <div id="tasks-list">
+                {% for task in tasks %}
+                <div class="card task-card mb-3" data-task-id="{{ task.id }}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <a href="/plans/{{ task.plan.id if task.plan else '#' }}" class="text-decoration-none">
+                                        {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
+                                    </a>
+                                </h6>
+                                <div class="d-flex gap-2 align-items-center mb-2">
+                                    <span class="status-badge status-{{ task.status }}">
+                                        {{ task.status }}
+                                    </span>
+                                    {% if task.plan %}
+                                    <span class="badge bg-secondary">v{{ task.plan.version }}</span>
+                                    <span class="text-muted small">
+                                        Шаг {{ task.plan.current_step }}/{{ task.plan.total_steps }}
+                                    </span>
+                                    {% endif %}
+                                    <span class="text-muted small">
+                                        Приоритет: {{ task.priority }} | Автономия: {{ task.autonomy_level }}
+                                    </span>
+                                </div>
+                                {% if task.plan %}
+                                <div class="progress mb-2" style="width: 300px;">
+                                    <div class="progress-bar" style="width: {{ task.plan.progress }}%"></div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="btn-group-vertical btn-group-sm">
+                                {% if task.status == 'pending_approval' and task.approval_request %}
+                                <button class="btn btn-success btn-sm" onclick="approveTask('{{ task.id }}', '{{ task.approval_request.id }}')">
+                                    <i class="bi bi-check-circle"></i> Утвердить
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="rejectTask('{{ task.id }}', '{{ task.approval_request.id }}')">
+                                    <i class="bi bi-x-circle"></i> Отклонить
+                                </button>
+                                {% endif %}
+                                {% if task.status in ['in_progress', 'executing'] %}
+                                <button class="btn btn-warning btn-sm" onclick="pauseTask('{{ task.id }}')">
+                                    <i class="bi bi-pause-circle"></i> Пауза
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="cancelTask('{{ task.id }}')">
+                                    <i class="bi bi-x-circle"></i> Отменить
+                                </button>
+                                {% endif %}
+                                {% if task.status == 'on_hold' %}
+                                <button class="btn btn-primary btn-sm" onclick="resumeTask('{{ task.id }}')">
+                                    <i class="bi bi-play-circle"></i> Возобновить
+                                </button>
+                                {% endif %}
+                                <a href="/plans/{{ task.plan.id if task.plan else '#' }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i> Детали
+                                </a>
+                            </div>
+                        </div>
+                        {% if task.plan %}
+                        <div class="mt-2">
+                            <button class="btn btn-link btn-sm p-0" type="button" onclick="toggleHistory('{{ task.plan.id }}')">
+                                <i class="bi bi-clock-history"></i> История изменений
+                            </button>
+                            <div id="history-{{ task.plan.id }}" style="display: none;" class="mt-2">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Загрузка...</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted">Нет активных задач</p>
+                <button class="btn btn-primary" onclick="showCreateTaskModal()">
+                    Создать задачу
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal для создания задачи -->
+<div class="modal fade" id="createTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Создать задачу</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createTaskForm" 
+                      hx-post="/api/dashboard/tasks/create"
+                      hx-target="body"
+                      hx-swap="none">
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Описание задачи</label>
+                        <textarea class="form-control" id="taskDescription" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskPriority" class="form-label">Приоритет (0-9)</label>
+                                <input type="number" class="form-control" id="taskPriority" name="priority" value="5" min="0" max="9" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskAutonomy" class="form-label">Уровень автономии (0-4)</label>
+                                <input type="number" class="form-control" id="taskAutonomy" name="autonomy_level" value="2" min="0" max="4" required>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="description" id="taskDescriptionHidden">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Создать</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Auto-refresh every 10 seconds
+    setInterval(function() {
+        htmx.ajax('GET', '/api/dashboard/tasks', {
+            target: '#tasks-list',
+            swap: 'innerHTML'
+        });
+    }, 10000);
+
+    function showCreateTaskModal() {
+        const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+        modal.show();
+    }
+
+    function approveTask(taskId, approvalRequestId) {
+        if (confirm('Утвердить задачу?')) {
+            htmx.ajax('POST', `/api/approvals/${approvalRequestId}/approve`, {
+                target: 'body',
+                swap: 'none',
+                headers: {'HX-Trigger': 'task-approved'}
+            }).then(() => {
+                location.reload();
+            });
+        }
+    }
+
+    function rejectTask(taskId, approvalRequestId) {
+        if (confirm('Отклонить задачу?')) {
+            htmx.ajax('POST', `/api/approvals/${approvalRequestId}/reject`, {
+                target: 'body',
+                swap: 'none',
+                headers: {'HX-Trigger': 'task-rejected'}
+            }).then(() => {
+                location.reload();
+            });
+        }
+    }
+
+    function cancelTask(taskId) {
+        if (confirm('Отменить выполнение задачи?')) {
+            fetch(`/api/dashboard/tasks/${taskId}/cancel`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.message) {
+                      location.reload();
+                  }
+              });
+        }
+    }
+
+    function pauseTask(taskId) {
+        // TODO: Implement pause functionality
+        alert('Функция паузы будет реализована в InteractiveExecutionService');
+    }
+
+    function resumeTask(taskId) {
+        // TODO: Implement resume functionality
+        alert('Функция возобновления будет реализована в InteractiveExecutionService');
+    }
+
+    function toggleHistory(planId) {
+        const historyDiv = document.getElementById(`history-${planId}`);
+        if (historyDiv.style.display === 'none') {
+            historyDiv.style.display = 'block';
+            // Load history
+            fetch(`/api/dashboard/plan-history/${planId}`)
+                .then(response => response.json())
+                .then(data => {
+                    let html = '<div class="mt-2">';
+                    if (data.history && data.history.length > 0) {
+                        data.history.forEach(event => {
+                            html += `<div class="history-item ${event.event_type}">`;
+                            html += `<strong>${event.event_type}</strong> - v${event.plan_version}<br>`;
+                            html += `<small class="text-muted">${event.timestamp}</small>`;
+                            html += `</div>`;
+                        });
+                    } else {
+                        html += '<p class="text-muted small">История изменений не найдена</p>';
+                    }
+                    html += '</div>';
+                    historyDiv.innerHTML = html;
+                });
+        } else {
+            historyDiv.style.display = 'none';
+        }
+    }
+
+    // Handle form submission
+    document.getElementById('createTaskForm')?.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = {
+            description: formData.get('description'),
+            priority: parseInt(formData.get('priority')),
+            autonomy_level: parseInt(formData.get('autonomy_level'))
+        };
+        
+        fetch('/api/dashboard/tasks/create', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createTaskModal'));
+                modal.hide();
+                event.target.reset();
+                location.reload();
+            } else {
+                alert('Ошибка создания задачи');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка создания задачи');
+        });
+    });
+</script>
+{% endblock %}
+

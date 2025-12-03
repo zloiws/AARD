@@ -157,6 +157,11 @@ app.include_router(plans_pages.router)
 app.include_router(agents_pages.router)
 app.include_router(tools_pages.router)
 app.include_router(traces_pages.router)
+
+# Dashboard
+from app.api.routes import dashboard, dashboard_pages
+app.include_router(dashboard.router)
+app.include_router(dashboard_pages.router)
 app.include_router(experiments.router)
 app.include_router(agent_gym.router)
 app.include_router(agent_gym_pages.router)

@@ -323,6 +323,7 @@
     
     <div class="tabs">
         <div class="tab active" onclick="switchTab('chat')">💬 Чат</div>
+        <div class="tab" onclick="switchTab('dashboard')">📊 Dashboard</div>
         <div class="tab" onclick="switchTab('plans')">📋 Планы</div>
         <div class="tab" onclick="switchTab('approvals')">✅ Утверждения</div>
         <div class="tab" onclick="switchTab('artifacts')">📦 Артефакты</div>
@@ -409,6 +410,13 @@
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+    
+    <!-- Dashboard Tab -->
+    <div id="dashboard-tab" class="tab-content">
+        <div style="width: 100%; height: 100%; overflow: hidden;">
+            <iframe src="/dashboard" style="width: 100%; height: 100%; border: none;"></iframe>
         </div>
     </div>
     
