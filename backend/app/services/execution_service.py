@@ -241,6 +241,50 @@ class StepExecutor:
                 # Fallback: convert to string representation
                 context_str = f"\n\nКонтекст выполнения:\n{str(context)}"
         
+        # Check if step has a function_call (from planning model)
+        function_call_data = step.get("function_call")
+        if function_call_data:
+            # Process function call using FunctionCallProtocol
+            from app.core.function_calling import FunctionCallProtocol
+            
+            # Parse function call
+            if isinstance(function_call_data, dict):
+                function_call = FunctionCallProtocol.create_function_call(
+                    function_name=function_call_data.get("function", ""),
+                    parameters=function_call_data.get("parameters", {}),
+                    validation_schema=function_call_data.get("validation_schema"),
+                    safety_checks=function_call_data.get("safety_checks", True)
+                )
+            elif isinstance(function_call_data, str):
+                # Try to parse from string
+                function_call = FunctionCallProtocol.parse_function_call_from_llm(function_call_data)
+            else:
+                function_call = None
+            
+            if function_call:
+                # Validate function call
+                is_valid, issues = FunctionCallProtocol.validate_function_call(function_call)
+                
+                if not is_valid:
+                    result["status"] = "failed"
+                    result["error"] = f"Function call validation failed: {', '.join(issues)}"
+                    return result
+                
+                # Store function call in result for later execution
+                result["function_call"] = function_call.to_dict()
+                result["metadata"] = {
+                    "execution_method": "function_call",
+                    "function": function_call.function,
+                    "validation_passed": True
+                }
+                
+                # For now, return that function call is ready for execution
+                # Actual execution will be handled by CodeExecutionSandbox (to be implemented)
+                result["status"] = "pending_function_call"
+                result["message"] = f"Function call '{function_call.function}' validated and ready for execution"
+                return result
+        
+        # Fallback to LLM-based execution if no function call
         system_prompt = """You are an execution engine for task plans.
 Execute the given step and return the result in JSON format:
 {

@@ -154,12 +154,52 @@ server = model_selector.get_server_for_model(code_model)
 python -m pytest tests/integration/test_model_selector.py -v
 ```
 
+## Function Calling Protocol
+
+Для безопасного выполнения кода используется Function Calling Protocol, который обеспечивает структурированный интерфейс между моделью планирования и выполнением кода.
+
+### Основные компоненты
+
+1. **FunctionCall** - структурированное представление вызова функции
+2. **FunctionCallProtocol** - протокол для создания, валидации и парсинга function calls
+
+### Использование
+
+```python
+from app.core.function_calling import FunctionCallProtocol
+
+# Создание function call
+call = FunctionCallProtocol.create_function_call(
+    function_name="code_execution_tool",
+    parameters={
+        "code": "print('Hello, World!')",
+        "language": "python"
+    },
+    safety_checks=True
+)
+
+# Валидация
+is_valid, issues = FunctionCallProtocol.validate_function_call(call)
+
+# Парсинг из LLM ответа
+call = FunctionCallProtocol.parse_function_call_from_llm(llm_response)
+```
+
+### Безопасность
+
+Function Calling Protocol включает:
+- Whitelist разрешенных функций
+- Проверку обязательных параметров
+- Валидацию по JSON schema
+- Проверку на опасный код (os.system, eval, exec и т.д.)
+- Обнаружение SQL injection в запросах
+
 ## Следующие шаги
 
 - [x] Реализация ModelSelector
 - [x] Интеграция в PlanningService
 - [x] Интеграция в ExecutionService
-- [ ] Function Calling Protocol для безопасного выполнения кода
+- [x] Function Calling Protocol для безопасного выполнения кода
 - [ ] CodeExecutionSandbox для изоляции выполнения
 - [ ] Метрики использования моделей
 

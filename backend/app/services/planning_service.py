@@ -241,6 +241,17 @@ Create a detailed plan with steps. Each step should have:
 - dependencies: list of step_ids that must complete first (array)
 - approval_required: boolean
 - risk_level: "low", "medium", or "high"
+- function_call: (optional) if step requires code execution, include function call in format:
+  {
+    "function": "code_execution_tool",
+    "parameters": {
+      "code": "python code here",
+      "language": "python"
+    }
+  }
+
+IMPORTANT: For steps that require code execution, use function_call instead of generating code directly.
+This ensures safe execution in a sandboxed environment.
 
 Return a JSON array of steps."""
         
