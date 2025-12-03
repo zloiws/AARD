@@ -130,6 +130,27 @@ class PlanningService:
             logger = LoggingConfig.get_logger(__name__)
             logger.warning(f"Failed to log plan generation: {e}", exc_info=True)
         
+        # Track plan quality using PlanningMetricsService
+        try:
+            from app.services.planning_metrics_service import PlanningMetricsService
+            metrics_service = PlanningMetricsService(self.db)
+            quality_score = metrics_service.calculate_plan_quality_score(plan)
+            
+            # Store quality score in plan metadata if available
+            if plan.agent_metadata is None:
+                plan.agent_metadata = {}
+            if isinstance(plan.agent_metadata, dict):
+                plan.agent_metadata["quality_score"] = quality_score
+                self.db.commit()
+                self.db.refresh(plan)
+            
+            logger.debug(
+                f"Calculated quality score for plan {plan.id}",
+                extra={"plan_id": str(plan.id), "quality_score": quality_score}
+            )
+        except Exception as e:
+            logger.warning(f"Failed to calculate plan quality score: {e}", exc_info=True)
+        
         return plan
     
     async def _analyze_task(

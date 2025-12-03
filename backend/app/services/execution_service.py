@@ -798,6 +798,27 @@ class ExecutionService:
         self.db.commit()
         self.db.refresh(plan)
         
+        # Track plan execution using PlanningMetricsService
+        try:
+            from app.services.planning_metrics_service import PlanningMetricsService
+            metrics_service = PlanningMetricsService(self.db)
+            
+            # Calculate execution time
+            execution_time_ms = None
+            if plan.actual_duration:
+                execution_time_ms = plan.actual_duration * 1000
+            
+            # Determine success based on plan status
+            success = plan.status == "completed"
+            
+            metrics_service.track_plan_execution_success(
+                plan_id=plan.id,
+                success=success,
+                execution_time_ms=execution_time_ms
+            )
+        except Exception as e:
+            logger.warning(f"Failed to track plan execution: {e}", exc_info=True)
+        
         return plan
     
     def get_execution_status(self, plan_id: UUID) -> Dict[str, Any]:
