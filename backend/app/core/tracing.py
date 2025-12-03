@@ -2,19 +2,43 @@
 OpenTelemetry tracing configuration
 """
 from typing import Optional
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+
+# Try to import OpenTelemetry - make it optional
+try:
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+    from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+    OPENTELEMETRY_AVAILABLE = True
+except ImportError:
+    OPENTELEMETRY_AVAILABLE = False
+    # Create dummy classes to avoid import errors
+    trace = None
+    TracerProvider = None
+    BatchSpanProcessor = None
+    ConsoleSpanExporter = None
+    Resource = None
+    FastAPIInstrumentor = None
+    SQLAlchemyInstrumentor = None
+    HTTPXClientInstrumentor = None
+    AioHttpClientInstrumentor = None
+    OTLPSpanExporter = None
 
 from app.core.config import get_settings
 from app.core.logging_config import LoggingConfig
-from app.core.trace_exporter import DatabaseSpanExporter
+
+# Try to import DatabaseSpanExporter (it also depends on opentelemetry)
+try:
+    from app.core.trace_exporter import DatabaseSpanExporter
+    DATABASE_EXPORTER_AVAILABLE = True
+except ImportError:
+    DATABASE_EXPORTER_AVAILABLE = False
+    DatabaseSpanExporter = None
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -38,7 +62,16 @@ def configure_tracing(app=None):
     settings = get_settings()
     
     if not settings.enable_tracing:
-        logger.info("OpenTelemetry tracing is disabled")
+        logger.info("OpenTelemetry tracing is disabled via configuration")
+        return
+    
+    if not OPENTELEMETRY_AVAILABLE:
+        logger.warning(
+            "OpenTelemetry tracing is enabled but opentelemetry packages are not installed. "
+            "Install with: pip install opentelemetry-api opentelemetry-sdk "
+            "opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-sqlalchemy "
+            "opentelemetry-instrumentation-httpx opentelemetry-instrumentation-aiohttp-client"
+        )
         return
     
     logger.info("Configuring OpenTelemetry tracing...")
@@ -65,8 +98,12 @@ def configure_tracing(app=None):
             logger.warning("OTLP exporter selected but no endpoint configured, falling back to console")
             exporter = ConsoleSpanExporter()
     elif settings.tracing_exporter == "database":
-        exporter = DatabaseSpanExporter()
-        logger.info("Using database exporter for tracing")
+        if DATABASE_EXPORTER_AVAILABLE and DatabaseSpanExporter:
+            exporter = DatabaseSpanExporter()
+            logger.info("Using database exporter for tracing")
+        else:
+            logger.warning("Database exporter not available, falling back to console")
+            exporter = ConsoleSpanExporter()
     else:
         # Default: console exporter
         exporter = ConsoleSpanExporter()
@@ -113,8 +150,16 @@ def get_tracer(name: str):
         name: Tracer name (usually module name)
     
     Returns:
-        Tracer instance
+        Tracer instance (or NoOpTracer if OpenTelemetry is not available)
     """
+    if not OPENTELEMETRY_AVAILABLE:
+        # Return a dummy tracer that does nothing
+        class NoOpTracer:
+            def start_as_current_span(self, *args, **kwargs):
+                from contextlib import nullcontext
+                return nullcontext()
+        return NoOpTracer()
+    
     if not _configured:
         configure_tracing()
     
@@ -128,6 +173,9 @@ def get_current_trace_id() -> Optional[str]:
     Returns:
         Trace ID as string or None if not in a trace
     """
+    if not OPENTELEMETRY_AVAILABLE:
+        return None
+    
     span = trace.get_current_span()
     if span and span.get_span_context().is_valid:
         return format(span.get_span_context().trace_id, '032x')
@@ -141,21 +189,35 @@ def get_current_span_id() -> Optional[str]:
     Returns:
         Span ID as string or None if not in a span
     """
+    if not OPENTELEMETRY_AVAILABLE:
+        return None
+    
     span = trace.get_current_span()
     if span and span.get_span_context().is_valid:
         return format(span.get_span_context().span_id, '016x')
     return None
 
 
-def add_span_attributes(**kwargs):
+def add_span_attributes(span=None, **kwargs):
     """
-    Add attributes to current span
+    Add attributes to current span or provided span
     
     Args:
+        span: Optional span object (if None, uses current span)
         **kwargs: Attributes to add
     """
-    span = trace.get_current_span()
-    if span and span.get_span_context().is_valid:
+    if not OPENTELEMETRY_AVAILABLE:
+        return
+    
+    if span is None:
+        span = trace.get_current_span()
+    
+    if span and hasattr(span, 'get_span_context'):
+        if span.get_span_context().is_valid:
+            for key, value in kwargs.items():
+                span.set_attribute(key, value)
+    elif span and hasattr(span, 'set_attribute'):
+        # Direct span object
         for key, value in kwargs.items():
             span.set_attribute(key, value)
 
