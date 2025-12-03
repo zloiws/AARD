@@ -2,7 +2,7 @@
 A2A (Agent-to-Agent) Communication Protocol
 Standardized protocol for agent-to-agent communication
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List, Union
 from uuid import UUID, uuid4
 from enum import Enum
@@ -50,7 +50,7 @@ class A2AMessage(BaseModel):
     parent_message_id: Optional[UUID] = None  # For message chains
     
     # Metadata
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     ttl: int = Field(default=300, ge=1, le=3600)  # Time to live in seconds
     priority: int = Field(default=5, ge=0, le=9)  # 0-9, where 9 is highest
     
@@ -94,7 +94,13 @@ class A2AMessage(BaseModel):
         if not self.timestamp:
             return False
         expiry_time = self.timestamp + timedelta(seconds=self.ttl)
-        return datetime.utcnow() > expiry_time
+        now = datetime.now(timezone.utc)
+        # Handle timezone-aware and naive datetimes
+        if self.timestamp.tzinfo is None:
+            # Naive datetime - assume UTC
+            expiry_time = expiry_time.replace(tzinfo=None)
+            return now.replace(tzinfo=None) > expiry_time
+        return now > expiry_time
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert message to dictionary"""
@@ -139,7 +145,12 @@ class A2AMessage(BaseModel):
         
         # Convert timestamp
         if isinstance(data.get('timestamp'), str):
-            data['timestamp'] = datetime.fromisoformat(data['timestamp'].replace('Z', '+00:00'))
+            ts_str = data['timestamp'].replace('Z', '+00:00')
+            try:
+                data['timestamp'] = datetime.fromisoformat(ts_str)
+            except ValueError:
+                # Fallback for naive datetime strings
+                data['timestamp'] = datetime.fromisoformat(data['timestamp']).replace(tzinfo=timezone.utc)
         
         # Convert sender
         if isinstance(data.get('sender'), dict):

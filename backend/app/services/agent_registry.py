@@ -181,10 +181,11 @@ class AgentRegistry:
             
             agents = query.all()
             
-            add_span_attributes(span, {
-                "found_count": len(agents),
-                "capabilities_filter": str(capabilities) if capabilities else None
-            })
+            add_span_attributes(
+                span=span,
+                found_count=len(agents),
+                capabilities_filter=str(capabilities) if capabilities else None
+            )
             
             return agents
     

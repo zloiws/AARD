@@ -51,11 +51,12 @@ class A2ARouter:
             Response message if wait_for_response=True, None otherwise
         """
         with self.tracer.start_as_current_span("a2a_router.send_message") as span:
-            add_span_attributes(span, {
-                "message_id": str(message.message_id),
-                "message_type": message.type.value,
-                "recipient": str(message.recipient) if isinstance(message.recipient, UUID) else message.recipient
-            })
+            add_span_attributes(
+                span=span,
+                message_id=str(message.message_id),
+                message_type=message.type.value,
+                recipient=str(message.recipient) if isinstance(message.recipient, UUID) else message.recipient
+            )
             
             # Check if message is expired
             if message.is_expired():
@@ -134,10 +135,9 @@ class A2ARouter:
             tasks = []
             for agent in active_agents:
                 # Create a copy of message for each agent
-                agent_message = A2AMessage(
-                    **message.dict(),
-                    recipient=agent.id
-                )
+                message_dict = message.dict()
+                message_dict['recipient'] = agent.id
+                agent_message = A2AMessage(**message_dict)
                 tasks.append(self._send_to_agent(agent_message, wait_for_response=False))
             
             # Wait for all to complete
@@ -167,18 +167,18 @@ class A2ARouter:
                 health_status=health_status
             )
             
-            add_span_attributes(span, {
-                "recipient_count": len(matching_agents),
-                "filter_capabilities": str(capabilities) if capabilities else None
-            })
+            add_span_attributes(
+                span=span,
+                recipient_count=len(matching_agents),
+                filter_capabilities=str(capabilities) if capabilities else None
+            )
             
             # Send to all matching agents
             tasks = []
             for agent in matching_agents:
-                agent_message = A2AMessage(
-                    **message.dict(),
-                    recipient=agent.id
-                )
+                message_dict = message.dict()
+                message_dict['recipient'] = agent.id
+                agent_message = A2AMessage(**message_dict)
                 tasks.append(self._send_to_agent(agent_message, wait_for_response=False))
             
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -204,11 +204,12 @@ class A2ARouter:
             Response message if message is a request, None otherwise
         """
         with self.tracer.start_as_current_span("a2a_router.handle_incoming") as span:
-            add_span_attributes(span, {
-                "message_id": str(message.message_id),
-                "message_type": message.type.value,
-                "sender_id": str(message.sender.agent_id)
-            })
+            add_span_attributes(
+                span=span,
+                message_id=str(message.message_id),
+                message_type=message.type.value,
+                sender_id=str(message.sender.agent_id)
+            )
             
             # Check if message is expired
             if message.is_expired():
