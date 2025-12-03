@@ -46,11 +46,32 @@ class PlanningService:
             Created plan in DRAFT status
         """
         
+        # 0. Try to apply procedural memory patterns (successful plan templates)
+        procedural_pattern = None
+        agent_id = None
+        if context and isinstance(context, dict):
+            agent_id_str = context.get("agent_id")
+            if agent_id_str:
+                try:
+                    agent_id = UUID(agent_id_str)
+                except (ValueError, TypeError):
+                    pass
+        
+        if agent_id:
+            procedural_pattern = await self._apply_procedural_memory_patterns(
+                task_description,
+                agent_id
+            )
+        
         # 1. Analyze task and create strategy
         strategy = await self._analyze_task(task_description, context)
         
-        # 2. Decompose task into steps
-        steps = await self._decompose_task(task_description, strategy, context)
+        # 2. Decompose task into steps (use procedural pattern if available)
+        steps = await self._decompose_task(
+            task_description,
+            strategy,
+            {**(context or {}), "procedural_pattern": procedural_pattern}
+        )
         
         # 3. Assess risks
         risks = await self._assess_risks(steps, strategy)
