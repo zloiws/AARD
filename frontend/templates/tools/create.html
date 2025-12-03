@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Создать инструмент{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        display: block;
+    }
+    
+    body.iframe-page {
+        background: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        display: block;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">🔧 Создать новый инструмент</h4>
+                </div>
+                <div class="card-body">
+                    <form id="createToolForm" onsubmit="createTool(event)">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Имя инструмента *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required 
+                                           placeholder="Например: file_finder">
+                                    <div class="form-text">Уникальное имя инструмента</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tool_type" class="form-label">Тип инструмента *</label>
+                                    <select class="form-select" id="tool_type" name="tool_type" required>
+                                        <option value="python">Python</option>
+                                        <option value="api">API</option>
+                                        <option value="shell">Shell</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Описание</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="Описание назначения и функциональности инструмента"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Категория</label>
+                                    <input type="text" class="form-control" id="category" name="category" 
+                                           placeholder="Например: file_operations, data_analysis">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="entry_point" class="form-label">Точка входа (имя функции)</label>
+                                    <input type="text" class="form-control" id="entry_point" name="entry_point" 
+                                           value="execute" placeholder="execute">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="code" class="form-label">Код (для Python инструментов)</label>
+                            <textarea class="form-control font-monospace" id="code" name="code" rows="10" 
+                                      placeholder="def execute(**kwargs):&#10;    # Ваш код здесь&#10;    return {'status': 'success', 'result': '...'}"></textarea>
+                            <div class="form-text">Python код инструмента. Функция должна принимать **kwargs и возвращать словарь с результатом.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="input_schema" class="form-label">Схема входных данных (JSON Schema, опционально)</label>
+                            <textarea class="form-control font-monospace" id="input_schema" name="input_schema" rows="5" 
+                                      placeholder='{"type": "object", "properties": {"param1": {"type": "string"}}}'></textarea>
+                            <div class="form-text">JSON Schema для валидации входных параметров</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Теги (через запятую)</label>
+                            <input type="text" class="form-control" id="tags" name="tags" 
+                                   placeholder="production, experimental, testing">
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Совет:</strong> После создания инструмента вы сможете активировать его и назначить агентам.
+                        </div>
+
+                        <div id="errorAlert" class="alert alert-danger" style="display: none;"></div>
+                        <div id="successAlert" class="alert alert-success" style="display: none;"></div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/tools" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-plus-circle"></i> Создать инструмент
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function createTool(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitBtn = document.getElementById('submitBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const successAlert = document.getElementById('successAlert');
+    
+    errorAlert.style.display = 'none';
+    successAlert.style.display = 'none';
+    
+    // Get form data
+    const formData = {
+        name: document.getElementById('name').value,
+        description: document.getElementById('description').value || null,
+        tool_type: document.getElementById('tool_type').value,
+        category: document.getElementById('category').value || null,
+        code: document.getElementById('code').value || null,
+        entry_point: document.getElementById('entry_point').value || 'execute',
+        input_schema: (() => {
+            const schemaText = document.getElementById('input_schema').value;
+            if (!schemaText.trim()) return {};
+            try {
+                return JSON.parse(schemaText);
+            } catch (e) {
+                throw new Error('Ошибка в JSON схеме: ' + e.message);
+            }
+        })(),
+        output_schema: {},
+        tags: document.getElementById('tags').value 
+            ? document.getElementById('tags').value.split(',').map(s => s.trim()).filter(s => s)
+            : []
+    };
+    
+    // Disable form
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Создание...';
+    
+    try {
+        const response = await fetch('/api/tools/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            successAlert.textContent = 'Инструмент успешно создан! Перенаправление...';
+            successAlert.style.display = 'block';
+            
+            setTimeout(() => {
+                window.location.href = `/tools/${data.id}`;
+            }, 1000);
+        } else {
+            errorAlert.textContent = data.detail || 'Ошибка при создании инструмента';
+            errorAlert.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Создать инструмент';
+        }
+    } catch (error) {
+        errorAlert.textContent = 'Ошибка: ' + error.message;
+        errorAlert.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Создать инструмент';
+    }
+}
+</script>
+{% endblock %}
+

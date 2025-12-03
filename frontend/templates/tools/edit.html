@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать инструмент - {{ tool.name }}{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        display: block;
+    }
+    
+    body.iframe-page {
+        background: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        display: block;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">✏️ Редактировать инструмент: {{ tool.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form id="editToolForm" onsubmit="updateTool(event)">
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Описание</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ tool.description or '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Категория</label>
+                                    <input type="text" class="form-control" id="category" name="category" 
+                                           value="{{ tool.category or '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="entry_point" class="form-label">Точка входа (имя функции)</label>
+                                    <input type="text" class="form-control" id="entry_point" name="entry_point" 
+                                           value="{{ tool.entry_point or 'execute' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="code" class="form-label">Код</label>
+                            <textarea class="form-control font-monospace" id="code" name="code" rows="10">{{ tool.code or '' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="input_schema" class="form-label">Схема входных данных (JSON Schema)</label>
+                            <textarea class="form-control font-monospace" id="input_schema" name="input_schema" rows="5">{{ tool.input_schema | tojson(indent=2) if tool.input_schema else '{}' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Теги (через запятую)</label>
+                            <input type="text" class="form-control" id="tags" name="tags" 
+                                   value="{{ tool.tags|join(', ') if tool.tags else '' }}">
+                        </div>
+
+                        <div id="errorAlert" class="alert alert-danger" style="display: none;"></div>
+                        <div id="successAlert" class="alert alert-success" style="display: none;"></div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/tools/{{ tool.id }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-save"></i> Сохранить изменения
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function updateTool(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitBtn = document.getElementById('submitBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const successAlert = document.getElementById('successAlert');
+    
+    errorAlert.style.display = 'none';
+    successAlert.style.display = 'none';
+    
+    // Get form data
+    const formData = {
+        description: document.getElementById('description').value || null,
+        category: document.getElementById('category').value || null,
+        entry_point: document.getElementById('entry_point').value || 'execute',
+        code: document.getElementById('code').value || null,
+        input_schema: (() => {
+            const schemaText = document.getElementById('input_schema').value;
+            if (!schemaText.trim()) return {};
+            try {
+                return JSON.parse(schemaText);
+            } catch (e) {
+                throw new Error('Ошибка в JSON схеме: ' + e.message);
+            }
+        })(),
+        tags: document.getElementById('tags').value 
+            ? document.getElementById('tags').value.split(',').map(s => s.trim()).filter(s => s)
+            : null
+    };
+    
+    // Remove null values
+    Object.keys(formData).forEach(key => {
+        if (formData[key] === null) {
+            delete formData[key];
+        }
+    });
+    
+    // Disable form
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Сохранение...';
+    
+    try {
+        const response = await fetch('/api/tools/{{ tool.id }}', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            successAlert.textContent = 'Изменения сохранены! Перенаправление...';
+            successAlert.style.display = 'block';
+            
+            setTimeout(() => {
+                window.location.href = `/tools/${data.id}`;
+            }, 1000);
+        } else {
+            errorAlert.textContent = data.detail || 'Ошибка при сохранении изменений';
+            errorAlert.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-save"></i> Сохранить изменения';
+        }
+    } catch (error) {
+        errorAlert.textContent = 'Ошибка: ' + error.message;
+        errorAlert.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-save"></i> Сохранить изменения';
+    }
+}
+</script>
+{% endblock %}
+

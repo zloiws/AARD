@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tool.name }} - Инструмент{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        display: block;
+    }
+    
+    body.iframe-page {
+        background: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        display: block;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .metric-card {
+        text-align: center;
+        padding: 20px;
+    }
+    .metric-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 8px;
+    }
+    .metric-label {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+    .code-block {
+        background: #f4f4f4;
+        padding: 15px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>{{ tool.name }}</h1>
+            <p class="text-muted mb-0">{{ tool.description or 'Без описания' }}</p>
+        </div>
+        <div>
+            <a href="/tools/{{ tool.id }}/edit" class="btn btn-outline-primary me-2">
+                <i class="bi bi-pencil"></i> Редактировать
+            </a>
+            <a href="/tools" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Назад к списку
+            </a>
+        </div>
+    </div>
+
+    <!-- Статус и основная информация -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📋 Основная информация</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Статус:</strong>
+                            {% if tool.status == 'active' %}
+                                <span class="status-badge bg-success text-white ms-2">Активен</span>
+                            {% elif tool.status == 'draft' %}
+                                <span class="status-badge bg-warning text-dark ms-2">Черновик</span>
+                            {% elif tool.status == 'waiting_approval' %}
+                                <span class="status-badge bg-info text-white ms-2">Ожидает утверждения</span>
+                            {% elif tool.status == 'deprecated' %}
+                                <span class="status-badge bg-dark text-white ms-2">Устарел</span>
+                            {% elif tool.status == 'failed' %}
+                                <span class="status-badge bg-danger text-white ms-2">Ошибка</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Тип:</strong> <span class="ms-2">{{ tool.tool_type }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if tool.category %}
+                    <div class="mb-3">
+                        <strong>Категория:</strong> <span class="ms-2">{{ tool.category }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Точка входа:</strong> <span class="ms-2">{{ tool.entry_point }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Версия:</strong> <span class="ms-2">v{{ tool.version }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if tool.code %}
+                    <div class="mb-3">
+                        <strong>Код:</strong>
+                        <div class="code-block mt-2">{{ tool.code }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if tool.input_schema %}
+                    <div class="mb-3">
+                        <strong>Схема входных данных:</strong>
+                        <div class="code-block mt-2">{{ tool.input_schema | tojson(indent=2) }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <strong>Создан:</strong> 
+                            <span class="ms-2">{{ tool.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Обновлен:</strong> 
+                            <span class="ms-2">{{ tool.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if tool.last_used_at %}
+                    <div class="mt-3">
+                        <strong>Последнее использование:</strong> 
+                        <span class="ms-2">{{ tool.last_used_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Метрики -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Метрики</h5>
+                </div>
+                <div class="card-body">
+                    <div class="metric-card">
+                        <div class="metric-value">{{ metrics.total_executions }}</div>
+                        <div class="metric-label">Всего выполнений</div>
+                    </div>
+                    <hr>
+                    <div class="metric-card">
+                        <div class="metric-value text-success">{{ metrics.successful_executions }}</div>
+                        <div class="metric-label">Успешных</div>
+                    </div>
+                    <hr>
+                    <div class="metric-card">
+                        <div class="metric-value text-danger">{{ metrics.failed_executions }}</div>
+                        <div class="metric-label">Неудачных</div>
+                    </div>
+                    <hr>
+                    <div class="metric-card">
+                        <div class="metric-value">{{ metrics.success_rate }}</div>
+                        <div class="metric-label">Успешность</div>
+                    </div>
+                    {% if metrics.average_execution_time %}
+                    <hr>
+                    <div class="metric-card">
+                        <div class="metric-value">{{ (metrics.average_execution_time / 1000)|round(1) }}s</div>
+                        <div class="metric-label">Среднее время</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Действия -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">⚙️ Действия</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        {% if tool.status == 'draft' or tool.status == 'deprecated' or tool.status == 'failed' %}
+                        <button type="button" class="btn btn-success" onclick="activateTool('{{ tool.id }}')">
+                            <i class="bi bi-play-circle"></i> Активировать
+                        </button>
+                        {% endif %}
+                        {% if tool.status == 'active' %}
+                        <button type="button" class="btn btn-warning" onclick="deactivateTool('{{ tool.id }}')">
+                            <i class="bi bi-pause-circle"></i> Деактивировать
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-danger" onclick="deleteTool('{{ tool.id }}')">
+                            <i class="bi bi-trash"></i> Удалить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function activateTool(toolId) {
+    if (!confirm('Активировать инструмент?')) return;
+    
+    try {
+        const response = await fetch(`/api/tools/${toolId}/activate`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            const data = await response.json();
+            alert('Ошибка: ' + (data.detail || 'Не удалось активировать инструмент'));
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function deactivateTool(toolId) {
+    if (!confirm('Деактивировать инструмент?')) return;
+    
+    try {
+        const response = await fetch(`/api/tools/${toolId}/deactivate`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            const data = await response.json();
+            alert('Ошибка: ' + (data.detail || 'Не удалось деактивировать инструмент'));
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function deleteTool(toolId) {
+    if (!confirm('Удалить инструмент? Это действие нельзя отменить.')) return;
+    
+    try {
+        const response = await fetch(`/api/tools/${toolId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            window.location.href = '/tools';
+        } else {
+            const data = await response.json();
+            alert('Ошибка: ' + (data.detail || 'Не удалось удалить инструмент'));
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+</script>
+{% endblock %}
+
