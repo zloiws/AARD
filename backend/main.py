@@ -136,6 +136,10 @@ app.include_router(health.router)
 app.include_router(agents.router)
 app.include_router(tools.router)
 
+# A2A communication
+from app.api.routes import a2a
+app.include_router(a2a.router)
+
 # Evolution system routers
 from app.api.routes import approvals, artifacts, prompts, plans
 app.include_router(approvals.router)
