@@ -172,17 +172,19 @@ class BaseAgent(ABC):
                 
                 result_text = response.response if hasattr(response, "response") else str(response)
                 
-                add_span_attributes(span, {
-                    "agent.llm.success": True,
-                    "agent.llm.response_length": len(result_text),
-                })
+                if span:
+                    add_span_attributes(
+                        agent_llm_success=True,
+                        agent_llm_response_length=len(result_text)
+                    )
                 
                 return result_text
             except Exception as e:
-                add_span_attributes(span, {
-                    "agent.llm.success": False,
-                    "agent.llm.error": str(e),
-                })
+                if span:
+                    add_span_attributes(
+                        agent_llm_success=False,
+                        agent_llm_error=str(e)
+                    )
                 logger.error(
                     f"LLM call failed for agent {self.name}",
                     exc_info=True,
@@ -345,10 +347,11 @@ class BaseAgent(ABC):
                 tool_data = self.get_tool_by_name(tool_name)
                 if not tool_data:
                     error_msg = f"Tool '{tool_name}' not found or not accessible"
-                    add_span_attributes(span, {
-                        "tool.error": error_msg,
-                        "tool.success": False,
-                    })
+                    if span:
+                        add_span_attributes(
+                            tool_error=error_msg,
+                            tool_success=False
+                        )
                     return {
                         "status": "failed",
                         "result": None,
@@ -359,10 +362,11 @@ class BaseAgent(ABC):
                 # Check permissions
                 if not self._check_permissions(f"use_tool:{tool_name}"):
                     error_msg = f"Agent {self.name} does not have permission to use tool {tool_name}"
-                    add_span_attributes(span, {
-                        "tool.error": error_msg,
-                        "tool.success": False,
-                    })
+                    if span:
+                        add_span_attributes(
+                            tool_error=error_msg,
+                            tool_success=False
+                        )
                     return {
                         "status": "failed",
                         "result": None,
@@ -379,10 +383,11 @@ class BaseAgent(ABC):
                 # Execute tool
                 result = await tool.execute(**kwargs)
                 
-                add_span_attributes(span, {
-                    "tool.success": result["status"] == "success",
-                    "tool.execution_time_ms": result.get("metadata", {}).get("execution_time_ms", 0),
-                })
+                if span:
+                    add_span_attributes(
+                        tool_success=result["status"] == "success",
+                        tool_execution_time_ms=result.get("metadata", {}).get("execution_time_ms", 0)
+                    )
                 
                 logger.info(
                     f"Agent {self.name} used tool {tool_name}",
@@ -396,10 +401,11 @@ class BaseAgent(ABC):
                 return result
                 
             except Exception as e:
-                add_span_attributes(span, {
-                    "tool.error": str(e),
-                    "tool.success": False,
-                })
+                if span:
+                    add_span_attributes(
+                        tool_error=str(e),
+                        tool_success=False
+                    )
                 logger.error(
                     f"Error using tool {tool_name} for agent {self.name}",
                     exc_info=True,
