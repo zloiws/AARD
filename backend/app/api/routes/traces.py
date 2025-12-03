@@ -11,7 +11,7 @@ from sqlalchemy import and_, or_
 from app.core.database import get_db
 from app.models.trace import ExecutionTrace
 from app.core.logging_config import LoggingConfig
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -38,8 +38,7 @@ class TraceResponse(BaseModel):
     error_type: Optional[str]
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TraceListResponse(BaseModel):

@@ -13,6 +13,9 @@ from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
+# Track if exporter is shutdown
+_shutdown = False
+
 
 class DatabaseSpanExporter(SpanExporter):
     """
@@ -22,6 +25,8 @@ class DatabaseSpanExporter(SpanExporter):
     def __init__(self):
         """Initialize database exporter"""
         super().__init__()
+        global _shutdown
+        _shutdown = False
         logger.info("DatabaseSpanExporter initialized")
     
     def export(self, spans: List[ReadableSpan]) -> SpanExportResult:
@@ -34,6 +39,12 @@ class DatabaseSpanExporter(SpanExporter):
         Returns:
             SpanExportResult indicating success or failure
         """
+        global _shutdown
+        
+        # Check if exporter is shutdown - silently drop spans
+        if _shutdown:
+            return SpanExportResult.SUCCESS
+        
         if not spans:
             return SpanExportResult.SUCCESS
         
@@ -43,18 +54,23 @@ class DatabaseSpanExporter(SpanExporter):
                 try:
                     self._export_span(span, db)
                 except Exception as e:
-                    logger.error(
-                        f"Failed to export span {span.context.span_id}: {e}",
-                        exc_info=True
-                    )
+                    # Only log if not shutdown (to avoid noise during shutdown)
+                    if not _shutdown:
+                        logger.error(
+                            f"Failed to export span {span.context.span_id}: {e}",
+                            exc_info=True
+                        )
                     # Continue with other spans even if one fails
             
             db.commit()
-            logger.debug(f"Exported {len(spans)} spans to database")
+            if not _shutdown:
+                logger.debug(f"Exported {len(spans)} spans to database")
             return SpanExportResult.SUCCESS
             
         except Exception as e:
-            logger.error(f"Failed to export spans to database: {e}", exc_info=True)
+            # Only log if not shutdown
+            if not _shutdown:
+                logger.error(f"Failed to export spans to database: {e}", exc_info=True)
             db.rollback()
             return SpanExportResult.FAILURE
         finally:
@@ -80,6 +96,7 @@ class DatabaseSpanExporter(SpanExporter):
         error_message = None
         error_type = None
         
+        # Check status code
         if span.status.status_code == StatusCode.ERROR:
             status = "error"
             if span.status.description:
@@ -89,8 +106,39 @@ class DatabaseSpanExporter(SpanExporter):
                 error_type = span.attributes.get("error.type") or span.attributes.get("exception.type")
         elif span.status.status_code == StatusCode.OK:
             status = "success"
+        elif span.status.status_code == StatusCode.UNSET:
+            # UNSET means the span completed without explicit status - treat as success
+            # unless there's an error in attributes
+            if span.attributes:
+                # Check for error indicators in attributes
+                has_error = (
+                    span.attributes.get("error") or
+                    span.attributes.get("exception.type") or
+                    span.attributes.get("error.type") or
+                    span.attributes.get("http.status_code") and int(span.attributes.get("http.status_code", 200)) >= 400
+                )
+                if has_error:
+                    status = "error"
+                    error_message = span.attributes.get("error.message") or span.attributes.get("exception.message")
+                    error_type = span.attributes.get("error.type") or span.attributes.get("exception.type")
+                else:
+                    status = "success"
+            else:
+                # No attributes, no explicit error - treat as success
+                status = "success"
         else:
-            status = "timeout"  # or unknown
+            # Unknown status code - default to success if no error indicators
+            status = "success"
+            if span.attributes:
+                has_error = (
+                    span.attributes.get("error") or
+                    span.attributes.get("exception.type") or
+                    span.attributes.get("error.type")
+                )
+                if has_error:
+                    status = "error"
+                    error_message = span.attributes.get("error.message") or span.attributes.get("exception.message")
+                    error_type = span.attributes.get("error.type") or span.attributes.get("exception.type")
         
         # Calculate duration
         duration_ms = None
@@ -192,5 +240,7 @@ class DatabaseSpanExporter(SpanExporter):
     
     def shutdown(self):
         """Shutdown the exporter"""
+        global _shutdown
+        _shutdown = True
         logger.info("DatabaseSpanExporter shutdown")
 

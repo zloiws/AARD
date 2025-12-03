@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Трассировка {{ trace_id[:16] }}... - AARD{% endblock %}
+
+{% block extra_css %}
+<style>
+    .trace-detail-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        font-size: 28px;
+        margin-bottom: 10px;
+        font-family: monospace;
+    }
+    
+    .page-header .stats {
+        display: flex;
+        gap: 30px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    
+    .stat-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    .trace-info-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .trace-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    
+    .trace-info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .trace-info-label {
+        font-size: 12px;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .trace-info-value {
+        font-size: 14px;
+        color: #212529;
+        font-family: monospace;
+    }
+    
+    .spans-tree {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .spans-tree h2 {
+        margin-bottom: 20px;
+        color: #212529;
+    }
+    
+    .span-item {
+        margin-left: 0;
+        margin-bottom: 10px;
+        padding: 15px;
+        border-left: 3px solid #667eea;
+        background: #f8f9fa;
+        border-radius: 6px;
+    }
+    
+    .span-item.child {
+        margin-left: 30px;
+        border-left-color: #28a745;
+    }
+    
+    .span-item.error {
+        border-left-color: #dc3545;
+        background: #fff5f5;
+    }
+    
+    .span-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 10px;
+    }
+    
+    .span-name {
+        font-weight: 600;
+        font-size: 16px;
+        color: #212529;
+    }
+    
+    .span-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .span-status.success {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .span-status.error {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .span-status.timeout {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .span-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #e9ecef;
+        font-size: 13px;
+    }
+    
+    .span-detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    
+    .span-detail-label {
+        color: #6c757d;
+        font-size: 11px;
+    }
+    
+    .span-detail-value {
+        color: #212529;
+        font-weight: 500;
+    }
+    
+    .span-attributes {
+        margin-top: 10px;
+        padding: 10px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .span-attributes pre {
+        margin: 0;
+        font-size: 12px;
+        overflow-x: auto;
+    }
+    
+    .btn-back {
+        display: inline-block;
+        padding: 10px 20px;
+        background: white;
+        color: #667eea;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+    
+    .btn-back:hover {
+        background: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="trace-detail-container">
+    <a href="/traces" class="btn-back">← Назад к списку</a>
+    
+    <div class="page-header">
+        <h1>Трассировка: {{ trace_id }}</h1>
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.total }}</div>
+                <div class="stat-label">Всего spans</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.success }}</div>
+                <div class="stat-label">Успешно</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.error }}</div>
+                <div class="stat-label">Ошибки</div>
+            </div>
+            {% if total_duration %}
+            <div class="stat-item">
+                <div class="stat-value">{{ total_duration }} мс</div>
+                <div class="stat-label">Общая длительность</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if start_time %}
+    <div class="trace-info-panel">
+        <div class="trace-info-grid">
+            <div class="trace-info-item">
+                <div class="trace-info-label">Начало</div>
+                <div class="trace-info-value">{{ start_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] }}</div>
+            </div>
+            {% if end_time %}
+            <div class="trace-info-item">
+                <div class="trace-info-label">Окончание</div>
+                <div class="trace-info-value">{{ end_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] }}</div>
+            </div>
+            {% endif %}
+            {% if total_duration %}
+            <div class="trace-info-item">
+                <div class="trace-info-label">Длительность</div>
+                <div class="trace-info-value">{{ total_duration }} мс</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="spans-tree">
+        <h2>Spans ({{ spans|length }})</h2>
+        {% if error %}
+        <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px;">
+            Ошибка: {{ error }}
+        </div>
+        {% elif spans %}
+            {% for span in spans %}
+            <div class="span-item {% if span.status == 'error' %}error{% endif %} {% if span.parent_span_id %}child{% endif %}">
+                <div class="span-header">
+                    <div class="span-name">{{ span.operation_name }}</div>
+                    {% if span.status %}
+                    <span class="span-status {{ span.status }}">{{ span.status }}</span>
+                    {% endif %}
+                </div>
+                <div class="span-details">
+                    <div class="span-detail-item">
+                        <div class="span-detail-label">Span ID</div>
+                        <div class="span-detail-value">{{ span.span_id }}</div>
+                    </div>
+                    {% if span.parent_span_id %}
+                    <div class="span-detail-item">
+                        <div class="span-detail-label">Parent Span ID</div>
+                        <div class="span-detail-value">{{ span.parent_span_id }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="span-detail-item">
+                        <div class="span-detail-label">Начало</div>
+                        <div class="span-detail-value">{{ span.start_time.strftime('%H:%M:%S.%f')[:-3] }}</div>
+                    </div>
+                    {% if span.end_time %}
+                    <div class="span-detail-item">
+                        <div class="span-detail-label">Окончание</div>
+                        <div class="span-detail-value">{{ span.end_time.strftime('%H:%M:%S.%f')[:-3] }}</div>
+                    </div>
+                    {% endif %}
+                    {% if span.duration_ms %}
+                    <div class="span-detail-item">
+                        <div class="span-detail-label">Длительность</div>
+                        <div class="span-detail-value">{{ span.duration_ms }} мс</div>
+                    </div>
+                    {% endif %}
+                    {% if span.error_message %}
+                    <div class="span-detail-item" style="grid-column: 1 / -1;">
+                        <div class="span-detail-label">Ошибка</div>
+                        <div class="span-detail-value" style="color: #dc3545;">{{ span.error_message }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if span.attributes %}
+                <div class="span-attributes">
+                    <strong>Атрибуты:</strong>
+                    <pre>{{ span.attributes | tojson(indent=2) }}</pre>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: #6c757d;">
+            Spans не найдены
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

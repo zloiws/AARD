@@ -159,3 +159,35 @@ def add_span_attributes(**kwargs):
         for key, value in kwargs.items():
             span.set_attribute(key, value)
 
+
+def shutdown_tracing():
+    """
+    Shutdown OpenTelemetry tracing
+    
+    This should be called during application shutdown to properly
+    flush and close all spans and exporters.
+    
+    Note: Some spans may still be exported after shutdown during reload,
+    which is normal and generates a harmless warning.
+    """
+    global _tracer_provider, _configured
+    
+    if not _configured or _tracer_provider is None:
+        return
+    
+    try:
+        logger.info("Shutting down OpenTelemetry tracing...")
+        # Force flush all pending spans before shutdown
+        try:
+            _tracer_provider.force_flush(timeout_millis=5000)
+        except Exception:
+            pass  # Ignore flush errors during shutdown
+        
+        _tracer_provider.shutdown()
+        logger.info("OpenTelemetry tracing shutdown complete")
+    except Exception as e:
+        logger.warning(f"Error during tracing shutdown: {e}")
+    finally:
+        _tracer_provider = None
+        _configured = False
+

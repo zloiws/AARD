@@ -24,11 +24,25 @@ AARD начинает как "голый мозг" (LLM через Ollama) с в
 ```
 aard/
 ├── backend/          # Backend (FastAPI)
+│   ├── app/         # Основное приложение
+│   ├── tests/       # Тесты
+│   │   └── integration/  # Интеграционные тесты
+│   └── alembic/     # Миграции БД
 ├── frontend/         # Frontend (HTMX + Jinja2)
 ├── docker/           # Docker конфигурации
 ├── config/           # Конфигурационные файлы
 └── docs/             # Документация
+    ├── guides/      # Актуальные руководства
+    ├── archive/     # Архивные документы
+    └── ТЗ AARD.md   # Техническое задание
 ```
+
+## Документация
+
+- **Установка и настройка:** `docs/guides/SETUP.md`
+- **Запуск сервера:** `docs/guides/START_SERVER.md`
+- **Настройка логирования:** `docs/guides/LOGGING.md`
+- **Техническое задание:** `docs/ТЗ AARD.md`
 
 ## Разработка
 

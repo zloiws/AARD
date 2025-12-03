@@ -4,7 +4,7 @@ API routes for managing models (capabilities, priority, etc.)
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy.orm import Session
 from datetime import datetime
 import httpx
@@ -26,6 +26,8 @@ class ModelUpdate(BaseModel):
 
 class ModelResponse(BaseModel):
     """Response model for model"""
+    model_config = ConfigDict(protected_namespaces=(), from_attributes=True)
+    
     id: str
     name: str
     model_name: str

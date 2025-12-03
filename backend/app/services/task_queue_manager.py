@@ -9,6 +9,13 @@ from sqlalchemy import and_, or_, desc
 
 from app.models.task_queue import TaskQueue, QueueTask
 from app.core.logging_config import LoggingConfig
+from app.core.metrics import (
+    queue_tasks_total,
+    queue_tasks_processed_total,
+    queue_task_duration_seconds,
+    queue_size
+)
+import time
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -109,6 +116,19 @@ class TaskQueueManager:
         self.db.commit()
         self.db.refresh(task)
         
+        # Record queue metrics
+        queue_tasks_total.labels(
+            queue_name=queue.name,
+            priority=priority
+        ).inc()
+        
+        # Update queue size gauge
+        pending_count = self.db.query(QueueTask).filter(
+            QueueTask.queue_id == queue_id,
+            QueueTask.status == "pending"
+        ).count()
+        queue_size.labels(queue_name=queue.name, status="pending").set(pending_count)
+        
         logger.debug(
             f"Added task to queue {queue.name}",
             extra={
@@ -178,6 +198,18 @@ class TaskQueueManager:
             self.db.commit()
             self.db.refresh(task)
             
+            # Update queue size
+            pending_count = self.db.query(QueueTask).filter(
+                QueueTask.queue_id == queue_id,
+                QueueTask.status == "pending"
+            ).count()
+            processing_count = self.db.query(QueueTask).filter(
+                QueueTask.queue_id == queue_id,
+                QueueTask.status == "processing"
+            ).count()
+            queue_size.labels(queue_name=queue.name, status="pending").set(pending_count)
+            queue_size.labels(queue_name=queue.name, status="processing").set(processing_count)
+            
             logger.debug(
                 f"Assigned task to worker {worker_id}",
                 extra={
@@ -209,8 +241,38 @@ class TaskQueueManager:
         task.completed_at = datetime.utcnow()
         task.assigned_worker = None
         
+        # Calculate processing duration
+        processing_duration = None
+        if task.started_at:
+            processing_duration = (task.completed_at - task.started_at).total_seconds()
+        
         self.db.commit()
         self.db.refresh(task)
+        
+        # Update metrics
+        queue = self.get_queue(task.queue_id)
+        if queue:
+            queue_tasks_processed_total.labels(
+                queue_name=queue.name,
+                status="success"
+            ).inc()
+            
+            if processing_duration is not None:
+                queue_task_duration_seconds.labels(
+                    queue_name=queue.name
+                ).observe(processing_duration)
+            
+            # Update queue size
+            pending_count = self.db.query(QueueTask).filter(
+                QueueTask.queue_id == task.queue_id,
+                QueueTask.status == "pending"
+            ).count()
+            processing_count = self.db.query(QueueTask).filter(
+                QueueTask.queue_id == task.queue_id,
+                QueueTask.status == "processing"
+            ).count()
+            queue_size.labels(queue_name=queue.name, status="pending").set(pending_count)
+            queue_size.labels(queue_name=queue.name, status="processing").set(processing_count)
         
         logger.debug(f"Task {task_id} completed")
     
@@ -256,6 +318,11 @@ class TaskQueueManager:
             task.error_message = error_message
             task.assigned_worker = None
             task.completed_at = datetime.utcnow()
+            
+            # Calculate processing duration
+            processing_duration = None
+            if task.started_at:
+                processing_duration = (task.completed_at - task.started_at).total_seconds()
             
             logger.warning(
                 f"Task {task_id} failed permanently after {task.retry_count} retries",

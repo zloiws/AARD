@@ -11,7 +11,7 @@ from sqlalchemy import and_, or_, desc
 from app.core.database import get_db
 from app.models.request_log import RequestLog, RequestConsequence
 from app.core.logging_config import LoggingConfig
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -20,6 +20,8 @@ router = APIRouter(prefix="/api/requests", tags=["requests"])
 
 class RequestLogResponse(BaseModel):
     """Request log response model"""
+    model_config = ConfigDict(protected_namespaces=(), from_attributes=True)
+    
     id: str
     request_type: str
     status: str
@@ -37,13 +39,12 @@ class RequestLogResponse(BaseModel):
     session_id: Optional[str]
     trace_id: Optional[str]
     created_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 
 class RequestLogDetailResponse(BaseModel):
     """Detailed request log response model"""
+    model_config = ConfigDict(protected_namespaces=(), from_attributes=True)
+    
     id: str
     request_type: str
     request_data: dict
@@ -66,9 +67,6 @@ class RequestLogDetailResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     consequences: List[dict]
-    
-    class Config:
-        from_attributes = True
 
 
 class RequestListResponse(BaseModel):

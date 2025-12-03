@@ -1,4 +1,3 @@
 """
-Tests package
+Tests package for AARD backend
 """
-

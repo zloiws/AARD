@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 from contextvars import ContextVar
 from logging.handlers import TimedRotatingFileHandler
-from pythonjsonlogger import jsonlogger
+import json
+from datetime import datetime
 from app.core.config import get_settings
 
 # Context variables for request context
@@ -60,29 +61,60 @@ class SensitiveDataFilter(logging.Filter):
         return True
 
 
-class ContextualFormatter(jsonlogger.JsonFormatter):
-    """JSON formatter with context support"""
+class ContextualFormatter(logging.Formatter):
+    """JSON formatter with context support (custom implementation without external dependencies)"""
     
-    def add_fields(self, log_record: Dict[str, Any], record: logging.LogRecord, message_dict: Dict[str, Any]) -> None:
-        """Add context fields to log record"""
-        super().add_fields(log_record, record, message_dict)
+    def __init__(self, *args, **kwargs):
+        # Remove format string if provided (we don't use it for JSON)
+        kwargs.pop('fmt', None)
+        # Store datefmt if provided
+        self.datefmt = kwargs.pop('datefmt', None)
+        super().__init__(*args, **kwargs)
+    
+    def format(self, record: logging.LogRecord) -> str:
+        """Format log record as JSON"""
+        log_dict = {
+            'timestamp': self.formatTime(record, self.datefmt),
+            'level': record.levelname,
+            'name': record.name,
+            'logger': record.name,
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno,
+            'message': record.getMessage(),
+        }
         
         # Add context from contextvars
         ctx = request_context.get({})
         if ctx:
-            log_record.update(ctx)
+            log_dict.update(ctx)
         
-        # Add standard fields
-        log_record['timestamp'] = self.formatTime(record, self.datefmt)
-        log_record['level'] = record.levelname
-        log_record['logger'] = record.name
-        log_record['module'] = record.module
-        log_record['function'] = record.funcName
-        log_record['line'] = record.lineno
+        # Add extra fields from record
+        if hasattr(record, 'taskName') and record.taskName:
+            log_dict['taskName'] = record.taskName
         
         # Add exception info if present
         if record.exc_info:
-            log_record['exception'] = self.formatException(record.exc_info)
+            log_dict['exception'] = self.formatException(record.exc_info)
+        
+        # Add any extra fields from record (from extra= parameter in logging calls)
+        for key, value in record.__dict__.items():
+            if key not in ['name', 'msg', 'args', 'created', 'filename', 
+                          'funcName', 'levelname', 'levelno', 'lineno', 
+                          'module', 'msecs', 'message', 'pathname', 'process',
+                          'processName', 'relativeCreated', 'thread', 'threadName',
+                          'exc_info', 'exc_text', 'stack_info', 'taskName',
+                          'exc_info', 'exc_text', 'stack_info']:
+                # Only include serializable values
+                try:
+                    # Test if serializable
+                    json.dumps(value, default=str)
+                    log_dict[key] = value
+                except (TypeError, ValueError):
+                    # Convert non-serializable to string
+                    log_dict[key] = str(value)
+        
+        return json.dumps(log_dict, ensure_ascii=False, default=str)
 
 
 class LoggingConfig:
@@ -138,7 +170,6 @@ class LoggingConfig:
         # Choose formatter based on settings
         if settings.log_format.lower() == "json":
             formatter = ContextualFormatter(
-                '%(timestamp)s %(level)s %(name)s %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S'
             )
         else:

@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Трассировки - AARD{% endblock %}
+
+{% block extra_css %}
+<style>
+    .traces-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+    
+    .page-header .stats {
+        display: flex;
+        gap: 30px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    
+    .stat-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    .filters-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .filters-panel h3 {
+        margin-bottom: 15px;
+        color: #495057;
+    }
+    
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .filter-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #6c757d;
+    }
+    
+    .filter-group input,
+    .filter-group select {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .traces-list {
+        display: grid;
+        gap: 15px;
+    }
+    
+    .trace-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    
+    .trace-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .trace-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 15px;
+    }
+    
+    .trace-id {
+        font-family: monospace;
+        font-size: 13px;
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .trace-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .trace-status.success {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .trace-status.error {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .trace-status.timeout {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .trace-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .trace-info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    
+    .trace-info-label {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .trace-info-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #212529;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 30px;
+        padding: 20px;
+    }
+    
+    .pagination button {
+        padding: 8px 16px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .pagination button:hover:not(:disabled) {
+        background: #f8f9fa;
+    }
+    
+    .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .pagination .page-info {
+        font-size: 14px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="traces-container">
+    <div class="page-header">
+        <h1>Трассировки выполнения</h1>
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.total }}</div>
+                <div class="stat-label">Всего</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.success }}</div>
+                <div class="stat-label">Успешно</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.error }}</div>
+                <div class="stat-label">Ошибки</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ stats.timeout }}</div>
+                <div class="stat-label">Таймауты</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="filters-panel">
+        <h3>Фильтры</h3>
+        <form method="get" action="/traces" class="filters-grid">
+            <div class="filter-group">
+                <label>Trace ID</label>
+                <input type="text" name="trace_id" value="{{ filters.trace_id or '' }}" placeholder="Trace ID">
+            </div>
+            <div class="filter-group">
+                <label>Task ID</label>
+                <input type="text" name="task_id" value="{{ filters.task_id or '' }}" placeholder="Task ID">
+            </div>
+            <div class="filter-group">
+                <label>Plan ID</label>
+                <input type="text" name="plan_id" value="{{ filters.plan_id or '' }}" placeholder="Plan ID">
+            </div>
+            <div class="filter-group">
+                <label>Статус</label>
+                <select name="status">
+                    <option value="">Все</option>
+                    <option value="success" {% if filters.status == 'success' %}selected{% endif %}>Успешно</option>
+                    <option value="error" {% if filters.status == 'error' %}selected{% endif %}>Ошибка</option>
+                    <option value="timeout" {% if filters.status == 'timeout' %}selected{% endif %}>Таймаут</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Операция</label>
+                <input type="text" name="operation_name" value="{{ filters.operation_name or '' }}" placeholder="Название операции">
+            </div>
+            <div class="filter-group" style="align-items: flex-end;">
+                <button type="submit" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">Применить</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="traces-list">
+        {% if error %}
+        <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px;">
+            Ошибка: {{ error }}
+        </div>
+        {% elif traces %}
+            {% for trace in traces %}
+            <div class="trace-card" onclick="window.location.href='/traces/{{ trace.trace_id }}'">
+                <div class="trace-header">
+                    <div>
+                        <div class="trace-id">{{ trace.trace_id[:16] }}...</div>
+                        <div style="margin-top: 5px; font-size: 16px; font-weight: 600; color: #212529;">
+                            {{ trace.operation_name }}
+                        </div>
+                    </div>
+                    {% if trace.status %}
+                    <span class="trace-status {{ trace.status }}">{{ trace.status }}</span>
+                    {% endif %}
+                </div>
+                <div class="trace-info">
+                    <div class="trace-info-item">
+                        <div class="trace-info-label">Начало</div>
+                        <div class="trace-info-value">{{ trace.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                    </div>
+                    {% if trace.end_time %}
+                    <div class="trace-info-item">
+                        <div class="trace-info-label">Окончание</div>
+                        <div class="trace-info-value">{{ trace.end_time.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                    </div>
+                    {% endif %}
+                    {% if trace.duration_ms %}
+                    <div class="trace-info-item">
+                        <div class="trace-info-label">Длительность</div>
+                        <div class="trace-info-value">{{ trace.duration_ms }} мс</div>
+                    </div>
+                    {% endif %}
+                    {% if trace.task_id %}
+                    <div class="trace-info-item">
+                        <div class="trace-info-label">Task ID</div>
+                        <div class="trace-info-value" style="font-family: monospace; font-size: 12px;">{{ trace.task_id[:8] }}...</div>
+                    </div>
+                    {% endif %}
+                    {% if trace.plan_id %}
+                    <div class="trace-info-item">
+                        <div class="trace-info-label">Plan ID</div>
+                        <div class="trace-info-value" style="font-family: monospace; font-size: 12px;">{{ trace.plan_id[:8] }}...</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div style="background: white; padding: 40px; border-radius: 12px; text-align: center; color: #6c757d;">
+            Трассировки не найдены
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        <button onclick="goToPage({{ page - 1 }})" {% if page == 1 %}disabled{% endif %}>Назад</button>
+        <span class="page-info">Страница {{ page }} из {{ total_pages }}</span>
+        <button onclick="goToPage({{ page + 1 }})" {% if page >= total_pages %}disabled{% endif %}>Вперед</button>
+    </div>
+    {% endif %}
+    
+    <script>
+        function goToPage(page) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('page', page);
+            window.location.href = url.toString();
+        }
+    </script>
+</div>
+{% endblock %}
+

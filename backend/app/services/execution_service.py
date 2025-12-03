@@ -14,8 +14,15 @@ from app.models.task import Task, TaskStatus
 from app.core.ollama_client import OllamaClient
 from app.core.logging_config import LoggingConfig
 from app.core.tracing import get_tracer, add_span_attributes
+from app.core.metrics import (
+    plan_executions_total,
+    plan_execution_duration_seconds,
+    plan_steps_total,
+    plan_step_duration_seconds
+)
 from app.services.ollama_service import OllamaService
 from app.services.checkpoint_service import CheckpointService
+import time
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -47,6 +54,9 @@ class StepExecutor:
         step_id = step.get("step_id", "unknown")
         step_type = step.get("type", "action")
         description = step.get("description", "")
+        
+        # Start metrics tracking
+        step_start_time = time.time()
         
         result = {
             "step_id": step_id,
@@ -107,6 +117,17 @@ class StepExecutor:
             if result["started_at"]:
                 result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
             
+            # Record step metrics
+            step_duration = time.time() - step_start_time
+            step_status = result.get("status", "unknown")
+            plan_steps_total.labels(
+                step_type=step_type,
+                status=step_status
+            ).inc()
+            plan_step_duration_seconds.labels(
+                step_type=step_type
+            ).observe(step_duration)
+            
         except Exception as e:
             logger.error(
                 "Exception in step execution",
@@ -124,6 +145,16 @@ class StepExecutor:
             result["completed_at"] = datetime.utcnow()
             if result["started_at"]:
                 result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
+            
+            # Record failed step metrics
+            step_duration = time.time() - step_start_time
+            plan_steps_total.labels(
+                step_type=step_type,
+                status="failed"
+            ).inc()
+            plan_step_duration_seconds.labels(
+                step_type=step_type
+            ).observe(step_duration)
         
         return result
     
@@ -297,7 +328,8 @@ class ExecutionService:
         if plan.status != "approved":
             raise ValueError(f"Plan must be approved before execution (current: {plan.status})")
         
-        # Start execution
+        # Start execution and metrics tracking
+        plan_start_time = time.time()
         plan.status = "executing"
         plan.current_step = 0
         self.db.commit()
@@ -313,6 +345,10 @@ class ExecutionService:
         
         if not steps:
             plan.status = "failed"
+            # Record failed plan metrics
+            plan_duration = time.time() - plan_start_time
+            plan_executions_total.labels(status="failed").inc()
+            plan_execution_duration_seconds.labels(status="failed").observe(plan_duration)
             self.db.commit()
             return plan
         
@@ -440,6 +476,16 @@ class ExecutionService:
         # Calculate actual duration
         if plan.created_at:
             plan.actual_duration = int((datetime.utcnow() - plan.created_at).total_seconds())
+        
+        # Record plan execution metrics
+        plan_duration = time.time() - plan_start_time
+        plan_status = plan.status
+        plan_executions_total.labels(
+            status=plan_status
+        ).inc()
+        plan_execution_duration_seconds.labels(
+            status=plan_status
+        ).observe(plan_duration)
         
         self.db.commit()
         self.db.refresh(plan)

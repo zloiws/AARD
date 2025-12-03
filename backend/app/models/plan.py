@@ -50,7 +50,7 @@ class Plan(Base):
     
     # Relationships
     task = relationship("Task", backref="plans")
-    approval_request = relationship("ApprovalRequest", back_populates="plan", uselist=False)
+    approval_request = relationship("ApprovalRequest", back_populates="plan", uselist=False, overlaps="approval_requests")
     traces = relationship("ExecutionTrace", back_populates="plan", foreign_keys="ExecutionTrace.plan_id")
     
     def __repr__(self):

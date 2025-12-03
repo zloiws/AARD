@@ -40,7 +40,7 @@ class ExecutionTrace(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships (using strings to avoid circular imports)
-    task = relationship("Task", foreign_keys=[task_id])
+    task = relationship("Task", foreign_keys=[task_id], overlaps="traces")
     plan = relationship("Plan", foreign_keys=[plan_id])
     
     # Indexes for common queries

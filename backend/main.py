@@ -1,6 +1,14 @@
 """
 Main FastAPI application entry point
 """
+import warnings
+# Suppress pkg_resources deprecation warning from opentelemetry
+warnings.filterwarnings('ignore', message='.*pkg_resources is deprecated.*', category=UserWarning)
+# Suppress Pydantic protected namespace warnings
+warnings.filterwarnings('ignore', message='.*has conflict with protected namespace.*', category=UserWarning)
+# Suppress OpenTelemetry shutdown warnings (spans dropped after shutdown is normal)
+warnings.filterwarnings('ignore', message='.*Already shutdown.*', category=UserWarning)
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -12,8 +20,12 @@ import logging
 from app.core.config import get_settings
 from app.core.logging_config import LoggingConfig
 from app.core.middleware import LoggingContextMiddleware
-from app.core.tracing import configure_tracing
-from app.api.routes import chat, pages, models, servers, approvals_pages, logging as logging_routes, traces, requests, queues, checkpoints
+from app.core.tracing import configure_tracing, shutdown_tracing
+from app.api.routes import (
+    chat, pages, models, servers, approvals_pages, logging as logging_routes,
+    traces, traces_pages, requests, queues, checkpoints, metrics, health,
+    artifacts_pages, settings_pages, models_management, plans_pages
+)
 
 # Configure logging first
 LoggingConfig.configure()
@@ -30,9 +42,11 @@ async def lifespan(app: FastAPI):
     # Startup
     settings = get_settings()
     logger.info(f"Starting {settings.app_name} in {settings.app_env} mode...")
+    configure_tracing(app)
     yield
     # Shutdown
     logger.info(f"Shutting down {settings.app_name}...")
+    shutdown_tracing()
 
 
 # Create FastAPI app
@@ -45,11 +59,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure OpenTelemetry tracing (after app creation for instrumentation)
-configure_tracing(app)
+# OpenTelemetry tracing is configured in lifespan startup
 
 # Add logging context middleware (before CORS to capture all requests)
 app.add_middleware(LoggingContextMiddleware)
+# Add metrics middleware
+from app.core.middleware_metrics import MetricsMiddleware
+app.add_middleware(MetricsMiddleware)
 
 # Configure CORS
 app.add_middleware(
@@ -103,6 +119,8 @@ app.include_router(traces.router)
 app.include_router(requests.router)
 app.include_router(queues.router)
 app.include_router(checkpoints.router)
+app.include_router(metrics.router)
+app.include_router(health.router)
 
 # Evolution system routers
 from app.api.routes import approvals, artifacts, prompts, plans
@@ -113,14 +131,11 @@ app.include_router(plans.router)
 
 # Evolution system web pages
 app.include_router(approvals_pages.router)
-from app.api.routes import artifacts_pages
 app.include_router(artifacts_pages.router)
-from app.api.routes import settings_pages
 app.include_router(settings_pages.router)
-from app.api.routes import models_management
 app.include_router(models_management.router)
-from app.api.routes import plans_pages
 app.include_router(plans_pages.router)
+app.include_router(traces_pages.router)
 
 
 @app.get("/")
@@ -135,10 +150,7 @@ async def root():
     }
 
 
-@app.get("/health")
-async def health():
-    """Health check endpoint"""
-    return {"status": "healthy"}
+# Health check endpoints are in app.api.routes.health
 
 
 if __name__ == "__main__":

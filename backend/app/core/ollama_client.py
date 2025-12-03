@@ -16,6 +16,13 @@ from pydantic import BaseModel
 from app.core.config import get_settings, OllamaInstanceConfig
 from app.core.logging_config import LoggingConfig
 from app.core.tracing import get_tracer, add_span_attributes
+from app.core.metrics import (
+    llm_requests_total,
+    llm_request_duration_seconds,
+    llm_tokens_total,
+    llm_errors_total,
+    llm_model_loaded
+)
 
 logger = LoggingConfig.get_logger(__name__)
 tracer = get_tracer(__name__)
@@ -450,6 +457,10 @@ class OllamaClient:
         # Use longer timeout for planning tasks (10 minutes)
         timeout_value = 600.0 if task_type == TaskType.PLANNING else 300.0
         
+        # Start metrics tracking
+        request_start_time = time.time()
+        task_type_str = task_type.value if hasattr(task_type, 'value') else str(task_type)
+        
         async with httpx.AsyncClient(
             base_url=request_base_url,
             timeout=timeout_value,
@@ -505,6 +516,32 @@ class OllamaClient:
                             metadata={"attempt": attempt + 1}
                         )
                     
+                    # Record successful request metrics
+                    duration = time.time() - request_start_time
+                    llm_requests_total.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        task_type=task_type_str,
+                        status="success"
+                    ).inc()
+                    llm_request_duration_seconds.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        task_type=task_type_str
+                    ).observe(duration)
+                    
+                    # Extract and record tokens if available
+                    if "prompt_eval_count" in data:
+                        llm_tokens_total.labels(
+                            model=model_to_use,
+                            type="input"
+                        ).inc(data.get("prompt_eval_count", 0))
+                    if "eval_count" in data:
+                        llm_tokens_total.labels(
+                            model=model_to_use,
+                            type="output"
+                        ).inc(data.get("eval_count", 0))
+                    
                     # Always use model_to_use (the one we requested), not what Ollama returned
                     # This ensures consistency with what the user selected
                     return OllamaResponse(
@@ -513,19 +550,94 @@ class OllamaClient:
                         done=data.get("done", False)
                     )
                     
-                except httpx.TimeoutException:
+                except httpx.TimeoutException as e:
+                    error_type = "timeout"
                     if attempt < max_retries - 1:
                         await asyncio.sleep(retry_delay * (attempt + 1))
                         continue
+                    # Record error metrics
+                    duration = time.time() - request_start_time
+                    llm_requests_total.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        task_type=task_type_str,
+                        status="error"
+                    ).inc()
+                    llm_errors_total.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        error_type=error_type
+                    ).inc()
+                    llm_request_duration_seconds.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        task_type=task_type_str
+                    ).observe(duration)
                     raise OllamaError(f"Request to {instance.url} timed out after {max_retries} attempts")
                 except httpx.HTTPStatusError as e:
+                    error_type = f"http_{e.response.status_code}"
+                    # Record error metrics
+                    duration = time.time() - request_start_time
+                    llm_requests_total.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        task_type=task_type_str,
+                        status="error"
+                    ).inc()
+                    llm_errors_total.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        error_type=error_type
+                    ).inc()
+                    llm_request_duration_seconds.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        task_type=task_type_str
+                    ).observe(duration)
                     raise OllamaError(f"HTTP error from {instance.url}: {e.response.status_code} - {e.response.text}")
                 except Exception as e:
+                    error_type = type(e).__name__
                     if attempt < max_retries - 1:
                         await asyncio.sleep(retry_delay * (attempt + 1))
                         continue
+                    # Record error metrics
+                    duration = time.time() - request_start_time
+                    llm_requests_total.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        task_type=task_type_str,
+                        status="error"
+                    ).inc()
+                    llm_errors_total.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        error_type=error_type
+                    ).inc()
+                    llm_request_duration_seconds.labels(
+                        model=model_to_use,
+                        server_url=instance.url,
+                        task_type=task_type_str
+                    ).observe(duration)
                     raise OllamaError(f"Error calling Ollama at {instance.url}: {str(e)}")
             
+            # All retries failed
+            duration = time.time() - request_start_time
+            llm_requests_total.labels(
+                model=model_to_use,
+                server_url=instance.url,
+                task_type=task_type_str,
+                status="error"
+            ).inc()
+            llm_errors_total.labels(
+                model=model_to_use,
+                server_url=instance.url,
+                error_type="max_retries_exceeded"
+            ).inc()
+            llm_request_duration_seconds.labels(
+                model=model_to_use,
+                server_url=instance.url,
+                task_type=task_type_str
+            ).observe(duration)
             raise OllamaError(f"Failed to generate response after {max_retries} attempts")
     
     async def generate_stream(

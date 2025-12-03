@@ -17,13 +17,8 @@ if (Test-Path $activateScript) {
     exit 1
 }
 
-# Проверить установку python-json-logger
+# Проверка зависимостей (python-json-logger больше не требуется - используем кастомный formatter)
 Write-Host "Проверка зависимостей..." -ForegroundColor Green
-python -c "from pythonjsonlogger import jsonlogger; print('✓ python-json-logger установлен')" 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Установка python-json-logger..." -ForegroundColor Yellow
-    pip install python-json-logger==2.0.7
-}
 
 # Запустить сервер
 Write-Host "Запуск сервера..." -ForegroundColor Green
