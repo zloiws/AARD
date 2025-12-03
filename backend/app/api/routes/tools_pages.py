@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 
 from app.core.templates import templates
 from app.core.database import get_db
-from app.models.tool import Tool, ToolStatus, ToolType
+from app.models.tool import Tool, ToolStatus
 from app.services.tool_service import ToolService
 from sqlalchemy.orm import Session
 
