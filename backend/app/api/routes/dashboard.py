@@ -235,11 +235,16 @@ async def cancel_task(
         raise HTTPException(status_code=500, detail=f"Error cancelling task: {str(e)}")
 
 
+class CreateTaskRequest(BaseModel):
+    """Request model for creating a task"""
+    description: str
+    priority: int = 5
+    autonomy_level: int = 2
+
+
 @router.post("/api/dashboard/tasks/create")
 async def create_task_manual(
-    description: str,
-    priority: int = 5,
-    autonomy_level: int = 2,
+    request: CreateTaskRequest,
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """
@@ -253,9 +258,9 @@ async def create_task_manual(
         Created task
     """
     try:
-        description = request.get("description")
-        priority = request.get("priority", 5)
-        autonomy_level = request.get("autonomy_level", 2)
+        description = request.description
+        priority = request.priority
+        autonomy_level = request.autonomy_level
         
         if not description:
             raise HTTPException(status_code=400, detail="Description is required")
