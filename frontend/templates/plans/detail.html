@@ -305,7 +305,204 @@
     {% endif %}
 </div>
 
+<!-- Modal for assigning agent/tool to step -->
+<div class="modal fade" id="stepAgentModal" tabindex="-1" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Назначить агента и инструмент</h5>
+                <button type="button" class="btn-close" onclick="document.getElementById('stepAgentModal').style.display='none'"></button>
+            </div>
+            <div class="modal-body">
+                <form id="stepAgentForm">
+                    <input type="hidden" id="stepPlanId">
+                    <input type="hidden" id="stepStepId">
+                    
+                    <div class="mb-3">
+                        <label for="stepAgent" class="form-label">Агент</label>
+                        <select class="form-select" id="stepAgent">
+                            <option value="">Не назначен</option>
+                        </select>
+                        <div class="form-text">Выберите агента для выполнения этого шага</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="stepTool" class="form-label">Инструмент</label>
+                        <select class="form-select" id="stepTool">
+                            <option value="">Не назначен</option>
+                        </select>
+                        <div class="form-text">Выберите инструмент для использования агентом</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="stepUseTools">
+                            <label class="form-check-label" for="stepUseTools">
+                                Разрешить агенту автоматически использовать доступные инструменты
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('stepAgentModal').style.display='none'">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveStepAgent()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-dialog {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+.modal-title {
+    margin: 0;
+}
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+}
+.modal-body {
+    margin-bottom: 20px;
+}
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #dee2e6;
+}
+.form-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+</style>
+
 <script>
+let currentStepData = {};
+
+async function editStepAgent(planId, stepId, currentAgent, currentTool) {
+    currentStepData = { planId, stepId, currentAgent, currentTool };
+    
+    document.getElementById('stepPlanId').value = planId;
+    document.getElementById('stepStepId').value = stepId;
+    
+    // Load agents
+    try {
+        const agentsResponse = await fetch('/api/agents/?active_only=true');
+        const agents = await agentsResponse.json();
+        
+        const agentSelect = document.getElementById('stepAgent');
+        agentSelect.innerHTML = '<option value="">Не назначен</option>';
+        agents.forEach(agent => {
+            const option = document.createElement('option');
+            option.value = agent.id;
+            option.textContent = agent.name;
+            if (currentAgent === agent.id) {
+                option.selected = true;
+            }
+            agentSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading agents:', error);
+    }
+    
+    // Load tools
+    try {
+        const toolsResponse = await fetch('/api/tools/?status=active');
+        const tools = await toolsResponse.json();
+        
+        const toolSelect = document.getElementById('stepTool');
+        toolSelect.innerHTML = '<option value="">Не назначен</option>';
+        tools.forEach(tool => {
+            const option = document.createElement('option');
+            option.value = tool.id;
+            option.textContent = tool.name;
+            if (currentTool === tool.id) {
+                option.selected = true;
+            }
+            toolSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading tools:', error);
+    }
+    
+    // Show modal
+    document.getElementById('stepAgentModal').style.display = 'flex';
+}
+
+async function saveStepAgent() {
+    const planId = document.getElementById('stepPlanId').value;
+    const stepId = document.getElementById('stepStepId').value;
+    const agentId = document.getElementById('stepAgent').value;
+    const toolId = document.getElementById('stepTool').value;
+    const useTools = document.getElementById('stepUseTools').checked;
+    
+    try {
+        // Get current plan
+        const planResponse = await fetch(`/api/plans/${planId}`);
+        const plan = await planResponse.json();
+        
+        // Update step
+        const steps = plan.steps || [];
+        const stepIndex = steps.findIndex(s => s.step_id === stepId);
+        if (stepIndex === -1) {
+            alert('Шаг не найден');
+            return;
+        }
+        
+        steps[stepIndex].agent = agentId || null;
+        steps[stepIndex].tool = toolId || null;
+        steps[stepIndex].use_tools = useTools;
+        
+        // Update plan
+        const updateResponse = await fetch(`/api/plans/${planId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ steps })
+        });
+        
+        if (updateResponse.ok) {
+            document.getElementById('stepAgentModal').style.display = 'none';
+            location.reload();
+        } else {
+            const error = await updateResponse.json();
+            alert('Ошибка: ' + (error.detail || 'Не удалось обновить план'));
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
 async function approvePlan(planId) {
     if (!confirm('Утвердить этот план?')) return;
     
