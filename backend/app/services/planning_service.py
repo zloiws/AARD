@@ -28,6 +28,14 @@ class PlanningService:
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
     
+    def _get_logger(self):
+        """Get logger instance, return None if not available"""
+        try:
+            from app.core.logging_config import LoggingConfig
+            return LoggingConfig.get_logger(__name__)
+        except:
+            return None
+    
     async def generate_plan(
         self,
         task_description: str,
@@ -164,20 +172,24 @@ class PlanningService:
             metrics_service = PlanningMetricsService(self.db)
             quality_score = metrics_service.calculate_plan_quality_score(plan)
             
-            # Store quality score in plan metadata if available
-            if plan.agent_metadata is None:
-                plan.agent_metadata = {}
-            if isinstance(plan.agent_metadata, dict):
-                plan.agent_metadata["quality_score"] = quality_score
+            # Store quality score in plan strategy if available
+            if plan.strategy is None:
+                plan.strategy = {}
+            if isinstance(plan.strategy, dict):
+                plan.strategy["quality_score"] = quality_score
                 self.db.commit()
                 self.db.refresh(plan)
             
-            logger.debug(
-                f"Calculated quality score for plan {plan.id}",
-                extra={"plan_id": str(plan.id), "quality_score": quality_score}
-            )
+            logger = self._get_logger()
+            if logger:
+                logger.debug(
+                    f"Calculated quality score for plan {plan.id}",
+                    extra={"plan_id": str(plan.id), "quality_score": quality_score}
+                )
         except Exception as e:
-            logger.warning(f"Failed to calculate plan quality score: {e}", exc_info=True)
+            logger = self._get_logger()
+            if logger:
+                logger.warning(f"Failed to calculate plan quality score: {e}", exc_info=True)
         
         return plan
     
@@ -503,8 +515,9 @@ Break down this task into executable steps. Return only a valid JSON array."""
         # Check if approval is actually required using adaptive logic
         # Try to get agent_id from plan context if available
         agent_id = None
-        if plan.agent_metadata and isinstance(plan.agent_metadata, dict):
-            agent_id_str = plan.agent_metadata.get("agent_id")
+        agent_metadata = getattr(plan, 'agent_metadata', None) or (plan.strategy if isinstance(plan.strategy, dict) else None)
+        if agent_metadata and isinstance(agent_metadata, dict):
+            agent_id_str = agent_metadata.get("agent_id")
             if agent_id_str:
                 try:
                     from uuid import UUID
@@ -524,14 +537,16 @@ Break down this task into executable steps. Return only a valid JSON array."""
             requires_approval = True
             decision_metadata["reason"] = "critical_steps_detected"
             decision_metadata["critical_types"] = critical_info["critical_types"]
-            logger.info(
-                f"Plan {plan.id} requires mandatory approval due to critical steps",
-                extra={
-                    "plan_id": str(plan.id),
-                    "critical_types": critical_info["critical_types"],
-                    "critical_steps_count": len(critical_info["critical_steps"])
-                }
-            )
+            logger = self._get_logger()
+            if logger:
+                logger.info(
+                    f"Plan {plan.id} requires mandatory approval due to critical steps",
+                    extra={
+                        "plan_id": str(plan.id),
+                        "critical_types": critical_info["critical_types"],
+                        "critical_steps_count": len(critical_info["critical_steps"])
+                    }
+                )
         
         # Update task status to PENDING_APPROVAL if approval is required
         if requires_approval and task:
@@ -539,14 +554,16 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 task.status = TaskStatus.PENDING_APPROVAL
                 self.db.commit()
                 self.db.refresh(task)
-                logger.info(
-                    f"Task {task.id} transitioned from DRAFT to PENDING_APPROVAL",
-                    extra={
-                        "task_id": str(task.id),
-                        "plan_id": str(plan.id),
-                        "reason": decision_metadata.get("reason", "approval_required")
-                    }
-                )
+                logger = self._get_logger()
+                if logger:
+                    logger.info(
+                        f"Task {task.id} transitioned from DRAFT to PENDING_APPROVAL",
+                        extra={
+                            "task_id": str(task.id),
+                            "plan_id": str(plan.id),
+                            "reason": decision_metadata.get("reason", "approval_required")
+                        }
+                    )
         
         # If approval is not required, skip creating approval request
         if not requires_approval:
@@ -742,8 +759,9 @@ Break down this task into executable steps. Return only a valid JSON array."""
             # For working memory, we need an agent_id
             # Try to get from plan metadata or use a system agent
             agent_id = None
-            if plan.agent_metadata and isinstance(plan.agent_metadata, dict):
-                agent_id_str = plan.agent_metadata.get("agent_id")
+            agent_metadata = getattr(plan, 'agent_metadata', None) or (plan.strategy if isinstance(plan.strategy, dict) else None)
+            if agent_metadata and isinstance(agent_metadata, dict):
+                agent_id_str = agent_metadata.get("agent_id")
                 if agent_id_str:
                     try:
                         agent_id = UUID(agent_id_str)
@@ -752,7 +770,7 @@ Break down this task into executable steps. Return only a valid JSON array."""
             
             # If no agent_id, we can't save to working memory (requires agent)
             if not agent_id:
-                logger.debug(f"No agent_id for plan {plan.id}, skipping working memory save")
+                # Skip working memory save if no agent_id
                 return
             
             memory_service = MemoryService(self.db)
@@ -787,13 +805,25 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 ttl_seconds=86400 * 7  # 7 days
             )
             
-            logger.debug(
-                f"Saved ToDo list to working memory for task {task_id}",
-                extra={"task_id": str(task_id), "plan_id": str(plan.id), "steps_count": len(todo_list)}
-            )
+            # Logging is optional - skip if logger not available
+            try:
+                from app.core.logging_config import LoggingConfig
+                logger = LoggingConfig.get_logger(__name__)
+                logger.debug(
+                    f"Saved ToDo list to working memory for task {task_id}",
+                    extra={"task_id": str(task_id), "plan_id": str(plan.id), "steps_count": len(todo_list)}
+                )
+            except:
+                pass
             
         except Exception as e:
-            logger.warning(f"Error saving ToDo to working memory: {e}", exc_info=True)
+            # Logging is optional - skip if logger not available
+            try:
+                from app.core.logging_config import LoggingConfig
+                logger = LoggingConfig.get_logger(__name__)
+                logger.warning(f"Error saving ToDo to working memory: {e}", exc_info=True)
+            except:
+                pass
     
     async def _save_plan_to_episodic_memory(
         self,
@@ -823,8 +853,9 @@ Break down this task into executable steps. Return only a valid JSON array."""
             
             # Get agent_id from plan metadata if available
             agent_id = None
-            if plan.agent_metadata and isinstance(plan.agent_metadata, dict):
-                agent_id_str = plan.agent_metadata.get("agent_id")
+            agent_metadata = getattr(plan, 'agent_metadata', None) or (plan.strategy if isinstance(plan.strategy, dict) else None)
+            if agent_metadata and isinstance(agent_metadata, dict):
+                agent_id_str = agent_metadata.get("agent_id")
                 if agent_id_str:
                     try:
                         agent_id = UUID(agent_id_str)
@@ -833,7 +864,7 @@ Break down this task into executable steps. Return only a valid JSON array."""
             
             # If no agent_id, we can't save to episodic memory (requires agent)
             if not agent_id:
-                logger.debug(f"No agent_id for plan {plan.id}, skipping episodic memory save")
+                # Skip episodic memory save if no agent_id
                 return
             
             memory_service = MemoryService(self.db)
@@ -863,18 +894,30 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 source=f"task_{task_id}"
             )
             
-            logger.debug(
-                f"Saved plan to episodic memory",
-                extra={
-                    "plan_id": str(plan.id),
-                    "task_id": str(task_id),
-                    "event_type": event_type,
-                    "agent_id": str(agent_id)
-                }
-            )
+            # Logging is optional - skip if logger not available
+            try:
+                from app.core.logging_config import LoggingConfig
+                logger = LoggingConfig.get_logger(__name__)
+                logger.debug(
+                    f"Saved plan to episodic memory",
+                    extra={
+                        "plan_id": str(plan.id),
+                        "task_id": str(task_id),
+                        "event_type": event_type,
+                        "agent_id": str(agent_id)
+                    }
+                )
+            except:
+                pass
             
         except Exception as e:
-            logger.warning(f"Error saving plan to episodic memory: {e}", exc_info=True)
+            # Logging is optional - skip if logger not available
+            try:
+                from app.core.logging_config import LoggingConfig
+                logger = LoggingConfig.get_logger(__name__)
+                logger.warning(f"Error saving plan to episodic memory: {e}", exc_info=True)
+            except:
+                pass
     
     async def _apply_procedural_memory_patterns(
         self,
@@ -946,19 +989,23 @@ Break down this task into executable steps. Return only a valid JSON array."""
             # Return best matching pattern
             if all_patterns:
                 best_pattern = all_patterns[0]
-                logger.info(
-                    f"Found procedural memory pattern for task",
-                    extra={
-                        "agent_id": str(agent_id),
-                        "pattern_source": best_pattern["source"],
-                        "success_rate": best_pattern["success_rate"]
-                    }
-                )
+                logger = self._get_logger()
+                if logger:
+                    logger.info(
+                        f"Found procedural memory pattern for task",
+                        extra={
+                            "agent_id": str(agent_id),
+                            "pattern_source": best_pattern["source"],
+                            "success_rate": best_pattern["success_rate"]
+                        }
+                    )
                 return best_pattern["pattern"]
             
             return None
             
         except Exception as e:
-            logger.warning(f"Error applying procedural memory patterns: {e}", exc_info=True)
+            logger = self._get_logger()
+            if logger:
+                logger.warning(f"Error applying procedural memory patterns: {e}", exc_info=True)
             return None
 

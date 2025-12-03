@@ -908,8 +908,9 @@ class ExecutionService:
             
             # Get agent_id from plan if available
             agent_id = None
-            if plan.agent_metadata and isinstance(plan.agent_metadata, dict):
-                agent_id_str = plan.agent_metadata.get("agent_id")
+            agent_metadata = getattr(plan, 'agent_metadata', None)
+            if agent_metadata and isinstance(agent_metadata, dict):
+                agent_id_str = agent_metadata.get("agent_id")
                 if agent_id_str:
                     try:
                         agent_id = UUID(agent_id_str)
