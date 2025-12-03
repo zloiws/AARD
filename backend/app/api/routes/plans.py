@@ -318,6 +318,57 @@ async def get_plan_status(
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/{plan_id}/quality")
+async def get_plan_quality(
+    plan_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get plan quality metrics"""
+    from app.services.planning_metrics_service import PlanningMetricsService
+    from app.services.planning_service import PlanningService
+    
+    try:
+        planning_service = PlanningService(db)
+        plan = planning_service.get_plan(plan_id)
+        
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+        
+        metrics_service = PlanningMetricsService(db)
+        quality_score = metrics_service.calculate_plan_quality_score(plan)
+        breakdown = metrics_service.get_plan_quality_breakdown(plan_id)
+        
+        return {
+            "plan_id": str(plan_id),
+            "quality_score": quality_score,
+            "breakdown": breakdown
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/statistics")
+async def get_planning_statistics(
+    agent_id: Optional[UUID] = None,
+    time_range_days: int = 30,
+    db: Session = Depends(get_db)
+):
+    """Get planning statistics"""
+    from app.services.planning_metrics_service import PlanningMetricsService
+    
+    try:
+        metrics_service = PlanningMetricsService(db)
+        stats = metrics_service.get_planning_statistics(
+            agent_id=agent_id,
+            time_range_days=time_range_days
+        )
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Interactive Execution endpoints
 @router.post("/{plan_id}/pause")
 async def pause_execution(

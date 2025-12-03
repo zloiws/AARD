@@ -139,7 +139,7 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card">
+            <div class="card mb-3">
                 <div class="card-body">
                     <h5 class="card-title">Информация</h5>
                     <p class="mb-2"><strong>Создан:</strong> {{ plan.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
@@ -152,6 +152,48 @@
                     {% endif %}
                 </div>
             </div>
+            
+            {% if quality_data %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">📊 Качество плана</h5>
+                    {% set quality_score = quality_data.quality_score %}
+                    {% set score_percent = (quality_score * 100)|round(1) %}
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span><strong>Общая оценка:</strong></span>
+                            <span class="badge {% if quality_score >= 0.8 %}bg-success{% elif quality_score >= 0.6 %}bg-info{% elif quality_score >= 0.4 %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                                {{ score_percent }}%
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar {% if quality_score >= 0.8 %}bg-success{% elif quality_score >= 0.6 %}bg-info{% elif quality_score >= 0.4 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ score_percent }}%">
+                                {{ score_percent }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if quality_data.breakdown and quality_data.breakdown.factors %}
+                    <div class="small">
+                        <p class="mb-1"><strong>Детализация:</strong></p>
+                        <ul class="list-unstyled mb-0">
+                            <li>Количество шагов: {{ "%.1f"|format(quality_data.breakdown.factors.step_count_score * 100 / 0.3) }}%</li>
+                            <li>Структура: {{ "%.1f"|format(quality_data.breakdown.factors.structure_score * 100 / 0.2) }}%</li>
+                            {% if quality_data.breakdown.factors.execution_success_rate > 0 %}
+                            <li>Успешность: {{ "%.1f"|format(quality_data.breakdown.factors.execution_success_rate * 100 / 0.3) }}%</li>
+                            {% endif %}
+                            {% if quality_data.breakdown.factors.duration_accuracy > 0 %}
+                            <li>Точность оценки: {{ "%.1f"|format(quality_data.breakdown.factors.duration_accuracy * 100 / 0.2) }}%</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
