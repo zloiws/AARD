@@ -22,6 +22,10 @@ from app.core.metrics import (
 )
 from app.services.ollama_service import OllamaService
 from app.services.checkpoint_service import CheckpointService
+from app.services.agent_service import AgentService
+from app.services.tool_service import ToolService
+from app.agents.simple_agent import SimpleAgent
+from app.tools.python_tool import PythonTool
 import time
 
 logger = LoggingConfig.get_logger(__name__)
@@ -168,8 +172,41 @@ class StepExecutor:
         """Execute an action step"""
         description = step.get("description", "")
         
-        # For now, use LLM to execute the step
-        # In future, this will use agents and tools
+        # Check if step specifies an agent
+        agent_id = step.get("agent")
+        tool_id = step.get("tool")
+        
+        # If agent is specified, use agent to execute the step
+        if agent_id:
+            try:
+                return await self._execute_with_agent(step, plan, context, result, agent_id, tool_id)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to execute step with agent {agent_id}, falling back to LLM: {e}",
+                    extra={
+                        "step_id": step.get("step_id"),
+                        "agent_id": agent_id,
+                        "error": str(e)
+                    }
+                )
+                # Fall back to LLM execution
+        
+        # If tool is specified without agent, use tool directly
+        if tool_id and not agent_id:
+            try:
+                return await self._execute_with_tool(step, plan, context, result, tool_id)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to execute step with tool {tool_id}, falling back to LLM: {e}",
+                    extra={
+                        "step_id": step.get("step_id"),
+                        "tool_id": tool_id,
+                        "error": str(e)
+                    }
+                )
+                # Fall back to LLM execution
+        
+        # Default: use LLM to execute the step
         
         # Get appropriate model
         default_server = OllamaService.get_default_server(self.db)
@@ -262,6 +299,202 @@ Execute the given step and return the result in JSON format:
         except asyncio.TimeoutError:
             result["status"] = "failed"
             result["error"] = f"Step execution timeout after {timeout} seconds"
+        
+        return result
+    
+    async def _execute_with_agent(
+        self,
+        step: Dict[str, Any],
+        plan: Plan,
+        context: Optional[Dict[str, Any]],
+        result: Dict[str, Any],
+        agent_id: str,
+        tool_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute step using an agent, optionally with a tool
+        
+        Args:
+            step: Step definition
+            plan: Plan being executed
+            context: Execution context
+            result: Result dictionary to update
+            agent_id: Agent ID to use
+            tool_id: Optional tool ID to use
+            
+        Returns:
+            Updated result dictionary
+        """
+        from uuid import UUID
+        
+        try:
+            agent_uuid = UUID(agent_id) if isinstance(agent_id, str) else agent_id
+        except (ValueError, TypeError):
+            result["status"] = "failed"
+            result["error"] = f"Invalid agent_id: {agent_id}"
+            return result
+        
+        agent_service = AgentService(self.db)
+        agent_data = agent_service.get_agent(agent_uuid)
+        
+        if not agent_data:
+            result["status"] = "failed"
+            result["error"] = f"Agent {agent_id} not found"
+            return result
+        
+        if agent_data.status != "active":
+            result["status"] = "failed"
+            result["error"] = f"Agent {agent_data.name} is not active (status: {agent_data.status})"
+            return result
+        
+        # Create agent instance
+        tool_service = ToolService(self.db)
+        agent = SimpleAgent(
+            agent_id=agent_uuid,
+            agent_service=agent_service,
+            tool_service=tool_service
+        )
+        
+        # Prepare task description
+        task_description = step.get("description", "")
+        if context:
+            # Add context to task description
+            context_str = "\n\nContext from previous steps:\n"
+            for key, value in context.items():
+                context_str += f"- {key}: {value}\n"
+            task_description = f"{task_description}{context_str}"
+        
+        # Prepare inputs from step
+        step_inputs = step.get("inputs", {})
+        
+        # Execute with agent
+        if tool_id:
+            # Use specific tool
+            try:
+                tool_uuid = UUID(tool_id) if isinstance(tool_id, str) else tool_id
+                tool_service = ToolService(self.db)
+                tool_data = tool_service.get_tool(tool_uuid)
+                
+                if not tool_data:
+                    result["status"] = "failed"
+                    result["error"] = f"Tool {tool_id} not found"
+                    return result
+                
+                # Execute with tool
+                agent_result = await agent.execute(
+                    task_description=task_description,
+                    context=context,
+                    tool_name=tool_data.name,
+                    tool_params={**step_inputs, **step.get("tool_params", {})}
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error executing step with agent and tool: {e}",
+                    exc_info=True,
+                    extra={
+                        "agent_id": agent_id,
+                        "tool_id": tool_id,
+                        "step_id": step.get("step_id")
+                    }
+                )
+                result["status"] = "failed"
+                result["error"] = f"Tool execution error: {str(e)}"
+                return result
+        else:
+            # Execute with agent only (may use tools automatically)
+            use_tools = step.get("use_tools", False)
+            agent_result = await agent.execute(
+                task_description=task_description,
+                context=context,
+                use_tools=use_tools,
+                **step_inputs
+            )
+        
+        # Update result
+        if agent_result["status"] == "success":
+            result["status"] = "completed"
+            result["output"] = agent_result.get("result")
+            result["message"] = agent_result.get("message", "Step completed successfully")
+            
+            # Add metadata
+            if "metadata" in agent_result:
+                result["metadata"] = agent_result["metadata"]
+                if "tool_used" in agent_result["metadata"]:
+                    result["tool_used"] = agent_result["metadata"]["tool_used"]
+        else:
+            result["status"] = "failed"
+            result["error"] = agent_result.get("message", "Agent execution failed")
+            result["output"] = agent_result.get("result")
+        
+        return result
+    
+    async def _execute_with_tool(
+        self,
+        step: Dict[str, Any],
+        plan: Plan,
+        context: Optional[Dict[str, Any]],
+        result: Dict[str, Any],
+        tool_id: str
+    ) -> Dict[str, Any]:
+        """
+        Execute step using a tool directly (without agent)
+        
+        Args:
+            step: Step definition
+            plan: Plan being executed
+            context: Execution context
+            result: Result dictionary to update
+            tool_id: Tool ID to use
+            
+        Returns:
+            Updated result dictionary
+        """
+        from uuid import UUID
+        
+        try:
+            tool_uuid = UUID(tool_id) if isinstance(tool_id, str) else tool_id
+        except (ValueError, TypeError):
+            result["status"] = "failed"
+            result["error"] = f"Invalid tool_id: {tool_id}"
+            return result
+        
+        tool_service = ToolService(self.db)
+        tool_data = tool_service.get_tool(tool_uuid)
+        
+        if not tool_data:
+            result["status"] = "failed"
+            result["error"] = f"Tool {tool_id} not found"
+            return result
+        
+        if tool_data.status != "active":
+            result["status"] = "failed"
+            result["error"] = f"Tool {tool_data.name} is not active (status: {tool_data.status})"
+            return result
+        
+        # Create tool instance
+        tool = PythonTool(
+            tool_id=tool_uuid,
+            tool_service=tool_service
+        )
+        
+        # Prepare inputs
+        step_inputs = step.get("inputs", {})
+        context_dict = context or {}
+        tool_params = {**step_inputs, **step.get("tool_params", {}), **context_dict}
+        
+        # Execute tool
+        tool_result = await tool.execute(**tool_params)
+        
+        # Update result
+        if tool_result["status"] == "success":
+            result["status"] = "completed"
+            result["output"] = tool_result.get("result")
+            result["message"] = tool_result.get("message", "Tool executed successfully")
+            result["tool_used"] = tool_data.name
+        else:
+            result["status"] = "failed"
+            result["error"] = tool_result.get("message", "Tool execution failed")
+            result["output"] = tool_result.get("result")
         
         return result
     
