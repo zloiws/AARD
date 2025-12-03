@@ -10,7 +10,7 @@ import re
 from sqlalchemy.orm import Session
 
 from app.models.plan import Plan, PlanStatus
-from app.models.task import Task
+from app.models.task import Task, TaskStatus
 from app.core.ollama_client import OllamaClient, TaskType
 from app.services.ollama_service import OllamaService
 from app.services.approval_service import ApprovalService
@@ -63,7 +63,8 @@ class PlanningService:
             # Create a task if not provided
             task = Task(
                 description=task_description,
-                status="pending"
+                status=TaskStatus.DRAFT,  # Start as DRAFT, will transition to PENDING_APPROVAL if needed
+                created_by_role="planner"  # Created by planner agent
             )
             self.db.add(task)
             self.db.flush()
