@@ -25,7 +25,7 @@ from app.api.routes import (
     chat, pages, models, servers, approvals_pages, logging as logging_routes,
     traces, traces_pages, requests, queues, checkpoints, metrics, health,
     artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages, tools_pages,
-    experiments
+    experiments, agent_gym, agent_memory
 )
 
 # Configure logging first
@@ -158,6 +158,8 @@ app.include_router(agents_pages.router)
 app.include_router(tools_pages.router)
 app.include_router(traces_pages.router)
 app.include_router(experiments.router)
+app.include_router(agent_gym.router)
+app.include_router(agent_memory.router)
 
 
 @app.get("/")

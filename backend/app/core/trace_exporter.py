@@ -84,6 +84,50 @@ class DatabaseSpanExporter(SpanExporter):
             span: Span to export
             db: Database session
         """
+        # Filter out SQLAlchemy auto-instrumented spans that don't contain useful data
+        # Skip automatic DB query spans unless they:
+        # 1. Have errors (important for debugging)
+        # 2. Are slow (>100ms - performance issues)
+        # 3. Have custom attributes (task_id, plan_id, etc. - business context)
+        if span.attributes:
+            # Check if this is a SQLAlchemy span
+            is_db_span = (
+                span.attributes.get("db.system") == "postgresql" or
+                span.attributes.get("db.name") or
+                span.name in ("SELECT", "INSERT", "UPDATE", "DELETE", "COMMIT", "ROLLBACK")
+            )
+            
+            if is_db_span:
+                # Calculate duration
+                duration_ms = None
+                if span.end_time and span.start_time:
+                    duration_ns = span.end_time - span.start_time
+                    duration_ms = int(duration_ns / 1_000_000)
+                
+                # Check if span has business context
+                has_business_context = (
+                    span.attributes.get("task_id") or
+                    span.attributes.get("plan_id") or
+                    span.attributes.get("agent_id") or
+                    span.attributes.get("tool_id")
+                )
+                
+                # Check if span has error
+                has_error = (
+                    span.status.status_code == StatusCode.ERROR or
+                    span.attributes.get("error") or
+                    span.attributes.get("exception.type") or
+                    span.attributes.get("error.type")
+                )
+                
+                # Skip if:
+                # - No error
+                # - Fast query (<100ms)
+                # - No business context
+                if not has_error and (duration_ms is None or duration_ms < 100) and not has_business_context:
+                    # Skip this span - it's just a routine DB query without useful data
+                    return
+        
         # Convert trace_id and span_id to hex strings
         trace_id = format(span.context.trace_id, '032x')
         span_id = format(span.context.span_id, '016x')

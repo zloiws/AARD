@@ -42,8 +42,59 @@ class SimpleAgent(BaseAgent):
             Execution result
         """
         start_time = time.time()
+        session_id = kwargs.get("session_id")  # Get session ID if provided
         
         try:
+            # 1. Search relevant memories before execution
+            relevant_memories = []
+            try:
+                # Search for relevant memories based on task description
+                memory_search = self.search_memory(
+                    query_text=task_description[:100] if len(task_description) > 100 else task_description,
+                    limit=5
+                )
+                relevant_memories = memory_search
+                
+                # Also get recent experiences
+                recent_experiences = self.recall(
+                    memory_type="experience",
+                    limit=3
+                )
+                relevant_memories.extend(recent_experiences)
+            except Exception as e:
+                logger.warning(
+                    f"Error searching memories: {e}",
+                    extra={"agent_id": str(self.agent_id)}
+                )
+            
+            # 2. Save current context to short-term memory
+            try:
+                self.save_context(
+                    context_key="current_task",
+                    content={
+                        "task_description": task_description,
+                        "context": context or {},
+                        "timestamp": time.time()
+                    },
+                    session_id=session_id,
+                    ttl_seconds=3600  # 1 hour TTL
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Error saving context: {e}",
+                    extra={"agent_id": str(self.agent_id)}
+                )
+            
+            # 3. Get existing context if available
+            existing_context = {}
+            try:
+                existing_context = self.get_all_context(session_id=session_id)
+            except Exception as e:
+                logger.warning(
+                    f"Error getting context: {e}",
+                    extra={"agent_id": str(self.agent_id)}
+                )
+            
             # Check if specific tool is requested
             tool_name = kwargs.get("tool_name")
             if tool_name:
@@ -73,13 +124,33 @@ class SimpleAgent(BaseAgent):
                         extra={"tool_result": tool_result}
                     )
             
-            # Build prompt with context
+            # Build prompt with context and relevant memories
             prompt = task_description
+            
+            # Add relevant memories to prompt
+            if relevant_memories:
+                memories_str = "\n\nRelevant memories from past experiences:\n"
+                for mem in relevant_memories[:5]:  # Limit to 5 most relevant
+                    mem_summary = mem.get("summary") or str(mem.get("content", ""))[:200]
+                    memories_str += f"- {mem_summary}\n"
+                prompt = f"{prompt}{memories_str}"
+            
+            # Add context
             if context:
                 context_str = "\n\nContext:\n"
                 for key, value in context.items():
                     context_str += f"{key}: {value}\n"
-                prompt = f"{task_description}{context_str}"
+                prompt = f"{prompt}{context_str}"
+            
+            # Add existing short-term context
+            if existing_context:
+                context_str = "\n\nPrevious context:\n"
+                for key, value in existing_context.items():
+                    if isinstance(value, dict):
+                        context_str += f"{key}: {str(value)[:200]}\n"
+                    else:
+                        context_str += f"{key}: {value}\n"
+                prompt = f"{prompt}{context_str}"
             
             # If use_tools is True, include available tools in the prompt
             if use_tools:
@@ -99,6 +170,28 @@ class SimpleAgent(BaseAgent):
             
             execution_time = int(time.time() - start_time)
             
+            # 4. Save execution result to long-term memory
+            try:
+                self.remember(
+                    memory_type="experience",
+                    content={
+                        "task_description": task_description,
+                        "result": response[:500] if isinstance(response, str) else str(response)[:500],
+                        "execution_time": execution_time,
+                        "success": True,
+                        "context": context or {}
+                    },
+                    summary=f"Successfully completed: {task_description[:100]}",
+                    importance=0.6,
+                    tags=["execution", "success"],
+                    source=session_id or "system"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Error saving execution to memory: {e}",
+                    extra={"agent_id": str(self.agent_id)}
+                )
+            
             # Record successful execution
             await self._record_execution(success=True, execution_time=execution_time)
             
@@ -111,11 +204,34 @@ class SimpleAgent(BaseAgent):
                     "agent_id": str(self.agent_id),
                     "agent_name": self.name,
                     "tools_available": len(self.get_available_tools()) if use_tools else 0,
+                    "memories_used": len(relevant_memories),
                 }
             }
             
         except Exception as e:
             execution_time = int(time.time() - start_time)
+            
+            # 5. Save failure to memory for learning
+            try:
+                self.remember(
+                    memory_type="experience",
+                    content={
+                        "task_description": task_description,
+                        "error": str(e),
+                        "execution_time": execution_time,
+                        "success": False,
+                        "context": context or {}
+                    },
+                    summary=f"Failed: {task_description[:100]} - {str(e)[:100]}",
+                    importance=0.7,  # Failures are important to remember
+                    tags=["execution", "failure", "error"],
+                    source=session_id or "system"
+                )
+            except Exception as mem_error:
+                logger.warning(
+                    f"Error saving failure to memory: {mem_error}",
+                    extra={"agent_id": str(self.agent_id)}
+                )
             
             # Record failed execution
             await self._record_execution(success=False, execution_time=execution_time)

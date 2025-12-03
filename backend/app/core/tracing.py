@@ -10,9 +10,9 @@ try:
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+    # SQLAlchemyInstrumentor and AioHttpClientInstrumentor imported lazily to avoid multiprocessing/WMI issues on Windows
     from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-    from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
+    # AioHttpClientInstrumentor imported lazily in configure_tracing() to avoid WMI issues on Windows
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
     OPENTELEMETRY_AVAILABLE = True
 except ImportError:
@@ -24,9 +24,9 @@ except ImportError:
     ConsoleSpanExporter = None
     Resource = None
     FastAPIInstrumentor = None
-    SQLAlchemyInstrumentor = None
+    # SQLAlchemyInstrumentor and AioHttpClientInstrumentor not imported here - imported lazily when needed
     HTTPXClientInstrumentor = None
-    AioHttpClientInstrumentor = None
+    # AioHttpClientInstrumentor not imported here - imported lazily when needed
     OTLPSpanExporter = None
 
 from app.core.config import get_settings
@@ -118,9 +118,10 @@ def configure_tracing(app=None):
         FastAPIInstrumentor.instrument_app(app)
         logger.info("FastAPI instrumentation enabled")
     
-    # Auto-instrument SQLAlchemy
+    # Auto-instrument SQLAlchemy (lazy import to avoid multiprocessing issues)
     try:
-        SQLAlchemyInstrumentor().instrument()
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor as _SQLAlchemyInstrumentor
+        _SQLAlchemyInstrumentor().instrument()
         logger.info("SQLAlchemy instrumentation enabled")
     except Exception as e:
         logger.warning(f"Failed to instrument SQLAlchemy: {e}")
@@ -132,8 +133,10 @@ def configure_tracing(app=None):
     except Exception as e:
         logger.warning(f"Failed to instrument HTTPX: {e}")
     
+    # Lazy import AioHttpClientInstrumentor to avoid WMI issues on Windows
     try:
-        AioHttpClientInstrumentor().instrument()
+        from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor as _AioHttpClientInstrumentor
+        _AioHttpClientInstrumentor().instrument()
         logger.info("AioHTTP instrumentation enabled")
     except Exception as e:
         logger.warning(f"Failed to instrument AioHTTP: {e}")

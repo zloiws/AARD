@@ -3,7 +3,8 @@ Page routes for traces web interface
 """
 from typing import Optional
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Request, Depends, Query
+from uuid import UUID
+from fastapi import APIRouter, Request, Depends, Query, HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -39,9 +40,17 @@ async def traces_list(
         
         # Apply filters
         if task_id:
-            query = query.filter(ExecutionTrace.task_id == task_id)
+            try:
+                task_uuid = UUID(task_id)
+                query = query.filter(ExecutionTrace.task_id == task_uuid)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid task_id format")
         if plan_id:
-            query = query.filter(ExecutionTrace.plan_id == plan_id)
+            try:
+                plan_uuid = UUID(plan_id)
+                query = query.filter(ExecutionTrace.plan_id == plan_uuid)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid plan_id format")
         if trace_id:
             query = query.filter(ExecutionTrace.trace_id == trace_id)
         if status:
@@ -59,9 +68,17 @@ async def traces_list(
         # Get statistics
         stats_query = db.query(ExecutionTrace)
         if task_id:
-            stats_query = stats_query.filter(ExecutionTrace.task_id == task_id)
+            try:
+                task_uuid = UUID(task_id)
+                stats_query = stats_query.filter(ExecutionTrace.task_id == task_uuid)
+            except ValueError:
+                pass  # Skip invalid UUIDs in stats
         if plan_id:
-            stats_query = stats_query.filter(ExecutionTrace.plan_id == plan_id)
+            try:
+                plan_uuid = UUID(plan_id)
+                stats_query = stats_query.filter(ExecutionTrace.plan_id == plan_uuid)
+            except ValueError:
+                pass  # Skip invalid UUIDs in stats
         if trace_id:
             stats_query = stats_query.filter(ExecutionTrace.trace_id == trace_id)
         

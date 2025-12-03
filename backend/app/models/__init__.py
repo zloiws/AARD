@@ -16,6 +16,16 @@ from app.models.trace import ExecutionTrace  # noqa: F401
 from app.models.request_log import RequestLog, RequestConsequence  # noqa: F401
 from app.models.task_queue import TaskQueue, QueueTask  # noqa: F401
 from app.models.checkpoint import Checkpoint  # noqa: F401
+from app.models.agent import Agent, AgentStatus, AgentHealthStatus, AgentCapability  # noqa: F401
+from app.models.agent_experiment import AgentExperiment, ExperimentResult  # noqa: F401
+from app.models.agent_test import (  # noqa: F401
+    AgentTest, AgentTestRun, AgentBenchmark, AgentBenchmarkRun,
+    TestStatus, TestType
+)
+from app.models.agent_memory import (  # noqa: F401
+    AgentMemory, MemoryEntry, MemoryAssociation,
+    MemoryType, AssociationType
+)
 
 __all__ = [
     "Base",
@@ -58,5 +68,26 @@ __all__ = [
     "QueueTask",
     # Checkpoints
     "Checkpoint",
+    # Agents
+    "Agent",
+    "AgentStatus",
+    "AgentHealthStatus",
+    "AgentCapability",
+    # Agent Experiments
+    "AgentExperiment",
+    "ExperimentResult",
+    # Agent Tests
+    "AgentTest",
+    "AgentTestRun",
+    "AgentBenchmark",
+    "AgentBenchmarkRun",
+    "TestStatus",
+    "TestType",
+    # Agent Memory
+    "AgentMemory",
+    "MemoryEntry",
+    "MemoryAssociation",
+    "MemoryType",
+    "AssociationType",
 ]
 

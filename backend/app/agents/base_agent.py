@@ -14,6 +14,7 @@ from app.core.database import SessionLocal
 from app.models.agent import Agent
 from app.services.agent_service import AgentService
 from app.services.tool_service import ToolService
+from app.services.memory_service import MemoryService
 from app.tools.python_tool import PythonTool
 
 logger = LoggingConfig.get_logger(__name__)
@@ -51,9 +52,10 @@ class BaseAgent(ABC):
         self.ollama_client = ollama_client or OllamaClient()
         self.tracer = get_tracer(__name__)
         
-        # Database session for tools
+        # Database session for tools and memory
         self.db_session = db_session or SessionLocal()
         self.tool_service = ToolService(self.db_session)
+        self.memory_service = MemoryService(self.db_session)
         
         # Load agent data from database
         self._agent_data: Optional[Agent] = None
@@ -439,4 +441,335 @@ class BaseAgent(ABC):
             categorized[category].append(tool)
         
         return categorized
+    
+    # Memory methods
+    
+    def remember(
+        self,
+        memory_type: str,
+        content: Dict[str, Any],
+        summary: Optional[str] = None,
+        importance: float = 0.5,
+        tags: Optional[List[str]] = None,
+        source: Optional[str] = None,
+        expires_at: Optional[datetime] = None
+    ) -> Any:
+        """
+        Save information to long-term memory
+        
+        Args:
+            memory_type: Type of memory (fact, experience, pattern, rule)
+            content: Memory content (dict)
+            summary: Human-readable summary
+            importance: Importance score (0.0 to 1.0)
+            tags: Tags for categorization
+            source: Source of memory (task_id, user, etc.)
+            expires_at: Optional expiration date
+            
+        Returns:
+            Created AgentMemory
+        """
+        with self.tracer.start_as_current_span(
+            "agent.remember",
+            attributes={
+                "agent.id": str(self.agent_id),
+                "agent.name": self.name,
+                "memory.type": memory_type,
+            }
+        ) as span:
+            try:
+                memory = self.memory_service.save_memory(
+                    agent_id=self.agent_id,
+                    memory_type=memory_type,
+                    content=content,
+                    summary=summary,
+                    importance=importance,
+                    tags=tags,
+                    source=source,
+                    expires_at=expires_at
+                )
+                
+                if span:
+                    add_span_attributes(
+                        memory_id=str(memory.id),
+                        memory_importance=importance
+                    )
+                
+                logger.debug(
+                    f"Agent {self.name} remembered {memory_type}",
+                    extra={
+                        "agent_id": str(self.agent_id),
+                        "memory_id": str(memory.id),
+                        "memory_type": memory_type
+                    }
+                )
+                
+                return memory
+            except Exception as e:
+                if span:
+                    add_span_attributes(memory_error=str(e))
+                logger.error(
+                    f"Error saving memory for agent {self.name}",
+                    exc_info=True,
+                    extra={
+                        "agent_id": str(self.agent_id),
+                        "error": str(e)
+                    }
+                )
+                raise
+    
+    def recall(
+        self,
+        memory_type: Optional[str] = None,
+        min_importance: Optional[float] = None,
+        tags: Optional[List[str]] = None,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Recall memories from long-term storage
+        
+        Args:
+            memory_type: Filter by memory type
+            min_importance: Minimum importance score
+            tags: Filter by tags
+            limit: Maximum number of results
+            
+        Returns:
+            List of memory dictionaries
+        """
+        with self.tracer.start_as_current_span(
+            "agent.recall",
+            attributes={
+                "agent.id": str(self.agent_id),
+                "agent.name": self.name,
+            }
+        ) as span:
+            try:
+                memories = self.memory_service.get_memories(
+                    agent_id=self.agent_id,
+                    memory_type=memory_type,
+                    min_importance=min_importance,
+                    tags=tags,
+                    limit=limit
+                )
+                
+                result = [m.to_dict() for m in memories]
+                
+                if span:
+                    add_span_attributes(
+                        memories_found=len(result)
+                    )
+                
+                return result
+            except Exception as e:
+                if span:
+                    add_span_attributes(recall_error=str(e))
+                logger.error(
+                    f"Error recalling memories for agent {self.name}",
+                    exc_info=True,
+                    extra={
+                        "agent_id": str(self.agent_id),
+                        "error": str(e)
+                    }
+                )
+                return []
+    
+    def search_memory(
+        self,
+        query_text: Optional[str] = None,
+        content_query: Optional[Dict[str, Any]] = None,
+        memory_type: Optional[str] = None,
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """
+        Search memories by text or content
+        
+        Args:
+            query_text: Text to search in summary
+            content_query: JSONB query for content
+            memory_type: Filter by memory type
+            limit: Maximum number of results
+            
+        Returns:
+            List of matching memory dictionaries
+        """
+        with self.tracer.start_as_current_span(
+            "agent.search_memory",
+            attributes={
+                "agent.id": str(self.agent_id),
+                "agent.name": self.name,
+            }
+        ) as span:
+            try:
+                memories = self.memory_service.search_memories(
+                    agent_id=self.agent_id,
+                    query_text=query_text,
+                    content_query=content_query,
+                    memory_type=memory_type,
+                    limit=limit
+                )
+                
+                result = [m.to_dict() for m in memories]
+                
+                if span:
+                    add_span_attributes(
+                        memories_found=len(result)
+                    )
+                
+                return result
+            except Exception as e:
+                if span:
+                    add_span_attributes(search_error=str(e))
+                logger.error(
+                    f"Error searching memories for agent {self.name}",
+                    exc_info=True,
+                    extra={
+                        "agent_id": str(self.agent_id),
+                        "error": str(e)
+                    }
+                )
+                return []
+    
+    def forget(self, memory_id: UUID) -> bool:
+        """
+        Delete a memory from long-term storage
+        
+        Args:
+            memory_id: Memory ID to delete
+            
+        Returns:
+            True if deleted, False if not found
+        """
+        with self.tracer.start_as_current_span(
+            "agent.forget",
+            attributes={
+                "agent.id": str(self.agent_id),
+                "agent.name": self.name,
+                "memory.id": str(memory_id),
+            }
+        ):
+            try:
+                result = self.memory_service.forget_memory(memory_id)
+                logger.debug(
+                    f"Agent {self.name} forgot memory {memory_id}",
+                    extra={
+                        "agent_id": str(self.agent_id),
+                        "memory_id": str(memory_id),
+                        "deleted": result
+                    }
+                )
+                return result
+            except Exception as e:
+                logger.error(
+                    f"Error forgetting memory for agent {self.name}",
+                    exc_info=True,
+                    extra={
+                        "agent_id": str(self.agent_id),
+                        "memory_id": str(memory_id),
+                        "error": str(e)
+                    }
+                )
+                return False
+    
+    def save_context(
+        self,
+        context_key: str,
+        content: Dict[str, Any],
+        session_id: Optional[str] = None,
+        ttl_seconds: Optional[int] = None
+    ) -> Any:
+        """
+        Save context to short-term memory
+        
+        Args:
+            context_key: Key for context lookup
+            content: Context data
+            session_id: Optional session ID
+            ttl_seconds: Time to live in seconds
+            
+        Returns:
+            Created MemoryEntry
+        """
+        try:
+            entry = self.memory_service.save_context(
+                agent_id=self.agent_id,
+                context_key=context_key,
+                content=content,
+                session_id=session_id,
+                ttl_seconds=ttl_seconds
+            )
+            return entry
+        except Exception as e:
+            logger.error(
+                f"Error saving context for agent {self.name}",
+                exc_info=True,
+                extra={
+                    "agent_id": str(self.agent_id),
+                    "context_key": context_key,
+                    "error": str(e)
+                }
+            )
+            raise
+    
+    def get_context(
+        self,
+        context_key: str,
+        session_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get context from short-term memory
+        
+        Args:
+            context_key: Context key
+            session_id: Optional session ID
+            
+        Returns:
+            Context content or None
+        """
+        try:
+            return self.memory_service.get_context(
+                agent_id=self.agent_id,
+                context_key=context_key,
+                session_id=session_id
+            )
+        except Exception as e:
+            logger.error(
+                f"Error getting context for agent {self.name}",
+                exc_info=True,
+                extra={
+                    "agent_id": str(self.agent_id),
+                    "context_key": context_key,
+                    "error": str(e)
+                }
+            )
+            return None
+    
+    def get_all_context(
+        self,
+        session_id: Optional[str] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Get all context entries for this agent/session
+        
+        Args:
+            session_id: Optional session ID
+            
+        Returns:
+            Dictionary of context_key -> content
+        """
+        try:
+            return self.memory_service.get_all_context(
+                agent_id=self.agent_id,
+                session_id=session_id
+            )
+        except Exception as e:
+            logger.error(
+                f"Error getting all context for agent {self.name}",
+                exc_info=True,
+                extra={
+                    "agent_id": str(self.agent_id),
+                    "error": str(e)
+                }
+            )
+            return {}
 
