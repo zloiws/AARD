@@ -247,6 +247,60 @@ async def get_test(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.put("/tests/{test_id}", response_model=TestResponse)
+async def update_test(
+    test_id: str,
+    request: CreateTestRequest,
+    db: Session = Depends(get_db)
+):
+    """Update a test"""
+    try:
+        from app.models.agent_test import AgentTest
+        
+        test = db.query(AgentTest).filter(AgentTest.id == UUID(test_id)).first()
+        if not test:
+            raise HTTPException(status_code=404, detail="Test not found")
+        
+        # Update fields
+        test.name = request.name
+        test.description = request.description
+        test.test_type = request.test_type
+        test.agent_id = UUID(request.agent_id)
+        test.input_data = request.input_data
+        test.expected_output = request.expected_output
+        test.validation_rules = request.validation_rules
+        test.timeout_seconds = request.timeout_seconds
+        test.max_retries = request.max_retries
+        test.required_tools = request.required_tools
+        test.tags = request.tags
+        
+        db.commit()
+        db.refresh(test)
+        
+        return TestResponse(
+            id=str(test.id),
+            name=test.name,
+            description=test.description,
+            test_type=test.test_type,
+            agent_id=str(test.agent_id),
+            input_data=test.input_data,
+            expected_output=test.expected_output,
+            validation_rules=test.validation_rules,
+            timeout_seconds=test.timeout_seconds,
+            max_retries=test.max_retries,
+            required_tools=test.required_tools,
+            created_by=test.created_by,
+            created_at=test.created_at.isoformat(),
+            tags=test.tags
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating test: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/tests/{test_id}/run", response_model=TestRunResponse)
 async def run_test(
     test_id: str,
@@ -329,6 +383,44 @@ async def get_test_runs(
         ]
     except Exception as e:
         logger.error(f"Error getting test runs: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/test-runs/{test_run_id}", response_model=TestRunResponse)
+async def get_test_run(
+    test_run_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get a test run by ID"""
+    try:
+        from app.models.agent_test import AgentTestRun
+        
+        test_run = db.query(AgentTestRun).filter(AgentTestRun.id == UUID(test_run_id)).first()
+        if not test_run:
+            raise HTTPException(status_code=404, detail="Test run not found")
+        
+        return TestRunResponse(
+            id=str(test_run.id),
+            test_id=str(test_run.test_id),
+            agent_id=str(test_run.agent_id),
+            agent_version=test_run.agent_version,
+            status=test_run.status,
+            started_at=test_run.started_at.isoformat(),
+            completed_at=test_run.completed_at.isoformat() if test_run.completed_at else None,
+            duration_ms=test_run.duration_ms,
+            output_data=test_run.output_data,
+            validation_passed=test_run.validation_passed,
+            validation_details=test_run.validation_details,
+            tokens_used=test_run.tokens_used,
+            llm_calls=test_run.llm_calls,
+            tool_calls=test_run.tool_calls,
+            error_message=test_run.error_message,
+            error_type=test_run.error_type
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting test run: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

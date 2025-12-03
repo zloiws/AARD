@@ -2,15 +2,20 @@
 API routes for artifacts (agents and tools)
 """
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.ollama_client import OllamaClient, get_ollama_client
+from app.core.auth import get_current_user_optional
 from app.models.artifact import Artifact, ArtifactType, ArtifactStatus
 from app.services.artifact_generator import ArtifactGenerator
 
@@ -87,8 +92,10 @@ async def get_artifact(
 @router.post("/", response_model=ArtifactDetailResponse)
 async def create_artifact(
     request: CreateArtifactRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
-    ollama_client: OllamaClient = Depends(get_ollama_client)
+    ollama_client: OllamaClient = Depends(get_ollama_client),
+    current_user: Optional["User"] = Depends(get_current_user_optional)
 ):
     """Create a new artifact (agent or tool)"""
     generator = ArtifactGenerator(db, ollama_client)
@@ -98,7 +105,7 @@ async def create_artifact(
             description=request.description,
             artifact_type=request.artifact_type,
             context=request.context,
-            created_by="user"  # TODO: Get from auth
+            created_by=current_user.username if current_user else "system"
         )
         return artifact
     except Exception as e:

@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Gym - Редактировать тест{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        padding: 20px;
+        margin: 0;
+        min-height: auto;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 15px 20px;
+    }
+    
+    .card-title {
+        color: #212529;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #212529;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+    
+    textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #545b62;
+    }
+    
+    .json-editor {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+    }
+    
+    .help-text {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Редактировать тест: {{ test.name }}</h2>
+        </div>
+        <div class="card-body">
+            <form id="testForm" onsubmit="return submitTest(event)">
+                <div class="form-group">
+                    <label for="name">Название теста *</label>
+                    <input type="text" id="name" name="name" class="form-control" value="{{ test.name }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Описание</label>
+                    <textarea id="description" name="description" class="form-control">{{ test.description or '' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="agent_id">Агент *</label>
+                    <select id="agent_id" name="agent_id" class="form-control" required>
+                        <option value="">Выберите агента</option>
+                        {% for agent in agents %}
+                        <option value="{{ agent.id }}" {% if agent.id == test.agent_id %}selected{% endif %}>{{ agent.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="test_type">Тип теста *</label>
+                    <select id="test_type" name="test_type" class="form-control" required>
+                        <option value="functional" {% if test.test_type == 'functional' %}selected{% endif %}>Функциональный</option>
+                        <option value="performance" {% if test.test_type == 'performance' %}selected{% endif %}>Производительность</option>
+                        <option value="integration" {% if test.test_type == 'integration' %}selected{% endif %}>Интеграционный</option>
+                        <option value="regression" {% if test.test_type == 'regression' %}selected{% endif %}>Регрессионный</option>
+                        <option value="stress" {% if test.test_type == 'stress' %}selected{% endif %}>Нагрузочный</option>
+                        <option value="security" {% if test.test_type == 'security' %}selected{% endif %}>Безопасность</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="input_data">Входные данные (JSON) *</label>
+                    <textarea id="input_data" name="input_data" class="form-control json-editor" required rows="8">{{ test.input_data | tojson(indent=2) if test.input_data else '{}' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="expected_output">Ожидаемый результат (JSON, опционально)</label>
+                    <textarea id="expected_output" name="expected_output" class="form-control json-editor" rows="6">{{ test.expected_output | tojson(indent=2) if test.expected_output else '{}' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="validation_rules">Правила валидации (JSON, опционально)</label>
+                    <textarea id="validation_rules" name="validation_rules" class="form-control json-editor" rows="4">{{ test.validation_rules | tojson(indent=2) if test.validation_rules else '{}' }}</textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="timeout_seconds">Таймаут (секунды)</label>
+                            <input type="number" id="timeout_seconds" name="timeout_seconds" class="form-control" value="{{ test.timeout_seconds }}" min="1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="max_retries">Максимум повторов</label>
+                            <input type="number" id="max_retries" name="max_retries" class="form-control" value="{{ test.max_retries }}" min="0">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tags">Теги (через запятую)</label>
+                    <input type="text" id="tags" name="tags" class="form-control" value="{{ test.tags | join(', ') if test.tags else '' }}" placeholder="tag1, tag2, tag3">
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    <a href="/agent-gym/tests/{{ test.id }}" class="btn btn-secondary">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function submitTest(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    // Parse JSON fields
+    let input_data, expected_output, validation_rules;
+    try {
+        input_data = JSON.parse(formData.get('input_data'));
+    } catch (e) {
+        alert('Ошибка в JSON входных данных: ' + e.message);
+        return false;
+    }
+    
+    try {
+        const expectedOutputText = formData.get('expected_output').trim();
+        expected_output = expectedOutputText ? JSON.parse(expectedOutputText) : null;
+    } catch (e) {
+        alert('Ошибка в JSON ожидаемого результата: ' + e.message);
+        return false;
+    }
+    
+    try {
+        const validationRulesText = formData.get('validation_rules').trim();
+        validation_rules = validationRulesText ? JSON.parse(validationRulesText) : null;
+    } catch (e) {
+        alert('Ошибка в JSON правил валидации: ' + e.message);
+        return false;
+    }
+    
+    // Parse tags
+    const tagsText = formData.get('tags');
+    const tags = tagsText ? tagsText.split(',').map(t => t.trim()).filter(t => t) : [];
+    
+    const payload = {
+        name: formData.get('name'),
+        description: formData.get('description') || null,
+        agent_id: formData.get('agent_id'),
+        test_type: formData.get('test_type'),
+        input_data: input_data,
+        expected_output: expected_output,
+        validation_rules: validation_rules,
+        timeout_seconds: parseInt(formData.get('timeout_seconds')),
+        max_retries: parseInt(formData.get('max_retries')),
+        tags: tags
+    };
+    
+    fetch('/api/agent-gym/tests/{{ test.id }}', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            window.location.href = '/agent-gym/tests/' + data.id;
+        } else {
+            alert('Ошибка обновления теста: ' + (data.detail || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+    
+    return false;
+}
+</script>
+{% endblock %}
+

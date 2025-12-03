@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Gym - {{ test.name }}{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        padding: 20px;
+        margin: 0;
+        min-height: auto;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .card-title {
+        color: #212529;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .badge {
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    
+    .badge-success {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .badge-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .badge-warning {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .badge-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .btn {
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+    
+    .table {
+        background: white;
+        margin: 0;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+        padding: 12px;
+    }
+    
+    .table td {
+        color: #212529;
+        border-bottom: 1px solid #e9ecef;
+        padding: 12px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        font-weight: 600;
+        color: #007bff;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .json-view {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">{{ test.name }}</h2>
+            <div>
+                <a href="/agent-gym/tests/{{ test.id }}/edit" class="btn btn-primary">Редактировать</a>
+                <a href="/agent-gym" class="btn btn-secondary">Назад к списку</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Тип:</strong> <span class="badge badge-secondary">{{ test.test_type }}</span><br>
+                    <strong>Агент:</strong> {{ test.agent.name if test.agent else 'N/A' }}<br>
+                    <strong>Таймаут:</strong> {{ test.timeout_seconds }} сек<br>
+                    <strong>Максимум повторов:</strong> {{ test.max_retries }}
+                </div>
+                <div class="col-md-6">
+                    {% if test.description %}
+                    <strong>Описание:</strong><br>
+                    <p>{{ test.description }}</p>
+                    {% endif %}
+                    {% if test.tags %}
+                    <strong>Теги:</strong>
+                    {% for tag in test.tags %}
+                        <span class="badge badge-secondary">{{ tag }}</span>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    {% if stats %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Статистика</h3>
+        </div>
+        <div class="card-body">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_runs }}</div>
+                    <div class="stat-label">Всего запусков</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.passed }}</div>
+                    <div class="stat-label">Пройдено</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.failed }}</div>
+                    <div class="stat-label">Провалено</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ "%.1f"|format(stats.success_rate) }}%</div>
+                    <div class="stat-label">Успешность</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ (stats.avg_duration_ms / 1000)|round(2) }}s</div>
+                    <div class="stat-label">Среднее время</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Test Runs -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">История запусков</h3>
+            <button class="btn btn-primary" onclick="runTest()">Запустить тест</button>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Дата запуска</th>
+                        <th>Статус</th>
+                        <th>Длительность</th>
+                        <th>Валидация</th>
+                        <th>Метрики</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if runs %}
+                        {% for run in runs %}
+                        <tr>
+                            <td>{{ run.started_at.strftime('%Y-%m-%d %H:%M:%S') if run.started_at else 'N/A' }}</td>
+                            <td>
+                                {% if run.status == 'passed' %}
+                                    <span class="badge badge-success">Пройден</span>
+                                {% elif run.status == 'failed' %}
+                                    <span class="badge badge-danger">Провален</span>
+                                {% elif run.status == 'running' %}
+                                    <span class="badge badge-warning">Выполняется</span>
+                                {% elif run.status == 'error' %}
+                                    <span class="badge badge-danger">Ошибка</span>
+                                {% elif run.status == 'timeout' %}
+                                    <span class="badge badge-warning">Таймаут</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">{{ run.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ (run.duration_ms / 1000)|round(2) if run.duration_ms else 'N/A' }}s</td>
+                            <td>
+                                {% if run.validation_passed == 'true' %}
+                                    <span class="badge badge-success">✓</span>
+                                {% elif run.validation_passed == 'false' %}
+                                    <span class="badge badge-danger">✗</span>
+                                {% elif run.validation_passed == 'partial' %}
+                                    <span class="badge badge-warning">~</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if run.tokens_used or run.llm_calls or run.tool_calls %}
+                                    <small>
+                                        {% if run.tokens_used %}Tokens: {{ run.tokens_used }}<br>{% endif %}
+                                        {% if run.llm_calls %}LLM: {{ run.llm_calls }}<br>{% endif %}
+                                        {% if run.tool_calls %}Tools: {{ run.tool_calls }}{% endif %}
+                                    </small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="showRunDetails('{{ run.id }}')">Детали</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                Запусков пока нет. <button class="btn btn-sm btn-primary" onclick="runTest()">Запустить первый тест</button>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Run Details Modal -->
+<div id="runDetailsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+    <div style="background: white; margin: 50px auto; max-width: 800px; padding: 20px; border-radius: 8px;">
+        <h3>Детали запуска</h3>
+        <div id="runDetailsContent"></div>
+        <button class="btn btn-secondary" onclick="closeRunDetails()">Закрыть</button>
+    </div>
+</div>
+
+<script>
+function getCurrentUsername() {
+    return localStorage.getItem('current_username') || null;
+}
+
+function runTest() {
+    if (!confirm('Запустить тест сейчас?')) return;
+    
+    fetch('/api/agent-gym/tests/{{ test.id }}/run', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            run_by: getCurrentUsername() || 'user',
+            notes: 'Запущено из веб-интерфейса'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            alert('Тест запущен! Обновите страницу через несколько секунд.');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            alert('Ошибка запуска теста: ' + (data.detail || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+}
+
+function showRunDetails(runId) {
+    fetch('/api/agent-gym/test-runs/' + runId)
+    .then(response => response.json())
+    .then(data => {
+        const content = document.getElementById('runDetailsContent');
+        content.innerHTML = `
+            <div class="mb-3">
+                <strong>Статус:</strong> ${data.status}<br>
+                <strong>Начало:</strong> ${data.started_at}<br>
+                <strong>Завершение:</strong> ${data.completed_at || 'N/A'}<br>
+                <strong>Длительность:</strong> ${data.duration_ms ? (data.duration_ms / 1000).toFixed(2) + 's' : 'N/A'}
+            </div>
+            ${data.output_data ? `
+            <div class="mb-3">
+                <strong>Результат:</strong>
+                <div class="json-view">${JSON.stringify(data.output_data, null, 2)}</div>
+            </div>
+            ` : ''}
+            ${data.validation_details ? `
+            <div class="mb-3">
+                <strong>Детали валидации:</strong>
+                <div class="json-view">${JSON.stringify(data.validation_details, null, 2)}</div>
+            </div>
+            ` : ''}
+            ${data.error_message ? `
+            <div class="mb-3">
+                <strong>Ошибка:</strong>
+                <div style="color: red;">${data.error_message}</div>
+            </div>
+            ` : ''}
+        `;
+        document.getElementById('runDetailsModal').style.display = 'block';
+    })
+    .catch(error => {
+        alert('Ошибка загрузки деталей: ' + error.message);
+    });
+}
+
+function closeRunDetails() {
+    document.getElementById('runDetailsModal').style.display = 'none';
+}
+</script>
+{% endblock %}
+

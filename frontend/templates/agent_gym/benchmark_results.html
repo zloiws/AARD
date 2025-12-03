@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Gym - {{ benchmark.name }}{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        padding: 20px;
+        margin: 0;
+        min-height: auto;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .card-title {
+        color: #212529;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .table {
+        background: white;
+        margin: 0;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+        padding: 12px;
+    }
+    
+    .table td {
+        color: #212529;
+        border-bottom: 1px solid #e9ecef;
+        padding: 12px;
+    }
+    
+    .badge {
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    
+    .badge-success {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .badge-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn {
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        font-weight: 600;
+        color: #007bff;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">{{ benchmark.name }}</h2>
+            <button class="btn btn-primary" onclick="runBenchmark()">Запустить бенчмарк</button>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Тип:</strong> <span class="badge badge-secondary">{{ benchmark.benchmark_type }}</span><br>
+                    <strong>Агентов:</strong> {{ benchmark.agent_ids|length if benchmark.agent_ids else 0 }}<br>
+                    <strong>Задач:</strong> {{ benchmark.tasks|length if benchmark.tasks else 0 }}<br>
+                    <strong>Итераций:</strong> {{ benchmark.iterations }}
+                </div>
+                <div class="col-md-6">
+                    {% if benchmark.description %}
+                    <strong>Описание:</strong><br>
+                    <p>{{ benchmark.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    {% if stats %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Статистика</h3>
+        </div>
+        <div class="card-body">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_runs }}</div>
+                    <div class="stat-label">Всего запусков</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.passed }}</div>
+                    <div class="stat-label">Пройдено</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.failed }}</div>
+                    <div class="stat-label">Провалено</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ (stats.avg_duration_ms / 1000)|round(2) if stats.avg_duration_ms else 0 }}s</div>
+                    <div class="stat-label">Среднее время</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Benchmark Runs -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">История запусков</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Дата запуска</th>
+                        <th>Статус</th>
+                        <th>Длительность</th>
+                        <th>Результаты</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if runs %}
+                        {% for run in runs %}
+                        <tr>
+                            <td>{{ run.started_at.strftime('%Y-%m-%d %H:%M:%S') if run.started_at else 'N/A' }}</td>
+                            <td>
+                                {% if run.status == 'passed' %}
+                                    <span class="badge badge-success">Пройден</span>
+                                {% elif run.status == 'failed' %}
+                                    <span class="badge badge-danger">Провален</span>
+                                {% elif run.status == 'running' %}
+                                    <span class="badge badge-warning">Выполняется</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">{{ run.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ (run.duration_ms / 1000)|round(2) if run.duration_ms else 'N/A' }}s</td>
+                            <td>
+                                {% if run.summary %}
+                                    <small>
+                                        Агентов: {{ run.summary.total_agents or 'N/A' }}<br>
+                                        {% if run.summary.best_agent %}
+                                        Лучший: {{ run.summary.best_agent.agent_name or 'N/A' }}
+                                        {% endif %}
+                                    </small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="showRunDetails('{{ run.id }}')">Детали</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">
+                                Запусков пока нет. <button class="btn btn-sm btn-primary" onclick="runBenchmark()">Запустить первый бенчмарк</button>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function getCurrentUsername() {
+    return localStorage.getItem('current_username') || null;
+}
+
+function runBenchmark() {
+    if (!confirm('Запустить бенчмарк сейчас?')) return;
+    
+    fetch('/api/agent-gym/benchmarks/{{ benchmark.id }}/run', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            run_by: getCurrentUsername() || 'user',
+            notes: 'Запущено из веб-интерфейса'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            alert('Бенчмарк запущен! Обновите страницу через несколько секунд.');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            alert('Ошибка запуска бенчмарка: ' + (data.detail || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+}
+
+function showRunDetails(runId) {
+    // TODO: Implement run details modal
+    alert('Детали запуска (ID: ' + runId + ')');
+}
+</script>
+{% endblock %}
+

@@ -3,11 +3,12 @@ OpenTelemetry database exporter for execution traces
 """
 from typing import Optional, List
 from datetime import datetime
+import threading
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 from opentelemetry.trace import Status, StatusCode
 
-from app.core.database import SessionLocal
+from app.core.database import get_session_local
 from app.models.trace import ExecutionTrace
 from app.core.logging_config import LoggingConfig
 
@@ -31,7 +32,7 @@ class DatabaseSpanExporter(SpanExporter):
     
     def export(self, spans: List[ReadableSpan]) -> SpanExportResult:
         """
-        Export spans to database
+        Export spans to database (non-blocking)
         
         Args:
             spans: List of spans to export
@@ -48,33 +49,58 @@ class DatabaseSpanExporter(SpanExporter):
         if not spans:
             return SpanExportResult.SUCCESS
         
-        db = SessionLocal()
+        # Run export in background to avoid blocking requests
+        # Use fire-and-forget approach - don't wait for DB write
         try:
-            for span in spans:
+            def export_async():
+                """Export spans asynchronously"""
+                db = None
                 try:
-                    self._export_span(span, db)
-                except Exception as e:
-                    # Only log if not shutdown (to avoid noise during shutdown)
+                    SessionLocal = get_session_local()
+                    db = SessionLocal()
+                    for span in spans:
+                        try:
+                            self._export_span(span, db)
+                        except Exception as e:
+                            # Only log if not shutdown
+                            if not _shutdown:
+                                logger.error(
+                                    f"Failed to export span {span.context.span_id}: {e}",
+                                    exc_info=True
+                                )
+                            # Continue with other spans even if one fails
+                    
+                    db.commit()
                     if not _shutdown:
-                        logger.error(
-                            f"Failed to export span {span.context.span_id}: {e}",
-                            exc_info=True
-                        )
-                    # Continue with other spans even if one fails
+                        logger.debug(f"Exported {len(spans)} spans to database")
+                except Exception as e:
+                    # Only log if not shutdown
+                    if not _shutdown:
+                        logger.error(f"Failed to export spans to database: {e}", exc_info=True)
+                    if db:
+                        try:
+                            db.rollback()
+                        except Exception:
+                            pass
+                finally:
+                    if db:
+                        try:
+                            db.close()
+                        except Exception:
+                            pass
             
-            db.commit()
-            if not _shutdown:
-                logger.debug(f"Exported {len(spans)} spans to database")
+            # Start export in background thread (fire-and-forget)
+            thread = threading.Thread(target=export_async, daemon=True)
+            thread.start()
+            
+            # Return success immediately - don't wait for DB write
             return SpanExportResult.SUCCESS
             
         except Exception as e:
-            # Only log if not shutdown
+            # If thread creation fails, silently drop spans (don't block)
             if not _shutdown:
-                logger.error(f"Failed to export spans to database: {e}", exc_info=True)
-            db.rollback()
-            return SpanExportResult.FAILURE
-        finally:
-            db.close()
+                logger.warning(f"Failed to start span export thread: {e}")
+            return SpanExportResult.SUCCESS
     
     def _export_span(self, span: ReadableSpan, db):
         """

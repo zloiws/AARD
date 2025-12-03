@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Вход - AARD{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .login-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        padding: 40px;
+        max-width: 400px;
+        width: 100%;
+    }
+    
+    .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .login-header h1 {
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .btn {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-link {
+        background: none;
+        color: #667eea;
+        text-decoration: none;
+        display: block;
+        text-align: center;
+        margin-top: 15px;
+    }
+    
+    .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+    }
+    
+    .error-message.show {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-header">
+        <h1>Вход в AARD</h1>
+        <p style="color: #666;">Войдите в свою учетную запись</p>
+    </div>
+    
+    <div id="errorMessage" class="error-message"></div>
+    
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+        <div class="form-group">
+            <label for="username">Имя пользователя или Email</label>
+            <input type="text" id="username" name="username" class="form-control" required autofocus>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Пароль</label>
+            <input type="password" id="password" name="password" class="form-control" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Войти</button>
+        
+        <a href="/auth/register" class="btn-link">Нет аккаунта? Зарегистрироваться</a>
+    </form>
+</div>
+
+<script>
+function handleLogin(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    const payload = {
+        username: formData.get('username'),
+        password: formData.get('password')
+    };
+    
+    fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.token) {
+            // Store username in localStorage
+            if (data.user && data.user.username) {
+                localStorage.setItem('current_username', data.user.username);
+            }
+            // Redirect to main page
+            window.location.href = '/';
+        } else {
+            showError(data.detail || 'Ошибка входа');
+        }
+    })
+    .catch(error => {
+        showError('Ошибка: ' + error.message);
+    });
+    
+    return false;
+}
+
+function showError(message) {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.textContent = message;
+    errorDiv.classList.add('show');
+}
+</script>
+{% endblock %}
+

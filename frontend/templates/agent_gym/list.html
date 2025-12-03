@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Gym - Тесты{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        padding: 20px;
+        margin: 0;
+        min-height: auto;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .card-title {
+        color: #212529;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .table {
+        background: white;
+        margin: 0;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+        padding: 12px;
+    }
+    
+    .table td {
+        color: #212529;
+        border-bottom: 1px solid #e9ecef;
+        padding: 12px;
+        vertical-align: middle;
+    }
+    
+    .badge {
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    
+    .btn {
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+    
+    .btn-sm {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+    
+    .filters {
+        background: white;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .filters form {
+        display: flex;
+        gap: 15px;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .form-group label {
+        font-size: 12px;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .form-control {
+        padding: 6px 10px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Тесты Agent Gym</h2>
+            <a href="/agent-gym/tests/create" class="btn btn-primary">Создать тест</a>
+        </div>
+        <div class="card-body">
+            <!-- Filters -->
+            <div class="filters">
+                <form method="get" action="/agent-gym">
+                    <div class="form-group">
+                        <label>Тип теста</label>
+                        <select name="test_type" class="form-control">
+                            <option value="">Все типы</option>
+                            <option value="functional" {% if filters.test_type == 'functional' %}selected{% endif %}>Функциональный</option>
+                            <option value="performance" {% if filters.test_type == 'performance' %}selected{% endif %}>Производительность</option>
+                            <option value="integration" {% if filters.test_type == 'integration' %}selected{% endif %}>Интеграционный</option>
+                            <option value="regression" {% if filters.test_type == 'regression' %}selected{% endif %}>Регрессионный</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Агент</label>
+                        <select name="agent_id" class="form-control">
+                            <option value="">Все агенты</option>
+                            {% for agent in agents %}
+                            <option value="{{ agent.id }}" {% if filters.agent_id == agent.id|string %}selected{% endif %}>{{ agent.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="submit" class="btn btn-primary">Применить</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Tests Table -->
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Тип</th>
+                        <th>Агент</th>
+                        <th>Последний запуск</th>
+                        <th>Статус</th>
+                        <th>Всего запусков</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if tests %}
+                        {% for test in tests %}
+                        <tr>
+                            <td>
+                                <strong>{{ test.name }}</strong>
+                                {% if test.description %}
+                                <br><small class="text-muted">{{ test.description[:50] }}{% if test.description|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-secondary">{{ test.test_type.value }}</span>
+                            </td>
+                            <td>{{ test.agent.name if test.agent else 'N/A' }}</td>
+                            <td>
+                                {% set stats = test_stats.get(test.id|string, {}) %}
+                                {% if stats.last_run %}
+                                    {{ stats.last_run[:19] }}
+                                {% else %}
+                                    <span class="text-muted">Никогда</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set stats = test_stats.get(test.id|string, {}) %}
+                                {% if stats.last_status %}
+                                    {% if stats.last_status == 'passed' %}
+                                        <span class="badge badge-success">Пройден</span>
+                                    {% elif stats.last_status == 'failed' %}
+                                        <span class="badge badge-danger">Провален</span>
+                                    {% elif stats.last_status == 'running' %}
+                                        <span class="badge badge-warning">Выполняется</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">{{ stats.last_status }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ test_stats.get(test.id|string, {}).total_runs or 0 }}</td>
+                            <td>
+                                <a href="/agent-gym/tests/{{ test.id }}" class="btn btn-sm btn-primary">Просмотр</a>
+                                <a href="/agent-gym/tests/{{ test.id }}/edit" class="btn btn-sm btn-secondary">Редактировать</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                Тесты не найдены. <a href="/agent-gym/tests/create">Создать первый тест</a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

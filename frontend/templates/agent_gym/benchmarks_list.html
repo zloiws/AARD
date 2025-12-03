@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Gym - Бенчмарки{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        padding: 20px;
+        margin: 0;
+        min-height: auto;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .card-title {
+        color: #212529;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .table {
+        background: white;
+        margin: 0;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+        padding: 12px;
+    }
+    
+    .table td {
+        color: #212529;
+        border-bottom: 1px solid #e9ecef;
+        padding: 12px;
+        vertical-align: middle;
+    }
+    
+    .badge {
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    
+    .btn {
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+    
+    .btn-sm {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Бенчмарки Agent Gym</h2>
+            <a href="/agent-gym/benchmarks/create" class="btn btn-primary">Создать бенчмарк</a>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Тип</th>
+                        <th>Агентов</th>
+                        <th>Задач</th>
+                        <th>Последний запуск</th>
+                        <th>Статус</th>
+                        <th>Всего запусков</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if benchmarks %}
+                        {% for benchmark in benchmarks %}
+                        <tr>
+                            <td>
+                                <strong>{{ benchmark.name }}</strong>
+                                {% if benchmark.description %}
+                                <br><small class="text-muted">{{ benchmark.description[:50] }}{% if benchmark.description|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-secondary">{{ benchmark.benchmark_type }}</span>
+                            </td>
+                            <td>{{ benchmark.agent_ids|length if benchmark.agent_ids else 0 }}</td>
+                            <td>{{ benchmark.tasks|length if benchmark.tasks else 0 }}</td>
+                            <td>
+                                {% set stats = benchmark_stats.get(benchmark.id|string, {}) %}
+                                {% if stats.last_run %}
+                                    {{ stats.last_run[:19] }}
+                                {% else %}
+                                    <span class="text-muted">Никогда</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set stats = benchmark_stats.get(benchmark.id|string, {}) %}
+                                {% if stats.last_status %}
+                                    {% if stats.last_status == 'passed' %}
+                                        <span class="badge badge-success">Пройден</span>
+                                    {% elif stats.last_status == 'failed' %}
+                                        <span class="badge badge-danger">Провален</span>
+                                    {% elif stats.last_status == 'running' %}
+                                        <span class="badge badge-warning">Выполняется</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">{{ stats.last_status }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ benchmark_stats.get(benchmark.id|string, {}).total_runs or 0 }}</td>
+                            <td>
+                                <a href="/agent-gym/benchmarks/{{ benchmark.id }}" class="btn btn-sm btn-primary">Просмотр</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">
+                                Бенчмарки не найдены. <a href="/agent-gym/benchmarks/create">Создать первый бенчмарк</a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

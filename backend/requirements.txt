@@ -16,14 +16,16 @@ httpx==0.25.1
 aiohttp==3.9.1
 
 # Data Validation
-pydantic==2.5.0
+pydantic[email]==2.5.0
 pydantic-settings==2.1.0
 
 # Utilities
 python-dotenv==1.0.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
 python-dateutil==2.8.2
+email-validator==2.1.0
 
 # Observability - OpenTelemetry (optional, can be disabled via ENABLE_TRACING=false)
 # Latest stable versions as of 2024

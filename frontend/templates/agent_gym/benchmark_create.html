@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Gym - Создать бенчмарк{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        padding: 20px;
+        margin: 0;
+        min-height: auto;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 15px 20px;
+    }
+    
+    .card-title {
+        color: #212529;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #212529;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .json-editor {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Создать бенчмарк</h2>
+        </div>
+        <div class="card-body">
+            <form id="benchmarkForm" onsubmit="return submitBenchmark(event)">
+                <div class="form-group">
+                    <label for="name">Название бенчмарка *</label>
+                    <input type="text" id="name" name="name" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Описание</label>
+                    <textarea id="description" name="description" class="form-control"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="benchmark_type">Тип бенчмарка *</label>
+                    <select id="benchmark_type" name="benchmark_type" class="form-control" required>
+                        <option value="performance">Производительность</option>
+                        <option value="functional">Функциональный</option>
+                        <option value="integration">Интеграционный</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="agent_ids">Агенты (выберите несколько) *</label>
+                    <select id="agent_ids" name="agent_ids" class="form-control" multiple required size="5">
+                        {% for agent in agents %}
+                        <option value="{{ agent.id }}">{{ agent.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <small>Удерживайте Ctrl/Cmd для выбора нескольких агентов</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tasks">Задачи (JSON массив) *</label>
+                    <textarea id="tasks" name="tasks" class="form-control json-editor" required rows="10">[
+  {
+    "task": "Описание задачи 1",
+    "context": {}
+  },
+  {
+    "task": "Описание задачи 2",
+    "context": {}
+  }
+]</textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="iterations">Итераций</label>
+                            <input type="number" id="iterations" name="iterations" class="form-control" value="1" min="1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="timeout_seconds">Таймаут (секунды)</label>
+                            <input type="number" id="timeout_seconds" name="timeout_seconds" class="form-control" value="300" min="1">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Создать бенчмарк</button>
+                    <a href="/agent-gym/benchmarks" class="btn btn-secondary">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function submitBenchmark(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    // Parse JSON tasks
+    let tasks;
+    try {
+        tasks = JSON.parse(formData.get('tasks'));
+    } catch (e) {
+        alert('Ошибка в JSON задач: ' + e.message);
+        return false;
+    }
+    
+    // Get selected agent IDs
+    const agentSelect = document.getElementById('agent_ids');
+    const agentIds = Array.from(agentSelect.selectedOptions).map(opt => opt.value);
+    
+    if (agentIds.length === 0) {
+        alert('Выберите хотя бы одного агента');
+        return false;
+    }
+    
+    const payload = {
+        name: formData.get('name'),
+        description: formData.get('description') || null,
+        benchmark_type: formData.get('benchmark_type'),
+        agent_ids: agentIds,
+        tasks: tasks,
+        iterations: parseInt(formData.get('iterations')),
+        timeout_seconds: parseInt(formData.get('timeout_seconds')),
+        parallel_execution: false,
+        created_by: "user"
+    };
+    
+    fetch('/api/agent-gym/benchmarks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            window.location.href = '/agent-gym/benchmarks/' + data.id;
+        } else {
+            alert('Ошибка создания бенчмарка: ' + (data.detail || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+    
+    return false;
+}
+</script>
+{% endblock %}
+

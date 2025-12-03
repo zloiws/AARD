@@ -25,7 +25,7 @@ from app.api.routes import (
     chat, pages, models, servers, approvals_pages, logging as logging_routes,
     traces, traces_pages, requests, queues, checkpoints, metrics, health,
     artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages, tools_pages,
-    experiments, agent_gym, agent_memory
+    experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages
 )
 
 # Configure logging first
@@ -159,12 +159,15 @@ app.include_router(tools_pages.router)
 app.include_router(traces_pages.router)
 app.include_router(experiments.router)
 app.include_router(agent_gym.router)
+app.include_router(agent_gym_pages.router)
 app.include_router(agent_memory.router)
+app.include_router(auth.router)
+app.include_router(auth_pages.router)
 
 
-@app.get("/")
+@app.get("/api")
 async def root():
-    """Root endpoint"""
+    """Root API endpoint"""
     settings = get_settings()
     return {
         "name": settings.app_name,

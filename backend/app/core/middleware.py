@@ -29,15 +29,23 @@ class LoggingContextMiddleware(BaseHTTPMiddleware):
             user_agent=request.headers.get("user-agent"),
         )
         
-        # Get trace_id from OpenTelemetry context
-        otel_trace_id = get_current_trace_id()
-        if otel_trace_id:
-            LoggingConfig.set_context(trace_id=otel_trace_id)
-            add_span_attributes(
-                request_id=request_id,
-                method=request.method,
-                path=request.url.path,
-            )
+        # Get trace_id from OpenTelemetry context (non-blocking)
+        try:
+            otel_trace_id = get_current_trace_id()
+            if otel_trace_id:
+                LoggingConfig.set_context(trace_id=otel_trace_id)
+                try:
+                    add_span_attributes(
+                        request_id=request_id,
+                        method=request.method,
+                        path=request.url.path,
+                    )
+                except Exception:
+                    # Ignore tracing errors - don't block requests
+                    pass
+        except Exception:
+            # Ignore tracing errors - don't block requests
+            pass
         
         # Also try to extract from headers (for external traces)
         header_trace_id = request.headers.get("x-trace-id") or request.headers.get("traceparent")

@@ -26,6 +26,7 @@ from app.models.agent_memory import (  # noqa: F401
     AgentMemory, MemoryEntry, MemoryAssociation,
     MemoryType, AssociationType
 )
+from app.models.user import User, Session, UserRole  # noqa: F401
 
 __all__ = [
     "Base",
@@ -89,5 +90,9 @@ __all__ = [
     "MemoryAssociation",
     "MemoryType",
     "AssociationType",
+    # Authentication
+    "User",
+    "Session",
+    "UserRole",
 ]
 

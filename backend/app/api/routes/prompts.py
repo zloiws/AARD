@@ -2,15 +2,19 @@
 API routes for prompts
 """
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
+from app.core.auth import get_current_user_optional
 from app.models.prompt import Prompt, PromptType, PromptStatus
 
 router = APIRouter(prefix="/api/prompts", tags=["prompts"])
@@ -91,7 +95,9 @@ async def get_prompt(
 @router.post("/", response_model=PromptResponse)
 async def create_prompt(
     request: CreatePromptRequest,
-    db: Session = Depends(get_db)
+    http_request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional["User"] = Depends(get_current_user_optional)
 ):
     """Create a new prompt"""
     try:
@@ -115,7 +121,7 @@ async def create_prompt(
             prompt_type=prompt_type_str,
             level=request.level,
             status=status_str,
-            created_by="user"  # TODO: Get from auth
+            created_by=current_user.username if current_user else "system"
         )
         
         # Verify values are lowercase before commit

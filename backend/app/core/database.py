@@ -134,6 +134,12 @@ def get_engine():
             max_overflow=settings.database_max_overflow,
             pool_pre_ping=True,  # Verify connections before using
             echo=echo,  # Controlled by log_sqlalchemy setting
+            connect_args={
+                "connect_timeout": 5,  # 5 second timeout for connection
+                "options": "-c statement_timeout=5000"  # 5 second timeout for queries (PostgreSQL)
+            } if "postgresql" in settings.database_url else {
+                "timeout": 5  # For SQLite
+            }
         )
         
         # Explicitly set SQLAlchemy logger level
