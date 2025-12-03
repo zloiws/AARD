@@ -10,4 +10,5 @@ This directory contains active guides and documentation for the AARD project.
 - `PROMETHEUS_METRICS.md` - Prometheus metrics setup and usage
 - `AGENTS.md` - Agents architecture and usage guide
 - `TOOLS.md` - Tools system documentation
+- `AGENT_TOOLS_INTEGRATION.md` - Integration of agents with tools
 

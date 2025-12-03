@@ -10,8 +10,11 @@ from datetime import datetime
 from app.core.ollama_client import OllamaClient, TaskType
 from app.core.logging_config import LoggingConfig
 from app.core.tracing import get_tracer, add_span_attributes
+from app.core.database import SessionLocal
 from app.models.agent import Agent
 from app.services.agent_service import AgentService
+from app.services.tool_service import ToolService
+from app.tools.python_tool import PythonTool
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -31,7 +34,8 @@ class BaseAgent(ABC):
         self,
         agent_id: UUID,
         agent_service: AgentService,
-        ollama_client: Optional[OllamaClient] = None
+        ollama_client: Optional[OllamaClient] = None,
+        db_session = None
     ):
         """
         Initialize agent
@@ -40,11 +44,16 @@ class BaseAgent(ABC):
             agent_id: Agent ID from database
             agent_service: AgentService instance
             ollama_client: OllamaClient instance (optional, will create if not provided)
+            db_session: Database session (optional, will create if not provided)
         """
         self.agent_id = agent_id
         self.agent_service = agent_service
         self.ollama_client = ollama_client or OllamaClient()
         self.tracer = get_tracer(__name__)
+        
+        # Database session for tools
+        self.db_session = db_session or SessionLocal()
+        self.tool_service = ToolService(self.db_session)
         
         # Load agent data from database
         self._agent_data: Optional[Agent] = None
@@ -251,4 +260,177 @@ class BaseAgent(ABC):
             success=success,
             execution_time=execution_time
         )
+    
+    def get_available_tools(
+        self,
+        category: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get list of tools available to this agent
+        
+        Args:
+            category: Optional tool category filter
+            
+        Returns:
+            List of tool dictionaries
+        """
+        tools = self.tool_service.list_tools(
+            status="active",
+            category=category,
+            active_only=True
+        )
+        
+        # Filter by agent access
+        available = []
+        for tool in tools:
+            if self.tool_service.can_agent_use_tool(tool.id, self.agent_id):
+                available.append(tool.to_dict())
+        
+        return available
+    
+    def get_tool_by_name(self, tool_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get tool by name if available to this agent
+        
+        Args:
+            tool_name: Tool name
+            
+        Returns:
+            Tool dictionary or None
+        """
+        tool = self.tool_service.get_tool_by_name(tool_name)
+        if not tool:
+            return None
+        
+        if not self.tool_service.can_agent_use_tool(tool.id, self.agent_id):
+            logger.warning(
+                f"Agent {self.name} does not have access to tool {tool_name}",
+                extra={"agent_id": str(self.agent_id), "tool_name": tool_name}
+            )
+            return None
+        
+        return tool.to_dict()
+    
+    async def use_tool(
+        self,
+        tool_name: str,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Use a tool to perform an action
+        
+        Args:
+            tool_name: Name of the tool to use
+            **kwargs: Parameters to pass to the tool
+            
+        Returns:
+            Tool execution result:
+            {
+                "status": "success" | "failed",
+                "result": Any,
+                "message": str,
+                "metadata": Dict
+            }
+        """
+        with self.tracer.start_as_current_span(
+            "agent.use_tool",
+            attributes={
+                "agent.id": str(self.agent_id),
+                "agent.name": self.name,
+                "tool.name": tool_name,
+            }
+        ) as span:
+            try:
+                # Get tool
+                tool_data = self.get_tool_by_name(tool_name)
+                if not tool_data:
+                    error_msg = f"Tool '{tool_name}' not found or not accessible"
+                    add_span_attributes(span, {
+                        "tool.error": error_msg,
+                        "tool.success": False,
+                    })
+                    return {
+                        "status": "failed",
+                        "result": None,
+                        "message": error_msg,
+                        "metadata": {}
+                    }
+                
+                # Check permissions
+                if not self._check_permissions(f"use_tool:{tool_name}"):
+                    error_msg = f"Agent {self.name} does not have permission to use tool {tool_name}"
+                    add_span_attributes(span, {
+                        "tool.error": error_msg,
+                        "tool.success": False,
+                    })
+                    return {
+                        "status": "failed",
+                        "result": None,
+                        "message": error_msg,
+                        "metadata": {}
+                    }
+                
+                # Create tool instance
+                tool = PythonTool(
+                    tool_id=tool_data["id"],
+                    tool_service=self.tool_service
+                )
+                
+                # Execute tool
+                result = await tool.execute(**kwargs)
+                
+                add_span_attributes(span, {
+                    "tool.success": result["status"] == "success",
+                    "tool.execution_time_ms": result.get("metadata", {}).get("execution_time_ms", 0),
+                })
+                
+                logger.info(
+                    f"Agent {self.name} used tool {tool_name}",
+                    extra={
+                        "agent_id": str(self.agent_id),
+                        "tool_name": tool_name,
+                        "tool_status": result["status"],
+                    }
+                )
+                
+                return result
+                
+            except Exception as e:
+                add_span_attributes(span, {
+                    "tool.error": str(e),
+                    "tool.success": False,
+                })
+                logger.error(
+                    f"Error using tool {tool_name} for agent {self.name}",
+                    exc_info=True,
+                    extra={
+                        "agent_id": str(self.agent_id),
+                        "tool_name": tool_name,
+                        "error": str(e),
+                    }
+                )
+                return {
+                    "status": "failed",
+                    "result": None,
+                    "message": f"Tool execution error: {str(e)}",
+                    "metadata": {"error": str(e)}
+                }
+    
+    def list_tools_by_category(self) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Get tools grouped by category
+        
+        Returns:
+            Dictionary mapping category to list of tools
+        """
+        tools = self.get_available_tools()
+        categorized = {}
+        
+        for tool in tools:
+            category = tool.get("category", "uncategorized")
+            if category not in categorized:
+                categorized[category] = []
+            categorized[category].append(tool)
+        
+        return categorized
 
