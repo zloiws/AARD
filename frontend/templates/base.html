@@ -375,7 +375,7 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body{% if body_class %} class="{{ body_class }}"{% endif %}>
     {% block content %}{% endblock %}
     
     {% block extra_js %}{% endblock %}
