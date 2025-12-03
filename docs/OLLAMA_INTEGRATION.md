@@ -15,7 +15,13 @@
    - Retry логика и обработка ошибок
    - Health checks
 
-2. **Chat API** (`backend/app/api/routes/chat.py`)
+2. **ModelSelector** (`backend/app/core/model_selector.py`)
+   - Специализированный выбор моделей для dual-model архитектуры
+   - Разделение моделей планирования (reasoning) и генерации кода (code_generation)
+   - Автоматический fallback при отсутствии специализированных моделей
+   - Поддержка выбора по capabilities
+
+3. **Chat API** (`backend/app/api/routes/chat.py`)
    - REST API для взаимодействия с LLM
    - Поддержка разных типов задач
    - Выбор модели по типу задачи

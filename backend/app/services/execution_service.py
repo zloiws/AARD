@@ -208,26 +208,19 @@ class StepExecutor:
         
         # Default: use LLM to execute the step
         
-        # Get appropriate model
-        default_server = OllamaService.get_default_server(self.db)
-        if not default_server:
-            raise ValueError("No default server found")
+        # Use ModelSelector for dual-model architecture (code generation model)
+        from app.core.model_selector import ModelSelector
         
-        models = OllamaService.get_models_for_server(self.db, str(default_server.id))
-        execution_model = None
-        
-        # Prefer code generation models
-        for model in models:
-            if model.capabilities and "code_generation" in model.capabilities:
-                execution_model = model
-                break
-        
-        # Fallback to general chat
-        if not execution_model and models:
-            execution_model = models[0]
+        model_selector = ModelSelector(self.db)
+        execution_model = model_selector.get_code_model()
         
         if not execution_model:
-            raise ValueError("No suitable model found for execution")
+            raise ValueError("No suitable model found for code execution")
+        
+        # Get server for the model
+        server = model_selector.get_server_for_model(execution_model)
+        if not server:
+            raise ValueError("No server found for code model")
         
         # Create OllamaClient
         ollama_client = OllamaClient()
@@ -268,7 +261,7 @@ Execute the given step and return the result in JSON format:
             response = await asyncio.wait_for(
                 ollama_client.generate(
                     prompt=user_prompt,
-                    server_url=f"{default_server.url}/v1",
+                    server_url=server.get_api_url(),
                     model=execution_model.model_name or execution_model.name,
                     system_prompt=system_prompt,
                     task_type="code_generation"

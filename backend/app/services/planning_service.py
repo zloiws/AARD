@@ -161,35 +161,19 @@ Return a JSON object with these fields."""
 Analyze this task and create a strategic plan. Return only valid JSON."""
         
         try:
-            # Get planning model from database
-            from app.services.ollama_service import OllamaService
+            # Use ModelSelector for dual-model architecture
+            from app.core.model_selector import ModelSelector
             
-            # Find model with planning capability
-            default_server = OllamaService.get_default_server(self.db)
-            if not default_server:
-                raise ValueError("No default server found")
-            
-            # Get models with planning capability
-            models = OllamaService.get_models_for_server(self.db, str(default_server.id))
-            planning_model = None
-            for model in models:
-                if model.capabilities and "planning" in model.capabilities:
-                    planning_model = model
-                    break
-            
-            # Fallback to reasoning model
-            if not planning_model:
-                for model in models:
-                    if model.capabilities and "reasoning" in model.capabilities:
-                        planning_model = model
-                        break
-            
-            # Fallback to first model
-            if not planning_model and models:
-                planning_model = models[0]
+            model_selector = ModelSelector(self.db)
+            planning_model = model_selector.get_planning_model()
             
             if not planning_model:
                 raise ValueError("No suitable model found for planning")
+            
+            # Get server for the model
+            server = model_selector.get_server_for_model(planning_model)
+            if not server:
+                raise ValueError("No server found for planning model")
             
             # Create OllamaClient
             ollama_client = OllamaClient()
@@ -203,7 +187,7 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                         system_prompt=system_prompt,
                         task_type=TaskType.PLANNING,
                         model=planning_model.model_name,
-                        server_url=default_server.get_api_url()
+                        server_url=server.get_api_url()
                     ),
                     timeout=300.0  # 5 minutes max for strategy analysis
                 )
@@ -274,35 +258,19 @@ Strategy:
 Break down this task into executable steps. Return only a valid JSON array."""
         
         try:
-            # Get planning model from database
-            from app.services.ollama_service import OllamaService
+            # Use ModelSelector for dual-model architecture
+            from app.core.model_selector import ModelSelector
             
-            # Find model with planning capability
-            default_server = OllamaService.get_default_server(self.db)
-            if not default_server:
-                raise ValueError("No default server found")
-            
-            # Get models with planning capability
-            models = OllamaService.get_models_for_server(self.db, str(default_server.id))
-            planning_model = None
-            for model in models:
-                if model.capabilities and "planning" in model.capabilities:
-                    planning_model = model
-                    break
-            
-            # Fallback to reasoning model
-            if not planning_model:
-                for model in models:
-                    if model.capabilities and "reasoning" in model.capabilities:
-                        planning_model = model
-                        break
-            
-            # Fallback to first model
-            if not planning_model and models:
-                planning_model = models[0]
+            model_selector = ModelSelector(self.db)
+            planning_model = model_selector.get_planning_model()
             
             if not planning_model:
                 raise ValueError("No suitable model found for planning")
+            
+            # Get server for the model
+            server = model_selector.get_server_for_model(planning_model)
+            if not server:
+                raise ValueError("No server found for planning model")
             
             # Create OllamaClient
             ollama_client = OllamaClient()
@@ -316,7 +284,7 @@ Break down this task into executable steps. Return only a valid JSON array."""
                         system_prompt=system_prompt,
                         task_type=TaskType.PLANNING,
                         model=planning_model.model_name,
-                        server_url=default_server.get_api_url()
+                        server_url=server.get_api_url()
                     ),
                     timeout=300.0  # 5 minutes max for task decomposition
                 )
