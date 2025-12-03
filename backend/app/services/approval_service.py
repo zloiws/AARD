@@ -85,6 +85,16 @@ class ApprovalService:
         if feedback:
             approval.human_feedback = feedback
         
+        # Learn from feedback using FeedbackLearningService
+        try:
+            from app.services.feedback_learning_service import FeedbackLearningService
+            feedback_learning = FeedbackLearningService(self.db)
+            feedback_learning.learn_from_approval_feedback(approval, feedback)
+        except Exception as e:
+            from app.core.logging_config import LoggingConfig
+            logger = LoggingConfig.get_logger(__name__)
+            logger.warning(f"Failed to learn from approval feedback: {e}", exc_info=True)
+        
         # Apply the approval based on type (compare lowercase values)
         request_type_lower = approval.request_type.lower()
         if request_type_lower == "new_artifact":
