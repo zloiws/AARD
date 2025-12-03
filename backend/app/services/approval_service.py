@@ -125,9 +125,19 @@ class ApprovalService:
             raise ValueError(f"Approval request {request_id} not found")
         
         approval.status = "rejected"  # Use lowercase to match DB constraint
-        approval.approved_by = rejected_by
-        approval.approved_at = datetime.utcnow()
+        approval.rejected_by = rejected_by
+        approval.rejected_at = datetime.utcnow()
         approval.human_feedback = feedback
+        
+        # Learn from feedback using FeedbackLearningService
+        try:
+            from app.services.feedback_learning_service import FeedbackLearningService
+            feedback_learning = FeedbackLearningService(self.db)
+            feedback_learning.learn_from_approval_feedback(approval, feedback)
+        except Exception as e:
+            from app.core.logging_config import LoggingConfig
+            logger = LoggingConfig.get_logger(__name__)
+            logger.warning(f"Failed to learn from rejection feedback: {e}", exc_info=True)
         
         self.db.commit()
         self.db.refresh(approval)
