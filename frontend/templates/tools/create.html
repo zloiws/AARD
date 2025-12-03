@@ -51,9 +51,9 @@
                                 <div class="mb-3">
                                     <label for="tool_type" class="form-label">Тип инструмента *</label>
                                     <select class="form-select" id="tool_type" name="tool_type" required>
-                                        <option value="python">Python</option>
-                                        <option value="api">API</option>
-                                        <option value="shell">Shell</option>
+                                        <option value="PYTHON">Python</option>
+                                        <option value="API">API</option>
+                                        <option value="SHELL">Shell</option>
                                     </select>
                                 </div>
                             </div>
@@ -138,10 +138,11 @@ async function createTool(event) {
     successAlert.style.display = 'none';
     
     // Get form data
+    const toolTypeValue = document.getElementById('tool_type').value;
     const formData = {
         name: document.getElementById('name').value,
         description: document.getElementById('description').value || null,
-        tool_type: document.getElementById('tool_type').value,
+        tool_type: toolTypeValue,
         category: document.getElementById('category').value || null,
         code: document.getElementById('code').value || null,
         entry_point: document.getElementById('entry_point').value || 'execute',

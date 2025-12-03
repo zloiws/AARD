@@ -204,7 +204,7 @@
                         </button>
                         {% endif %}
                         {% if tool.status == 'active' %}
-                        <button type="button" class="btn btn-warning" onclick="deactivateTool('{{ tool.id }}')">
+                        <button type="button" class="btn btn-warning" onclick="deprecateTool('{{ tool.id }}')">
                             <i class="bi bi-pause-circle"></i> Деактивировать
                         </button>
                         {% endif %}
@@ -238,11 +238,11 @@ async function activateTool(toolId) {
     }
 }
 
-async function deactivateTool(toolId) {
+async function deprecateTool(toolId) {
     if (!confirm('Деактивировать инструмент?')) return;
     
     try {
-        const response = await fetch(`/api/tools/${toolId}/deactivate`, {
+        const response = await fetch(`/api/tools/${toolId}/deprecate`, {
             method: 'POST'
         });
         
