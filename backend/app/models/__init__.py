@@ -27,6 +27,7 @@ from app.models.agent_memory import (  # noqa: F401
     MemoryType, AssociationType
 )
 from app.models.user import User, Session, UserRole  # noqa: F401
+from app.models.learning_pattern import LearningPattern, PatternType  # noqa: F401
 
 __all__ = [
     "Base",
@@ -94,5 +95,8 @@ __all__ = [
     "User",
     "Session",
     "UserRole",
+    # Learning Patterns
+    "LearningPattern",
+    "PatternType",
 ]
 
