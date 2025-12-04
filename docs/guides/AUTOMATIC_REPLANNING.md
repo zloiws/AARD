@@ -7,18 +7,22 @@ The AARD platform implements automatic replanning when a plan execution fails. T
 ## Features
 
 1. **Automatic Failure Detection**: Detects when plan execution fails
-2. **Error Analysis**: Uses ReflectionService to analyze failures
-3. **Learning from Mistakes**: Saves error patterns to memory for future reference
-4. **Automatic Replanning**: Creates new plan version with error context
-5. **Approval Integration**: New plans automatically go through approval process
+2. **Error Classification**: Classifies errors by severity (CRITICAL, HIGH, MEDIUM, LOW) and category
+3. **Smart Replanning Trigger**: Only triggers replanning for critical/high severity errors
+4. **Error Analysis**: Uses ReflectionService to analyze failures
+5. **Learning from Mistakes**: Saves error patterns to memory for future reference
+6. **Automatic Replanning**: Creates new plan version with error context
+7. **Approval Integration**: New plans automatically go through approval process
 
 ## Workflow
 
 ### When a Plan Fails
 
 1. **Failure Detection**: ExecutionService detects failure at any step
-2. **Task Status Update**: Task status is updated to `FAILED`
-3. **Error Analysis**: ReflectionService analyzes the failure:
+2. **Error Classification**: Error is classified by severity and category using ExecutionErrorDetector
+3. **Replanning Decision**: System checks if error requires replanning (CRITICAL/HIGH severity)
+4. **Task Status Update**: Task status is updated to `FAILED` (only if replanning is triggered)
+5. **Error Analysis**: ReflectionService analyzes the failure:
    - Error type classification
    - Root cause analysis
    - Contributing factors
@@ -85,15 +89,38 @@ async def _handle_plan_failure(
 
 The automatic replanning is triggered in three places in `ExecutionService`:
 
-1. **No steps in plan**: When plan has no steps
-2. **Dependency failure**: When required dependency is missing
-3. **Step execution failure**: When a step fails during execution
+1. **No steps in plan**: When plan has no steps (CRITICAL error)
+2. **Dependency failure**: When required dependency is missing (CRITICAL error)
+3. **Step execution failure**: When a step fails during execution (classified by severity)
 
-## Error Analysis
+Only CRITICAL and HIGH severity errors trigger automatic replanning. MEDIUM and LOW severity errors are logged but do not trigger replanning.
 
-### Error Types
+## Error Detection and Classification
 
-The ReflectionService classifies errors into categories:
+### Error Classification System
+
+Before error analysis, errors are classified using `ExecutionErrorDetector`:
+
+**Severity Levels:**
+- **CRITICAL**: Requires immediate replanning (e.g., "Plan has no steps", "Dependency not found")
+- **HIGH**: May require replanning (e.g., "Agent not found", "Validation failed")
+- **MEDIUM**: Can be handled without replanning (retry or continue)
+- **LOW**: Non-fatal, can continue
+
+**Categories:**
+- **ENVIRONMENT**: Infrastructure issues
+- **DEPENDENCY**: Missing dependencies
+- **VALIDATION**: Validation/format errors
+- **LOGIC**: Logic errors in plan
+- **TIMEOUT**: Timeout errors
+- **RESOURCE**: Resource constraints
+- **UNKNOWN**: Unclassified errors
+
+See [Execution Error Detection](../EXECUTION_ERROR_DETECTION.md) for detailed documentation.
+
+### Error Analysis
+
+The ReflectionService further analyzes errors into categories:
 
 - **timeout**: Execution timeout
 - **permission**: Access denied

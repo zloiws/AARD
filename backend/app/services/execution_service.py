@@ -26,6 +26,14 @@ from app.services.agent_service import AgentService
 from app.services.tool_service import ToolService
 from app.agents.simple_agent import SimpleAgent
 from app.tools.python_tool import PythonTool
+from app.core.execution_error_types import (
+    ExecutionErrorDetector,
+    ExecutionError,
+    ErrorSeverity,
+    ErrorCategory,
+    requires_replanning,
+    detect_execution_error
+)
 import time
 
 logger = LoggingConfig.get_logger(__name__)
@@ -614,6 +622,45 @@ class ExecutionService:
         self.db = db
         self.step_executor = StepExecutor(db)
         self.checkpoint_service = CheckpointService(db)
+        self.error_detector = ExecutionErrorDetector()
+    
+    def _is_critical_error(
+        self,
+        error_message: str,
+        error_type: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> bool:
+        """
+        Determine if an error is critical and requires replanning
+        
+        Args:
+            error_message: Error message
+            error_type: Optional error type/class name
+            context: Optional context (step, plan info, etc.)
+            
+        Returns:
+            True if error is critical and requires replanning
+        """
+        return self.error_detector.requires_replanning(error_message, error_type, context)
+    
+    def _classify_error(
+        self,
+        error_message: str,
+        error_type: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> ExecutionError:
+        """
+        Classify an execution error
+        
+        Args:
+            error_message: Error message
+            error_type: Optional error type/class name
+            context: Optional context
+            
+        Returns:
+            Classified ExecutionError
+        """
+        return self.error_detector.detect_error(error_message, error_type, context)
     
     async def execute_plan(self, plan_id: UUID) -> Plan:
         """
@@ -699,8 +746,28 @@ class ExecutionService:
                         plan.current_step = i
                         self.db.commit()
                         error_msg = f"Dependency {dep_id} not found in execution context"
-                        # Automatic replanning on failure
-                        await self._handle_plan_failure(plan, error_msg, execution_context)
+                        
+                        # Classify dependency error (should be critical)
+                        error_context = {
+                            "step_id": step.get("step_id"),
+                            "step_index": i,
+                            "plan_id": str(plan.id),
+                            "dependency_id": dep_id
+                        }
+                        classified_error = self._classify_error(
+                            error_message=error_msg,
+                            error_type="DependencyError",
+                            context=error_context
+                        )
+                        
+                        # Automatic replanning on critical dependency error
+                        if classified_error.requires_replanning:
+                            await self._handle_plan_failure(
+                                plan,
+                                error_msg,
+                                execution_context,
+                                classified_error=classified_error
+                            )
                         raise ValueError(error_msg)
             
             # Execute step
@@ -735,6 +802,35 @@ class ExecutionService:
             
             # Check if step failed
             if step_result.get("status") == "failed":
+                error_message = step_result.get('error', 'Unknown error')
+                
+                # Classify the error
+                error_context = {
+                    "step_id": step.get("step_id"),
+                    "step_index": i,
+                    "plan_id": str(plan.id),
+                    "plan_version": plan.version,
+                    "total_steps": len(steps)
+                }
+                classified_error = self._classify_error(
+                    error_message=error_message,
+                    error_type=step_result.get('error_type'),
+                    context=error_context
+                )
+                
+                logger.warning(
+                    f"Step failed: {classified_error.severity.value} error - {classified_error.category.value}",
+                    extra={
+                        "plan_id": str(plan.id),
+                        "step_index": i,
+                        "step_id": step.get('step_id'),
+                        "error": error_message,
+                        "error_severity": classified_error.severity.value,
+                        "error_category": classified_error.category.value,
+                        "requires_replanning": classified_error.requires_replanning
+                    }
+                )
+                
                 # Try to rollback to last checkpoint
                 try:
                     latest_checkpoint = self.checkpoint_service.get_latest_checkpoint("plan", plan.id)
@@ -744,7 +840,7 @@ class ExecutionService:
                             extra={
                                 "plan_id": str(plan.id),
                                 "checkpoint_id": str(latest_checkpoint.id),
-                                "error": step_result.get('error', 'Unknown error'),
+                                "error": error_message,
                             }
                         )
                         self.checkpoint_service.rollback_entity("plan", plan.id, latest_checkpoint.id)
@@ -759,19 +855,44 @@ class ExecutionService:
                 plan.current_step = i
                 self.db.commit()
                 
-                # Log failure
+                # Log failure with classification
                 logger.error(
                     "Plan failed at step",
                     extra={
                         "plan_id": str(plan.id),
                         "step_index": i,
                         "step_id": step.get('step_id'),
-                        "error": step_result.get('error', 'Unknown error'),
+                        "error": error_message,
+                        "error_severity": classified_error.severity.value,
+                        "error_category": classified_error.category.value,
+                        "requires_replanning": classified_error.requires_replanning
                     }
                 )
                 
-                # Automatic replanning on failure
-                await self._handle_plan_failure(plan, step_result.get('error', 'Unknown error'), execution_context)
+                # Automatic replanning only for critical/high severity errors
+                if classified_error.requires_replanning:
+                    logger.info(
+                        f"Triggering automatic replanning due to {classified_error.severity.value} error",
+                        extra={
+                            "plan_id": str(plan.id),
+                            "error_severity": classified_error.severity.value,
+                            "error_category": classified_error.category.value
+                        }
+                    )
+                    await self._handle_plan_failure(
+                        plan,
+                        error_message,
+                        execution_context,
+                        classified_error=classified_error
+                    )
+                else:
+                    logger.info(
+                        f"Skipping replanning for {classified_error.severity.value} error",
+                        extra={
+                            "plan_id": str(plan.id),
+                            "error_severity": classified_error.severity.value
+                        }
+                    )
                 break
             
             # Check if step is waiting for approval
@@ -865,7 +986,8 @@ class ExecutionService:
         self,
         plan: Plan,
         error_message: str,
-        execution_context: Dict[str, Any]
+        execution_context: Dict[str, Any],
+        classified_error: Optional[ExecutionError] = None
     ) -> Optional[Plan]:
         """
         Handle plan failure by analyzing error and automatically replanning
@@ -874,6 +996,7 @@ class ExecutionService:
             plan: Failed plan
             error_message: Error message
             execution_context: Execution context at time of failure
+            classified_error: Optional pre-classified error (if not provided, will be classified)
             
         Returns:
             New plan if replanning was successful, None otherwise
@@ -884,12 +1007,28 @@ class ExecutionService:
         from app.models.task import Task, TaskStatus
         
         try:
+            # Classify error if not already classified
+            if not classified_error:
+                error_context = {
+                    "plan_id": str(plan.id),
+                    "plan_version": plan.version,
+                    "current_step": plan.current_step,
+                    "total_steps": len(plan.steps) if isinstance(plan.steps, list) else 0
+                }
+                classified_error = self._classify_error(
+                    error_message=error_message,
+                    context=error_context
+                )
+            
             logger.info(
                 f"Handling plan failure for plan {plan.id}",
                 extra={
                     "plan_id": str(plan.id),
                     "error": error_message,
-                    "current_step": plan.current_step
+                    "current_step": plan.current_step,
+                    "error_severity": classified_error.severity.value,
+                    "error_category": classified_error.category.value,
+                    "requires_replanning": classified_error.requires_replanning
                 }
             )
             
