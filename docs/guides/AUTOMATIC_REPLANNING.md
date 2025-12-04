@@ -243,12 +243,53 @@ assert "error_analysis" in new_plan.context
 3. **Infinite Loop Risk**: Could replan indefinitely if issue persists
 4. **Resource Usage**: Each replan uses LLM tokens
 
+## Configuration
+
+Automatic replanning can be configured via environment variables in `.env`:
+
+```env
+# Enable/disable automatic replanning
+ENABLE_AUTO_REPLANNING=true
+
+# Maximum number of replanning attempts per task
+AUTO_REPLANNING_MAX_ATTEMPTS=3
+
+# Minimum interval between replanning attempts (seconds)
+AUTO_REPLANNING_MIN_INTERVAL_SECONDS=5
+
+# Timeout for each replanning attempt (seconds)
+AUTO_REPLANNING_TIMEOUT_SECONDS=300
+
+# Trigger replanning for CRITICAL severity errors
+AUTO_REPLANNING_TRIGGER_CRITICAL=true
+
+# Trigger replanning for HIGH severity errors
+AUTO_REPLANNING_TRIGGER_HIGH=true
+
+# Trigger replanning for MEDIUM severity errors (default: false)
+AUTO_REPLANNING_TRIGGER_MEDIUM=false
+
+# Require human intervention after N failed replanning attempts
+AUTO_REPLANNING_REQUIRE_HUMAN_INTERVENTION_AFTER=5
+```
+
+### Default Values
+
+- `ENABLE_AUTO_REPLANNING=true` - Automatic replanning is enabled by default
+- `AUTO_REPLANNING_MAX_ATTEMPTS=3` - Maximum 3 replanning attempts per task
+- `AUTO_REPLANNING_MIN_INTERVAL_SECONDS=5` - 5 seconds between attempts
+- `AUTO_REPLANNING_TIMEOUT_SECONDS=300` - 5 minutes timeout per attempt
+- `AUTO_REPLANNING_TRIGGER_CRITICAL=true` - Always replan on CRITICAL errors
+- `AUTO_REPLANNING_TRIGGER_HIGH=true` - Always replan on HIGH errors
+- `AUTO_REPLANNING_TRIGGER_MEDIUM=false` - Don't replan on MEDIUM errors by default
+- `AUTO_REPLANNING_REQUIRE_HUMAN_INTERVENTION_AFTER=5` - Alert after 5 attempts
+
 ## Future Improvements
 
-- [ ] Maximum replan attempts limit
+- [x] Maximum replan attempts limit (implemented)
 - [ ] Exponential backoff for repeated failures
-- [ ] Human intervention trigger after N failures
-- [ ] Better error pattern matching
+- [x] Human intervention trigger after N failures (implemented)
+- [x] Better error pattern matching (implemented via ExecutionErrorDetector)
 - [ ] Cross-agent learning
 
 ## Related Documentation

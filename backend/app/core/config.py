@@ -124,6 +124,45 @@ class Settings(BaseSettings):
     )
     enable_caching: bool = Field(default=True, description="Enable caching")
     
+    # Automatic Replanning Configuration
+    enable_auto_replanning: bool = Field(
+        default=True,
+        description="Enable automatic replanning on errors"
+    )
+    auto_replanning_max_attempts: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Maximum number of automatic replanning attempts per task"
+    )
+    auto_replanning_min_interval_seconds: int = Field(
+        default=5,
+        ge=0,
+        description="Minimum interval between replanning attempts (seconds)"
+    )
+    auto_replanning_timeout_seconds: int = Field(
+        default=300,
+        ge=30,
+        description="Timeout for each replanning attempt (seconds)"
+    )
+    auto_replanning_trigger_critical: bool = Field(
+        default=True,
+        description="Trigger replanning for CRITICAL severity errors"
+    )
+    auto_replanning_trigger_high: bool = Field(
+        default=True,
+        description="Trigger replanning for HIGH severity errors"
+    )
+    auto_replanning_trigger_medium: bool = Field(
+        default=False,
+        description="Trigger replanning for MEDIUM severity errors"
+    )
+    auto_replanning_require_human_intervention_after: int = Field(
+        default=5,
+        ge=1,
+        description="Require human intervention after N failed replanning attempts"
+    )
+    
     @property
     def database_url(self) -> str:
         """Construct database URL"""

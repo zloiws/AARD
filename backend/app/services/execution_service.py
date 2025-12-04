@@ -34,9 +34,11 @@ from app.core.execution_error_types import (
     requires_replanning,
     detect_execution_error
 )
+from app.core.config import get_settings
 import time
 
 logger = LoggingConfig.get_logger(__name__)
+settings = get_settings()
 
 
 class StepExecutor:
@@ -662,6 +664,79 @@ class ExecutionService:
         """
         return self.error_detector.detect_error(error_message, error_type, context)
     
+    def _should_trigger_replanning(
+        self,
+        classified_error: ExecutionError,
+        plan: Plan,
+        execution_context: Dict[str, Any]
+    ) -> bool:
+        """
+        Determine if automatic replanning should be triggered based on configuration
+        
+        Args:
+            classified_error: Classified execution error
+            plan: Current plan
+            execution_context: Execution context
+            
+        Returns:
+            True if replanning should be triggered
+        """
+        # Check if auto-replanning is enabled
+        if not settings.enable_auto_replanning:
+            return False
+        
+        # Check severity trigger settings
+        severity = classified_error.severity
+        if severity == ErrorSeverity.CRITICAL:
+            if not settings.auto_replanning_trigger_critical:
+                return False
+        elif severity == ErrorSeverity.HIGH:
+            if not settings.auto_replanning_trigger_high:
+                return False
+        elif severity == ErrorSeverity.MEDIUM:
+            if not settings.auto_replanning_trigger_medium:
+                return False
+        else:
+            # LOW severity errors don't trigger replanning
+            return False
+        
+        # Check replanning attempts limit
+        task = self.db.query(Task).filter(Task.id == plan.task_id).first()
+        if task:
+            context = task.get_context()
+            planning_decisions = context.get("planning_decisions", {})
+            replanning_history = planning_decisions.get("replanning_history", [])
+            
+            # Count replanning attempts
+            replan_count = len(replanning_history)
+            
+            if replan_count >= settings.auto_replanning_max_attempts:
+                logger.warning(
+                    f"Replanning limit reached for task {task.id}: {replan_count} attempts",
+                    extra={
+                        "task_id": str(task.id),
+                        "plan_id": str(plan.id),
+                        "replan_count": replan_count,
+                        "max_attempts": settings.auto_replanning_max_attempts
+                    }
+                )
+                return False
+            
+            # Check if human intervention is required
+            if replan_count >= settings.auto_replanning_require_human_intervention_after:
+                logger.warning(
+                    f"Human intervention required after {replan_count} replanning attempts",
+                    extra={
+                        "task_id": str(task.id),
+                        "plan_id": str(plan.id),
+                        "replan_count": replan_count
+                    }
+                )
+                # Still allow replanning, but this should trigger notification
+                # In future, this could return False to require human approval
+        
+        return True
+    
     async def execute_plan(self, plan_id: UUID) -> Plan:
         """
         Execute a plan step by step
@@ -869,8 +944,14 @@ class ExecutionService:
                     }
                 )
                 
-                # Automatic replanning only for critical/high severity errors
-                if classified_error.requires_replanning:
+                # Check if auto-replanning should be triggered based on configuration
+                should_replan = self._should_trigger_replanning(
+                    classified_error,
+                    plan,
+                    execution_context
+                )
+                
+                if should_replan:
                     logger.info(
                         f"Triggering automatic replanning due to {classified_error.severity.value} error",
                         extra={
@@ -887,10 +968,11 @@ class ExecutionService:
                     )
                 else:
                     logger.info(
-                        f"Skipping replanning for {classified_error.severity.value} error",
+                        f"Skipping replanning for {classified_error.severity.value} error (disabled or limit reached)",
                         extra={
                             "plan_id": str(plan.id),
-                            "error_severity": classified_error.severity.value
+                            "error_severity": classified_error.severity.value,
+                            "auto_replanning_enabled": settings.enable_auto_replanning
                         }
                     )
                 break
