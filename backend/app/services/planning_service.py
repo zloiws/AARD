@@ -27,6 +27,8 @@ class PlanningService:
         self.tracer = get_tracer(__name__)
         self.model_logs = []  # Collect model interaction logs for this planning session
         self.current_task_id = None  # Track current task_id for real-time log saving
+        self.workflow_id = None  # Track workflow ID for real-time display
+        self.workflow_tracker = None  # WorkflowTracker instance for real-time events
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
     
@@ -117,6 +119,146 @@ class PlanningService:
         except:
             return None
     
+    def _add_and_save_workflow_event(
+        self,
+        stage,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        duration_ms: Optional[int] = None,
+        plan_id: Optional[UUID] = None
+    ):
+        """
+        Add event to WorkflowTracker and save to DB simultaneously
+        
+        Args:
+            stage: WorkflowStage from WorkflowTracker
+            message: Event message
+            details: Event details
+            duration_ms: Duration in milliseconds
+            plan_id: Plan ID if available
+        """
+        # Add to in-memory tracker (for real-time display)
+        if self.workflow_tracker and self.workflow_id:
+            self.workflow_tracker.add_event(
+                stage=stage,
+                message=message,
+                details=details,
+                workflow_id=self.workflow_id
+            )
+        
+        # Save to DB (for persistence)
+        self._save_workflow_event_to_db(
+            stage=stage,
+            message=message,
+            details=details,
+            duration_ms=duration_ms,
+            plan_id=plan_id
+        )
+    
+    def _save_workflow_event_to_db(
+        self,
+        stage,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        event_type: Optional[str] = None,
+        event_source: Optional[str] = None,
+        event_data: Optional[Dict[str, Any]] = None,
+        duration_ms: Optional[int] = None,
+        trace_id: Optional[str] = None,
+        plan_id: Optional[UUID] = None
+    ):
+        """
+        Save workflow event to database for persistence
+        
+        Args:
+            stage: WorkflowStage from WorkflowTracker
+            message: Event message
+            details: Event details
+            event_type: EventType (defaults to inferred from stage)
+            event_source: EventSource (defaults to PLANNER_AGENT)
+            duration_ms: Duration in milliseconds
+            trace_id: OpenTelemetry trace ID
+            plan_id: Plan ID if available
+        """
+        if not self.workflow_id:
+            return  # No workflow ID, skip saving
+        
+        try:
+            from app.services.workflow_event_service import WorkflowEventService
+            from app.models.workflow_event import (
+                EventSource as DBEventSource,
+                EventType as DBEventType,
+                EventStatus,
+                WorkflowStage as DBWorkflowStage
+            )
+            from app.core.workflow_tracker import WorkflowStage as TrackerStage
+            
+            event_service = WorkflowEventService(self.db)
+            
+            # Map tracker stage to DB workflow stage
+            db_stage = event_service.map_tracker_stage_to_workflow_stage(stage)
+            
+            # Determine event type and source
+            if not event_type:
+                # Infer from stage
+                if stage == TrackerStage.USER_REQUEST:
+                    event_type = DBEventType.USER_INPUT
+                elif stage == TrackerStage.REQUEST_PARSING or stage == TrackerStage.ACTION_DETERMINATION:
+                    event_type = DBEventType.EXECUTION_STEP
+                elif stage == TrackerStage.EXECUTION:
+                    event_type = DBEventType.EXECUTION_STEP
+                elif stage == TrackerStage.RESULT:
+                    event_type = DBEventType.COMPLETION
+                elif stage == TrackerStage.ERROR:
+                    event_type = DBEventType.ERROR
+                else:
+                    event_type = DBEventType.EXECUTION_STEP
+            
+            if not event_source:
+                event_source = DBEventSource.PLANNER_AGENT
+            
+            # Get trace ID if not provided
+            if not trace_id:
+                from app.core.tracing import get_current_trace_id
+                trace_id = get_current_trace_id()
+            
+            # Prepare event data and metadata
+            # event_data takes priority, then merge with details (details go to metadata)
+            final_event_data = event_data or {}
+            
+            # Merge details into event_data if event_data was not provided explicitly
+            if not event_data and details:
+                final_event_data = details.copy()
+            elif event_data and details:
+                # Merge details into event_data (event_data takes priority)
+                final_event_data = {**event_data, **details}
+            
+            metadata = {
+                "planning_service": True,
+                "task_id": str(self.current_task_id) if self.current_task_id else None
+            }
+            
+            # Save event
+            event_service.save_event(
+                workflow_id=self.workflow_id,
+                event_type=event_type,
+                event_source=event_source,
+                stage=db_stage,
+                message=message,
+                event_data=final_event_data,
+                metadata=metadata,
+                task_id=self.current_task_id,
+                plan_id=plan_id,
+                trace_id=trace_id,
+                duration_ms=duration_ms,
+                status=EventStatus.COMPLETED if stage == TrackerStage.RESULT else EventStatus.IN_PROGRESS
+            )
+        except Exception as e:
+            # Don't fail if DB save fails, just log it
+            logger = self._get_logger()
+            if logger:
+                logger.warning(f"Failed to save workflow event to DB: {e}", exc_info=True)
+    
     async def generate_plan(
         self,
         task_description: str,
@@ -165,8 +307,6 @@ class PlanningService:
             task = self.db.query(Task).filter(Task.id == task_id).first()
             if task:
                 digital_twin_context = task.get_context()
-                # Set current_task_id for real-time log saving
-                self.current_task_id = task_id
         else:
             # Create task first for real-time logging if not provided
             task = Task(
@@ -178,7 +318,41 @@ class PlanningService:
             self.db.commit()
             self.db.refresh(task)
             task_id = task.id
-            self.current_task_id = task_id  # Set for real-time log saving
+        
+        # Set current_task_id for real-time log saving
+        self.current_task_id = task_id
+        
+        # Initialize WorkflowTracker for real-time monitoring
+        # Use task_id as workflow_id for consistency (so events can be found by task_id)
+        from app.core.workflow_tracker import get_workflow_tracker, WorkflowStage
+        self.workflow_tracker = get_workflow_tracker()
+        self.workflow_id = str(task_id)  # Use task_id as workflow_id
+        
+        # Start workflow tracking
+        self.workflow_tracker.start_workflow(
+            self.workflow_id,
+            task_description,
+            username="system",
+            interaction_type="planning"
+        )
+        # Save initial workflow start event to DB
+        self._add_and_save_workflow_event(
+            WorkflowStage.USER_REQUEST,
+            f"Начало планирования задачи: {task_description[:100]}...",
+            details={"task_description": task_description}
+        )
+        
+        self._add_and_save_workflow_event(
+            WorkflowStage.REQUEST_PARSING,
+            f"Начало планирования задачи: {task_description[:100]}...",
+            details={"task_description": task_description}
+        )
+        
+        self.workflow_tracker.add_event(
+            WorkflowStage.ACTION_DETERMINATION,
+            f"Задача создана (ID: {str(task_id)[:8]}...), анализ требований...",
+            details={"task_id": str(task_id)}
+        )
         
         # Merge Digital Twin context with provided context
         enhanced_context = {**(context or {}), **digital_twin_context}
@@ -186,7 +360,18 @@ class PlanningService:
             enhanced_context["procedural_pattern"] = procedural_pattern
         
         # 1. Analyze task and create strategy (with Digital Twin context)
+        self._add_and_save_workflow_event(
+            WorkflowStage.EXECUTION,
+            "Анализ задачи и создание стратегии...",
+            details={"stage": "strategy_analysis"}
+        )
         strategy = await self._analyze_task(task_description, enhanced_context, task_id)
+        
+        self._add_and_save_workflow_event(
+            WorkflowStage.EXECUTION,
+            f"Стратегия создана, декомпозиция задачи на шаги...",
+            details={"stage": "task_decomposition", "strategy_created": True}
+        )
         
         # 2. Decompose task into steps (use procedural pattern if available)
         steps = await self._decompose_task(
@@ -196,8 +381,20 @@ class PlanningService:
             task_id=task_id
         )
         
+        self._add_and_save_workflow_event(
+            WorkflowStage.EXECUTION,
+            f"Задача декомпозирована на {len(steps)} шаг(ов), оценка рисков...",
+            details={"stage": "risk_assessment", "steps_count": len(steps)}
+        )
+        
         # 3. Assess risks
         risks = await self._assess_risks(steps, strategy)
+        
+        self._add_and_save_workflow_event(
+            WorkflowStage.EXECUTION,
+            f"Риски оценены, создание альтернатив...",
+            details={"stage": "alternatives_creation"}
+        )
         
         # 4. Create alternatives if needed
         alternatives = await self._create_alternatives(steps, strategy, risks)
@@ -304,6 +501,35 @@ class PlanningService:
             },
             stage="completion"
         )
+        
+        # Complete workflow tracking
+        if self.workflow_tracker and self.workflow_id:
+            from app.core.workflow_tracker import WorkflowStage
+            self.workflow_tracker.add_event(
+                WorkflowStage.EXECUTION,
+                f"План создан: {len(steps)} шаг(ов), версия {plan.version}",
+                details={
+                    "plan_id": str(plan.id),
+                    "steps_count": len(steps),
+                    "version": plan.version
+                },
+                workflow_id=self.workflow_id
+            )
+            result_message = f"План успешно создан: {len(steps)} шаг(ов), план ID: {str(plan.id)[:8]}..."
+            self.workflow_tracker.finish_workflow(result=result_message)
+            # Save final event to DB
+            from app.models.workflow_event import EventType as DBEventType
+            self._save_workflow_event_to_db(
+                WorkflowStage.RESULT,
+                result_message,
+                details={
+                    "plan_id": str(plan.id),
+                    "steps_count": len(steps),
+                    "version": plan.version
+                },
+                event_type=DBEventType.COMPLETION,
+                plan_id=plan.id
+            )
         
         # Save plan to episodic memory (history of plan changes)
         await self._save_plan_to_episodic_memory(plan, task_id, "plan_created")
@@ -438,6 +664,41 @@ Return a JSON object with these fields. Only return valid JSON, no additional te
                 }
             )
             
+            # Save workflow event with full prompts before request
+            from app.core.workflow_tracker import WorkflowStage
+            from app.models.workflow_event import EventType as DBEventType, EventSource as DBEventSource
+            
+            self._save_workflow_event_to_db(
+                stage=WorkflowStage.EXECUTION,
+                message=f"Отправка запроса к модели {planning_model.model_name} для анализа задачи",
+                details={
+                    "model": planning_model.model_name,
+                    "server": server.name,
+                    "server_url": server.get_api_url()
+                },
+                event_type=DBEventType.MODEL_REQUEST,
+                event_source=DBEventSource.PLANNER_AGENT,
+                event_data={
+                    "system_prompt": system_prompt,
+                    "user_prompt": user_prompt,
+                    "full_prompt": f"{system_prompt}\n\n{user_prompt}",
+                    "task_type": "analyze_task",
+                    "context_used": bool(context),
+                    "model": planning_model.model_name,
+                    "server": server.name,
+                    "server_url": server.get_api_url()
+                }
+            )
+            
+            # Add workflow event to tracker
+            if self.workflow_tracker and self.workflow_id:
+                self.workflow_tracker.add_event(
+                    WorkflowStage.EXECUTION,
+                    f"Отправка запроса к модели {planning_model.model_name} для анализа задачи...",
+                    details={"model": planning_model.model_name, "server": server.name},
+                    workflow_id=self.workflow_id
+                )
+            
             # Create OllamaClient
             ollama_client = OllamaClient()
             
@@ -471,6 +732,42 @@ Return a JSON object with these fields. Only return valid JSON, no additional te
                         "task": "analyze_task"
                     }
                 )
+                
+                # Save workflow event with full response
+                self._save_workflow_event_to_db(
+                    stage=WorkflowStage.EXECUTION,
+                    message=f"Получен ответ от модели {planning_model.model_name}",
+                    details={
+                        "model": planning_model.model_name,
+                        "duration_ms": duration_ms,
+                        "response_length": len(response.response),
+                        "server": server.name
+                    },
+                    event_type=DBEventType.MODEL_RESPONSE,
+                    event_source=DBEventSource.PLANNER_AGENT,
+                    duration_ms=duration_ms,
+                    event_data={
+                        "full_response": response.response,  # Полный ответ, не обрезанный
+                        "response_length": len(response.response),
+                        "task_type": "analyze_task",
+                        "model": planning_model.model_name,
+                        "duration_ms": duration_ms,
+                        "server": server.name
+                    }
+                )
+                
+                # Add workflow event for model response
+                if self.workflow_tracker and self.workflow_id:
+                    self.workflow_tracker.add_event(
+                        WorkflowStage.EXECUTION,
+                        f"Получен ответ от модели {planning_model.model_name} ({duration_ms}ms), обработка стратегии...",
+                        details={
+                            "model": planning_model.model_name,
+                            "duration_ms": duration_ms,
+                            "response_length": len(response.response)
+                        },
+                        workflow_id=self.workflow_id
+                    )
             except asyncio.TimeoutError:
                 duration_ms = int((asyncio.get_event_loop().time() - start_time) * 1000)
                 self._add_model_log(
@@ -486,20 +783,8 @@ Return a JSON object with these fields. Only return valid JSON, no additional te
                 raise ValueError("Strategy analysis timed out after 5 minutes. Task may be too complex or model is stuck.")
             
             # Stage 2: Log request analysis (HITL observation)
-            self._add_model_log(
-                log_type="request_analysis",
-                model=planning_model.model_name,
-                content={
-                    "analysis_type": "strategy_generation",
-                    "response_preview": response.response[:500] + "..." if len(response.response) > 500 else response.response
-                },
-                metadata={
-                    "stage": "analysis",
-                    "operation": "analyze_task",
-                    "duration_ms": duration_ms
-                },
-                stage="analysis"
-            )
+            # Skip duplicate log - already logged in WorkflowTracker
+            # self._add_model_log(...) - commented to avoid duplication
             
             # Parse JSON from response with validation
             strategy = self._parse_and_validate_json(
@@ -649,6 +934,39 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 }
             )
             
+            # Save workflow event with full prompts before request
+            from app.core.workflow_tracker import WorkflowStage
+            from app.models.workflow_event import EventType as DBEventType, EventSource as DBEventSource
+            
+            self._save_workflow_event_to_db(
+                stage=WorkflowStage.EXECUTION,
+                message=f"Декомпозиция задачи на шаги, отправка запроса к модели {planning_model.model_name}",
+                details={
+                    "model": planning_model.model_name,
+                    "server": server.name,
+                    "server_url": server.get_api_url()
+                },
+                event_type=DBEventType.MODEL_REQUEST,
+                event_source=DBEventSource.PLANNER_AGENT,
+                event_data={
+                    "system_prompt": system_prompt,
+                    "user_prompt": user_prompt,
+                    "full_prompt": f"{system_prompt}\n\n{user_prompt}",
+                    "task_type": "decompose_task",
+                    "strategy": strategy if isinstance(strategy, dict) else {"strategy": str(strategy)},
+                    "context_used": bool(context)
+                }
+            )
+            
+            # Add workflow event for decomposition request
+            if self.workflow_tracker and self.workflow_id:
+                self.workflow_tracker.add_event(
+                    WorkflowStage.EXECUTION,
+                    f"Декомпозиция задачи на шаги, отправка запроса к модели {planning_model.model_name}...",
+                    details={"model": planning_model.model_name, "server": server.name},
+                    workflow_id=self.workflow_id
+                )
+            
             # Create OllamaClient
             ollama_client = OllamaClient()
             
@@ -670,19 +988,63 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 duration_ms = int((time.time() - start_time) * 1000)
                 
                 # Log response from model
+                try:
+                    parsed_response = json.loads(response.response)
+                    steps_count = len(parsed_response) if isinstance(parsed_response, list) else 0
+                except:
+                    steps_count = 0
+                
                 self._add_model_log(
                     log_type="response",
                     model=planning_model.model_name,
                     content={
                         "response": response.response[:2000] + "..." if len(response.response) > 2000 else response.response,
                         "full_length": len(response.response),
-                        "steps_count": len(json.loads(response.response)) if isinstance(json.loads(response.response), list) else 0
+                        "steps_count": steps_count
                     },
                     metadata={
                         "duration_ms": duration_ms,
                         "task": "decompose_task"
                     }
                 )
+                
+                # Save workflow event with full response
+                from app.core.workflow_tracker import WorkflowStage
+                from app.models.workflow_event import EventType as DBEventType, EventSource as DBEventSource
+                
+                self._save_workflow_event_to_db(
+                    stage=WorkflowStage.EXECUTION,
+                    message=f"Получен ответ от модели, декомпозировано на {steps_count} шаг(ов)",
+                    details={
+                        "model": planning_model.model_name,
+                        "duration_ms": duration_ms,
+                        "steps_count": steps_count,
+                        "server": server.name
+                    },
+                    event_type=DBEventType.MODEL_RESPONSE,
+                    event_source=DBEventSource.PLANNER_AGENT,
+                    duration_ms=duration_ms,
+                    event_data={
+                        "full_response": response.response,  # Полный ответ, не обрезанный
+                        "response_length": len(response.response),
+                        "task_type": "decompose_task",
+                        "steps_count": steps_count,
+                        "parsed_steps": parsed_response if steps_count > 0 else None
+                    }
+                )
+                
+                # Add workflow event for decomposition response
+                if self.workflow_tracker and self.workflow_id:
+                    self.workflow_tracker.add_event(
+                        WorkflowStage.EXECUTION,
+                        f"Получен ответ от модели, декомпозировано на {steps_count} шаг(ов) ({duration_ms}ms)...",
+                        details={
+                            "model": planning_model.model_name,
+                            "duration_ms": duration_ms,
+                            "steps_count": steps_count
+                        },
+                        workflow_id=self.workflow_id
+                    )
             except asyncio.TimeoutError:
                 import time
                 duration_ms = int((time.time() - start_time) * 1000)

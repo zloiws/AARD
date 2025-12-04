@@ -71,20 +71,38 @@ class WorkflowTracker:
         self._workflows: Dict[str, List[WorkflowEvent]] = {}
         self._initialized = True
     
-    def start_workflow(self, workflow_id: str, user_request: str, username: str = "user") -> None:
-        """Start tracking a new workflow"""
+    def start_workflow(self, workflow_id: str, user_request: str, username: str = "user", interaction_type: str = "chat") -> None:
+        """Start tracking a new workflow
+        
+        Args:
+            workflow_id: Unique workflow identifier
+            user_request: User request or task description
+            username: Username or source of request
+            interaction_type: Type of interaction (chat, planning, test, etc.)
+        """
         with self._lock:
             self._current_workflow_id = workflow_id
+            
+            # Format message based on interaction type
+            type_labels = {
+                "chat": "Основной чат",
+                "planning": "Планирование задачи",
+                "test": "Тест",
+                "execution": "Выполнение",
+                "system": "Система"
+            }
+            type_label = type_labels.get(interaction_type, interaction_type.capitalize())
+            
             event = WorkflowEvent(
                 stage=WorkflowStage.USER_REQUEST,
-                message=f"Основной чат, запрос пользователя @{username}: \"{user_request}\"",
-                details={"user_request": user_request, "username": username}
+                message=f"{type_label}, запрос пользователя @{username}: \"{user_request}\"",
+                details={"user_request": user_request, "username": username, "interaction_type": interaction_type}
             )
             self._events.append(event)
             if workflow_id not in self._workflows:
                 self._workflows[workflow_id] = []
             self._workflows[workflow_id].append(event)
-            logger.info(f"Workflow {workflow_id} started", extra={"user_request": user_request})
+            logger.info(f"Workflow {workflow_id} started", extra={"user_request": user_request, "type": interaction_type})
     
     def add_event(
         self,

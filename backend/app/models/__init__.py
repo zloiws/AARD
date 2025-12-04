@@ -29,6 +29,9 @@ from app.models.agent_memory import (  # noqa: F401
 from app.models.user import User, Session, UserRole  # noqa: F401
 from app.models.learning_pattern import LearningPattern, PatternType  # noqa: F401
 from app.models.chat_session import ChatSession, ChatMessage  # noqa: F401
+from app.models.workflow_event import (  # noqa: F401
+    WorkflowEvent, EventSource, EventType, EventStatus, WorkflowStage
+)
 
 __all__ = [
     "Base",
@@ -99,5 +102,14 @@ __all__ = [
     # Learning Patterns
     "LearningPattern",
     "PatternType",
+    # Chat Sessions
+    "ChatSession",
+    "ChatMessage",
+    # Workflow Events
+    "WorkflowEvent",
+    "EventSource",
+    "EventType",
+    "EventStatus",
+    "WorkflowStage",
 ]
 

@@ -101,11 +101,51 @@ async def chat(
         # Start workflow tracking
         # Get username from request if available (for now use "user" as default)
         username = "user"  # TODO: Get from auth context when available
-        workflow_tracker.start_workflow(workflow_id, chat_message.message, username=username)
+        workflow_tracker.start_workflow(workflow_id, chat_message.message, username=username, interaction_type="chat")
+        
+        # Save initial workflow events to DB
+        from app.services.workflow_event_service import WorkflowEventService
+        from app.models.workflow_event import EventSource, EventType, EventStatus, WorkflowStage as DBWorkflowStage
+        from app.core.tracing import get_current_trace_id
+        
+        event_service = WorkflowEventService(db)
+        trace_id = get_current_trace_id()
+        
+        # Save user input event
+        try:
+            event_service.save_event(
+                workflow_id=workflow_id,
+                event_type=EventType.USER_INPUT,
+                event_source=EventSource.USER,
+                stage=DBWorkflowStage.USER_REQUEST,
+                message=f"Запрос пользователя: {chat_message.message[:200]}",
+                event_data={"message": chat_message.message, "task_type": chat_message.task_type},
+                metadata={"username": username, "interaction_type": "chat"},
+                session_id=session_id if 'session_id' in locals() else None,
+                trace_id=trace_id
+            )
+        except Exception as e:
+            logger.warning(f"Failed to save workflow event to DB: {e}", exc_info=True)
+        
         workflow_tracker.add_event(
             WorkflowStage.REQUEST_PARSING,
             f"Разбор запроса, определение действий. Тип задачи: {chat_message.task_type}"
         )
+        
+        # Save request parsing event
+        try:
+            event_service.save_event(
+                workflow_id=workflow_id,
+                event_type=EventType.EXECUTION_STEP,
+                event_source=EventSource.SYSTEM,
+                stage=DBWorkflowStage.REQUEST_PARSING,
+                message=f"Разбор запроса, определение действий. Тип задачи: {chat_message.task_type}",
+                event_data={"task_type": chat_message.task_type},
+                session_id=session_id if 'session_id' in locals() else None,
+                trace_id=trace_id
+            )
+        except Exception as e:
+            logger.warning(f"Failed to save workflow event to DB: {e}", exc_info=True)
         
         # Log incoming request
         logger.debug(
@@ -326,6 +366,40 @@ async def chat(
             _active_tasks[generation_id] = asyncio.current_task()
             
             try:
+                # Get chat history for full context
+                chat_history = session_manager.get_ollama_history(db, session_id)
+                
+                # Save workflow event with full prompts before request
+                try:
+                    from app.services.workflow_event_service import WorkflowEventService
+                    from app.models.workflow_event import EventType, EventSource, WorkflowStage as DBWorkflowStage
+                    event_service = WorkflowEventService(db)
+                    event_service.save_event(
+                        workflow_id=workflow_id,
+                        event_type=EventType.MODEL_REQUEST,
+                        event_source=EventSource.MODEL,
+                        stage=DBWorkflowStage.EXECUTION,
+                        message=f"Отправка запроса к модели {selected_model}",
+                        event_data={
+                            "system_prompt": chat_message.system_prompt or "",
+                            "user_prompt": chat_message.message,
+                            "full_prompt": prompt,
+                            "task_type": task_type.value,
+                            "temperature": chat_message.temperature,
+                            "history_length": len(chat_history) if chat_history else 0,
+                            "history": chat_history  # Полная история разговора
+                        },
+                        metadata={
+                            "model": selected_model,
+                            "server_url": selected_server_url,
+                            "server": selected_server.name if selected_server else None
+                        },
+                        session_id=session_id,
+                        trace_id=trace_id
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to save workflow event to DB: {e}", exc_info=True)
+                
                 # Track execution start
                 workflow_tracker.add_event(
                     WorkflowStage.EXECUTION,
@@ -338,10 +412,38 @@ async def chat(
                     model=selected_model,
                     server_url=selected_server_url,
                     system_prompt=chat_message.system_prompt,
-                    history=session_manager.get_ollama_history(db, session_id),
+                    history=chat_history,
                     stream=False,
                     temperature=chat_message.temperature
                 )
+                
+                duration_ms = int((time.time() - start_time) * 1000)
+                
+                # Save workflow event with full response
+                try:
+                    event_service = WorkflowEventService(db)
+                    event_service.save_event(
+                        workflow_id=workflow_id,
+                        event_type=EventType.MODEL_RESPONSE,
+                        event_source=EventSource.MODEL,
+                        stage=DBWorkflowStage.EXECUTION,
+                        message=f"Получен ответ от модели {selected_model}",
+                        event_data={
+                            "full_response": ollama_response.response,  # Полный ответ, не обрезанный
+                            "response_length": len(ollama_response.response),
+                            "task_type": task_type.value
+                        },
+                        metadata={
+                            "model": selected_model,
+                            "duration_ms": duration_ms,
+                            "server_url": selected_server_url
+                        },
+                        session_id=session_id,
+                        trace_id=trace_id,
+                        duration_ms=duration_ms
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to save workflow event to DB: {e}", exc_info=True)
                 
                 # Track response received
                 workflow_tracker.add_event(
@@ -370,7 +472,9 @@ async def chat(
                     _current_generation_id = None
                     _cancellation_event = None
             
-            duration_ms = int((time.time() - start_time) * 1000)
+            # duration_ms is now calculated inside the try block
+            if 'duration_ms' not in locals():
+                duration_ms = int((time.time() - start_time) * 1000)
             
             # Log request to request_logs
             try:
@@ -423,9 +527,36 @@ async def chat(
             )
             
             # Track completion
-            workflow_tracker.finish_workflow(
-                result=f"Запрос выполнен успешно. Получен ответ длиной {len(ollama_response.response)} символов"
-            )
+            result_message = f"Запрос выполнен успешно. Получен ответ длиной {len(ollama_response.response)} символов"
+            workflow_tracker.finish_workflow(result=result_message)
+            
+            # Save final event to DB
+            try:
+                from app.services.workflow_event_service import WorkflowEventService
+                from app.models.workflow_event import EventSource, EventType, EventStatus, WorkflowStage as DBWorkflowStage
+                event_service = WorkflowEventService(db)
+                event_service.save_event(
+                    workflow_id=workflow_id,
+                    event_type=EventType.COMPLETION,
+                    event_source=EventSource.MODEL,
+                    stage=DBWorkflowStage.RESULT,
+                    message=result_message,
+                    event_data={
+                        "response": ollama_response.response,
+                        "response_length": len(ollama_response.response)
+                    },
+                    metadata={
+                        "model": ollama_response.model,
+                        "duration_ms": duration_ms,
+                        "task_type": task_type.value
+                    },
+                    session_id=session_id,
+                    trace_id=trace_id,
+                    duration_ms=duration_ms,
+                    status=EventStatus.COMPLETED
+                )
+            except Exception as e:
+                logger.warning(f"Failed to save workflow completion event to DB: {e}", exc_info=True)
             
             response_data = ChatResponse(
                 response=ollama_response.response,

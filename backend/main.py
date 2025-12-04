@@ -25,7 +25,8 @@ from app.api.routes import (
     chat, pages, models, servers, approvals_pages, logging as logging_routes,
     traces, traces_pages, requests, queues, checkpoints, metrics, health,
     artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages, tools_pages,
-    experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages, model_logs, current_work, workflow
+    experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages, model_logs, current_work, workflow,
+    websocket_events
 )
 
 # Configure logging first
@@ -150,6 +151,7 @@ app.include_router(plans.router)
 app.include_router(model_logs.router)
 app.include_router(current_work.router)
 app.include_router(workflow.router)
+app.include_router(websocket_events.router)
 
 # Evolution system web pages
 app.include_router(approvals_pages.router)

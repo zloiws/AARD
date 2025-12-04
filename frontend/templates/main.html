@@ -1713,38 +1713,204 @@
             }
         });
         
-        // Real-time refresh for current work (every 1 second when tab is active)
-        let currentWorkRefreshInterval = null;
+        // WebSocket connection for real-time workflow events
+        let workflowWebSocket = null;
+        let workflowEvents = []; // Store events for current workflow
+        let currentWorkflowId = null;
         
-        function startCurrentWorkRefresh() {
-            if (currentWorkRefreshInterval) return; // Already running
+        function connectWorkflowWebSocket(workflowId = null) {
+            // Close existing connection if any
+            disconnectWorkflowWebSocket();
             
-            // Load immediately first time
-            loadCurrentWork();
+            currentWorkflowId = workflowId;
             
-            currentWorkRefreshInterval = setInterval(function() {
-                const currentWorkTab = document.getElementById('current-work-tab');
-                if (currentWorkTab && currentWorkTab.classList.contains('active')) {
+            // Determine WebSocket URL
+            let wsUrl = 'ws://' + window.location.host;
+            if (window.location.protocol === 'https:') {
+                wsUrl = 'wss://' + window.location.host;
+            }
+            
+            if (workflowId) {
+                wsUrl += `/api/ws/events/${workflowId}`;
+            } else {
+                wsUrl += '/api/ws/events';
+            }
+            
+            try {
+                workflowWebSocket = new WebSocket(wsUrl);
+                
+                workflowWebSocket.onopen = function(event) {
+                    console.log('✅ WebSocket connected for workflow events', workflowId ? `(workflow: ${workflowId})` : '(all workflows)');
+                    // Load initial events
                     loadCurrentWork();
-                } else {
-                    // Tab is no longer active, stop refresh
-                    stopCurrentWorkRefresh();
-                }
-            }, 1000); // Refresh every 1 second for real-time updates
-            console.log('🔄 Real-time current work refresh started (1s interval)');
+                };
+                
+                workflowWebSocket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === 'connected') {
+                            console.log('WebSocket connected:', data.message);
+                        } else if (data.type === 'event') {
+                            // New event received via WebSocket
+                            handleNewWorkflowEvent(data.data);
+                        } else if (data.type === 'error') {
+                            console.error('WebSocket error:', data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
+                };
+                
+                workflowWebSocket.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    // Fallback to polling on error
+                    startCurrentWorkRefreshFallback();
+                };
+                
+                workflowWebSocket.onclose = function(event) {
+                    console.log('WebSocket disconnected');
+                    workflowWebSocket = null;
+                    // Fallback to polling on disconnect (will reconnect when tab becomes active)
+                };
+            } catch (error) {
+                console.error('Failed to create WebSocket connection:', error);
+                // Fallback to polling
+                startCurrentWorkRefreshFallback();
+            }
         }
         
-        function stopCurrentWorkRefresh() {
+        function disconnectWorkflowWebSocket() {
+            if (workflowWebSocket) {
+                workflowWebSocket.close();
+                workflowWebSocket = null;
+            }
+            currentWorkflowId = null;
+        }
+        
+        function handleNewWorkflowEvent(eventData) {
+            // Add event to our stored events
+            const existingIndex = workflowEvents.findIndex(e => e.id === eventData.id);
+            if (existingIndex >= 0) {
+                // Update existing event
+                workflowEvents[existingIndex] = eventData;
+            } else {
+                // Add new event
+                workflowEvents.push(eventData);
+            }
+            
+            // Sort events by timestamp
+            workflowEvents.sort((a, b) => {
+                const timeA = new Date(a.timestamp).getTime();
+                const timeB = new Date(b.timestamp).getTime();
+                return timeA - timeB;
+            });
+            
+            // Update display immediately
+            updateCurrentWorkDisplay();
+        }
+        
+        function updateCurrentWorkDisplay() {
+            const statusEl = document.getElementById('current-work-status');
+            const content = document.getElementById('current-work-content');
+            
+            if (!content) return;
+            
+            // Determine if workflow is active (if last event is not result/error)
+            const lastEvent = workflowEvents[workflowEvents.length - 1];
+            const isActive = lastEvent && !['result', 'error', 'completion'].includes(lastEvent.stage);
+            
+            if (statusEl) {
+                const stageText = lastEvent ? (lastEvent.stage || 'ожидание') : 'ожидание';
+                statusEl.textContent = isActive ? `🔄 Выполняется (${stageText})` : `✅ Завершено`;
+            }
+            
+            if (workflowEvents.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-logs">
+                        <div class="empty-logs-icon">⚙️</div>
+                        <p>Нет активного процесса выполнения</p>
+                        <p style="font-size: 13px; margin-top: 8px;">Здесь отображаются все взаимодействия: чат, планирование задач, тесты и другие операции</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Render events
+            renderWorkflowEvents(workflowEvents, lastEvent ? lastEvent.stage : null);
+        }
+        
+        // Fallback to polling if WebSocket fails
+        let currentWorkRefreshInterval = null;
+        
+        function startCurrentWorkRefreshFallback() {
+            if (currentWorkRefreshInterval) return; // Already running
+            
+            // Load immediately
+            loadCurrentWork();
+            
+            // Then refresh every 2 seconds (less frequent than WebSocket)
+            currentWorkRefreshInterval = setInterval(function() {
+                const currentWorkTab = document.getElementById('current-work-tab');
+                if (!currentWorkTab || !currentWorkTab.classList.contains('active')) {
+                    stopCurrentWorkRefreshFallback();
+                    return;
+                }
+                loadCurrentWork();
+            }, 2000); // Refresh every 2 seconds
+        }
+        
+        function stopCurrentWorkRefreshFallback() {
             if (currentWorkRefreshInterval) {
                 clearInterval(currentWorkRefreshInterval);
                 currentWorkRefreshInterval = null;
-                console.log('⏸️ Real-time current work refresh stopped');
             }
+        }
+        
+        function startCurrentWorkRefresh() {
+            // Try WebSocket first (preferred method)
+            connectWorkflowWebSocket();
+        }
+        
+        function stopCurrentWorkRefresh() {
+            disconnectWorkflowWebSocket();
+            stopCurrentWorkRefreshFallback();
         }
         
         // Make functions globally available for switchTab to use
         window.startCurrentWorkRefresh = startCurrentWorkRefresh;
         window.stopCurrentWorkRefresh = stopCurrentWorkRefresh;
+        
+        // Store original loadCurrentWork and enhance it
+        if (typeof window.loadCurrentWork === 'function') {
+            const originalLoadCurrentWork = window.loadCurrentWork;
+            
+            // Override to work with WebSocket events
+            window.loadCurrentWork = async function() {
+                // If WebSocket is connected and has events, use them primarily
+                if (workflowWebSocket && workflowWebSocket.readyState === WebSocket.OPEN && workflowEvents.length > 0) {
+                    updateCurrentWorkDisplay();
+                    // Still fetch from API to get latest status
+                    try {
+                        const response = await fetch('/api/workflow/current');
+                        if (response.ok) {
+                            const data = await response.json();
+                            // Update status from API
+                            const statusEl = document.getElementById('current-work-status');
+                            if (statusEl && data.current_stage) {
+                                const isActive = data.is_active;
+                                statusEl.textContent = isActive ? `🔄 Выполняется (${data.current_stage})` : `✅ Завершено`;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error fetching workflow status:', error);
+                    }
+                } else {
+                    // Fallback to original function
+                    await originalLoadCurrentWork();
+                }
+            };
+        }
     });
     
     // Load model logs summary with branching information
@@ -1895,6 +2061,13 @@
     // Load current work (active tasks)
     async function loadCurrentWork() {
         try {
+            // If WebSocket is connected and has events, use them
+            if (workflowWebSocket && workflowWebSocket.readyState === WebSocket.OPEN && workflowEvents.length > 0) {
+                updateCurrentWorkDisplay();
+                return;
+            }
+            
+            // Otherwise, fetch from API
             const response = await fetch('/api/workflow/current');
             if (!response.ok) {
                 console.error('Failed to load current workflow:', response.statusText);
@@ -1911,25 +2084,50 @@
             const emptyState = content.querySelector('.empty-logs');
             if (emptyState) emptyState.remove();
             
-            if (!data.is_active && (!data.events || data.events.length === 0)) {
+            // Merge API events with WebSocket events
+            if (data.events && data.events.length > 0) {
+                // Add/update events from API
+                data.events.forEach(apiEvent => {
+                    const existingIndex = workflowEvents.findIndex(e => 
+                        e.timestamp === apiEvent.timestamp && e.message === apiEvent.message
+                    );
+                    if (existingIndex >= 0) {
+                        workflowEvents[existingIndex] = apiEvent;
+                    } else {
+                        workflowEvents.push(apiEvent);
+                    }
+                });
+                
+                // Sort by timestamp
+                workflowEvents.sort((a, b) => {
+                    const timeA = new Date(a.timestamp).getTime();
+                    const timeB = new Date(b.timestamp).getTime();
+                    return timeA - timeB;
+                });
+            }
+            
+            if (!data.is_active && workflowEvents.length === 0) {
                 content.innerHTML = `
                     <div class="empty-logs">
                         <div class="empty-logs-icon">⚙️</div>
                         <p>Нет активного процесса выполнения</p>
-                        <p style="font-size: 13px; margin-top: 8px;">Отправьте запрос в чате, чтобы увидеть процесс выполнения</p>
+                        <p style="font-size: 13px; margin-top: 8px;">Здесь отображаются все взаимодействия: чат, планирование задач, тесты и другие операции</p>
                     </div>
                 `;
                 if (statusEl) statusEl.textContent = '';
                 return;
             }
             
-            if (statusEl) {
-                const stageText = data.current_stage || 'ожидание';
-                statusEl.textContent = data.is_active ? `🔄 Выполняется (${stageText})` : `✅ Завершено`;
-            }
+            // Update display with merged events
+            updateCurrentWorkDisplay();
             
-            // Render workflow events
-            renderWorkflowEvents(data.events || [], data.current_stage);
+            // Update status
+            if (statusEl) {
+                const lastEvent = workflowEvents[workflowEvents.length - 1];
+                const isActive = data.is_active || (lastEvent && !['result', 'error', 'completion'].includes(lastEvent.stage));
+                const stageText = data.current_stage || (lastEvent ? lastEvent.stage : 'ожидание');
+                statusEl.textContent = isActive ? `🔄 Выполняется (${stageText})` : `✅ Завершено`;
+            }
         } catch (error) {
             console.error('Error loading current workflow:', error);
         }
@@ -2009,21 +2207,9 @@
                         </div>
                     </div>
                     <div style="font-size: 14px; color: #212529; line-height: 1.6;">
-                        ${escapeHtml(event.message)}
-                        ${event.details && event.details.full_response ? `
-                            <div style="margin-top: 12px; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #2563eb;">
-                                <div style="font-weight: 600; margin-bottom: 8px; font-size: 13px;">Ответ модели:</div>
-                                <div style="font-size: 13px; color: #495057; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
-                                    ${escapeHtml(event.details.full_response)}
-                                </div>
-                            </div>
-                        ` : ''}
+                        ${formatWorkflowMessage(event)}
                     </div>
-                    ${event.details && Object.keys(event.details).length > 0 && !event.details.full_response ? `
-                        <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; font-size: 12px; font-family: monospace; max-height: 200px; overflow-y: auto;">
-                            ${JSON.stringify(event.details, null, 2)}
-                        </div>
-                    ` : ''}
+                    ${formatWorkflowDetails(event)}
                 </div>
             `;
         });
@@ -2033,6 +2219,91 @@
         
         // Don't auto-scroll - let user control scrolling manually
         // Auto-scroll was interfering with reading events
+    }
+    
+    // Format workflow message for better readability
+    function formatWorkflowMessage(event) {
+        let message = event.message || '';
+        
+        // If message contains JSON-like structures, try to extract meaningful content
+        if (message.includes('{') && message.includes('}')) {
+            try {
+                // Try to extract readable parts from JSON-like strings
+                message = message.replace(/\{'([^']+)':\s*'([^']+)'/g, '$1: $2');
+                message = message.replace(/\{"([^"]+)":\s*"([^"]+)"/g, '$1: $2');
+            } catch (e) {
+                // If parsing fails, use original message
+            }
+        }
+        
+        // Escape HTML
+        return escapeHtml(message);
+    }
+    
+    // Format workflow details (metadata) in a readable way
+    function formatWorkflowDetails(event) {
+        if (!event.details || Object.keys(event.details).length === 0) {
+            return '';
+        }
+        
+        const details = event.details;
+        const message = event.message || '';
+        let html = '';
+        
+        // Check if message already contains model/server/duration info to avoid duplication
+        const messageContainsModel = message.includes('модель') || message.includes('model');
+        const messageContainsServer = message.includes('Server') || message.includes('сервер');
+        const messageContainsDuration = /\d+\.\d+с/.test(message) || message.includes('(') && message.includes('с)');
+        
+        // Check if there's a full_response to show
+        if (details.full_response) {
+            html += `
+                <div style="margin-top: 12px; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #2563eb;">
+                    <div style="font-weight: 600; margin-bottom: 8px; font-size: 13px;">Ответ модели:</div>
+                    <div style="font-size: 13px; color: #495057; white-space: pre-wrap; max-height: 300px; overflow-y: auto; word-break: break-word;">
+                        ${escapeHtml(String(details.full_response).substring(0, 500))}${details.full_response.length > 500 ? '...' : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Collect additional details (only if not already in message)
+        const additionalDetails = [];
+        
+        // Only show model if not in message or if it's different
+        if (details.model && !messageContainsModel && details.model !== 'модель') {
+            additionalDetails.push({label: 'Модель', value: details.model});
+        }
+        
+        // Only show server if not in message
+        if (details.server && !messageContainsServer) {
+            additionalDetails.push({label: 'Сервер', value: details.server});
+        }
+        
+        // Only show duration if not in message
+        if (details.duration_ms && !messageContainsDuration) {
+            additionalDetails.push({label: 'Время', value: `${(details.duration_ms / 1000).toFixed(2)}с`});
+        }
+        
+        // Show steps_count, plan_id etc if available (these are usually not in message)
+        if (details.steps_count !== undefined) {
+            additionalDetails.push({label: 'Шагов создано', value: details.steps_count});
+        }
+        if (details.plan_id) {
+            additionalDetails.push({label: 'План ID', value: details.plan_id.substring(0, 8) + '...'});
+        }
+        
+        if (additionalDetails.length > 0) {
+            html += `
+                <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.03); border-radius: 4px; font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap;">
+                    ${additionalDetails.map(item => 
+                        `<div><strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(String(item.value))}</div>`
+                    ).join('')}
+                </div>
+            `;
+        }
+        
+        return html;
     }
     
     // Render active task with real-time progress (deprecated, kept for compatibility)
