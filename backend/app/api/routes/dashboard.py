@@ -3,12 +3,14 @@ API routes for dashboard
 """
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
 from app.core.database import get_db
+from app.core.templates import templates
 from app.models.task import Task, TaskStatus
 from app.models.plan import Plan
 from app.models.approval import ApprovalRequest
@@ -19,18 +21,24 @@ router = APIRouter(tags=["dashboard"])
 
 @router.get("/api/dashboard/tasks")
 async def get_dashboard_tasks(
+    request: Request,
     status: Optional[str] = None,
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+):
     """
     Get tasks for dashboard
     
+    Supports both JSON and HTML responses:
+    - JSON: for API clients
+    - HTML: for HTMX requests (returns HTML fragment)
+    
     Args:
+        request: FastAPI request object
         status: Optional status filter (in_progress, pending_approval, etc.)
         db: Database session
         
     Returns:
-        Dictionary with active tasks and statistics
+        HTML fragment if Accept header contains text/html, otherwise JSON
     """
     try:
         # Build query
@@ -55,17 +63,30 @@ async def get_dashboard_tasks(
             Task.status.in_(active_statuses)
         ).order_by(Task.updated_at.desc()).limit(50).all()
         
-        # Get statistics
-        total_tasks = db.query(Task).count()
-        pending_approval = db.query(Task).filter(Task.status == TaskStatus.PENDING_APPROVAL).count()
-        in_progress = db.query(Task).filter(
-            or_(
-                Task.status == TaskStatus.IN_PROGRESS,
-                Task.status == TaskStatus.EXECUTING
-            )
-        ).count()
-        on_hold = db.query(Task).filter(Task.status == TaskStatus.ON_HOLD).count()
-        failed = db.query(Task).filter(Task.status == TaskStatus.FAILED).count()
+        # Get approval requests for pending approval tasks
+        pending_approval_tasks = db.query(Task).filter(
+            Task.status == TaskStatus.PENDING_APPROVAL
+        ).all()
+        
+        approval_requests_map = {}
+        for task in pending_approval_tasks:
+            # Get latest plan
+            latest_plan = db.query(Plan).filter(
+                Plan.task_id == task.id
+            ).order_by(Plan.version.desc()).first()
+            
+            if latest_plan:
+                approval_request = db.query(ApprovalRequest).filter(
+                    ApprovalRequest.plan_id == latest_plan.id,
+                    ApprovalRequest.status == "pending"
+                ).first()
+                
+                if approval_request:
+                    approval_requests_map[str(task.id)] = {
+                        "id": str(approval_request.id),
+                        "plan_id": str(latest_plan.id),
+                        "request_data": approval_request.request_data
+                    }
         
         # Format tasks with plan information
         tasks_data = []
@@ -80,35 +101,60 @@ async def get_dashboard_tasks(
                 "description": task.description,
                 "status": task.status.value,
                 "priority": task.priority,
-                "created_at": task.created_at.isoformat() if task.created_at else None,
-                "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+                "created_at": task.created_at,
+                "updated_at": task.updated_at,
                 "created_by_role": task.created_by_role,
                 "approved_by_role": task.approved_by_role,
                 "autonomy_level": task.autonomy_level,
-                "plan": None
+                "plan": None,
+                "approval_request": approval_requests_map.get(str(task.id))
             }
             
             if latest_plan:
+                # Calculate progress
+                steps = latest_plan.steps if isinstance(latest_plan.steps, list) else []
+                total_steps = len(steps)
+                current_step = latest_plan.current_step
+                progress = (current_step / total_steps * 100) if total_steps > 0 else 0
+                
                 task_dict["plan"] = {
                     "id": str(latest_plan.id),
                     "version": latest_plan.version,
                     "status": latest_plan.status,
-                    "current_step": latest_plan.current_step,
+                    "current_step": current_step,
+                    "total_steps": total_steps,
+                    "progress": progress,
                     "goal": latest_plan.goal
                 }
             
             tasks_data.append(task_dict)
         
-        return {
-            "tasks": tasks_data,
-            "statistics": {
-                "total": total_tasks,
-                "pending_approval": pending_approval,
-                "in_progress": in_progress,
-                "on_hold": on_hold,
-                "failed": failed
-            }
-        }
+        # Check if request wants HTML (HTMX request)
+        accept_header = request.headers.get("accept", "")
+        if "text/html" in accept_header or request.headers.get("HX-Request") == "true":
+            # Return HTML fragment for HTMX
+            if not tasks_data:
+                return HTMLResponse("<div class='text-center py-5'><p class='text-muted'>Нет активных задач</p></div>")
+            
+            return templates.TemplateResponse(
+                "dashboard_tasks_fragment.html",
+                {
+                    "request": request,
+                    "tasks": tasks_data
+                }
+            )
+        
+        # Return JSON for API clients
+        return JSONResponse({
+            "tasks": [
+                {
+                    **task_dict,
+                    "created_at": task_dict["created_at"].isoformat() if task_dict["created_at"] else None,
+                    "updated_at": task_dict["updated_at"].isoformat() if task_dict["updated_at"] else None,
+                }
+                for task_dict in tasks_data
+            ]
+        })
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching dashboard tasks: {str(e)}")

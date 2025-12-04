@@ -25,8 +25,89 @@ class PlanningService:
     def __init__(self, db: Session):
         self.db = db
         self.tracer = get_tracer(__name__)
+        self.model_logs = []  # Collect model interaction logs for this planning session
+        self.current_task_id = None  # Track current task_id for real-time log saving
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
+    
+    def _add_model_log(
+        self, 
+        log_type: str, 
+        model: str, 
+        content: Any, 
+        metadata: Optional[Dict[str, Any]] = None,
+        stage: Optional[str] = None
+    ):
+        """
+        Add a model interaction log entry
+        
+        Log types:
+        - 'user_request': Запрос от пользователя
+        - 'request_analysis': Разбор запроса, определение действий
+        - 'action_start': Начало действия
+        - 'action_progress': Прогресс действия с изменениями
+        - 'action_end': Завершение действия
+        - 'request': Запрос к модели
+        - 'response': Ответ от модели
+        - 'thinking': Промежуточные мысли модели
+        - 'result': Финальный результат
+        - 'error': Ошибка выполнения
+        
+        Stages (для workflow):
+        - 'user_input': Получен запрос от пользователя
+        - 'analysis': Анализ запроса и определение действий
+        - 'execution': Выполнение действий
+        - 'completion': Завершение операции
+        """
+        from datetime import datetime
+        
+        log_entry = {
+            "type": log_type,
+            "model": model,
+            "content": content,
+            "metadata": metadata or {},
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        if stage:
+            log_entry["stage"] = stage
+        
+        self.model_logs.append(log_entry)
+        
+        # Save log to Digital Twin context in real-time if task_id is known
+        if self.current_task_id:
+            try:
+                from app.models.task import Task
+                task = self.db.query(Task).filter(Task.id == self.current_task_id).first()
+                if task:
+                    context = task.get_context()
+                    model_logs = context.get("model_logs", [])
+                    model_logs.append(log_entry)
+                    context["model_logs"] = model_logs
+                    task.update_context(context, merge=False)
+                    self.db.commit()
+            except Exception as e:
+                # Don't fail if real-time save fails, just log it
+                logger = self._get_logger()
+                if logger:
+                    logger.warning(f"Failed to save log to Digital Twin in real-time: {e}", exc_info=True)
+        
+        # Also log to standard logger
+        logger = self._get_logger()
+        if logger:
+            extra_data = {
+                "log_type": log_type,
+                "model": model,
+                "content_preview": str(content)[:100] if content else None,
+            }
+            if metadata:
+                extra_data.update(metadata)
+            logger.debug(
+                f"Model {log_type}",
+                extra=extra_data
+            )
+        
+        return log_entry
     
     def _get_logger(self):
         """Get logger instance, return None if not available"""
@@ -44,6 +125,12 @@ class PlanningService:
     ) -> Plan:
         """
         Generate a plan for a task using LLM
+        
+        Workflow logging (HITL observation mode):
+        1. user_request: Запрос от пользователя
+        2. request_analysis: Разбор запроса, определение действий
+        3. action_start/action_progress/action_end: Действия от и до со всеми изменениями
+        4. result: Финальный результат
         
         Args:
             task_description: Description of the task
@@ -71,14 +158,42 @@ class PlanningService:
                 agent_id
             )
         
-        # 1. Analyze task and create strategy
-        strategy = await self._analyze_task(task_description, context)
+        # Get or create task for Digital Twin context and real-time logging
+        task = None
+        digital_twin_context = {}
+        if task_id:
+            task = self.db.query(Task).filter(Task.id == task_id).first()
+            if task:
+                digital_twin_context = task.get_context()
+                # Set current_task_id for real-time log saving
+                self.current_task_id = task_id
+        else:
+            # Create task first for real-time logging if not provided
+            task = Task(
+                description=task_description[:500],  # Truncate if too long
+                status=TaskStatus.PENDING,
+                created_by_role="planner"
+            )
+            self.db.add(task)
+            self.db.commit()
+            self.db.refresh(task)
+            task_id = task.id
+            self.current_task_id = task_id  # Set for real-time log saving
+        
+        # Merge Digital Twin context with provided context
+        enhanced_context = {**(context or {}), **digital_twin_context}
+        if procedural_pattern:
+            enhanced_context["procedural_pattern"] = procedural_pattern
+        
+        # 1. Analyze task and create strategy (with Digital Twin context)
+        strategy = await self._analyze_task(task_description, enhanced_context, task_id)
         
         # 2. Decompose task into steps (use procedural pattern if available)
         steps = await self._decompose_task(
             task_description,
             strategy,
-            {**(context or {}), "procedural_pattern": procedural_pattern}
+            enhanced_context,
+            task_id=task_id
         )
         
         # 3. Assess risks
@@ -87,17 +202,7 @@ class PlanningService:
         # 4. Create alternatives if needed
         alternatives = await self._create_alternatives(steps, strategy, risks)
         
-        # 5. Create plan object
-        if not task_id:
-            # Create a task if not provided
-            task = Task(
-                description=task_description,
-                status=TaskStatus.DRAFT,  # Start as DRAFT, will transition to PENDING_APPROVAL if needed
-                created_by_role="planner"  # Created by planner agent
-            )
-            self.db.add(task)
-            self.db.flush()
-            task_id = task.id
+        # 5. Create plan object (task should already exist from step above)
         
         plan = Plan(
             task_id=task_id,
@@ -114,6 +219,91 @@ class PlanningService:
         self.db.add(plan)
         self.db.commit()
         self.db.refresh(plan)
+        
+        # Update Digital Twin context with plan data
+        task = self.db.query(Task).filter(Task.id == task_id).first()
+        if task:
+            # Initialize context if empty
+            context_updates = {
+                "original_user_request": task_description,
+                "active_todos": [
+                    {
+                        "step_id": step.get("step_id", f"step_{i}"),
+                        "description": step.get("description", ""),
+                        "status": "pending",
+                        "completed": False
+                    }
+                    for i, step in enumerate(steps)
+                ],
+                "plan": {
+                    "plan_id": str(plan.id),
+                    "version": plan.version,
+                    "goal": plan.goal,
+                    "strategy": strategy,
+                    "steps_count": len(steps),
+                    "status": plan.status,
+                    "created_at": plan.created_at.isoformat() if plan.created_at else None
+                },
+                "artifacts": [],
+                "execution_logs": [],
+                "interaction_history": [],
+                "model_logs": self.model_logs.copy(),  # Save model interaction logs
+                
+                # Branching information for observability
+                "planning_decisions": {
+                    "strategies_considered": [],  # Will be populated if alternatives exist
+                    "alternatives": alternatives if alternatives else [],
+                    "replanning_history": []  # Will be populated on replanning
+                },
+                "agent_selection": {
+                    "available_agents": [],
+                    "selected_agents": [],
+                    "reasons": {}
+                },
+                "prompt_usage": {
+                    "prompts_used": []  # Will track which prompts were used
+                },
+                "tool_selection": {
+                    "available_tools": [],
+                    "selected_tools": [],
+                    "reasons": {}
+                },
+                "memory_storage": {
+                    "episodic": [],
+                    "procedural": [],
+                    "what_stored": "",
+                    "why_stored": ""
+                },
+                
+                "metadata": {
+                    "created_at": datetime.utcnow().isoformat(),
+                    "task_id": str(task_id),
+                    "plan_id": str(plan.id)
+                }
+            }
+            task.update_context(context_updates, merge=False)
+            self.db.commit()
+            self.db.refresh(task)
+        
+        # Stage 4: Log final result (HITL observation)
+        self._add_model_log(
+            log_type="result",
+            model="system",
+            content={
+                "result_type": "plan_created",
+                "plan_id": str(plan.id),
+                "plan_version": plan.version,
+                "steps_count": len(steps),
+                "status": plan.status,
+                "goal": plan.goal
+            },
+            metadata={
+                "stage": "completion",
+                "operation": "generate_plan",
+                "task_id": str(task_id) if task_id else None
+            },
+            stage="completion"
+        )
         
         # Save plan to episodic memory (history of plan changes)
         await self._save_plan_to_episodic_memory(plan, task_id, "plan_created")
@@ -196,9 +386,10 @@ class PlanningService:
     async def _analyze_task(
         self,
         task_description: str,
-        context: Optional[Dict[str, Any]]
+        context: Optional[Dict[str, Any]],
+        task_id: Optional[UUID] = None
     ) -> Dict[str, Any]:
-        """Analyze task and create strategy"""
+        """Analyze task and create strategy using Digital Twin context"""
         with self.tracer.start_as_current_span("planning.analyze_task") as span:
             add_span_attributes(
                 task_description=task_description[:100],
@@ -211,15 +402,10 @@ Analyze the task and create a strategy that includes:
 3. constraints: List of constraints and limitations
 4. success_criteria: List of criteria for successful completion
 
-Return a JSON object with these fields."""
+Return a JSON object with these fields. Only return valid JSON, no additional text."""
         
-        context_str = ""
-        if context:
-            context_str = f"\n\nContext:\n{json.dumps(context, indent=2, ensure_ascii=False)}"
-        
-        user_prompt = f"""Task: {task_description}{context_str}
-
-Analyze this task and create a strategic plan. Return only valid JSON."""
+            # Build enhanced prompt with Digital Twin context
+        user_prompt = self._build_enhanced_analysis_prompt(task_description, context, task_id)
         
         try:
             # Use ModelSelector for dual-model architecture
@@ -236,11 +422,29 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             if not server:
                 raise ValueError("No server found for planning model")
             
+            # Log request to model
+            self._add_model_log(
+                log_type="request",
+                model=planning_model.model_name,
+                content={
+                    "prompt": user_prompt[:500] + "..." if len(user_prompt) > 500 else user_prompt,
+                    "system_prompt": system_prompt[:200] + "..." if len(system_prompt) > 200 else system_prompt,
+                    "task": "analyze_task"
+                },
+                metadata={
+                    "server": server.name,
+                    "server_url": server.get_api_url(),
+                    "model_id": str(planning_model.id) if hasattr(planning_model, 'id') else None
+                }
+            )
+            
             # Create OllamaClient
             ollama_client = OllamaClient()
             
             # IMPORTANT: Add timeout to prevent infinite loops
             import asyncio
+            import time
+            start_time = time.time()
             try:
                 response = await asyncio.wait_for(
                     ollama_client.generate(
@@ -252,11 +456,56 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                     ),
                     timeout=300.0  # 5 minutes max for strategy analysis
                 )
+                duration_ms = int((time.time() - start_time) * 1000)
+                
+                # Log response from model
+                self._add_model_log(
+                    log_type="response",
+                    model=planning_model.model_name,
+                    content={
+                        "response": response.response[:2000] + "..." if len(response.response) > 2000 else response.response,
+                        "full_length": len(response.response)
+                    },
+                    metadata={
+                        "duration_ms": duration_ms,
+                        "task": "analyze_task"
+                    }
+                )
             except asyncio.TimeoutError:
+                duration_ms = int((asyncio.get_event_loop().time() - start_time) * 1000)
+                self._add_model_log(
+                    log_type="error",
+                    model=planning_model.model_name,
+                    content="Strategy analysis timed out after 5 minutes",
+                    metadata={
+                        "duration_ms": duration_ms,
+                        "task": "analyze_task",
+                        "error_type": "timeout"
+                    }
+                )
                 raise ValueError("Strategy analysis timed out after 5 minutes. Task may be too complex or model is stuck.")
             
-            # Parse JSON from response
-            strategy = self._parse_json_from_response(response.response)
+            # Stage 2: Log request analysis (HITL observation)
+            self._add_model_log(
+                log_type="request_analysis",
+                model=planning_model.model_name,
+                content={
+                    "analysis_type": "strategy_generation",
+                    "response_preview": response.response[:500] + "..." if len(response.response) > 500 else response.response
+                },
+                metadata={
+                    "stage": "analysis",
+                    "operation": "analyze_task",
+                    "duration_ms": duration_ms
+                },
+                stage="analysis"
+            )
+            
+            # Parse JSON from response with validation
+            strategy = self._parse_and_validate_json(
+                response.response,
+                expected_keys=["approach", "assumptions", "constraints", "success_criteria"]
+            )
             
             # Ensure required fields
             if not isinstance(strategy, dict):
@@ -266,6 +515,21 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             strategy.setdefault("assumptions", [])
             strategy.setdefault("constraints", [])
             strategy.setdefault("success_criteria", [])
+            
+            # Log parsed strategy
+            self._add_model_log(
+                log_type="action_progress",
+                model=planning_model.model_name,
+                content={
+                    "action": "strategy_parsed",
+                    "strategy": strategy
+                },
+                metadata={
+                    "stage": "analysis",
+                    "operation": "analyze_task"
+                },
+                stage="analysis"
+            )
             
             return strategy
             
@@ -282,7 +546,8 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
         self,
         task_description: str,
         strategy: Dict[str, Any],
-        context: Optional[Dict[str, Any]]
+        context: Optional[Dict[str, Any]],
+        task_id: Optional[UUID] = None
     ) -> List[Dict[str, Any]]:
         """Decompose task into executable steps"""
         with self.tracer.start_as_current_span("planning.decompose_task") as span:
@@ -316,16 +581,39 @@ This ensures safe execution in a sandboxed environment.
 
 Return a JSON array of steps."""
         
-        context_str = ""
-        if context:
-            context_str = f"\n\nContext:\n{json.dumps(context, indent=2, ensure_ascii=False)}"
-        
+        # Build enhanced prompt with Digital Twin context
         strategy_str = json.dumps(strategy, indent=2, ensure_ascii=False)
+        
+        # Get Digital Twin context if task exists
+        digital_twin_context = {}
+        if task_id:
+            task = self.db.query(Task).filter(Task.id == task_id).first()
+            if task:
+                digital_twin_context = task.get_context()
+        
+        # Build context sections
+        sections = []
+        
+        # Add strategy
+        sections.append(f"Strategy:\n{strategy_str}")
+        
+        # Add existing artifacts (useful for dependencies)
+        artifacts = digital_twin_context.get("artifacts", [])
+        if artifacts:
+            sections.append(f"\nExisting Artifacts (available for use):\n{json.dumps(artifacts, indent=2, ensure_ascii=False)}")
+        
+        # Add context from parameters
+        if context:
+            filtered_context = {k: v for k, v in context.items() 
+                              if k not in ["artifacts", "original_user_request"]}
+            if filtered_context:
+                sections.append(f"\nAdditional Context:\n{json.dumps(filtered_context, indent=2, ensure_ascii=False)}")
+        
+        context_str = "\n".join(sections)
         
         user_prompt = f"""Task: {task_description}
 
-Strategy:
-{strategy_str}{context_str}
+{context_str}
 
 Break down this task into executable steps. Return only a valid JSON array."""
         
@@ -344,11 +632,30 @@ Break down this task into executable steps. Return only a valid JSON array."""
             if not server:
                 raise ValueError("No server found for planning model")
             
+            # Log request to model
+            self._add_model_log(
+                log_type="request",
+                model=planning_model.model_name,
+                content={
+                    "prompt": user_prompt[:500] + "..." if len(user_prompt) > 500 else user_prompt,
+                    "system_prompt": system_prompt[:200] + "..." if len(system_prompt) > 200 else system_prompt,
+                    "task": "decompose_task",
+                    "strategy": strategy
+                },
+                metadata={
+                    "server": server.name,
+                    "server_url": server.get_api_url(),
+                    "model_id": str(planning_model.id) if hasattr(planning_model, 'id') else None
+                }
+            )
+            
             # Create OllamaClient
             ollama_client = OllamaClient()
             
             # IMPORTANT: Add timeout to prevent infinite loops
             import asyncio
+            import time
+            start_time = time.time()
             try:
                 response = await asyncio.wait_for(
                     ollama_client.generate(
@@ -360,11 +667,39 @@ Break down this task into executable steps. Return only a valid JSON array."""
                     ),
                     timeout=300.0  # 5 minutes max for task decomposition
                 )
+                duration_ms = int((time.time() - start_time) * 1000)
+                
+                # Log response from model
+                self._add_model_log(
+                    log_type="response",
+                    model=planning_model.model_name,
+                    content={
+                        "response": response.response[:2000] + "..." if len(response.response) > 2000 else response.response,
+                        "full_length": len(response.response),
+                        "steps_count": len(json.loads(response.response)) if isinstance(json.loads(response.response), list) else 0
+                    },
+                    metadata={
+                        "duration_ms": duration_ms,
+                        "task": "decompose_task"
+                    }
+                )
             except asyncio.TimeoutError:
+                import time
+                duration_ms = int((time.time() - start_time) * 1000)
+                self._add_model_log(
+                    log_type="error",
+                    model=planning_model.model_name,
+                    content="Task decomposition timed out after 5 minutes",
+                    metadata={
+                        "duration_ms": duration_ms,
+                        "task": "decompose_task",
+                        "error_type": "timeout"
+                    }
+                )
                 raise ValueError("Task decomposition timed out after 5 minutes. Task may be too complex or model is stuck.")
             
-            # Parse JSON from response
-            steps = self._parse_json_from_response(response.response)
+            # Parse JSON from response with validation
+            steps = self._parse_and_validate_json(response.response, expected_structure="list")
             
             # Ensure it's a list
             if not isinstance(steps, list):
@@ -475,23 +810,130 @@ Break down this task into executable steps. Return only a valid JSON array."""
             total += step.get("timeout", 300)
         return total
     
-    def _parse_json_from_response(self, response_text: str) -> Any:
-        """Parse JSON from LLM response"""
-        # Try to find JSON in response
-        # Look for JSON object or array
+    def _build_enhanced_analysis_prompt(
+        self,
+        task_description: str,
+        context: Optional[Dict[str, Any]],
+        task_id: Optional[UUID] = None
+    ) -> str:
+        """Build enhanced prompt with Digital Twin context"""
+        
+        # Get Digital Twin context if task exists
+        digital_twin_context = {}
+        if task_id:
+            task = self.db.query(Task).filter(Task.id == task_id).first()
+            if task:
+                digital_twin_context = task.get_context()
+        
+        # Build structured context sections
+        sections = []
+        
+        # Original request from Digital Twin
+        if digital_twin_context.get("original_user_request"):
+            sections.append(f"Original Request:\n{digital_twin_context['original_user_request']}")
+        
+        # Previous plans (if any) - show last 2 versions
+        historical_todos = digital_twin_context.get("historical_todos", [])
+        if historical_todos:
+            recent_history = historical_todos[-2:] if len(historical_todos) > 2 else historical_todos
+            sections.append(f"\nPrevious Plans (for reference):\n{json.dumps(recent_history, indent=2, ensure_ascii=False)}")
+        
+        # Existing artifacts
+        artifacts = digital_twin_context.get("artifacts", [])
+        if artifacts:
+            # Include only relevant artifacts (last 5)
+            recent_artifacts = artifacts[-5:] if len(artifacts) > 5 else artifacts
+            sections.append(f"\nExisting Artifacts:\n{json.dumps(recent_artifacts, indent=2, ensure_ascii=False)}")
+        
+        # Recent interactions (last 3)
+        interaction_history = digital_twin_context.get("interaction_history", [])
+        if interaction_history:
+            recent_interactions = interaction_history[-3:]
+            sections.append(f"\nRecent Interactions:\n{json.dumps(recent_interactions, indent=2, ensure_ascii=False)}")
+        
+        # Additional context from parameters
+        if context:
+            # Filter out internal fields
+            filtered_context = {k: v for k, v in context.items() 
+                              if k not in ["original_user_request", "artifacts", "interaction_history", "historical_todos"]}
+            if filtered_context:
+                sections.append(f"\nAdditional Context:\n{json.dumps(filtered_context, indent=2, ensure_ascii=False)}")
+        
+        # Build final prompt
+        context_str = "\n".join(sections) if sections else ""
+        
+        if context_str:
+            return f"""Task: {task_description}
+
+{context_str}
+
+Analyze this task considering the context above and create a strategic plan. Return only valid JSON."""
+        else:
+            return f"""Task: {task_description}
+
+Analyze this task and create a strategic plan. Return only valid JSON."""
+    
+    def _parse_and_validate_json(
+        self,
+        response_text: str,
+        expected_keys: Optional[List[str]] = None,
+        expected_structure: Optional[str] = None  # "dict" or "list"
+    ) -> Any:
+        """Parse JSON from response with validation and error recovery"""
+        json_data = None
+        
+        # Method 1: Try to find JSON object/array in response
         json_match = re.search(r'\{.*\}|\[.*\]', response_text, re.DOTALL)
         if json_match:
             try:
-                return json.loads(json_match.group())
+                json_data = json.loads(json_match.group())
             except json.JSONDecodeError:
                 pass
         
-        # Try to parse entire response
-        try:
-            return json.loads(response_text)
-        except json.JSONDecodeError:
-            # Return empty structure
-            return {}
+        # Method 2: Try to parse entire response
+        if not json_data:
+            try:
+                json_data = json.loads(response_text)
+            except json.JSONDecodeError:
+                pass
+        
+        # Method 3: Try to fix common JSON errors
+        if not json_data:
+            try:
+                # Fix trailing commas
+                fixed_text = re.sub(r',(\s*[}\]])', r'\1', response_text)
+                json_data = json.loads(fixed_text)
+            except json.JSONDecodeError:
+                pass
+        
+        # Method 4: Try to extract JSON from markdown code blocks
+        if not json_data:
+            code_block_match = re.search(r'```(?:json)?\s*(\{.*\}|\[.*\])\s*```', response_text, re.DOTALL)
+            if code_block_match:
+                try:
+                    json_data = json.loads(code_block_match.group(1))
+                except json.JSONDecodeError:
+                    pass
+        
+        # Validate structure
+        if expected_structure == "list":
+            if not isinstance(json_data, list):
+                json_data = []
+        elif expected_structure == "dict":
+            if not isinstance(json_data, dict):
+                json_data = {}
+        
+        # Validate required keys for dict
+        if isinstance(json_data, dict) and expected_keys:
+            for key in expected_keys:
+                if key not in json_data:
+                    json_data[key] = None  # Set default value
+        
+        return json_data if json_data is not None else ({} if expected_structure == "dict" else [])
+    
+    def _parse_json_from_response(self, response_text: str) -> Any:
+        """Parse JSON from LLM response (legacy method, use _parse_and_validate_json instead)"""
+        return self._parse_and_validate_json(response_text)
     
     async def _create_plan_approval_request(self, plan: Plan, risks: Dict[str, Any]):
         """Create an approval request for a newly created plan"""
@@ -567,14 +1009,16 @@ Break down this task into executable steps. Return only a valid JSON array."""
         
         # If approval is not required, skip creating approval request
         if not requires_approval:
-            logger.info(
-                f"Plan {plan.id} does not require approval based on adaptive logic",
-                extra={
-                    "plan_id": str(plan.id),
-                    "agent_id": str(agent_id) if agent_id else None,
-                    "decision_metadata": decision_metadata
-                }
-            )
+            logger = self._get_logger()
+            if logger:
+                logger.info(
+                    f"Plan {plan.id} does not require approval based on adaptive logic",
+                    extra={
+                        "plan_id": str(plan.id),
+                        "agent_id": str(agent_id) if agent_id else None,
+                        "decision_metadata": decision_metadata
+                    }
+                )
             # Mark plan as auto-approved
             plan.status = "approved"
             plan.approved_at = datetime.utcnow()
@@ -728,6 +1172,45 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 **(context or {})
             }
         )
+        
+        # Update Digital Twin context with replanning history
+        task = self.db.query(Task).filter(Task.id == original_plan.task_id).first()
+        if task:
+            task_context = task.get_context()
+            
+            # Initialize replanning_history if not exists
+            if "planning_decisions" not in task_context:
+                task_context["planning_decisions"] = {}
+            if "replanning_history" not in task_context["planning_decisions"]:
+                task_context["planning_decisions"]["replanning_history"] = []
+            
+            # Add replanning entry
+            replanning_entry = {
+                "from_version": original_plan.version,
+                "to_version": new_plan.version,
+                "reason": reason,
+                "timestamp": datetime.utcnow().isoformat(),
+                "original_plan_id": str(original_plan.id),
+                "new_plan_id": str(new_plan.id),
+                "changes": {
+                    "steps_before": len(original_plan.steps) if original_plan.steps else 0,
+                    "steps_after": len(new_plan.steps) if new_plan.steps else 0
+                }
+            }
+            
+            task_context["planning_decisions"]["replanning_history"].append(replanning_entry)
+            task_context["plan"] = {
+                "plan_id": str(new_plan.id),
+                "version": new_plan.version,
+                "goal": new_plan.goal,
+                "strategy": new_plan.strategy,
+                "steps_count": len(new_plan.steps) if new_plan.steps else 0,
+                "status": new_plan.status,
+                "created_at": new_plan.created_at.isoformat() if new_plan.created_at else None
+            }
+            
+            task.update_context(task_context, merge=False)
+            self.db.commit()
         
         # Update working memory with new plan
         await self._save_todo_to_working_memory(original_plan.task_id, new_plan)

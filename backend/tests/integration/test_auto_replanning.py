@@ -2,6 +2,7 @@
 Integration tests for automatic replanning on failure
 """
 import pytest
+from unittest.mock import AsyncMock, patch, MagicMock
 from uuid import uuid4
 from sqlalchemy.orm import Session
 

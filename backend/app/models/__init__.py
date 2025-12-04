@@ -28,6 +28,7 @@ from app.models.agent_memory import (  # noqa: F401
 )
 from app.models.user import User, Session, UserRole  # noqa: F401
 from app.models.learning_pattern import LearningPattern, PatternType  # noqa: F401
+from app.models.chat_session import ChatSession, ChatMessage  # noqa: F401
 
 __all__ = [
     "Base",

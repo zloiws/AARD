@@ -86,14 +86,11 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>📊 Dashboard - Управление задачами</h1>
+        <h1>📊 Dashboard - Задачи</h1>
         <div>
             <button class="btn btn-primary" onclick="showCreateTaskModal()">
                 <i class="bi bi-plus-circle"></i> Создать задачу
             </button>
-            <a href="/plans" class="btn btn-outline-primary ms-2">
-                <i class="bi bi-list"></i> Все планы
-            </a>
         </div>
     </div>
 
@@ -147,27 +144,23 @@
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div class="flex-grow-1">
                                 <h6 class="mb-1">
-                                    <a href="/plans/{{ task.plan.id if task.plan else '#' }}" class="text-decoration-none">
-                                        {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
-                                    </a>
+                                    {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
                                 </h6>
                                 <div class="d-flex gap-2 align-items-center mb-2">
                                     <span class="status-badge status-{{ task.status }}">
                                         {{ task.status }}
                                     </span>
-                                    {% if task.plan %}
-                                    <span class="badge bg-secondary">v{{ task.plan.version }}</span>
-                                    <span class="text-muted small">
-                                        Шаг {{ task.plan.current_step }}/{{ task.plan.total_steps }}
-                                    </span>
-                                    {% endif %}
                                     <span class="text-muted small">
                                         Приоритет: {{ task.priority }} | Автономия: {{ task.autonomy_level }}
                                     </span>
+                                    {% if task.plan %}
+                                    <span class="text-muted small">| План: {{ task.plan.goal[:30] }}{% if task.plan.goal|length > 30 %}...{% endif %}</span>
+                                    {% endif %}
                                 </div>
-                                {% if task.plan %}
+                                {% if task.plan and task.plan.total_steps > 0 %}
                                 <div class="progress mb-2" style="width: 300px;">
-                                    <div class="progress-bar" style="width: {{ task.plan.progress }}%"></div>
+                                    <div class="progress-bar" style="width: {{ task.plan.progress|default(0) }}%"></div>
+                                    <small class="text-muted">Прогресс плана: {{ task.plan.current_step }}/{{ task.plan.total_steps }}</small>
                                 </div>
                                 {% endif %}
                             </div>
@@ -193,23 +186,13 @@
                                     <i class="bi bi-play-circle"></i> Возобновить
                                 </button>
                                 {% endif %}
-                                <a href="/plans/{{ task.plan.id if task.plan else '#' }}" class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-eye"></i> Детали
-                                </a>
+                                {% if task.plan %}
+                                <button class="btn btn-outline-info btn-sm" onclick="viewPlan('{{ task.plan.id }}')">
+                                    <i class="bi bi-diagram-3"></i> План
+                                </button>
+                                {% endif %}
                             </div>
                         </div>
-                        {% if task.plan %}
-                        <div class="mt-2">
-                            <button class="btn btn-link btn-sm p-0" type="button" onclick="toggleHistory('{{ task.plan.id }}')">
-                                <i class="bi bi-clock-history"></i> История изменений
-                            </button>
-                            <div id="history-{{ task.plan.id }}" style="display: none;" class="mt-2">
-                                <div class="spinner-border spinner-border-sm" role="status">
-                                    <span class="visually-hidden">Загрузка...</span>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -274,9 +257,20 @@
     setInterval(function() {
         htmx.ajax('GET', '/api/dashboard/tasks', {
             target: '#tasks-list',
-            swap: 'innerHTML'
+            swap: 'innerHTML',
+            headers: {
+                'Accept': 'text/html,application/json'
+            }
         });
     }, 10000);
+    
+    // Handle HTMX errors for task updates
+    document.body.addEventListener('htmx:responseError', function(event) {
+        if (event.detail.target && event.detail.target.id === 'tasks-list') {
+            console.error('Error updating tasks list:', event.detail);
+            // Don't show error in the list, just log it
+        }
+    });
 
     function showCreateTaskModal() {
         const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
@@ -331,32 +325,29 @@
         alert('Функция возобновления будет реализована в InteractiveExecutionService');
     }
 
-    function toggleHistory(planId) {
-        const historyDiv = document.getElementById(`history-${planId}`);
-        if (historyDiv.style.display === 'none') {
-            historyDiv.style.display = 'block';
-            // Load history
-            fetch(`/api/dashboard/plan-history/${planId}`)
-                .then(response => response.json())
-                .then(data => {
-                    let html = '<div class="mt-2">';
-                    if (data.history && data.history.length > 0) {
-                        data.history.forEach(event => {
-                            html += `<div class="history-item ${event.event_type}">`;
-                            html += `<strong>${event.event_type}</strong> - v${event.plan_version}<br>`;
-                            html += `<small class="text-muted">${event.timestamp}</small>`;
-                            html += `</div>`;
-                        });
-                    } else {
-                        html += '<p class="text-muted small">История изменений не найдена</p>';
-                    }
-                    html += '</div>';
-                    historyDiv.innerHTML = html;
-                });
-        } else {
-            historyDiv.style.display = 'none';
+    function viewPlan(planId) {
+        // Switch to Plans tab and navigate to plan detail
+        try {
+            // Try to communicate with parent window (if in iframe)
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ 
+                    type: 'switchTab', 
+                    tab: 'plans', 
+                    planId: planId 
+                }, '*');
+            } else {
+                // Not in iframe - redirect directly
+                window.location.href = `/plans/${planId}`;
+            }
+        } catch (e) {
+            // Fallback: direct redirect
+            console.warn('Could not switch tab, redirecting:', e);
+            window.location.href = `/plans/${planId}`;
         }
     }
+    
+    // Make viewPlan available globally for fragment
+    window.viewPlan = viewPlan;
 
     // Handle form submission
     document.getElementById('createTaskForm')?.addEventListener('submit', function(event) {

@@ -4,38 +4,105 @@
 
 {% block extra_css %}
 <style>
-    /* Tab styles */
+    /* Tab styles - redesigned with scrolling and new color palette */
+    .tabs-container {
+        position: relative;
+        background: #ffffff;
+        border-bottom: 2px solid #d1d5db;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .tabs-scroll-button {
+        background: #ffffff;
+        border: none;
+        border-right: 1px solid #e5e7eb;
+        padding: 12px 8px;
+        cursor: pointer;
+        color: #374151;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        transition: background 0.2s;
+        flex-shrink: 0;
+        z-index: 10;
+    }
+    
+    .tabs-scroll-button:hover {
+        background: #f3f4f6;
+    }
+    
+    .tabs-scroll-button:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+    
+    .tabs-wrapper {
+        flex: 1;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: #d1d5db #ffffff;
+    }
+    
+    .tabs-wrapper::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .tabs-wrapper::-webkit-scrollbar-track {
+        background: #ffffff;
+    }
+    
+    .tabs-wrapper::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 2px;
+    }
+    
     .tabs {
         display: flex;
         gap: 0;
         padding: 0;
-        background: #f8f9fa;
-        border-bottom: 2px solid #e9ecef;
-        flex-shrink: 0;
+        background: #ffffff;
+        min-width: max-content;
     }
     
     .tab {
-        padding: 14px 24px;
+        padding: 12px 20px;
         background: transparent;
         border: none;
         border-bottom: 3px solid transparent;
         cursor: pointer;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 500;
-        color: #6c757d;
+        color: #6b7280;
         transition: all 0.2s;
         position: relative;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
     
     .tab:hover {
-        background: #e9ecef;
-        color: #495057;
+        background: #f9fafb;
+        color: #111827;
     }
     
     .tab.active {
-        color: #667eea;
-        border-bottom-color: #667eea;
-        background: white;
+        color: #1e40af;
+        border-bottom-color: #3b82f6;
+        background: #eff6ff;
+        font-weight: 600;
+    }
+    
+    .tab-divider {
+        width: 1px;
+        background: #e5e7eb;
+        margin: 8px 4px;
+        flex-shrink: 0;
     }
     
     .tab-content {
@@ -134,8 +201,8 @@
     
     textarea:focus {
         outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
     
     .action-buttons {
@@ -146,7 +213,7 @@
     
     button[type="submit"] {
         padding: 12px 24px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
         border: none;
         border-radius: 12px;
@@ -228,7 +295,7 @@
     }
     
     .message.user .message-content {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
         border-bottom-right-radius: 4px;
     }
@@ -272,7 +339,7 @@
     .loading-dots span {
         width: 8px;
         height: 8px;
-        background: #667eea;
+        background: #2563eb;
         border-radius: 50%;
         animation: bounce 1.4s infinite ease-in-out both;
     }
@@ -306,6 +373,208 @@
         overflow-y: auto;
         height: 100%;
     }
+    
+    /* Model Logs Tab Styles */
+    .model-logs-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+        background: #f8f9fa;
+    }
+    
+    .model-logs-header {
+        padding: 16px 20px;
+        background: white;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    
+    .model-logs-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .model-logs-controls button {
+        padding: 8px 16px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+    
+    .model-logs-controls button:hover {
+        background: #1d4ed8;
+    }
+    
+    /* Links styling - different from tabs */
+    a {
+        color: #059669;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    
+    a:hover {
+        color: #047857;
+        text-decoration: underline;
+    }
+    
+    a:visited {
+        color: #0d9488;
+    }
+    
+    /* Markdown links */
+    .markdown-body a {
+        color: #059669;
+    }
+    
+    .markdown-body a:hover {
+        color: #047857;
+        text-decoration: underline;
+    }
+    
+    .model-logs-controls button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    
+    .model-logs-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f8f9fa;
+    }
+    
+    .log-entry {
+        background: white;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #2563eb;
+    }
+    
+    .log-entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .log-entry-model {
+        font-weight: 600;
+        color: #059669;
+        font-size: 14px;
+    }
+    
+    .log-entry-time {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .log-entry-type {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-left: 8px;
+    }
+    
+    .log-entry-type.request {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+    
+    .log-entry-type.response {
+        background: #e8f5e9;
+        color: #388e3c;
+    }
+    
+    .log-entry-type.thinking {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+    
+    .log-entry-type.error {
+        background: #ffebee;
+        color: #c62828;
+    }
+    
+    .log-entry-content {
+        margin-top: 12px;
+    }
+    
+    .log-entry-content pre {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 12px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: 1.5;
+        margin: 8px 0;
+    }
+    
+    .log-entry-content .json-view {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 12px;
+        overflow-x: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    
+    .log-entry-metadata {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #e9ecef;
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .log-entry-metadata span {
+        margin-right: 16px;
+    }
+    
+    .empty-logs {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-logs-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+    
+    /* Dashboard iframe improvements */
+    .dashboard-iframe-wrapper {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: white;
+    }
+    
+    .dashboard-iframe-wrapper iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+    }
 </style>
 {% endblock %}
 
@@ -321,17 +590,29 @@
         </div>
     </div>
     
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab('chat')">💬 Чат</div>
-        <div class="tab" onclick="switchTab('dashboard')">📊 Dashboard</div>
-        <div class="tab" onclick="switchTab('plans')">📋 Планы</div>
-        <div class="tab" onclick="switchTab('approvals')">✅ Утверждения</div>
-        <div class="tab" onclick="switchTab('artifacts')">📦 Артефакты</div>
-        <div class="tab" onclick="switchTab('agents')">🤖 Агенты</div>
-        <div class="tab" onclick="switchTab('tools')">🔧 Инструменты</div>
-        <div class="tab" onclick="switchTab('agent-gym')">🏋️ Agent Gym</div>
-        <div class="tab" onclick="switchTab('traces')">🔍 Трассировки</div>
-        <div class="tab" onclick="switchTab('settings')">⚙️ Настройки</div>
+    <div class="tabs-container">
+        <button class="tabs-scroll-button" id="tabs-scroll-left" onclick="scrollTabs(-200)" title="Прокрутить влево">‹</button>
+        <div class="tabs-wrapper" id="tabs-wrapper">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('chat')">💬 Чат</div>
+                <div class="tab" onclick="switchTab('current-work')">⚙️ Текущая работа</div>
+                <div class="tab" onclick="switchTab('model-logs')">🔍 Логи моделей</div>
+                <div class="tab-divider"></div>
+                <div class="tab" onclick="switchTab('dashboard')">📊 Dashboard</div>
+                <div class="tab" onclick="switchTab('plans')">📋 Планы</div>
+                <div class="tab" onclick="switchTab('approvals')">✅ Утверждения</div>
+                <div class="tab-divider"></div>
+                <div class="tab" onclick="switchTab('artifacts')">📦 Артефакты</div>
+                <div class="tab" onclick="switchTab('agents')">🤖 Агенты</div>
+                <div class="tab" onclick="switchTab('tools')">🔧 Инструменты</div>
+                <div class="tab-divider"></div>
+                <div class="tab" onclick="switchTab('agent-gym')">🏋️ Agent Gym</div>
+                <div class="tab" onclick="switchTab('traces')">🔍 Трассировки</div>
+                <div class="tab-divider"></div>
+                <div class="tab" onclick="switchTab('settings')">⚙️ Настройки</div>
+            </div>
+        </div>
+        <button class="tabs-scroll-button" id="tabs-scroll-right" onclick="scrollTabs(200)" title="Прокрутить вправо">›</button>
     </div>
     
     <!-- Chat Tab -->
@@ -413,10 +694,55 @@
         </div>
     </div>
     
+    <!-- Current Work Tab -->
+    <div id="current-work-tab" class="tab-content">
+        <div class="model-logs-container">
+            <div class="model-logs-header">
+                <h2 style="margin: 0; font-size: 20px;">⚙️ Текущая работа</h2>
+                <div class="model-logs-controls">
+                    <button onclick="loadCurrentWork()" id="refresh-current-work-btn">🔄 Обновить</button>
+                    <span id="current-work-status" style="font-size: 14px; color: #6c757d;"></span>
+                </div>
+            </div>
+            <div class="model-logs-content" id="current-work-content">
+                <div class="empty-logs">
+                    <div class="empty-logs-icon">⚙️</div>
+                    <p>Процесс выполнения текущего запроса будет отображаться здесь</p>
+                    <p style="font-size: 13px; margin-top: 8px;">Данные обновляются автоматически в реальном времени</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model Logs Tab -->
+    <div id="model-logs-tab" class="tab-content">
+        <div class="model-logs-container">
+            <div class="model-logs-header">
+                <h2 style="margin: 0; font-size: 20px;">🔍 Логи моделей</h2>
+                <div class="model-logs-controls">
+                    <button onclick="loadModelLogsSummary()" id="refresh-logs-btn">🔄 Обновить</button>
+                    <button onclick="clearModelLogs()" id="clear-logs-btn">🗑️ Очистить</button>
+                </div>
+            </div>
+            <div class="model-logs-content" id="model-logs-content">
+                <!-- Current session logs container -->
+                <div id="current-session-logs" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;"></div>
+                <!-- Summary container -->
+                <div id="summary-container" style="display: flex; flex-direction: column; gap: 20px;"></div>
+                <!-- Empty state -->
+                <div class="empty-logs" id="empty-logs-state">
+                    <div class="empty-logs-icon">🔍</div>
+                    <p>Краткая сводка с разветвлениями будет отображаться здесь</p>
+                    <p style="font-size: 13px; margin-top: 8px;">Нажмите "Обновить" для загрузки сводки последних задач со всеми разветвлениями</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Dashboard Tab -->
     <div id="dashboard-tab" class="tab-content">
-        <div style="width: 100%; height: 100%; overflow: hidden;">
-            <iframe src="/dashboard" style="width: 100%; height: 100%; border: none;"></iframe>
+        <div class="dashboard-iframe-wrapper">
+            <iframe src="/dashboard" id="dashboard-iframe"></iframe>
         </div>
     </div>
     
@@ -489,7 +815,12 @@
         const savedSession = localStorage.getItem('aard_session_id');
         if (savedSession) {
             currentSessionId = savedSession;
+            // Load session history if session exists
+            loadSessionHistory(savedSession);
         }
+        
+        // Load saved model logs from localStorage
+        loadModelLogsFromStorage();
         
         const textarea = document.getElementById('message-input');
         if (textarea) {
@@ -497,9 +828,78 @@
             textarea.focus();
         }
     });
+    
+    // Load session history from database
+    async function loadSessionHistory(sessionId) {
+        try {
+            const response = await fetch(`/api/chat/session/${sessionId}`);
+            if (!response.ok) {
+                if (response.status === 404) {
+                    // Session not found, clear it
+                    localStorage.removeItem('aard_session_id');
+                    currentSessionId = null;
+                    return;
+                }
+                console.error('Failed to load session history:', response.statusText);
+                return;
+            }
+            
+            const sessionData = await response.json();
+            const messagesDiv = document.getElementById('messages');
+            if (!messagesDiv) return;
+            
+            // Clear existing messages (except welcome message)
+            messagesDiv.innerHTML = '';
+            
+            // Render all messages from session
+            if (sessionData.messages && sessionData.messages.length > 0) {
+                sessionData.messages.forEach(msg => {
+                    if (msg.role === 'user') {
+                        // Add user message
+                        const userMsgDiv = document.createElement('div');
+                        userMsgDiv.className = 'message user';
+                        userMsgDiv.innerHTML = `
+                            <div class="message-content">${escapeHtml(msg.content)}</div>
+                            <div class="message-meta">${new Date(msg.timestamp).toLocaleTimeString()}</div>
+                        `;
+                        messagesDiv.appendChild(userMsgDiv);
+                    } else if (msg.role === 'assistant') {
+                        // Add assistant message
+                        const assistantMsgDiv = document.createElement('div');
+                        assistantMsgDiv.className = 'message assistant';
+                        assistantMsgDiv.innerHTML = `
+                            <div class="message-content markdown-body" data-markdown data-model="${msg.model || 'unknown'}">${escapeHtml(msg.content)}</div>
+                            <div class="message-meta">${msg.model || 'unknown'} • ${new Date(msg.timestamp).toLocaleTimeString()}</div>
+                        `;
+                        messagesDiv.appendChild(assistantMsgDiv);
+                        
+                        // Process markdown if available
+                        const markdownContent = assistantMsgDiv.querySelector('[data-markdown]');
+                        if (markdownContent && typeof marked !== 'undefined') {
+                            const rawText = markdownContent.textContent || markdownContent.innerText;
+                            markdownContent.innerHTML = marked.parse(rawText);
+                            // Highlight code blocks
+                            if (typeof hljs !== 'undefined') {
+                                markdownContent.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightElement(block);
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                // Scroll to bottom
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                console.log(`✅ Loaded ${sessionData.messages.length} messages from session`);
+            }
+        } catch (error) {
+            console.error('Error loading session history:', error);
+        }
+    }
 
     // Tab switching
-    function switchTab(tabName) {
+    function switchTab(tabName, planId = null) {
+        // Remove active class from all tabs and tab contents
         document.querySelectorAll('.tab-content').forEach(tab => {
             tab.classList.remove('active');
         });
@@ -510,10 +910,160 @@
         const targetTab = document.getElementById(tabName + '-tab');
         if (targetTab) {
             targetTab.classList.add('active');
+            
+            // If switching to plans tab with a planId, navigate to that plan
+            if (tabName === 'plans' && planId) {
+                const iframe = targetTab.querySelector('iframe');
+                if (iframe) {
+                    iframe.src = `/plans/${planId}`;
+                }
+            }
+            
+            // If switching to current-work tab, load active tasks and start refresh
+            if (tabName === 'current-work') {
+                if (typeof loadCurrentWork === 'function') {
+                    loadCurrentWork();
+                }
+                setTimeout(() => {
+                    if (typeof window.startCurrentWorkRefresh === 'function') {
+                        window.startCurrentWorkRefresh();
+                    }
+                }, 100);
+            } else {
+                if (typeof window.stopCurrentWorkRefresh === 'function') {
+                    window.stopCurrentWorkRefresh();
+                }
+            }
+            
+            // If switching to model-logs tab, load summary if not already loaded
+            if (tabName === 'model-logs') {
+                const summaryContainer = document.getElementById('summary-container');
+                if (summaryContainer && summaryContainer.children.length === 0) {
+                    setTimeout(() => {
+                        if (typeof loadModelLogsSummary === 'function') {
+                            loadModelLogsSummary();
+                        }
+                    }, 100);
+                }
+            }
         }
         
-        event.target.classList.add('active');
+        // Find and activate the correct tab button
+        const tabs = document.querySelectorAll('.tab');
+        let activeTabElement = null;
+        
+        tabs.forEach(tab => {
+            const tabText = tab.textContent.trim();
+            const tabMapping = {
+                'chat': '💬 Чат',
+                'current-work': '⚙️ Текущая работа',
+                'model-logs': '🔍 Логи моделей',
+                'dashboard': '📊 Dashboard',
+                'plans': '📋 Планы',
+                'approvals': '✅ Утверждения',
+                'artifacts': '📦 Артефакты',
+                'agents': '🤖 Агенты',
+                'tools': '🔧 Инструменты',
+                'agent-gym': '🏋️ Agent Gym',
+                'traces': '🔍 Трассировки',
+                'settings': '⚙️ Настройки'
+            };
+            
+            if (tabText === tabMapping[tabName]) {
+                tab.classList.add('active');
+                activeTabElement = tab;
+            }
+        });
+        
+        // Scroll to active tab if needed
+        if (activeTabElement && typeof scrollToTab === 'function') {
+            scrollToTab(activeTabElement);
+        }
+        
+        // Update scroll buttons visibility
+        if (typeof updateScrollButtons === 'function') {
+            updateScrollButtons();
+        }
     }
+    
+    // Make switchTab globally available
+    window.switchTab = switchTab;
+    
+    // Scroll tabs horizontally
+    function scrollTabs(direction) {
+        const tabsWrapper = document.getElementById('tabs-wrapper');
+        if (!tabsWrapper) return;
+        
+        const scrollAmount = direction;
+        tabsWrapper.scrollBy({
+            left: scrollAmount,
+            behavior: 'smooth'
+        });
+        
+        // Update button states after scroll
+        setTimeout(updateScrollButtons, 300);
+    }
+    
+    // Scroll to specific tab
+    function scrollToTab(tabElement) {
+        const tabsWrapper = document.getElementById('tabs-wrapper');
+        if (!tabsWrapper || !tabElement) return;
+        
+        const wrapperRect = tabsWrapper.getBoundingClientRect();
+        const tabRect = tabElement.getBoundingClientRect();
+        
+        // Check if tab is visible
+        const isVisible = tabRect.left >= wrapperRect.left && tabRect.right <= wrapperRect.right;
+        
+        if (!isVisible) {
+            // Scroll to make tab visible
+            const scrollLeft = tabElement.offsetLeft - tabsWrapper.offsetLeft - (wrapperRect.width / 2) + (tabRect.width / 2);
+            tabsWrapper.scrollTo({
+                left: scrollLeft,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Update button states
+        setTimeout(updateScrollButtons, 300);
+    }
+    
+    // Update scroll button states based on scroll position
+    function updateScrollButtons() {
+        const tabsWrapper = document.getElementById('tabs-wrapper');
+        const scrollLeftBtn = document.getElementById('tabs-scroll-left');
+        const scrollRightBtn = document.getElementById('tabs-scroll-right');
+        
+        if (!tabsWrapper) return;
+        
+        const canScrollLeft = tabsWrapper.scrollLeft > 0;
+        const canScrollRight = tabsWrapper.scrollLeft < (tabsWrapper.scrollWidth - tabsWrapper.clientWidth - 1);
+        
+        if (scrollLeftBtn) {
+            scrollLeftBtn.disabled = !canScrollLeft;
+        }
+        if (scrollRightBtn) {
+            scrollRightBtn.disabled = !canScrollRight;
+        }
+    }
+    
+    // Initialize scroll buttons on load
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabsWrapper = document.getElementById('tabs-wrapper');
+        if (tabsWrapper) {
+            // Update buttons on scroll
+            tabsWrapper.addEventListener('scroll', updateScrollButtons);
+            // Initial update
+            updateScrollButtons();
+        }
+    });
+    
+    // Listen for messages from iframes (for navigation)
+    window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'switchTab') {
+            switchTab(event.data.tab, event.data.planId);
+        }
+    });
 
     // Toggle model selection panel
     function toggleModelPanel() {
@@ -684,6 +1234,14 @@
         
         console.log('Submitting chat request:', requestData);
         
+        // Add request log
+        addModelLog('request', model || 'Auto-select', message.trim(), {
+            'Task Type': taskType,
+            'Temperature': parseFloat(temperature) || 0.7,
+            'Server ID': serverId || 'Auto-select',
+            'Трассировка': 'Загрузка...'
+        });
+        
         // Show loading and enable stop button
         document.getElementById('loading').classList.add('show');
         document.getElementById('submit-btn').disabled = true;
@@ -706,9 +1264,19 @@
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            return response.text();
+            // Try to get trace_id and session_id from response headers
+            const traceId = response.headers.get('X-Trace-Id') || response.headers.get('trace-id') || null;
+            const sessionId = response.headers.get('X-Session-Id') || null;
+            return response.text().then(html => ({ html, traceId, sessionId }));
         })
-        .then(html => {
+        .then(({ html, traceId, sessionId }) => {
+            // Save session_id if provided
+            if (sessionId && sessionId !== currentSessionId) {
+                currentSessionId = sessionId;
+                localStorage.setItem('aard_session_id', sessionId);
+                console.log('💾 Saved session ID:', sessionId);
+            }
+            
             // Insert response into messages
             const messagesDiv = document.getElementById('messages');
             const tempDiv = document.createElement('div');
@@ -729,6 +1297,94 @@
                 }
             }
             
+            // Extract model information from response if available
+            const modelMeta = messageElement.querySelector('[data-model]');
+            const modelName = modelMeta ? modelMeta.dataset.model : 
+                             (messageElement.querySelector('.message-meta')?.textContent?.split('•')[0]?.trim() || 'Unknown');
+            
+            // Extract trace_id from data attribute if not in headers
+            const traceIdFromData = messageElement.querySelector('[data-trace-id]')?.dataset.traceId || null;
+            const finalTraceId = traceId || traceIdFromData;
+            
+            const responseText = messageElement.querySelector('.message-content')?.textContent || 
+                                messageElement.querySelector('.message-content')?.innerText || '';
+            
+            // Extract duration if available
+            const metaText = messageElement.querySelector('.message-meta')?.textContent || '';
+            const durationMatch = metaText.match(/([\d.]+)s/);
+            const duration = durationMatch ? durationMatch[1] : null;
+            
+            // Extract trace_id from meta text if available
+            const traceMatch = metaText.match(/Трассировка:\s*([^\s•]+)/);
+            const traceIdFromMeta = traceMatch ? traceMatch[1] : null;
+            const actualTraceId = finalTraceId || traceIdFromMeta;
+            
+            // Add response log
+            const logMetadata = {
+                'Length': responseText.length,
+                'Characters': responseText.length
+            };
+            if (duration) {
+                logMetadata['Duration'] = `${duration}s`;
+            }
+            if (actualTraceId) {
+                logMetadata['Трассировка'] = actualTraceId;
+            }
+            addModelLog('response', modelName, responseText.substring(0, 5000), logMetadata);
+            
+            // Update request log with trace_id if available
+            if (actualTraceId) {
+                const requestLogs = document.querySelectorAll('.log-entry[data-log-id]');
+                if (requestLogs.length > 0) {
+                    // Find the last request log
+                    let lastRequestLog = null;
+                    for (let i = requestLogs.length - 1; i >= 0; i--) {
+                        const logEntry = requestLogs[i];
+                        const typeSpan = logEntry.querySelector('.log-entry-type');
+                        if (typeSpan && typeSpan.textContent === 'request') {
+                            lastRequestLog = logEntry;
+                            break;
+                        }
+                    }
+                    
+                    if (lastRequestLog) {
+                        const metadataDiv = lastRequestLog.querySelector('.log-entry-metadata');
+                        if (metadataDiv) {
+                            // Find existing trace span or create new one
+                            let traceSpan = null;
+                            const spans = metadataDiv.querySelectorAll('span');
+                            for (let span of spans) {
+                                if (span.textContent.includes('Трассировка')) {
+                                    traceSpan = span;
+                                    break;
+                                }
+                            }
+                            
+                            if (traceSpan) {
+                                traceSpan.innerHTML = `<strong>Трассировка:</strong> ${escapeHtml(actualTraceId)}`;
+                            } else {
+                                metadataDiv.innerHTML += ` <span><strong>Трассировка:</strong> ${escapeHtml(actualTraceId)}</span>`;
+                            }
+                            
+                            // Also update the log entry in memory
+                            const logId = lastRequestLog.dataset.logId;
+                            const logEntry = modelLogs.find(log => log.id == logId);
+                            if (logEntry && logEntry.metadata) {
+                                logEntry.metadata['Трассировка'] = actualTraceId;
+                                // Re-render the log entry to show updated trace_id
+                                const logContainer = lastRequestLog.parentElement;
+                                if (logContainer) {
+                                    lastRequestLog.remove();
+                                    renderModelLog(logEntry, logContainer.id || 'current-session-logs');
+                                }
+                                // Save updated logs to storage
+                                saveModelLogsToStorage();
+                            }
+                        }
+                    }
+                }
+            }
+            
             scrollToBottom();
         })
         .catch(error => {
@@ -746,6 +1402,13 @@
                 messagesDiv.appendChild(cancelDiv);
             } else {
                 console.error('Error:', error);
+                
+                // Add error log
+                addModelLog('error', 'System', error.message, {
+                    'Error Type': error.name || 'Unknown',
+                    'Status': error.status || 'Unknown'
+                });
+                
                 const messagesDiv = document.getElementById('messages');
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'message assistant';
@@ -798,6 +1461,653 @@
         document.getElementById('submit-btn').disabled = false;
         document.getElementById('loading').classList.remove('show');
     }
+    
+    // Model Logs Functions
+    let modelLogs = [];
+    let modelLogsEnabled = true;
+    
+    function addModelLog(type, model, content, metadata = {}) {
+        if (!modelLogsEnabled) return;
+        
+        const logEntry = {
+            id: Date.now() + Math.random(),
+            type: type, // 'request', 'response', 'thinking', 'error'
+            model: model || 'Unknown',
+            content: content,
+            metadata: metadata,
+            timestamp: new Date().toISOString()
+        };
+        
+        modelLogs.push(logEntry);
+        
+        // Save to localStorage
+        saveModelLogsToStorage();
+        
+        // Hide empty state
+        const emptyState = document.getElementById('empty-logs-state');
+        if (emptyState) emptyState.style.display = 'none';
+        
+        // Render in current session logs container
+        renderModelLog(logEntry, 'current-session-logs');
+        
+        // Auto-scroll if enabled
+        const autoScroll = document.getElementById('auto-scroll-logs')?.checked;
+        if (autoScroll) {
+            const logsContent = document.getElementById('model-logs-content');
+            if (logsContent) {
+                logsContent.scrollTop = logsContent.scrollHeight;
+            }
+        }
+    }
+    
+    function renderModelLog(logEntry, containerId = 'model-logs-content') {
+        const container = containerId === 'model-logs-content' 
+            ? document.getElementById('model-logs-content')
+            : document.getElementById(containerId);
+        if (!container) return;
+        
+        // Hide empty state if present
+        const emptyState = document.getElementById('empty-logs-state');
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+        
+        // Check filters
+        const showRequests = document.getElementById('show-requests')?.checked ?? true;
+        const showResponses = document.getElementById('show-responses')?.checked ?? true;
+        const showThinking = document.getElementById('show-thinking')?.checked ?? true;
+        
+        if (logEntry.type === 'request' && !showRequests) return;
+        if (logEntry.type === 'response' && !showResponses) return;
+        if (logEntry.type === 'thinking' && !showThinking) return;
+        
+        const logDiv = document.createElement('div');
+        logDiv.className = 'log-entry';
+        logDiv.dataset.logId = logEntry.id;
+        
+        const timeStr = new Date(logEntry.timestamp).toLocaleTimeString('ru-RU');
+        
+        let contentDisplay = '';
+        if (typeof logEntry.content === 'object') {
+            contentDisplay = `<div class="json-view">${JSON.stringify(logEntry.content, null, 2)}</div>`;
+        } else {
+            contentDisplay = `<pre>${escapeHtml(String(logEntry.content))}</pre>`;
+        }
+        
+        logDiv.innerHTML = `
+            <div class="log-entry-header">
+                <div>
+                    <span class="log-entry-model">${escapeHtml(logEntry.model)}</span>
+                    <span class="log-entry-type ${logEntry.type}">${logEntry.type}</span>
+                </div>
+                <span class="log-entry-time">${timeStr}</span>
+            </div>
+            <div class="log-entry-content">
+                ${contentDisplay}
+            </div>
+            ${Object.keys(logEntry.metadata).length > 0 ? `
+                <div class="log-entry-metadata">
+                    ${Object.entries(logEntry.metadata).map(([key, value]) => 
+                        `<span><strong>${escapeHtml(key)}:</strong> ${escapeHtml(String(value))}</span>`
+                    ).join('')}
+                </div>
+            ` : ''}
+        `;
+        
+        container.appendChild(logDiv);
+    }
+    
+    function clearModelLogs() {
+        if (confirm('Очистить все логи моделей?')) {
+            modelLogs = [];
+            localStorage.removeItem('aard_model_logs');
+            
+            const currentLogsContainer = document.getElementById('current-session-logs');
+            const summaryContainer = document.getElementById('summary-container');
+            
+            if (currentLogsContainer) {
+                currentLogsContainer.innerHTML = '';
+            }
+            if (summaryContainer) {
+                summaryContainer.innerHTML = '';
+            }
+            
+            const emptyState = document.getElementById('empty-logs-state');
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
+        }
+    }
+    
+    function saveModelLogsToStorage() {
+        try {
+            localStorage.setItem('aard_model_logs', JSON.stringify(modelLogs));
+        } catch (e) {
+            console.warn('Failed to save model logs to localStorage:', e);
+        }
+    }
+    
+    function loadModelLogsFromStorage() {
+        try {
+            const saved = localStorage.getItem('aard_model_logs');
+            if (saved) {
+                modelLogs = JSON.parse(saved);
+                
+                // Render all saved logs
+                const currentLogsContainer = document.getElementById('current-session-logs');
+                if (currentLogsContainer && modelLogs.length > 0) {
+                    const emptyState = document.getElementById('empty-logs-state');
+                    if (emptyState) {
+                        emptyState.style.display = 'none';
+                    }
+                    
+                    currentLogsContainer.innerHTML = '';
+                    modelLogs.forEach(log => {
+                        renderModelLog(log, 'current-session-logs');
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load model logs from localStorage:', e);
+            modelLogs = [];
+        }
+    }
+    
+    // Load model logs from API (from Digital Twin context)
+    async function loadModelLogsFromAPI(taskId = null) {
+        try {
+            let url = '/api/model-logs/latest?limit=100';
+            if (taskId) {
+                url = `/api/model-logs/task/${taskId}`;
+            }
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                console.error('Failed to load model logs:', response.statusText);
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (data.logs && data.logs.length > 0) {
+                // Replace all logs (no real-time updates - manual refresh only)
+                // Clear existing logs first
+                modelLogs = [];
+                const logsContent = document.getElementById('model-logs-content');
+                if (logsContent) {
+                    logsContent.innerHTML = '';
+                }
+                
+                // Remove empty state if present
+                const wasEmpty = logsContent && logsContent.querySelector('.empty-logs');
+                if (wasEmpty) {
+                    wasEmpty.remove();
+                }
+                
+                let newLogsCount = 0;
+                
+                // Add all logs from API
+                data.logs.forEach(log => {
+                    const logEntry = {
+                        id: Date.now() + Math.random() + newLogsCount,
+                        type: log.type,
+                        model: log.model,
+                        content: log.content,
+                        metadata: log.metadata || {},
+                        timestamp: log.timestamp,
+                        stage: log.stage || null
+                    };
+                    modelLogs.push(logEntry);
+                    renderModelLog(logEntry);
+                    newLogsCount++;
+                });
+                
+                // Sort by timestamp (oldest first for chronological view)
+                modelLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                
+                // Re-render all logs in sorted order
+                if (logsContent && modelLogs.length > 0) {
+                    logsContent.innerHTML = '';
+                    modelLogs.forEach(log => renderModelLog(log));
+                }
+                
+                // Auto-scroll to new logs if enabled
+                if (newLogsCount > 0) {
+                    const autoScroll = document.getElementById('auto-scroll-logs')?.checked;
+                    if (autoScroll && logsContent) {
+                        setTimeout(() => {
+                            logsContent.scrollTop = logsContent.scrollHeight;
+                        }, 100);
+                    }
+                }
+                
+                if (newLogsCount > 0) {
+                    console.log(`✅ Added ${newLogsCount} new logs (total: ${modelLogs.length})`);
+                }
+            } else {
+                console.log('No model logs found in API');
+            }
+        } catch (error) {
+            console.error('Error loading model logs:', error);
+        }
+    }
+    
+    // Setup filter listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Re-render logs when filters change
+        ['show-requests', 'show-responses', 'show-thinking'].forEach(filterId => {
+            const filter = document.getElementById(filterId);
+            if (filter) {
+                filter.addEventListener('change', function() {
+                    const logsContent = document.getElementById('model-logs-content');
+                    if (logsContent && modelLogs.length > 0) {
+                        // Remove empty state
+                        const emptyState = logsContent.querySelector('.empty-logs');
+                        if (emptyState) emptyState.remove();
+                        
+                        // Clear and re-render all logs
+                        logsContent.innerHTML = '';
+                        modelLogs.forEach(log => renderModelLog(log));
+                    }
+                });
+            }
+        });
+        
+        // Real-time refresh for current work (every 1 second when tab is active)
+        let currentWorkRefreshInterval = null;
+        
+        function startCurrentWorkRefresh() {
+            if (currentWorkRefreshInterval) return; // Already running
+            
+            // Load immediately first time
+            loadCurrentWork();
+            
+            currentWorkRefreshInterval = setInterval(function() {
+                const currentWorkTab = document.getElementById('current-work-tab');
+                if (currentWorkTab && currentWorkTab.classList.contains('active')) {
+                    loadCurrentWork();
+                } else {
+                    // Tab is no longer active, stop refresh
+                    stopCurrentWorkRefresh();
+                }
+            }, 1000); // Refresh every 1 second for real-time updates
+            console.log('🔄 Real-time current work refresh started (1s interval)');
+        }
+        
+        function stopCurrentWorkRefresh() {
+            if (currentWorkRefreshInterval) {
+                clearInterval(currentWorkRefreshInterval);
+                currentWorkRefreshInterval = null;
+                console.log('⏸️ Real-time current work refresh stopped');
+            }
+        }
+        
+        // Make functions globally available for switchTab to use
+        window.startCurrentWorkRefresh = startCurrentWorkRefresh;
+        window.stopCurrentWorkRefresh = stopCurrentWorkRefresh;
+    });
+    
+    // Load model logs summary with branching information
+    async function loadModelLogsSummary() {
+        try {
+            const response = await fetch('/api/model-logs/summaries/latest?limit=10');
+            if (!response.ok) {
+                console.error('Failed to load model logs summary:', response.statusText);
+                return;
+            }
+            
+            const data = await response.json();
+            
+            // Render summaries in summary container (don't replace current logs)
+            const summaryContainer = document.getElementById('summary-container');
+            if (!summaryContainer) return;
+            
+            // Clear only summary container
+            summaryContainer.innerHTML = '';
+            
+            // Hide empty state if summaries exist
+            const emptyState = document.getElementById('empty-logs-state');
+            
+            if (!data.summaries || data.summaries.length === 0) {
+                if (emptyState) {
+                    emptyState.style.display = 'block';
+                }
+                return;
+            }
+            
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+            
+            // Render summaries
+            data.summaries.forEach(summary => {
+                const summaryHtml = renderTaskSummary(summary);
+                const summaryDiv = document.createElement('div');
+                summaryDiv.innerHTML = summaryHtml;
+                summaryContainer.appendChild(summaryDiv.firstElementChild);
+            });
+        } catch (error) {
+            console.error('Error loading model logs summary:', error);
+        }
+    }
+    
+    // Render task summary with all branches
+    function renderTaskSummary(summary) {
+        let html = `
+            <div style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                    <div>
+                        <h3 style="margin: 0 0 8px 0; font-size: 18px;">${escapeHtml(summary.task_description)}</h3>
+                        <div style="display: flex; gap: 12px; font-size: 13px; color: #6c757d; flex-wrap: wrap;">
+                            <span>Статус: <strong>${summary.status}</strong></span>
+                            <span>ID: ${summary.task_id.substring(0, 8)}...</span>
+                            ${summary.trace_id ? `<span><strong>Трассировка:</strong> ${summary.trace_id}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="border-top: 1px solid #e9ecef; padding-top: 16px;">
+        `;
+        
+        // User request
+        if (summary.user_request) {
+            html += `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">📝 Запрос пользователя:</h4>
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; font-size: 14px;">
+                        ${escapeHtml(summary.user_request)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Plans branching
+        if (summary.plans && summary.plans.length > 0) {
+            html += `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">📋 Планы (${summary.plans.length} версий):</h4>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+            `;
+            summary.plans.forEach(plan => {
+                html += `
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid ${plan.version === summary.plans[summary.plans.length - 1].version ? '#2563eb' : '#ccc'};">
+                        <div style="font-weight: 600;">Версия ${plan.version} ${plan.version === summary.plans[summary.plans.length - 1].version ? '(текущая)' : ''}</div>
+                        <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">
+                            Статус: ${plan.status} | Шагов: ${plan.steps_count}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        }
+        
+        // Replanning history
+        if (summary.replanning_history && summary.replanning_history.length > 0) {
+            html += `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">🔄 История репланирования:</h4>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+            `;
+            summary.replanning_history.forEach(replan => {
+                html += `
+                    <div style="background: #fff3cd; padding: 12px; border-radius: 6px; font-size: 13px;">
+                        <strong>v${replan.from_version} → v${replan.to_version}:</strong> ${escapeHtml(replan.reason || 'Причина не указана')}
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        }
+        
+        // What was done / not done
+        if (summary.what_was_done && summary.what_was_done.length > 0) {
+            html += `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">✅ Что было сделано:</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+            `;
+            summary.what_was_done.forEach(item => {
+                html += `<li>${escapeHtml(item)}</li>`;
+            });
+            html += '</ul></div>';
+        }
+        
+        if (summary.what_was_not_done && summary.what_was_not_done.length > 0) {
+            html += `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">❌ Что не было сделано:</h4>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+            `;
+            summary.what_was_not_done.forEach(item => {
+                html += `
+                    <div style="background: #f8d7da; padding: 12px; border-radius: 6px; font-size: 13px;">
+                        <strong>${escapeHtml(item.step)}</strong><br>
+                        <span style="color: #721c24;">Причина: ${escapeHtml(item.reason || 'Не указана')}</span>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        }
+        
+        html += '</div></div>';
+        return html;
+    }
+    
+    // Load current work (active tasks)
+    async function loadCurrentWork() {
+        try {
+            const response = await fetch('/api/workflow/current');
+            if (!response.ok) {
+                console.error('Failed to load current workflow:', response.statusText);
+                return;
+            }
+            
+            const data = await response.json();
+            const content = document.getElementById('current-work-content');
+            const statusEl = document.getElementById('current-work-status');
+            
+            if (!content) return;
+            
+            // Remove empty state
+            const emptyState = content.querySelector('.empty-logs');
+            if (emptyState) emptyState.remove();
+            
+            if (!data.is_active && (!data.events || data.events.length === 0)) {
+                content.innerHTML = `
+                    <div class="empty-logs">
+                        <div class="empty-logs-icon">⚙️</div>
+                        <p>Нет активного процесса выполнения</p>
+                        <p style="font-size: 13px; margin-top: 8px;">Отправьте запрос в чате, чтобы увидеть процесс выполнения</p>
+                    </div>
+                `;
+                if (statusEl) statusEl.textContent = '';
+                return;
+            }
+            
+            if (statusEl) {
+                const stageText = data.current_stage || 'ожидание';
+                statusEl.textContent = data.is_active ? `🔄 Выполняется (${stageText})` : `✅ Завершено`;
+            }
+            
+            // Render workflow events
+            renderWorkflowEvents(data.events || [], data.current_stage);
+        } catch (error) {
+            console.error('Error loading current workflow:', error);
+        }
+    }
+    
+    // Render workflow events
+    function renderWorkflowEvents(events, currentStage) {
+        const content = document.getElementById('current-work-content');
+        if (!content) return;
+        
+        if (!events || events.length === 0) {
+            content.innerHTML = `
+                <div class="empty-logs">
+                    <div class="empty-logs-icon">⚙️</div>
+                    <p>Нет событий для отображения</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Group events by stage
+        const stageOrder = {
+            'user_request': 1,
+            'request_parsing': 2,
+            'action_determination': 3,
+            'execution': 4,
+            'result': 5,
+            'error': 6
+        };
+        
+        const stageLabels = {
+            'user_request': '📝 Запрос пользователя',
+            'request_parsing': '🔍 Разбор запроса',
+            'action_determination': '⚙️ Определение действий',
+            'execution': '🚀 Выполнение',
+            'result': '✅ Результат',
+            'error': '❌ Ошибка'
+        };
+        
+        let html = '<div style="display: flex; flex-direction: column; gap: 16px;">';
+        
+        events.forEach((event, index) => {
+            const stage = event.stage || 'execution';
+            const isCurrent = currentStage === stage && index === events.length - 1;
+            const stageLabel = stageLabels[stage] || '⚙️ Выполнение';
+            
+            // Color based on stage
+            let bgColor = '#f8f9fa';
+            let borderColor = '#e9ecef';
+            if (stage === 'user_request') {
+                bgColor = '#e7f3ff';
+                borderColor = '#b3d9ff';
+            } else if (stage === 'request_parsing' || stage === 'action_determination') {
+                bgColor = '#fff3cd';
+                borderColor = '#ffc107';
+            } else if (stage === 'execution') {
+                bgColor = isCurrent ? '#d1ecf1' : '#f8f9fa';
+                borderColor = isCurrent ? '#0dcaf0' : '#e9ecef';
+            } else if (stage === 'result') {
+                bgColor = '#d4edda';
+                borderColor = '#28a745';
+            } else if (stage === 'error') {
+                bgColor = '#f8d7da';
+                borderColor = '#dc3545';
+            }
+            
+            const timestamp = new Date(event.timestamp).toLocaleTimeString();
+            
+            html += `
+                <div style="background: ${bgColor}; border-left: 4px solid ${borderColor}; border-radius: 6px; padding: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                        <div style="font-weight: 600; font-size: 14px; color: #495057;">
+                            ${stageLabel} ${isCurrent ? '<span style="color: #0dcaf0;">●</span>' : ''}
+                        </div>
+                        <div style="font-size: 12px; color: #6c757d;">
+                            ${timestamp}
+                        </div>
+                    </div>
+                    <div style="font-size: 14px; color: #212529; line-height: 1.6;">
+                        ${escapeHtml(event.message)}
+                        ${event.details && event.details.full_response ? `
+                            <div style="margin-top: 12px; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #2563eb;">
+                                <div style="font-weight: 600; margin-bottom: 8px; font-size: 13px;">Ответ модели:</div>
+                                <div style="font-size: 13px; color: #495057; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
+                                    ${escapeHtml(event.details.full_response)}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${event.details && Object.keys(event.details).length > 0 && !event.details.full_response ? `
+                        <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; font-size: 12px; font-family: monospace; max-height: 200px; overflow-y: auto;">
+                            ${JSON.stringify(event.details, null, 2)}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        content.innerHTML = html;
+        
+        // Don't auto-scroll - let user control scrolling manually
+        // Auto-scroll was interfering with reading events
+    }
+    
+    // Render active task with real-time progress (deprecated, kept for compatibility)
+    function renderActiveTask(task) {
+        const progressColor = task.progress_percent < 50 ? '#dc3545' : task.progress_percent < 80 ? '#ffc107' : '#28a745';
+        
+        let html = `
+            <div style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 8px 0; font-size: 18px;">${escapeHtml(task.description)}</h3>
+                        <div style="display: flex; gap: 12px; font-size: 13px; color: #6c757d;">
+                            <span>Статус: <strong>${task.status}</strong></span>
+                            <span>Этап: <strong>${task.current_stage}</strong></span>
+                            ${task.plan_version ? `<span>План v${task.plan_version}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px;">
+                        <span>Прогресс</span>
+                        <span style="font-weight: 600;">${task.completed_steps} / ${task.total_steps} шагов (${Math.round(task.progress_percent)}%)</span>
+                    </div>
+                    <div style="background: #e9ecef; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: ${progressColor}; height: 100%; width: ${task.progress_percent}%; transition: width 0.3s;"></div>
+                    </div>
+                </div>
+        `;
+        
+        // Current step
+        if (task.current_step) {
+            html += `
+                <div style="background: #e7f3ff; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">
+                        Текущий шаг ${task.current_step.step_number}: ${escapeHtml(task.current_step.description)}
+                    </div>
+                    <div style="font-size: 13px; color: #6c757d;">
+                        Статус: ${task.current_step.status}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Latest logs
+        if (task.latest_logs && task.latest_logs.length > 0) {
+            html += `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">📝 Последние события:</h4>
+                    <div style="display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto;">
+            `;
+            task.latest_logs.slice(-5).reverse().forEach(log => {
+                html += `
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 12px;">
+                        <span style="color: #6c757d;">[${new Date(log.timestamp).toLocaleTimeString()}]</span>
+                        <span style="font-weight: 600;">${log.stage}:</span>
+                        <span>${escapeHtml(log.content_preview || '')}</span>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
 </script>
 {% endblock %}
 

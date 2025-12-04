@@ -25,7 +25,7 @@ from app.api.routes import (
     chat, pages, models, servers, approvals_pages, logging as logging_routes,
     traces, traces_pages, requests, queues, checkpoints, metrics, health,
     artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages, tools_pages,
-    experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages
+    experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages, model_logs, current_work, workflow
 )
 
 # Configure logging first
@@ -142,11 +142,14 @@ from app.api.routes import a2a
 app.include_router(a2a.router)
 
 # Evolution system routers
-from app.api.routes import approvals, artifacts, prompts, plans
+from app.api.routes import approvals, artifacts, prompts, plans, model_logs
 app.include_router(approvals.router)
 app.include_router(artifacts.router)
 app.include_router(prompts.router)
 app.include_router(plans.router)
+app.include_router(model_logs.router)
+app.include_router(current_work.router)
+app.include_router(workflow.router)
 
 # Evolution system web pages
 app.include_router(approvals_pages.router)

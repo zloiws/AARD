@@ -1,7 +1,7 @@
 <div class="message assistant">
-    <div class="message-content markdown-body" data-markdown>{{ message }}</div>
+    <div class="message-content markdown-body" data-markdown data-model="{{ model }}" data-trace-id="{{ trace_id or '' }}">{{ message }}</div>
     <div class="message-meta">
-        {{ model }} • {{ "%.1f"|format(duration_ms / 1000) }}s
+        {{ model }} • {{ "%.1f"|format(duration_ms / 1000) }}s{% if trace_id %} • Трассировка: {{ trace_id }}{% endif %}
     </div>
 </div>
 <script>

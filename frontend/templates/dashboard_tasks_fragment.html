@@ -1,0 +1,59 @@
+{% for task in tasks %}
+<div class="card task-card mb-3" data-task-id="{{ task.id }}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="flex-grow-1">
+                <h6 class="mb-1">
+                    {{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}
+                </h6>
+                <div class="d-flex gap-2 align-items-center mb-2">
+                    <span class="status-badge status-{{ task.status }}">
+                        {{ task.status }}
+                    </span>
+                    <span class="text-muted small">
+                        Приоритет: {{ task.priority }} | Автономия: {{ task.autonomy_level }}
+                    </span>
+                    {% if task.plan %}
+                    <span class="text-muted small">| План: {{ task.plan.goal[:30] }}{% if task.plan.goal|length > 30 %}...{% endif %}</span>
+                    {% endif %}
+                </div>
+                {% if task.plan and task.plan.total_steps > 0 %}
+                <div class="progress mb-2" style="width: 300px;">
+                    <div class="progress-bar" style="width: {{ task.plan.progress|default(0) }}%"></div>
+                    <small class="text-muted">Прогресс плана: {{ task.plan.current_step }}/{{ task.plan.total_steps }}</small>
+                </div>
+                {% endif %}
+            </div>
+            <div class="btn-group-vertical btn-group-sm">
+                {% if task.status == 'pending_approval' and task.approval_request %}
+                <button class="btn btn-success btn-sm" onclick="approveTask('{{ task.id }}', '{{ task.approval_request.id }}')">
+                    <i class="bi bi-check-circle"></i> Утвердить
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="rejectTask('{{ task.id }}', '{{ task.approval_request.id }}')">
+                    <i class="bi bi-x-circle"></i> Отклонить
+                </button>
+                {% endif %}
+                {% if task.status in ['in_progress', 'executing'] %}
+                <button class="btn btn-warning btn-sm" onclick="pauseTask('{{ task.id }}')">
+                    <i class="bi bi-pause-circle"></i> Пауза
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="cancelTask('{{ task.id }}')">
+                    <i class="bi bi-x-circle"></i> Отменить
+                </button>
+                {% endif %}
+                {% if task.status == 'on_hold' %}
+                <button class="btn btn-primary btn-sm" onclick="resumeTask('{{ task.id }}')">
+                    <i class="bi bi-play-circle"></i> Возобновить
+                </button>
+                {% endif %}
+                {% if task.plan %}
+                <button class="btn btn-outline-info btn-sm" onclick="viewPlan('{{ task.plan.id }}')">
+                    <i class="bi bi-diagram-3"></i> План
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+

@@ -57,7 +57,12 @@ class ReplanRequest(BaseModel):
     context: Optional[dict] = None
 
 
-@router.post("/", response_model=PlanResponse)
+class PlanResponseWithLogs(PlanResponse):
+    """Plan response with model logs"""
+    model_logs: Optional[List[dict]] = Field(default=None, description="Model interaction logs")
+
+
+@router.post("/", response_model=PlanResponseWithLogs)
 async def create_plan(
     request: PlanCreateRequest,
     db: Session = Depends(get_db)
@@ -71,7 +76,10 @@ async def create_plan(
             context=request.context
         )
         
-        return PlanResponse(
+        # Get model logs from planning service
+        model_logs = planning_service.model_logs.copy() if planning_service.model_logs else []
+        
+        return PlanResponseWithLogs(
             id=plan.id,
             task_id=plan.task_id,
             version=plan.version,
@@ -84,7 +92,8 @@ async def create_plan(
             estimated_duration=plan.estimated_duration,
             actual_duration=plan.actual_duration,
             created_at=plan.created_at,
-            approved_at=plan.approved_at
+            approved_at=plan.approved_at,
+            model_logs=model_logs
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating plan: {str(e)}")

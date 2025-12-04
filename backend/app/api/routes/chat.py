@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 import asyncio
 import json
 import uuid
+from datetime import datetime
 
 from app.core.ollama_client import get_ollama_client, OllamaClient, TaskType
 from app.core.templates import templates
@@ -61,6 +62,7 @@ class ChatResponse(BaseModel):
     task_type: str
     duration_ms: Optional[int] = None
     session_id: Optional[str] = None
+    trace_id: Optional[str] = None
 
 
 class MultiModelChatRequest(BaseModel):
@@ -91,6 +93,20 @@ async def chat(
     import time
     
     try:
+        # Initialize workflow tracker
+        from app.core.workflow_tracker import get_workflow_tracker, WorkflowStage
+        workflow_tracker = get_workflow_tracker()
+        workflow_id = str(uuid.uuid4())
+        
+        # Start workflow tracking
+        # Get username from request if available (for now use "user" as default)
+        username = "user"  # TODO: Get from auth context when available
+        workflow_tracker.start_workflow(workflow_id, chat_message.message, username=username)
+        workflow_tracker.add_event(
+            WorkflowStage.REQUEST_PARSING,
+            f"Разбор запроса, определение действий. Тип задачи: {chat_message.task_type}"
+        )
+        
         # Log incoming request
         logger.debug(
             "Chat request received",
@@ -108,17 +124,24 @@ async def chat(
         session_id = chat_message.session_id
         if not session_id:
             session = session_manager.create_session(
+                db=db,
                 system_prompt=chat_message.system_prompt,
                 title=chat_message.message[:50] if chat_message.message else None
             )
             session_id = session.id
         else:
-            session = session_manager.get_session(session_id)
+            session = session_manager.get_session(db, session_id)
             if not session:
-                raise HTTPException(status_code=404, detail="Session not found")
+                # Try to create new session if old one not found
+                session = session_manager.create_session(
+                    db=db,
+                    system_prompt=chat_message.system_prompt,
+                    title=chat_message.message[:50] if chat_message.message else None
+                )
+                session_id = session.id
         
         # Add user message to session
-        session_manager.add_message(session_id, "user", chat_message.message)
+        session_manager.add_message(db, session_id, "user", chat_message.message)
         
         # Parse task type
         try:
@@ -274,6 +297,13 @@ async def chat(
             }
         )
         
+        # Track model selection
+        workflow_tracker.add_event(
+            WorkflowStage.ACTION_DETERMINATION,
+            f"Выбрана модель: {selected_model} на сервере {selected_server.name if selected_server else 'unknown'}",
+            details={"model": selected_model, "server": selected_server_url}
+        )
+        
         # Prepare prompt with system prompt if provided
         prompt = chat_message.message
         if chat_message.system_prompt:
@@ -283,7 +313,7 @@ async def chat(
             # Stream response
             return StreamingResponse(
                 _stream_generation(client, prompt, task_type, selected_model, selected_server_url,
-                                 chat_message.temperature, session_id, session_manager),
+                                 chat_message.temperature, session_id, session_manager, db),
                 media_type="text/event-stream"
             )
         else:
@@ -296,19 +326,36 @@ async def chat(
             _active_tasks[generation_id] = asyncio.current_task()
             
             try:
+                # Track execution start
+                workflow_tracker.add_event(
+                    WorkflowStage.EXECUTION,
+                    f"Выполняю запрос к модели {selected_model}..."
+                )
+                
                 ollama_response = await client.generate(
                     prompt=prompt,
                     task_type=task_type,
                     model=selected_model,
                     server_url=selected_server_url,
                     system_prompt=chat_message.system_prompt,
-                    history=session_manager.get_ollama_history(session_id),
+                    history=session_manager.get_ollama_history(db, session_id),
                     stream=False,
                     temperature=chat_message.temperature
                 )
+                
+                # Track response received
+                workflow_tracker.add_event(
+                    WorkflowStage.EXECUTION,
+                    f"Получен ответ от модели ({len(ollama_response.response)} символов)"
+                )
             except asyncio.CancelledError:
                 # Generation was cancelled
+                workflow_tracker.add_event(
+                    WorkflowStage.ERROR,
+                    "Выполнение отменено пользователем"
+                )
                 session_manager.add_message(
+                    db,
                     session_id,
                     "assistant",
                     "\n\n[Генерация отменена пользователем]",
@@ -356,6 +403,7 @@ async def chat(
             
             # Add assistant response to session
             session_manager.add_message(
+                db,
                 session_id, 
                 "assistant", 
                 ollama_response.response,
@@ -363,33 +411,70 @@ async def chat(
                 metadata={"duration_ms": duration_ms, "task_type": task_type.value}
             )
             
+            # Track response content
+            workflow_tracker.add_event(
+                WorkflowStage.RESULT,
+                f"Ответ модели: {ollama_response.response}",
+                details={
+                    "model": ollama_response.model,
+                    "response_length": len(ollama_response.response),
+                    "full_response": ollama_response.response
+                }
+            )
+            
+            # Track completion
+            workflow_tracker.finish_workflow(
+                result=f"Запрос выполнен успешно. Получен ответ длиной {len(ollama_response.response)} символов"
+            )
+            
             response_data = ChatResponse(
                 response=ollama_response.response,
                 model=ollama_response.model,
                 task_type=task_type.value,
                 duration_ms=duration_ms,
-                session_id=session_id
+                session_id=session_id,
+                trace_id=trace_id
             )
             
             # If request is from HTMX, return HTML fragment
             if request and "text/html" in request.headers.get("accept", ""):
                 from datetime import datetime
-                return templates.TemplateResponse(
+                from fastapi.responses import HTMLResponse
+                response = templates.TemplateResponse(
                     "message_fragment.html",
                     {
                         "request": request,
                         "message": ollama_response.response,
                         "model": ollama_response.model,
                         "timestamp": datetime.now(),
-                        "duration_ms": duration_ms
+                        "duration_ms": duration_ms,
+                        "trace_id": trace_id
                     }
                 )
+                # Add trace_id and session_id to response headers
+                if trace_id:
+                    response.headers["X-Trace-Id"] = trace_id
+                if session_id:
+                    response.headers["X-Session-Id"] = session_id
+                return response
             
             return response_data
         
     except Exception as e:
         import traceback
         error_msg = f"Error generating response: {str(e)}"
+        
+        # Track error in workflow
+        try:
+            from app.core.workflow_tracker import get_workflow_tracker, WorkflowStage
+            workflow_tracker = get_workflow_tracker()
+            workflow_tracker.add_event(
+                WorkflowStage.ERROR,
+                f"Ошибка выполнения: {error_msg}"
+            )
+            workflow_tracker.finish_workflow(error=error_msg)
+        except Exception as tracker_error:
+            logger.warning(f"Failed to track workflow error: {tracker_error}")
         
         # Log failed request
         try:
@@ -438,7 +523,8 @@ async def _stream_generation(
     server_url: Optional[str],
     temperature: float,
     session_id: str,
-    session_manager: ChatSessionManager
+    session_manager: ChatSessionManager,
+    db: Session
 ):
     """Stream generation with cancellation support"""
     full_response = ""
@@ -446,8 +532,8 @@ async def _stream_generation(
     
     try:
         # Get session for history
-        session = session_manager.get_session(session_id)
-        history = session_manager.get_ollama_history(session_id) if session else []
+        session = session_manager.get_session(db, session_id)
+        history = session_manager.get_ollama_history(db, session_id) if session else []
         system_prompt = session.system_prompt if session else None
         
         async for chunk in client.generate_stream(
@@ -467,6 +553,7 @@ async def _stream_generation(
             if chunk.done:
                 # Add complete message to session
                 session_manager.add_message(
+                    db,
                     session_id,
                     "assistant",
                     full_response,
@@ -479,6 +566,7 @@ async def _stream_generation(
         # Save partial response if cancelled
         if full_response:
             session_manager.add_message(
+                db,
                 session_id,
                 "assistant",
                 full_response + "\n\n[Generation cancelled]",
@@ -509,7 +597,8 @@ async def cancel_generation():
 async def multi_model_chat(
     request: MultiModelChatRequest,
     client: OllamaClient = Depends(get_ollama_client),
-    session_manager: ChatSessionManager = Depends(get_session_manager)
+    session_manager: ChatSessionManager = Depends(get_session_manager),
+    db: Session = Depends(get_db)
 ):
     """
     Create a conversation between multiple models
@@ -521,14 +610,14 @@ async def multi_model_chat(
     # Create or get session
     session_id = request.session_id
     if not session_id:
-        session = session_manager.create_session(title="Multi-model conversation")
+        session = session_manager.create_session(db=db, title="Multi-model conversation")
         session_id = session.id
     
     # Initialize conversation
     current_message = request.initial_message
     conversation = []
-    session_manager.add_message(session_id, "system", f"Multi-model conversation started with models: {', '.join(request.models)}")
-    session_manager.add_message(session_id, "user", current_message)
+    session_manager.add_message(db, session_id, "system", f"Multi-model conversation started with models: {', '.join(request.models)}")
+    session_manager.add_message(db, session_id, "user", current_message)
     
     # Run conversation
     for turn in range(request.max_turns):
@@ -560,6 +649,7 @@ async def multi_model_chat(
             })
             
             session_manager.add_message(
+                db,
                 session_id,
                 "assistant",
                 response_text,
@@ -602,16 +692,17 @@ async def list_models(client: OllamaClient = Depends(get_ollama_client)):
 @router.get("/session/{session_id}")
 async def get_session(
     session_id: str,
-    session_manager: ChatSessionManager = Depends(get_session_manager)
+    session_manager: ChatSessionManager = Depends(get_session_manager),
+    db: Session = Depends(get_db)
 ):
     """Get chat session with history"""
-    session = session_manager.get_session(session_id)
+    session = session_manager.get_session(db, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
     return {
         "session_id": session.id,
-        "created_at": session.created_at,
+        "created_at": session.created_at.isoformat() if isinstance(session.created_at, datetime) else session.created_at,
         "title": session.title,
         "messages": [
             {
@@ -619,7 +710,7 @@ async def get_session(
                 "role": msg.role,
                 "content": msg.content,
                 "model": msg.model,
-                "timestamp": msg.timestamp,
+                "timestamp": msg.timestamp.isoformat() if isinstance(msg.timestamp, datetime) else msg.timestamp,
                 "metadata": msg.metadata
             }
             for msg in session.messages
@@ -631,12 +722,13 @@ async def get_session(
 async def create_session(
     system_prompt: Optional[str] = None,
     title: Optional[str] = None,
-    session_manager: ChatSessionManager = Depends(get_session_manager)
+    session_manager: ChatSessionManager = Depends(get_session_manager),
+    db: Session = Depends(get_db)
 ):
     """Create a new chat session"""
-    session = session_manager.create_session(system_prompt=system_prompt, title=title)
+    session = session_manager.create_session(db=db, system_prompt=system_prompt, title=title)
     return {
         "session_id": session.id,
-        "created_at": session.created_at,
+        "created_at": session.created_at.isoformat() if isinstance(session.created_at, datetime) else session.created_at,
         "title": session.title
     }
