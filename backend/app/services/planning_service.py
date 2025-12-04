@@ -286,13 +286,65 @@ class PlanningService:
         # 0. Try to apply procedural memory patterns (successful plan templates)
         procedural_pattern = None
         agent_id = None
+        selected_agent = None
+        
+        # Get agent_id from context if provided
         if context and isinstance(context, dict):
             agent_id_str = context.get("agent_id")
             if agent_id_str:
                 try:
                     agent_id = UUID(agent_id_str)
+                    # Get agent info if agent_id was provided
+                    try:
+                        from app.services.agent_service import AgentService
+                        agent_service = AgentService(self.db)
+                        selected_agent = agent_service.get_agent(agent_id)
+                    except Exception:
+                        pass
                 except (ValueError, TypeError):
                     pass
+        
+        # If no agent_id provided, try to select an agent automatically
+        if not agent_id:
+            try:
+                from app.services.agent_service import AgentService
+                from app.models.agent import AgentCapability
+                
+                agent_service = AgentService(self.db)
+                
+                # Determine required capabilities based on task description
+                # For now, default to planning capability
+                required_capabilities = [AgentCapability.PLANNING.value]
+                
+                # Simple heuristic: check task description for keywords
+                task_lower = task_description.lower()
+                if any(keyword in task_lower for keyword in ["code", "program", "script", "function"]):
+                    required_capabilities.append(AgentCapability.CODE_GENERATION.value)
+                if any(keyword in task_lower for keyword in ["analyze", "review", "check", "test"]):
+                    required_capabilities.append(AgentCapability.CODE_ANALYSIS.value)
+                
+                # Select best agent for task
+                selected_agent = agent_service.select_agent_for_task(
+                    required_capabilities=required_capabilities
+                )
+                
+                if selected_agent:
+                    agent_id = selected_agent.id
+                    logger = self._get_logger()
+                    if logger:
+                        logger.info(
+                            f"Auto-selected agent {selected_agent.name} for task",
+                            extra={
+                                "agent_id": str(agent_id),
+                                "agent_name": selected_agent.name,
+                                "required_capabilities": required_capabilities
+                            }
+                        )
+            except Exception as e:
+                # Don't fail if agent selection fails
+                logger = self._get_logger()
+                if logger:
+                    logger.warning(f"Failed to auto-select agent: {e}", exc_info=True)
         
         if agent_id:
             procedural_pattern = await self._apply_procedural_memory_patterns(
@@ -381,6 +433,12 @@ class PlanningService:
             task_id=task_id
         )
         
+        # Assign selected agent to steps if available
+        if agent_id and steps:
+            for step in steps:
+                if not step.get("agent"):
+                    step["agent"] = str(agent_id)
+        
         self._add_and_save_workflow_event(
             WorkflowStage.EXECUTION,
             f"Задача декомпозирована на {len(steps)} шаг(ов), оценка рисков...",
@@ -420,6 +478,31 @@ class PlanningService:
         # Update Digital Twin context with plan data
         task = self.db.query(Task).filter(Task.id == task_id).first()
         if task:
+            # Get agent selection info
+            agent_selection_info = {
+                "available_agents": [],
+                "selected_agents": [],
+                "selected_agent_id": str(agent_id) if agent_id else None,
+                "reasons": {}
+            }
+            
+            # If we have agent_id but not selected_agent object, fetch it
+            if agent_id and not selected_agent:
+                try:
+                    from app.services.agent_service import AgentService
+                    agent_service = AgentService(self.db)
+                    selected_agent = agent_service.get_agent(agent_id)
+                except Exception:
+                    pass
+            
+            if selected_agent:
+                agent_selection_info["selected_agents"] = [{
+                    "agent_id": str(selected_agent.id),
+                    "agent_name": selected_agent.name,
+                    "capabilities": selected_agent.capabilities or [],
+                    "reason": "Auto-selected based on task requirements" if agent_id == selected_agent.id else "Provided in context"
+                }]
+            
             # Initialize context if empty
             context_updates = {
                 "original_user_request": task_description,
@@ -452,11 +535,7 @@ class PlanningService:
                     "alternatives": alternatives if alternatives else [],
                     "replanning_history": []  # Will be populated on replanning
                 },
-                "agent_selection": {
-                    "available_agents": [],
-                    "selected_agents": [],
-                    "reasons": {}
-                },
+                "agent_selection": agent_selection_info,
                 "prompt_usage": {
                     "prompts_used": []  # Will track which prompts were used
                 },

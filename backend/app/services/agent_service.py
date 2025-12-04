@@ -115,6 +115,102 @@ class AgentService:
         
         return query.order_by(desc(Agent.created_at)).all()
     
+    def select_agent_for_task(
+        self,
+        required_capabilities: Optional[List[str]] = None,
+        preferred_agent_id: Optional[UUID] = None
+    ) -> Optional[Agent]:
+        """
+        Select the best agent for a task based on capabilities and performance metrics
+        
+        Args:
+            required_capabilities: List of required capabilities (e.g., ["code_generation", "planning"])
+            preferred_agent_id: Optional preferred agent ID to check first
+            
+        Returns:
+            Best matching Agent or None if no suitable agent found
+        """
+        # If preferred agent is specified, check it first
+        if preferred_agent_id:
+            agent = self.get_agent(preferred_agent_id)
+            if agent and agent.status == AgentStatus.ACTIVE.value:
+                # Check if preferred agent has required capabilities
+                if required_capabilities:
+                    agent_caps = agent.capabilities or []
+                    if all(cap in agent_caps for cap in required_capabilities):
+                        return agent
+                else:
+                    return agent
+        
+        # Find all active agents
+        query = self.db.query(Agent).filter(
+            Agent.status == AgentStatus.ACTIVE.value
+        )
+        
+        # Filter by capabilities if specified
+        if required_capabilities:
+            capability_filters = []
+            for cap in required_capabilities:
+                capability_filters.append(Agent.capabilities.contains([cap]))
+            
+            if capability_filters:
+                query = query.filter(or_(*capability_filters))
+        
+        candidates = query.all()
+        
+        if not candidates:
+            return None
+        
+        # Score candidates based on:
+        # 1. Number of matching capabilities (more is better)
+        # 2. Success rate (higher is better)
+        # 3. Average execution time (lower is better)
+        def score_agent(agent: Agent) -> float:
+            agent_caps = agent.capabilities or []
+            
+            # Capability score: count matching capabilities
+            capability_score = 0.0
+            if required_capabilities:
+                matching_caps = sum(1 for cap in required_capabilities if cap in agent_caps)
+                capability_score = matching_caps / len(required_capabilities)
+            else:
+                # If no specific capabilities required, prefer agents with more capabilities
+                capability_score = min(1.0, len(agent_caps) / 5.0)  # Normalize to 0-1
+            
+            # Success rate score
+            success_score = 0.5  # Default neutral score
+            if agent.success_rate:
+                try:
+                    # Parse percentage string like "85.50%" to float
+                    success_rate = float(str(agent.success_rate).rstrip('%')) / 100.0
+                    success_score = success_rate
+                except (ValueError, AttributeError):
+                    pass
+            elif agent.total_tasks_executed > 0:
+                success_score = agent.successful_tasks / agent.total_tasks_executed
+            
+            # Execution time score (inverse - faster is better)
+            time_score = 1.0
+            if agent.average_execution_time and agent.average_execution_time > 0:
+                # Normalize: assume 300 seconds is "slow"
+                time_score = max(0.1, 1.0 - (agent.average_execution_time / 300.0))
+            
+            # Weighted combination: capabilities (50%), success (30%), time (20%)
+            total_score = (
+                capability_score * 0.5 +
+                success_score * 0.3 +
+                time_score * 0.2
+            )
+            
+            return total_score
+        
+        # Sort by score (highest first)
+        scored_agents = [(agent, score_agent(agent)) for agent in candidates]
+        scored_agents.sort(key=lambda x: x[1], reverse=True)
+        
+        # Return best agent
+        return scored_agents[0][0] if scored_agents else None
+    
     def update_agent(
         self,
         agent_id: UUID,
@@ -458,6 +554,96 @@ class AgentService:
         
         agent.last_used_at = datetime.utcnow()
         self.db.commit()
+    
+    def find_agent_for_task(
+        self,
+        required_capabilities: List[str],
+        preferred_agent_id: Optional[UUID] = None
+    ) -> Optional[Agent]:
+        """
+        Find the best agent for a task based on capabilities and performance
+        
+        Args:
+            required_capabilities: List of required capabilities (e.g., ["code_generation", "planning"])
+            preferred_agent_id: Optional preferred agent ID to check first
+            
+        Returns:
+            Best matching Agent or None if no suitable agent found
+        """
+        # If preferred agent is specified, check it first
+        if preferred_agent_id:
+            agent = self.get_agent(preferred_agent_id)
+            if agent and agent.status == AgentStatus.ACTIVE.value:
+                # Check if preferred agent has required capabilities
+                agent_caps = agent.capabilities or []
+                if all(cap in agent_caps for cap in required_capabilities):
+                    return agent
+        
+        # Find all active agents with at least one required capability
+        query = self.db.query(Agent).filter(
+            Agent.status == AgentStatus.ACTIVE.value
+        )
+        
+        # Filter by capabilities (agent must have at least one required capability)
+        capability_filters = []
+        for cap in required_capabilities:
+            capability_filters.append(Agent.capabilities.contains([cap]))
+        
+        if capability_filters:
+            from sqlalchemy import or_
+            query = query.filter(or_(*capability_filters))
+        
+        candidates = query.all()
+        
+        if not candidates:
+            return None
+        
+        # Score candidates based on:
+        # 1. Number of matching capabilities (more is better)
+        # 2. Success rate (higher is better)
+        # 3. Average execution time (lower is better, if tasks executed)
+        def score_agent(agent: Agent) -> float:
+            agent_caps = agent.capabilities or []
+            
+            # Count matching capabilities
+            matching_caps = sum(1 for cap in required_capabilities if cap in agent_caps)
+            capability_score = matching_caps / len(required_capabilities) if required_capabilities else 0
+            
+            # Success rate score (convert percentage string to float)
+            success_score = 0.0
+            if agent.success_rate:
+                try:
+                    # Parse percentage string like "85.50%" to float
+                    success_rate = float(agent.success_rate.rstrip('%')) / 100.0
+                    success_score = success_rate
+                except (ValueError, AttributeError):
+                    pass
+            elif agent.total_tasks_executed > 0:
+                # Calculate from metrics if available
+                success_score = agent.successful_tasks / agent.total_tasks_executed
+            
+            # Execution time score (inverse - faster is better)
+            time_score = 1.0
+            if agent.average_execution_time and agent.average_execution_time > 0:
+                # Normalize: assume 300 seconds is "slow", 0 is "fast"
+                # Score decreases as time increases
+                time_score = max(0.1, 1.0 - (agent.average_execution_time / 300.0))
+            
+            # Weighted combination: capabilities (50%), success (30%), time (20%)
+            total_score = (
+                capability_score * 0.5 +
+                success_score * 0.3 +
+                time_score * 0.2
+            )
+            
+            return total_score
+        
+        # Sort by score (highest first)
+        scored_agents = [(agent, score_agent(agent)) for agent in candidates]
+        scored_agents.sort(key=lambda x: x[1], reverse=True)
+        
+        # Return best agent
+        return scored_agents[0][0] if scored_agents else None
     
     def get_agent_metrics(self, agent_id: UUID) -> Dict[str, Any]:
         """
