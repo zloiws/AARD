@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Add backend to path
-BACKEND_DIR = Path(__file__).resolve().parent.parent
+BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 
 from sqlalchemy.orm import Session
