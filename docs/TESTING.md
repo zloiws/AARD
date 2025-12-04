@@ -173,11 +173,53 @@ pytest --cov=app --cov-report=html
 2. Запускать сервер в Docker контейнере
 3. Помечаться как `@pytest.mark.skipif` если сервер недоступен
 
+## Покрытие тестами
+
+### Unit тесты
+
+- ✅ `test_agent_selection.py` - выбор агента (AgentService)
+- ✅ `test_plan_execution.py` - выполнение планов (ExecutionService)
+- ✅ `test_plan_tree_service.py` - построение дерева планов (PlanTreeService)
+- ✅ `test_plan_tree_api.py` - API дерева планов
+- ✅ `test_replan_config.py` - конфигурация перепланирования
+- ✅ `test_auto_replan_service.py` - автоматическое перепланирование
+- ✅ `test_execution_error_detection.py` - обнаружение ошибок
+- ✅ `test_planning_service_unit.py` - unit тесты для PlanningService (17 тестов)
+
+### Integration тесты
+
+**Основные сервисы покрыты тестами:**
+
+- ✅ PlanningService - множественные тесты (test_planning_*, test_agent_planning.py)
+- ✅ ExecutionService - test_execution_engine.py, test_full_plan_execution.py
+- ✅ CheckpointService - test_checkpoint_api_integration.py
+- ✅ AgentService - test_agent_planning.py
+- ✅ ApprovalService - test_adaptive_approval.py, test_auto_approval_transition.py, test_plan_approval_integration.py
+- ✅ PlanTreeService - test_plan_visualization.py
+- ✅ MemoryService - test_plan_memory_integration.py
+- ✅ WorkflowEventService - используется во многих тестах
+- ✅ PlanningMetricsService - test_planning_metrics.py
+- ✅ FeedbackLearningService - test_feedback_learning.py
+- ✅ InteractiveExecutionService - test_interactive_execution.py
+- ✅ CodeExecutionSandbox - test_code_sandbox.py
+- ✅ ModelSelector - test_model_selector.py
+
+**API endpoints:**
+
+- ✅ Planning API - test_planning_api.py, test_planning_api_simple.py
+- ✅ Chat API - test_chat_api.py, test_chat_with_model.py
+- ✅ Dashboard API - test_dashboard_api.py
+- ✅ Logging API - test_logging_api.py
+- ✅ Tracing API - test_tracing.py
+
+**Всего: 43 integration теста, 8+ unit тестов**
+
 ## Будущие улучшения
 
 - [ ] Добавить pytest markers для тестов, требующих сервер
 - [ ] Создать Docker compose для запуска тестов с сервером
 - [ ] Перевести тесты с реальными HTTP запросами на TestClient где возможно
-- [ ] Увеличить покрытие unit-тестами
+- [ ] Добавить больше unit-тестов для отдельных методов сервисов
 - [ ] Добавить тесты производительности
+- [ ] Добавить coverage report в CI/CD
 
