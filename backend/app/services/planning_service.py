@@ -1579,6 +1579,110 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
         
         return new_plan
     
+    async def auto_replan_on_error(
+        self,
+        plan_id: UUID,
+        error_message: str,
+        error_severity: Optional[str] = None,
+        error_category: Optional[str] = None,
+        execution_context: Optional[Dict[str, Any]] = None,
+        failed_at_step: Optional[int] = None
+    ) -> Optional[Plan]:
+        """
+        Automatically replan on error with error classification context
+        
+        This method is called automatically by ExecutionService when a critical
+        or high severity error is detected during plan execution.
+        
+        Args:
+            plan_id: ID of the failed plan
+            error_message: Error message
+            error_severity: Error severity (CRITICAL, HIGH, etc.)
+            error_category: Error category (ENVIRONMENT, DEPENDENCY, etc.)
+            execution_context: Execution context at time of failure
+            failed_at_step: Step index where failure occurred
+            
+        Returns:
+            New plan if replanning was successful, None otherwise
+        """
+        from app.core.execution_error_types import ExecutionErrorDetector, ErrorSeverity
+        
+        logger = self._get_logger()
+        
+        try:
+            # Classify error if not already classified
+            if not error_severity:
+                error_detector = ExecutionErrorDetector()
+                classified_error = error_detector.detect_error(
+                    error_message,
+                    context={
+                        "plan_id": str(plan_id),
+                        "failed_at_step": failed_at_step,
+                        **(execution_context or {})
+                    }
+                )
+                error_severity = classified_error.severity.value
+                error_category = classified_error.category.value
+            
+            logger.info(
+                f"Auto-replanning plan {plan_id} due to {error_severity} error: {error_category}",
+                extra={
+                    "plan_id": str(plan_id),
+                    "error_severity": error_severity,
+                    "error_category": error_category,
+                    "failed_at_step": failed_at_step,
+                    "error_message": error_message[:200]
+                }
+            )
+            
+            # Prepare replanning context with error information
+            replan_context = {
+                "auto_replan": True,
+                "error": {
+                    "message": error_message,
+                    "severity": error_severity,
+                    "category": error_category,
+                    "failed_at_step": failed_at_step
+                },
+                **(execution_context or {})
+            }
+            
+            # Create reason for replanning
+            reason = f"Автоматическое перепланирование из-за ошибки ({error_severity}/{error_category}): {error_message[:100]}"
+            
+            # Call replan with error context
+            new_plan = await self.replan(
+                plan_id=plan_id,
+                reason=reason,
+                context=replan_context
+            )
+            
+            logger.info(
+                f"Auto-replanning successful: created plan {new_plan.id} (version {new_plan.version})",
+                extra={
+                    "original_plan_id": str(plan_id),
+                    "new_plan_id": str(new_plan.id),
+                    "new_version": new_plan.version,
+                    "error_severity": error_severity,
+                    "error_category": error_category
+                }
+            )
+            
+            return new_plan
+            
+        except Exception as e:
+            logger.error(
+                f"Auto-replanning failed for plan {plan_id}: {e}",
+                exc_info=True,
+                extra={
+                    "plan_id": str(plan_id),
+                    "error_message": error_message,
+                    "error_severity": error_severity,
+                    "error_category": error_category
+                }
+            )
+            return None
+    
     async def _save_todo_to_working_memory(
         self,
         task_id: UUID,

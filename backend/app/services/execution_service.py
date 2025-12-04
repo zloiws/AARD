@@ -1093,18 +1093,28 @@ class ExecutionService:
                     analysis=reflection_result.analysis
                 )
             
-            # Create new plan using replan
+            # Create new plan using auto_replan_on_error (specialized for automatic replanning)
             planning_service = PlanningService(self.db)
-            new_plan = await planning_service.replan(
+            
+            # Prepare execution context with reflection results
+            enhanced_context = {
+                "error_analysis": reflection_result.analysis,
+                "fix_suggestion": fix_suggestion,
+                "similar_situations": reflection_result.similar_situations,
+                **(execution_context or {})
+            }
+            
+            # Use auto_replan_on_error with classified error information
+            error_severity = classified_error.severity.value if classified_error else None
+            error_category = classified_error.category.value if classified_error else None
+            
+            new_plan = await planning_service.auto_replan_on_error(
                 plan_id=plan.id,
-                reason=f"Plan failed: {error_message}",
-                context={
-                    "error_analysis": reflection_result.analysis,
-                    "fix_suggestion": fix_suggestion,
-                    "similar_situations": reflection_result.similar_situations,
-                    "execution_context": execution_context,
-                    "failed_at_step": plan.current_step
-                }
+                error_message=error_message,
+                error_severity=error_severity,
+                error_category=error_category,
+                execution_context=enhanced_context,
+                failed_at_step=plan.current_step
             )
             
             logger.info(
