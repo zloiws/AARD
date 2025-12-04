@@ -48,6 +48,51 @@ class CheckpointDetailResponse(BaseModel):
         from_attributes = True
 
 
+class CheckpointCreateRequest(BaseModel):
+    """Request to create a checkpoint"""
+    entity_type: str
+    entity_id: str
+    state_data: dict
+    reason: Optional[str] = None
+    created_by: Optional[str] = None
+
+
+@router.post("/", response_model=CheckpointResponse)
+async def create_checkpoint(
+    request: CheckpointCreateRequest,
+    db: Session = Depends(get_db)
+):
+    """Create a new checkpoint"""
+    try:
+        entity_uuid = UUID(request.entity_id)
+        service = CheckpointService(db)
+        
+        checkpoint = service.create_checkpoint(
+            entity_type=request.entity_type,
+            entity_id=entity_uuid,
+            state_data=request.state_data,
+            reason=request.reason,
+            created_by=request.created_by or "system"
+        )
+        
+        return CheckpointResponse(
+            id=str(checkpoint.id),
+            entity_type=checkpoint.entity_type,
+            entity_id=str(checkpoint.entity_id),
+            state_hash=checkpoint.state_hash,
+            reason=checkpoint.reason,
+            created_by=checkpoint.created_by,
+            created_at=checkpoint.created_at.isoformat(),
+            trace_id=checkpoint.trace_id,
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating checkpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/", response_model=List[CheckpointResponse])
 async def list_checkpoints(
     entity_type: str = Query(..., description="Entity type"),

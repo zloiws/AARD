@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+    .plan-tree-container {
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .tree-node {
+        margin: 10px 0;
+        padding: 10px;
+        border-left: 3px solid #007bff;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .tree-node.level-0 {
+        border-left-color: #28a745;
+        background: #d4edda;
+    }
+    
+    .tree-node.level-1 {
+        border-left-color: #007bff;
+        background: #cfe2ff;
+        margin-left: 20px;
+    }
+    
+    .tree-node.level-2 {
+        border-left-color: #ffc107;
+        background: #fff3cd;
+        margin-left: 40px;
+    }
+    
+    .tree-node.level-3 {
+        border-left-color: #dc3545;
+        background: #f8d7da;
+        margin-left: 60px;
+    }
+    
+    .tree-node.level-4 {
+        border-left-color: #6c757d;
+        background: #e2e3e5;
+        margin-left: 80px;
+    }
+    
+    .tree-node-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .tree-node-id {
+        font-weight: bold;
+        color: #495057;
+        font-size: 14px;
+    }
+    
+    .tree-node-type {
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: #007bff;
+        color: white;
+    }
+    
+    .tree-node-description {
+        color: #212529;
+        margin-bottom: 4px;
+    }
+    
+    .tree-node-meta {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .tree-children {
+        margin-top: 10px;
+        margin-left: 20px;
+        border-left: 2px dashed #dee2e6;
+        padding-left: 10px;
+    }
+    
+    .tree-node.has-children::after {
+        content: " ↳";
+        color: #6c757d;
+        font-size: 18px;
+        margin-left: 8px;
+    }
+    
+    .tree-loading {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+    
+    .tree-empty {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>🌳 Визуализация плана</h1>
+            <p class="text-muted mb-0">ID: {{ plan_id }}</p>
+        </div>
+        <div>
+            <a href="/plans/{{ plan_id }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Назад к плану
+            </a>
+        </div>
+    </div>
+    
+    <div class="plan-tree-container" id="tree-container">
+        <div class="tree-loading" id="tree-loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-3">Загрузка структуры плана...</p>
+        </div>
+        
+        <div class="tree-empty" id="tree-empty" style="display: none;">
+            <p>План не содержит шагов для визуализации</p>
+        </div>
+        
+        <div id="tree-content" style="display: none;">
+            <div class="mb-3">
+                <h5>Структура плана</h5>
+                <p class="text-muted">
+                    Всего шагов: <span id="total-steps">0</span> | 
+                    Уровней: <span id="total-levels">0</span>
+                </p>
+            </div>
+            <div id="tree-nodes"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const planId = '{{ plan_id }}';
+    
+    try {
+        const response = await fetch(`/api/plans/${planId}/tree?include_metadata=true`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const treeData = await response.json();
+        
+        document.getElementById('tree-loading').style.display = 'none';
+        
+        if (!treeData.nodes || treeData.nodes.length === 0) {
+            document.getElementById('tree-empty').style.display = 'block';
+            return;
+        }
+        
+        document.getElementById('tree-content').style.display = 'block';
+        document.getElementById('total-steps').textContent = treeData.total_steps;
+        document.getElementById('total-levels').textContent = treeData.total_levels;
+        
+        renderTree(treeData.root_nodes, document.getElementById('tree-nodes'));
+        
+    } catch (error) {
+        console.error('Error loading plan tree:', error);
+        document.getElementById('tree-loading').innerHTML = 
+            '<div class="alert alert-danger">Ошибка загрузки: ' + error.message + '</div>';
+    }
+});
+
+function renderTree(nodes, container) {
+    nodes.forEach(node => {
+        const nodeElement = createTreeNode(node);
+        container.appendChild(nodeElement);
+        
+        if (node.children && node.children.length > 0) {
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'tree-children';
+            nodeElement.appendChild(childrenContainer);
+            renderTree(node.children, childrenContainer);
+        }
+    });
+}
+
+function createTreeNode(node) {
+    const div = document.createElement('div');
+    div.className = `tree-node level-${Math.min(node.level || 0, 4)}`;
+    if (node.has_children) {
+        div.classList.add('has-children');
+    }
+    
+    const header = document.createElement('div');
+    header.className = 'tree-node-header';
+    
+    const idSpan = document.createElement('span');
+    idSpan.className = 'tree-node-id';
+    idSpan.textContent = node.step_id;
+    header.appendChild(idSpan);
+    
+    if (node.type) {
+        const typeSpan = document.createElement('span');
+        typeSpan.className = 'tree-node-type';
+        typeSpan.textContent = node.type;
+        header.appendChild(typeSpan);
+    }
+    
+    div.appendChild(header);
+    
+    if (node.description) {
+        const desc = document.createElement('div');
+        desc.className = 'tree-node-description';
+        desc.textContent = node.description;
+        div.appendChild(desc);
+    }
+    
+    const meta = document.createElement('div');
+    meta.className = 'tree-node-meta';
+    const metaParts = [];
+    if (node.timeout) {
+        metaParts.push(`Таймаут: ${node.timeout}с`);
+    }
+    if (node.risk_level) {
+        metaParts.push(`Риск: ${node.risk_level}`);
+    }
+    if (node.approval_required) {
+        metaParts.push('Требует утверждения');
+    }
+    meta.textContent = metaParts.join(' | ');
+    if (metaParts.length > 0) {
+        div.appendChild(meta);
+    }
+    
+    return div;
+}
+</script>
+{% endblock %}

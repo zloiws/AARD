@@ -435,6 +435,64 @@ async def resume_execution(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/{plan_id}/tree")
+async def get_plan_tree(
+    plan_id: UUID,
+    include_metadata: bool = True,
+    db: Session = Depends(get_db)
+):
+    """
+    Get hierarchical tree structure of plan steps
+    
+    Args:
+        plan_id: Plan ID
+        include_metadata: Whether to include full step metadata in tree nodes
+        db: Database session
+        
+    Returns:
+        Dictionary with tree structure containing nodes, root_nodes, total_steps, total_levels
+    """
+    from app.services.plan_tree_service import PlanTreeService
+    
+    planning_service = PlanningService(db)
+    plan = planning_service.get_plan(plan_id)
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail=f"Plan {plan_id} not found")
+    
+    # Get steps from plan
+    steps = plan.steps
+    if isinstance(steps, str):
+        import json
+        try:
+            steps = json.loads(steps)
+        except json.JSONDecodeError:
+            steps = []
+    
+    if not steps:
+        return {
+            "nodes": [],
+            "root_nodes": [],
+            "total_steps": 0,
+            "total_levels": 0,
+            "has_hierarchy": False,
+            "plan_id": str(plan_id),
+            "plan_version": plan.version
+        }
+    
+    # Build tree structure
+    tree_service = PlanTreeService()
+    tree = tree_service.build_tree(steps, include_metadata=include_metadata)
+    
+    # Add plan metadata
+    tree["plan_id"] = str(plan_id)
+    tree["plan_version"] = plan.version
+    tree["plan_status"] = plan.status
+    tree["plan_goal"] = plan.goal
+    
+    return tree
+
+
 @router.get("/{plan_id}/execution-state")
 async def get_execution_state(
     plan_id: UUID,

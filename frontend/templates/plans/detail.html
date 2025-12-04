@@ -57,6 +57,33 @@
     .progress-bar {
         background-color: #0d6efd;
     }
+    .tree-node {
+        margin: 10px 0;
+        padding: 10px;
+        border-left: 3px solid #007bff;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    .tree-children {
+        margin-top: 10px;
+        margin-left: 20px;
+        border-left: 2px dashed #dee2e6;
+        padding-left: 10px;
+    }
+    .nav-tabs .nav-link {
+        color: #495057;
+        border: 1px solid transparent;
+        border-top-left-radius: 0.25rem;
+        border-top-right-radius: 0.25rem;
+    }
+    .nav-tabs .nav-link:hover {
+        border-color: #e9ecef #e9ecef #dee2e6;
+    }
+    .nav-tabs .nav-link.active {
+        color: #495057;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+    }
 </style>
 {% endblock %}
 
@@ -254,12 +281,26 @@
     </div>
     {% endif %}
 
-    <!-- Шаги плана -->
+    <!-- Шаги плана - Tabs -->
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="mb-0">📝 Шаги выполнения</h5>
+            <ul class="nav nav-tabs card-header-tabs" id="stepsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="steps-list-tab" data-bs-toggle="tab" data-bs-target="#steps-list" type="button" role="tab">
+                        📝 Список шагов
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="steps-tree-tab" data-bs-toggle="tab" data-bs-target="#steps-tree" type="button" role="tab">
+                        🌳 Визуализация (дерево)
+                    </button>
+                </li>
+            </ul>
         </div>
         <div class="card-body">
+            <div class="tab-content" id="stepsTabsContent">
+                <!-- List View -->
+                <div class="tab-pane fade show active" id="steps-list" role="tabpanel">
             {% if steps %}
             <div class="list-group">
                 {% for step in steps %}
@@ -320,6 +361,32 @@
             {% else %}
             <p class="text-muted">Шаги не определены</p>
             {% endif %}
+                </div>
+                
+                <!-- Tree View -->
+                <div class="tab-pane fade" id="steps-tree" role="tabpanel" aria-labelledby="steps-tree-tab">
+                    <div id="tree-container">
+                        <div class="text-center py-4" id="tree-loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Загрузка структуры плана...</p>
+                        </div>
+                        <div class="text-center py-4" id="tree-empty" style="display: none;">
+                            <p class="text-muted">План не содержит шагов для визуализации</p>
+                        </div>
+                        <div id="tree-content" style="display: none;">
+                            <div class="mb-3">
+                                <p class="text-muted mb-2">
+                                    Всего шагов: <strong id="total-steps">0</strong> | 
+                                    Уровней: <strong id="total-levels">0</strong>
+                                </p>
+                            </div>
+                            <div id="tree-nodes"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -585,6 +652,155 @@ async function executePlan(planId) {
     } catch (error) {
         alert('Ошибка: ' + error.message);
     }
+}
+
+// Plan tree visualization
+let planTreeData = null;
+
+// Load tree when visualization tab is activated
+document.addEventListener('DOMContentLoaded', function() {
+    const treeTab = document.getElementById('steps-tree-tab');
+    if (treeTab) {
+        treeTab.addEventListener('shown.bs.tab', function() {
+            if (!planTreeData) {
+                loadPlanTree('{{ plan.id }}');
+            }
+        });
+    }
+});
+
+async function loadPlanTree(planId) {
+    const container = document.getElementById('tree-container');
+    const loading = document.getElementById('tree-loading');
+    const empty = document.getElementById('tree-empty');
+    const content = document.getElementById('tree-content');
+    
+    try {
+        loading.style.display = 'block';
+        empty.style.display = 'none';
+        content.style.display = 'none';
+        
+        const response = await fetch(`/api/plans/${planId}/tree?include_metadata=true`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        planTreeData = await response.json();
+        
+        loading.style.display = 'none';
+        
+        if (!planTreeData.nodes || planTreeData.nodes.length === 0) {
+            empty.style.display = 'block';
+            return;
+        }
+        
+        content.style.display = 'block';
+        document.getElementById('total-steps').textContent = planTreeData.total_steps;
+        document.getElementById('total-levels').textContent = planTreeData.total_levels;
+        
+        renderTree(planTreeData.root_nodes, document.getElementById('tree-nodes'));
+        
+    } catch (error) {
+        console.error('Error loading plan tree:', error);
+        loading.innerHTML = 
+            '<div class="alert alert-danger">Ошибка загрузки: ' + error.message + '</div>';
+    }
+}
+
+function renderTree(nodes, container) {
+    container.innerHTML = '';
+    
+    nodes.forEach(node => {
+        const nodeElement = createTreeNode(node);
+        container.appendChild(nodeElement);
+        
+        if (node.children && node.children.length > 0) {
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'tree-children';
+            childrenContainer.style.marginLeft = '20px';
+            childrenContainer.style.borderLeft = '2px dashed #dee2e6';
+            childrenContainer.style.paddingLeft = '10px';
+            nodeElement.appendChild(childrenContainer);
+            renderTree(node.children, childrenContainer);
+        }
+    });
+}
+
+function createTreeNode(node) {
+    const div = document.createElement('div');
+    div.className = 'tree-node';
+    div.style.margin = '10px 0';
+    div.style.padding = '10px';
+    div.style.borderLeft = '3px solid #007bff';
+    div.style.background = '#f8f9fa';
+    div.style.borderRadius = '4px';
+    
+    // Different colors for different levels
+    const level = Math.min(node.level || 0, 4);
+    const colors = [
+        { border: '#28a745', bg: '#d4edda' },
+        { border: '#007bff', bg: '#cfe2ff' },
+        { border: '#ffc107', bg: '#fff3cd' },
+        { border: '#dc3545', bg: '#f8d7da' },
+        { border: '#6c757d', bg: '#e2e3e5' }
+    ];
+    div.style.borderLeftColor = colors[level].border;
+    div.style.background = colors[level].bg;
+    
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '8px';
+    
+    const idSpan = document.createElement('span');
+    idSpan.style.fontWeight = 'bold';
+    idSpan.style.color = '#495057';
+    idSpan.style.fontSize = '14px';
+    idSpan.textContent = node.step_id;
+    header.appendChild(idSpan);
+    
+    if (node.type) {
+        const typeSpan = document.createElement('span');
+        typeSpan.style.fontSize = '12px';
+        typeSpan.style.padding = '2px 8px';
+        typeSpan.style.borderRadius = '12px';
+        typeSpan.style.background = '#007bff';
+        typeSpan.style.color = 'white';
+        typeSpan.textContent = node.type;
+        header.appendChild(typeSpan);
+    }
+    
+    div.appendChild(header);
+    
+    if (node.description) {
+        const desc = document.createElement('div');
+        desc.style.color = '#212529';
+        desc.style.marginBottom = '4px';
+        desc.textContent = node.description;
+        div.appendChild(desc);
+    }
+    
+    const metaParts = [];
+    if (node.timeout) {
+        metaParts.push(`Таймаут: ${node.timeout}с`);
+    }
+    if (node.risk_level) {
+        metaParts.push(`Риск: ${node.risk_level}`);
+    }
+    if (node.approval_required) {
+        metaParts.push('Требует утверждения');
+    }
+    
+    if (metaParts.length > 0) {
+        const meta = document.createElement('div');
+        meta.style.fontSize = '12px';
+        meta.style.color = '#6c757d';
+        meta.textContent = metaParts.join(' | ');
+        div.appendChild(meta);
+    }
+    
+    return div;
 }
 </script>
 {% endblock %}
