@@ -1,0 +1,5547 @@
+{
+  "duplicated_functions": [
+    {
+      "signature": "init_servers()",
+      "functions": [
+        {
+          "file": "init_servers.py",
+          "name": "init_servers",
+          "line": 20,
+          "body_start": "def init_servers():\n    \"\"\"Initialize Ollama servers from .env configuration\"\"\"\n    db = SessionLocal()\n    \n    try:\n        settings = get_settings()\n        \n        # Check if servers already exis"
+        },
+        {
+          "file": "scripts\\init_ollama_servers.py",
+          "name": "init_servers",
+          "line": 20,
+          "body_start": "def init_servers():\n    \"\"\"Initialize Ollama servers from .env configuration\"\"\"\n    db = SessionLocal()\n    \n    try:\n        settings = get_settings()\n        \n        # Check if servers already exis"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "signature": "print_separator(title)",
+      "functions": [
+        {
+          "file": "scripts\\run_test1.py",
+          "name": "print_separator",
+          "line": 19,
+          "body_start": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test2.py",
+          "name": "print_separator",
+          "line": 21,
+          "body_start": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test3.py",
+          "name": "print_separator",
+          "line": 21,
+          "body_start": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test4.py",
+          "name": "print_separator",
+          "line": 19,
+          "body_start": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test5.py",
+          "name": "print_separator",
+          "line": 21,
+          "body_start": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test6_complex_decomposition.py",
+          "name": "print_separator",
+          "line": 20,
+          "body_start": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "tests\\scripts\\test_branching.py",
+          "name": "print_separator",
+          "line": 22,
+          "body_start": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "tests\\scripts\\test_branching_endpoints.py",
+          "name": "print_separator",
+          "line": 16,
+          "body_start": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "name": "print_separator",
+          "line": 20,
+          "body_start": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        }
+      ],
+      "count": 9
+    },
+    {
+      "signature": "db()",
+      "functions": [
+        {
+          "file": "tests\\conftest.py",
+          "name": "db",
+          "line": 18,
+          "body_start": "def db() -> Session:\n    \"\"\"Create a database session for testing\"\"\"\n    # Create all tables\n    Base.metadata.create_all(bind=engine)\n    \n    # Create session\n    session = SessionLocal()\n    \n    t"
+        },
+        {
+          "file": "tests\\test_plan_tree_api.py",
+          "name": "db",
+          "line": 18,
+          "body_start": "def db():\n    \"\"\"Database session fixture\"\"\"\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\integration\\test_checkpoint_api_integration.py",
+          "name": "db",
+          "line": 18,
+          "body_start": "def db():\n    \"\"\"Database session fixture\"\"\"\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\integration\\test_planning_digital_twin.py",
+          "name": "db",
+          "line": 17,
+          "body_start": "def db():\n    \"\"\"Database session fixture\"\"\"\n    session = SessionLocal()\n    try:\n        yield session\n    finally:\n        session.close()"
+        },
+        {
+          "file": "tests\\integration\\test_planning_system_complete.py",
+          "name": "db",
+          "line": 19,
+          "body_start": "def db():\n    \"\"\"Database session fixture\"\"\"\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\integration\\test_plan_visualization.py",
+          "name": "db",
+          "line": 18,
+          "body_start": "def db():\n    \"\"\"Database session fixture\"\"\"\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()"
+        }
+      ],
+      "count": 6
+    },
+    {
+      "signature": "mock_db(self)",
+      "functions": [
+        {
+          "file": "tests\\test_agent_selection.py",
+          "name": "mock_db",
+          "line": 17,
+          "body_start": "    def mock_db(self):\n        \"\"\"Mock database session\"\"\"\n        return Mock()"
+        },
+        {
+          "file": "tests\\test_planning_service_unit.py",
+          "name": "mock_db",
+          "line": 18,
+          "body_start": "    def mock_db(self):\n        \"\"\"Mock database session\"\"\"\n        return Mock()"
+        },
+        {
+          "file": "tests\\test_plan_execution.py",
+          "name": "mock_db",
+          "line": 19,
+          "body_start": "    def mock_db(self):\n        \"\"\"Mock database session\"\"\"\n        return Mock()"
+        },
+        {
+          "file": "tests\\test_plan_execution.py",
+          "name": "mock_db",
+          "line": 132,
+          "body_start": "    def mock_db(self):\n        \"\"\"Mock database session\"\"\"\n        db = Mock()\n        db.commit = Mock()\n        db.refresh = Mock()\n        db.query = Mock()\n        return db"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "signature": "__init__(self, db)",
+      "functions": [
+        {
+          "file": "app\\core\\model_selector.py",
+          "name": "__init__",
+          "line": 30,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Model Selector\n        \n        Args:\n            db: Database session (optional, will create if not provided)\n        \"\"\"\n  "
+        },
+        {
+          "file": "app\\core\\ollama_db_client.py",
+          "name": "__init__",
+          "line": 16,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self._client: Optional[OllamaClient] = None"
+        },
+        {
+          "file": "app\\core\\ollama_manager.py",
+          "name": "__init__",
+          "line": 16,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self._instances: Optional[List[OllamaInstanceConfig]] = None"
+        },
+        {
+          "file": "app\\services\\a2a_router.py",
+          "name": "__init__",
+          "line": 30,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.registry = AgentRegistry(db)\n        self.tracer = get_tracer(__name__)\n        self.pending_requests: Dict[UUID, asyncio.Future]"
+        },
+        {
+          "file": "app\\services\\adaptive_approval_service.py",
+          "name": "__init__",
+          "line": 37,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Adaptive Approval Service\n        \n        Args:\n            db: Database session (optional)\n        \"\"\"\n        self.db = db"
+        },
+        {
+          "file": "app\\services\\agent_experiment_service.py",
+          "name": "__init__",
+          "line": 23,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.tracer = get_tracer(__name__)"
+        },
+        {
+          "file": "app\\services\\agent_gym_service.py",
+          "name": "__init__",
+          "line": 31,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Agent Gym Service\n        \n        Args:\n            db: Database session (optional, will create if not provided)\n        \"\"\""
+        },
+        {
+          "file": "app\\services\\agent_heartbeat_service.py",
+          "name": "__init__",
+          "line": 24,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.tracer = get_tracer(__name__)\n        self.heartbeat_interval = 30  # seconds\n        self.heartbeat_timeout = 5  # seconds\n     "
+        },
+        {
+          "file": "app\\services\\agent_registry.py",
+          "name": "__init__",
+          "line": 27,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.tracer = get_tracer(__name__)\n        self.heartbeat_interval = 30  # seconds\n        self.heartbeat_timeout = 5  # seconds\n     "
+        },
+        {
+          "file": "app\\services\\agent_service.py",
+          "name": "__init__",
+          "line": 20,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.tracer = get_tracer(__name__)"
+        },
+        {
+          "file": "app\\services\\approval_service.py",
+          "name": "__init__",
+          "line": 24,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db"
+        },
+        {
+          "file": "app\\services\\auth_service.py",
+          "name": "__init__",
+          "line": 20,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.session_duration_hours = 24  # Default session duration"
+        },
+        {
+          "file": "app\\services\\checkpoint_service.py",
+          "name": "__init__",
+          "line": 25,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db"
+        },
+        {
+          "file": "app\\services\\decision_pipeline.py",
+          "name": "__init__",
+          "line": 26,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Decision Pipeline\n        \n        Args:\n            db: Database session (optional)\n        \"\"\"\n        self.db = db or Sess"
+        },
+        {
+          "file": "app\\services\\decision_router.py",
+          "name": "__init__",
+          "line": 23,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Decision Router\n        \n        Args:\n            db: Database session (optional, will create if not provided)\n        \"\"\"\n "
+        },
+        {
+          "file": "app\\services\\execution_service.py",
+          "name": "__init__",
+          "line": 47,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.tracer = get_tracer(__name__)"
+        },
+        {
+          "file": "app\\services\\execution_service.py",
+          "name": "__init__",
+          "line": 623,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.step_executor = StepExecutor(db)\n        self.checkpoint_service = CheckpointService(db)\n        self.error_detector = ExecutionE"
+        },
+        {
+          "file": "app\\services\\feedback_learning_service.py",
+          "name": "__init__",
+          "line": 27,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Feedback Learning Service\n        \n        Args:\n            db: Database session (optional)\n        \"\"\"\n        self.db = db"
+        },
+        {
+          "file": "app\\services\\interactive_execution_service.py",
+          "name": "__init__",
+          "line": 36,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Interactive Execution Service\n        \n        Args:\n            db: Database session (optional)\n        \"\"\"\n        self.db "
+        },
+        {
+          "file": "app\\services\\memory_service.py",
+          "name": "__init__",
+          "line": 27,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Memory Service\n        \n        Args:\n            db: Database session (optional, will create if not provided)\n        \"\"\"\n  "
+        },
+        {
+          "file": "app\\services\\meta_learning_service.py",
+          "name": "__init__",
+          "line": 31,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Meta Learning Service\n        \n        Args:\n            db: Database session (optional)\n        \"\"\"\n        self.db = db or "
+        },
+        {
+          "file": "app\\services\\planning_metrics_service.py",
+          "name": "__init__",
+          "line": 29,
+          "body_start": "    def __init__(self, db: Session = None):\n        \"\"\"\n        Initialize Planning Metrics Service\n        \n        Args:\n            db: Database session (optional)\n        \"\"\"\n        self.db = db "
+        },
+        {
+          "file": "app\\services\\planning_service.py",
+          "name": "__init__",
+          "line": 25,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.tracer = get_tracer(__name__)\n        self.model_logs = []  # Collect model interaction logs for this planning session\n        se"
+        },
+        {
+          "file": "app\\services\\request_logger.py",
+          "name": "__init__",
+          "line": 18,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db"
+        },
+        {
+          "file": "app\\services\\task_queue_manager.py",
+          "name": "__init__",
+          "line": 26,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db"
+        },
+        {
+          "file": "app\\services\\tool_service.py",
+          "name": "__init__",
+          "line": 20,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db\n        self.tracer = get_tracer(__name__)"
+        },
+        {
+          "file": "app\\services\\workflow_event_service.py",
+          "name": "__init__",
+          "line": 23,
+          "body_start": "    def __init__(self, db: Session):\n        self.db = db"
+        }
+      ],
+      "count": 27
+    },
+    {
+      "signature": "test_task(db)",
+      "functions": [
+        {
+          "file": "tests\\integration\\test_adaptive_approval.py",
+          "name": "test_task",
+          "line": 17,
+          "body_start": "def test_task(db: Session) -> Task:\n    \"\"\"Create a test task\"\"\"\n    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.PENDING.value,\n        priority=5\n    )"
+        },
+        {
+          "file": "tests\\integration\\test_feedback_learning.py",
+          "name": "test_task",
+          "line": 17,
+          "body_start": "def test_task(db: Session) -> Task:\n    \"\"\"Create a test task\"\"\"\n    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.PENDING.value,\n        priority=5\n    )"
+        },
+        {
+          "file": "tests\\integration\\test_planning_metrics.py",
+          "name": "test_task",
+          "line": 16,
+          "body_start": "def test_task(db: Session) -> Task:\n    \"\"\"Create a test task\"\"\"\n    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.PENDING.value,\n        priority=5\n    )"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "signature": "test_plan(db, test_task)",
+      "functions": [
+        {
+          "file": "tests\\integration\\test_adaptive_approval.py",
+          "name": "test_plan",
+          "line": 34,
+          "body_start": "def test_plan(db: Session, test_task: Task) -> Plan:\n    \"\"\"Create a test plan\"\"\"\n    plan = Plan(\n        id=uuid4(),\n        task_id=test_task.id,\n        version=1,\n        goal=\"Test plan goal\",\n "
+        },
+        {
+          "file": "tests\\integration\\test_feedback_learning.py",
+          "name": "test_plan",
+          "line": 34,
+          "body_start": "def test_plan(db: Session, test_task: Task) -> Plan:\n    \"\"\"Create a test plan\"\"\"\n    plan = Plan(\n        id=uuid4(),\n        task_id=test_task.id,\n        version=1,\n        goal=\"Test plan goal\",\n "
+        },
+        {
+          "file": "tests\\integration\\test_planning_metrics.py",
+          "name": "test_plan",
+          "line": 33,
+          "body_start": "def test_plan(db: Session, test_task: Task) -> Plan:\n    \"\"\"Create a test plan\"\"\"\n    plan = Plan(\n        id=uuid4(),\n        task_id=test_task.id,\n        version=1,\n        goal=\"Test plan goal\",\n "
+        }
+      ],
+      "count": 3
+    },
+    {
+      "signature": "db_session()",
+      "functions": [
+        {
+          "file": "tests\\integration\\test_agent_planning.py",
+          "name": "db_session",
+          "line": 18,
+          "body_start": "def db_session():\n    \"\"\"Create a database session for testing\"\"\"\n    Base.metadata.create_all(bind=engine)\n    session = SessionLocal()\n    try:\n        yield session\n    finally:\n        session.clo"
+        },
+        {
+          "file": "tests\\integration\\test_full_plan_execution.py",
+          "name": "db_session",
+          "line": 22,
+          "body_start": "def db_session():\n    \"\"\"Create a database session for testing\"\"\"\n    Base.metadata.create_all(bind=engine)\n    session = SessionLocal()\n    try:\n        yield session\n    finally:\n        session.clo"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "signature": "print_response(response, title)",
+      "functions": [
+        {
+          "file": "tests\\integration\\test_planning_api.py",
+          "name": "print_response",
+          "line": 16,
+          "body_start": "def print_response(response: requests.Response, title: str = \"\"):\n    \"\"\"Print formatted response\"\"\"\n    print(f\"\\n{'='*60}\")\n    if title:\n        print(f\"{title}\")\n        print(f\"{'='*60}\")\n    pri"
+        },
+        {
+          "file": "tests\\integration\\test_planning_api_simple.py",
+          "name": "print_response",
+          "line": 13,
+          "body_start": "def print_response(response: requests.Response, title: str = \"\"):\n    \"\"\"Print formatted response\"\"\"\n    print(f\"\\n{'='*60}\")\n    if title:\n        print(f\"{title}\")\n        print(f\"{'='*60}\")\n    pri"
+        }
+      ],
+      "count": 2
+    }
+  ],
+  "duplicated_blocks": [
+    {
+      "block": "existing_count = db.query(OllamaServer).count()\nif existing_count > 0:\nprint(f\"Found {existing_count} existing servers in database. Skipping initialization.\")\nprint(\"Use API /api/servers to manage ser",
+      "occurrences": [
+        {
+          "file": "init_servers.py",
+          "start_line": 28,
+          "end_line": 32,
+          "block": "        existing_count = db.query(OllamaServer).count()\n        if existing_count > 0:\n            print(f\"Found {existing_count} existing servers in database. Skipping initialization.\")\n            print(\"Use API /api/servers to manage servers or delete existing ones first.\")\n            return"
+        },
+        {
+          "file": "scripts\\init_ollama_servers.py",
+          "start_line": 28,
+          "end_line": 32,
+          "block": "        existing_count = db.query(OllamaServer).count()\n        if existing_count > 0:\n            print(f\"Found {existing_count} existing servers in database. Skipping initialization.\")\n            print(\"Use API /api/servers to manage servers or delete existing ones first.\")\n            return"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "server1 = OllamaServer(\nname=\"Server 1 - General/Reasoning\",\nurl=url_1,\napi_version=\"v1\",\ncapabilities=[\"general\", \"reasoning\", \"conversation\"] if hasattr(settings, 'ollama_capabilities_1') else None,",
+      "occurrences": [
+        {
+          "file": "init_servers.py",
+          "start_line": 45,
+          "end_line": 57,
+          "block": "            server1 = OllamaServer(\n                name=\"Server 1 - General/Reasoning\",\n                url=url_1,\n                api_version=\"v1\",\n                capabilities=[\"general\", \"reasoning\", \"conversation\"] if hasattr(settings, 'ollama_capabilities_1') else None,\n                max_concurrent=getattr(settings, 'ollama_max_concurrent_1', 2),\n                priority=1,\n                is_default=True,\n                is_active=True,\n                description=f\"Default server from .env configuration. Model: {getattr(settings, 'ollama_model_1', 'N/A')}\"\n            )\n            db.add(server1)\n            print(f\"✓ Added server 1: {url_1}\")"
+        },
+        {
+          "file": "scripts\\init_ollama_servers.py",
+          "start_line": 45,
+          "end_line": 57,
+          "block": "            server1 = OllamaServer(\n                name=\"Server 1 - General/Reasoning\",\n                url=url_1,\n                api_version=\"v1\",\n                capabilities=[\"general\", \"reasoning\", \"conversation\"] if hasattr(settings, 'ollama_capabilities_1') else None,\n                max_concurrent=getattr(settings, 'ollama_max_concurrent_1', 2),\n                priority=1,\n                is_default=True,\n                is_active=True,\n                description=f\"Default server from .env configuration. Model: {getattr(settings, 'ollama_model_1', 'N/A')}\"\n            )\n            db.add(server1)\n            print(f\"✓ Added server 1: {url_1}\")"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "server2 = OllamaServer(\nname=\"Server 2 - Coding\",\nurl=url_2,\napi_version=\"v1\",\ncapabilities=[\"coding\", \"code_generation\"] if hasattr(settings, 'ollama_capabilities_2') else None,\nmax_concurrent=getatt",
+      "occurrences": [
+        {
+          "file": "init_servers.py",
+          "start_line": 68,
+          "end_line": 80,
+          "block": "            server2 = OllamaServer(\n                name=\"Server 2 - Coding\",\n                url=url_2,\n                api_version=\"v1\",\n                capabilities=[\"coding\", \"code_generation\"] if hasattr(settings, 'ollama_capabilities_2') else None,\n                max_concurrent=getattr(settings, 'ollama_max_concurrent_2', 1),\n                priority=0,\n                is_default=False,\n                is_active=True,\n                description=f\"Secondary server from .env configuration. Model: {getattr(settings, 'ollama_model_2', 'N/A')}\"\n            )\n            db.add(server2)\n            print(f\"✓ Added server 2: {url_2}\")"
+        },
+        {
+          "file": "scripts\\init_ollama_servers.py",
+          "start_line": 68,
+          "end_line": 80,
+          "block": "            server2 = OllamaServer(\n                name=\"Server 2 - Coding\",\n                url=url_2,\n                api_version=\"v1\",\n                capabilities=[\"coding\", \"code_generation\"] if hasattr(settings, 'ollama_capabilities_2') else None,\n                max_concurrent=getattr(settings, 'ollama_max_concurrent_2', 1),\n                priority=0,\n                is_default=False,\n                is_active=True,\n                description=f\"Secondary server from .env configuration. Model: {getattr(settings, 'ollama_model_2', 'N/A')}\"\n            )\n            db.add(server2)\n            print(f\"✓ Added server 2: {url_2}\")"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "db.commit()\nprint(\"\\n✓ Servers initialized successfully!\")\nprint(\"\\nNext steps:\")\nprint(\"1. Discover models on servers: POST /api/servers/{server_id}/discover\")\nprint(\"2. List servers: GET /api/server",
+      "occurrences": [
+        {
+          "file": "init_servers.py",
+          "start_line": 82,
+          "end_line": 87,
+          "block": "        db.commit()\n        print(\"\\n✓ Servers initialized successfully!\")\n        print(\"\\nNext steps:\")\n        print(\"1. Discover models on servers: POST /api/servers/{server_id}/discover\")\n        print(\"2. List servers: GET /api/servers\")\n        print(\"3. Manage servers via API: /api/servers\")"
+        },
+        {
+          "file": "scripts\\init_ollama_servers.py",
+          "start_line": 82,
+          "end_line": 87,
+          "block": "        db.commit()\n        print(\"\\n✓ Servers initialized successfully!\")\n        print(\"\\nNext steps:\")\n        print(\"1. Discover models on servers: POST /api/servers/{server_id}/discover\")\n        print(\"2. List servers: GET /api/servers\")\n        print(\"3. Manage servers via API: /api/servers\")"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "except Exception as e:\ndb.rollback()\nprint(f\"✗ Error initializing servers: {e}\")\nimport traceback\ntraceback.print_exc()\nraise\nfinally:\ndb.close()",
+      "occurrences": [
+        {
+          "file": "init_servers.py",
+          "start_line": 89,
+          "end_line": 96,
+          "block": "    except Exception as e:\n        db.rollback()\n        print(f\"✗ Error initializing servers: {e}\")\n        import traceback\n        traceback.print_exc()\n        raise\n    finally:\n        db.close()"
+        },
+        {
+          "file": "scripts\\init_ollama_servers.py",
+          "start_line": 89,
+          "end_line": 96,
+          "block": "    except Exception as e:\n        db.rollback()\n        print(f\"✗ Error initializing servers: {e}\")\n        import traceback\n        traceback.print_exc()\n        raise\n    finally:\n        db.close()"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "except Exception as e:\nprint(f\"❌ Error: {e}\")\nimport traceback\ntraceback.print_exc()\nfinally:\ndb.close()",
+      "occurrences": [
+        {
+          "file": "scripts\\check_logs_after_test.py",
+          "start_line": 65,
+          "end_line": 70,
+          "block": "    except Exception as e:\n        print(f\"❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n    finally:\n        db.close()"
+        },
+        {
+          "file": "scripts\\check_plan_details.py",
+          "start_line": 58,
+          "end_line": 63,
+          "block": "    except Exception as e:\n        print(f\"❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n    finally:\n        db.close()"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "def print_separator(title: str):\n\"\"\"Print test separator\"\"\"\nprint(\"\\n\" + \"=\" * 70)\nprint(f\" {title}\")\nprint(\"=\" * 70 + \"\\n\")",
+      "occurrences": [
+        {
+          "file": "scripts\\run_test1.py",
+          "start_line": 19,
+          "end_line": 23,
+          "block": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test2.py",
+          "start_line": 21,
+          "end_line": 25,
+          "block": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test3.py",
+          "start_line": 21,
+          "end_line": 25,
+          "block": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test4.py",
+          "start_line": 19,
+          "end_line": 23,
+          "block": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test5.py",
+          "start_line": 21,
+          "end_line": 25,
+          "block": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "scripts\\run_test6_complex_decomposition.py",
+          "start_line": 20,
+          "end_line": 24,
+          "block": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "tests\\scripts\\test_branching.py",
+          "start_line": 22,
+          "end_line": 26,
+          "block": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "tests\\scripts\\test_branching_endpoints.py",
+          "start_line": 16,
+          "end_line": 20,
+          "block": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 20,
+          "end_line": 24,
+          "block": "def print_separator(title: str):\n    \"\"\"Print test separator\"\"\"\n    print(\"\\n\" + \"=\" * 70)\n    print(f\" {title}\")\n    print(\"=\" * 70 + \"\\n\")"
+        }
+      ],
+      "count": 9
+    },
+    {
+      "block": "print(f\"\\n✅ Plan created successfully!\")\nprint(f\"   Plan ID: {plan.id}\")\nprint(f\"   Status: {plan.status}\")\nprint(f\"   Version: {plan.version}\")\nprint(f\"   Steps: {len(plan.steps)}\")",
+      "occurrences": [
+        {
+          "file": "scripts\\run_test1.py",
+          "start_line": 44,
+          "end_line": 48,
+          "block": "        print(f\"\\n✅ Plan created successfully!\")\n        print(f\"   Plan ID: {plan.id}\")\n        print(f\"   Status: {plan.status}\")\n        print(f\"   Version: {plan.version}\")\n        print(f\"   Steps: {len(plan.steps)}\")"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 45,
+          "end_line": 49,
+          "block": "        print(f\"\\n✅ Plan created successfully!\")\n        print(f\"   Plan ID: {plan.id}\")\n        print(f\"   Status: {plan.status}\")\n        print(f\"   Version: {plan.version}\")\n        print(f\"   Steps: {len(plan.steps)}\")"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "except Exception as e:\nprint(f\"\\n❌ Error: {e}\")\nimport traceback\ntraceback.print_exc()\nreturn None\nfinally:\ndb.close()",
+      "occurrences": [
+        {
+          "file": "scripts\\run_test1.py",
+          "start_line": 75,
+          "end_line": 81,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None\n    finally:\n        db.close()"
+        },
+        {
+          "file": "scripts\\run_test4.py",
+          "start_line": 118,
+          "end_line": 124,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None\n    finally:\n        db.close()"
+        },
+        {
+          "file": "scripts\\run_test6_complex_decomposition.py",
+          "start_line": 204,
+          "end_line": 210,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 59,
+          "end_line": 65,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 227,
+          "end_line": 233,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None\n    finally:\n        db.close()"
+        }
+      ],
+      "count": 5
+    },
+    {
+      "block": "except Exception as e:\nprint(f\"\\n❌ Error: {e}\")\nimport traceback\ntraceback.print_exc()\nreturn None, None\nfinally:\ndb.close()",
+      "occurrences": [
+        {
+          "file": "scripts\\run_test2.py",
+          "start_line": 99,
+          "end_line": 105,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None, None\n    finally:\n        db.close()"
+        },
+        {
+          "file": "scripts\\run_test3.py",
+          "start_line": 127,
+          "end_line": 133,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None, None\n    finally:\n        db.close()"
+        },
+        {
+          "file": "scripts\\run_test5.py",
+          "start_line": 139,
+          "end_line": 145,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None, None\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 105,
+          "end_line": 111,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None, None\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 176,
+          "end_line": 182,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None, None\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 303,
+          "end_line": 309,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ Error: {e}\")\n        import traceback\n        traceback.print_exc()\n        return None, None\n    finally:\n        db.close()"
+        }
+      ],
+      "count": 6
+    },
+    {
+      "block": "plan2 = await planning_service.replan(\nplan_id=plan1.id,\nreason=\"Need to integrate with existing database module\",\ncontext={\"artifacts_available\": True}\n)",
+      "occurrences": [
+        {
+          "file": "scripts\\run_test3.py",
+          "start_line": 80,
+          "end_line": 84,
+          "block": "        plan2 = await planning_service.replan(\n            plan_id=plan1.id,\n            reason=\"Need to integrate with existing database module\",\n            context={\"artifacts_available\": True}\n        )"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 158,
+          "end_line": 162,
+          "block": "        plan2 = await planning_service.replan(\n            plan_id=plan1.id,\n            reason=\"Need to integrate with existing database module\",\n            context={\"artifacts_available\": True}\n        )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "try:\ntask_description = \"\"\"Create a complete e-commerce application with:\n- User authentication and authorization\n- Product catalog with categories\n- Shopping cart functionality\n- Order processing and",
+      "occurrences": [
+        {
+          "file": "scripts\\run_test4.py",
+          "start_line": 33,
+          "end_line": 38,
+          "block": "    try:\n        task_description = \"\"\"Create a complete e-commerce application with:\n        - User authentication and authorization\n        - Product catalog with categories\n        - Shopping cart functionality\n        - Order processing and payment integration\"\"\""
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 192,
+          "end_line": 197,
+          "block": "    try:\n        task_description = \"\"\"Create a complete e-commerce application with:\n        - User authentication and authorization\n        - Product catalog with categories\n        - Shopping cart functionality\n        - Order processing and payment integration\"\"\""
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "task.add_to_history(\"error_feedback\", {\n\"errors\": [\"Missing pandas dependency\"],\n\"suggestions\": [\"Add dependency installation step\"]\n})\ndb.commit()",
+      "occurrences": [
+        {
+          "file": "scripts\\run_test5.py",
+          "start_line": 71,
+          "end_line": 75,
+          "block": "        task.add_to_history(\"error_feedback\", {\n            \"errors\": [\"Missing pandas dependency\"],\n            \"suggestions\": [\"Add dependency installation step\"]\n        })\n        db.commit()"
+        },
+        {
+          "file": "tests\\scripts\\test_planning_step_by_step.py",
+          "start_line": 267,
+          "end_line": 271,
+          "block": "        task.add_to_history(\"error_feedback\", {\n            \"errors\": [\"Missing pandas dependency\"],\n            \"suggestions\": [\"Add dependency installation step\"]\n        })\n        db.commit()"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "task = Task(\nid=uuid4(),\ndescription=\"Test task\",\nstatus=TaskStatus.APPROVED,\ncreated_by_role=\"planner\"\n)\ndb.add(task)\ndb.commit()",
+      "occurrences": [
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 77,
+          "end_line": 84,
+          "block": "    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.APPROVED,\n        created_by_role=\"planner\"\n    )\n    db.add(task)\n    db.commit()"
+        },
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 127,
+          "end_line": 134,
+          "block": "    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.APPROVED,\n        created_by_role=\"planner\"\n    )\n    db.add(task)\n    db.commit()"
+        },
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 196,
+          "end_line": 203,
+          "block": "    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.APPROVED,\n        created_by_role=\"planner\"\n    )\n    db.add(task)\n    db.commit()"
+        },
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 238,
+          "end_line": 245,
+          "block": "    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.APPROVED,\n        created_by_role=\"planner\"\n    )\n    db.add(task)\n    db.commit()"
+        },
+        {
+          "file": "tests\\integration\\test_auto_replanning.py",
+          "start_line": 111,
+          "end_line": 118,
+          "block": "    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.APPROVED,\n        created_by_role=\"planner\"\n    )\n    db.add(task)\n    db.commit()"
+        },
+        {
+          "file": "tests\\integration\\test_auto_replanning.py",
+          "start_line": 154,
+          "end_line": 161,
+          "block": "    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.APPROVED,\n        created_by_role=\"planner\"\n    )\n    db.add(task)\n    db.commit()"
+        },
+        {
+          "file": "tests\\integration\\test_auto_replan_trigger.py",
+          "start_line": 100,
+          "end_line": 107,
+          "block": "    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.APPROVED,\n        created_by_role=\"planner\"\n    )\n    db.add(task)\n    db.commit()"
+        }
+      ],
+      "count": 7
+    },
+    {
+      "block": "plan = Plan(\nid=uuid4(),\ntask_id=task.id,\nversion=1,\ngoal=\"Test task\",\nsteps=[],\nstatus=\"approved\"\n)\ndb.add(plan)\ndb.commit()",
+      "occurrences": [
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 87,
+          "end_line": 96,
+          "block": "    plan = Plan(\n        id=uuid4(),\n        task_id=task.id,\n        version=1,\n        goal=\"Test task\",\n        steps=[],\n        status=\"approved\"\n    )\n    db.add(plan)\n    db.commit()"
+        },
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 137,
+          "end_line": 146,
+          "block": "    plan = Plan(\n        id=uuid4(),\n        task_id=task.id,\n        version=1,\n        goal=\"Test task\",\n        steps=[],\n        status=\"approved\"\n    )\n    db.add(plan)\n    db.commit()"
+        },
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 206,
+          "end_line": 215,
+          "block": "    plan = Plan(\n        id=uuid4(),\n        task_id=task.id,\n        version=1,\n        goal=\"Test task\",\n        steps=[],\n        status=\"approved\"\n    )\n    db.add(plan)\n    db.commit()"
+        },
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 248,
+          "end_line": 257,
+          "block": "    plan = Plan(\n        id=uuid4(),\n        task_id=task.id,\n        version=1,\n        goal=\"Test task\",\n        steps=[],\n        status=\"approved\"\n    )\n    db.add(plan)\n    db.commit()"
+        },
+        {
+          "file": "tests\\integration\\test_auto_replanning.py",
+          "start_line": 121,
+          "end_line": 130,
+          "block": "    plan = Plan(\n        id=uuid4(),\n        task_id=task.id,\n        version=1,\n        goal=\"Test task\",\n        steps=[],\n        status=\"approved\"\n    )\n    db.add(plan)\n    db.commit()"
+        },
+        {
+          "file": "tests\\integration\\test_auto_replanning.py",
+          "start_line": 164,
+          "end_line": 173,
+          "block": "    plan = Plan(\n        id=uuid4(),\n        task_id=task.id,\n        version=1,\n        goal=\"Test task\",\n        steps=[],\n        status=\"approved\"\n    )\n    db.add(plan)\n    db.commit()"
+        }
+      ],
+      "count": 6
+    },
+    {
+      "block": "with patch.object(planning_service, 'generate_plan', new_callable=AsyncMock) as mock_generate:\nnew_plan = Plan(\nid=uuid4(),\ntask_id=task.id,\nversion=2,\ngoal=\"Test task\",\nsteps=[],\nstatus=\"draft\"\n)\nmoc",
+      "occurrences": [
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 101,
+          "end_line": 110,
+          "block": "    with patch.object(planning_service, 'generate_plan', new_callable=AsyncMock) as mock_generate:\n        new_plan = Plan(\n            id=uuid4(),\n            task_id=task.id,\n            version=2,\n            goal=\"Test task\",\n            steps=[],\n            status=\"draft\"\n        )\n        mock_generate.return_value = new_plan"
+        },
+        {
+          "file": "tests\\test_auto_replan_service.py",
+          "start_line": 156,
+          "end_line": 165,
+          "block": "    with patch.object(planning_service, 'generate_plan', new_callable=AsyncMock) as mock_generate:\n        new_plan = Plan(\n            id=uuid4(),\n            task_id=task.id,\n            version=2,\n            goal=\"Test task\",\n            steps=[],\n            status=\"draft\"\n        )\n        mock_generate.return_value = new_plan"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "result = await step_executor.execute_step(\nstep=sample_step,\nplan=sample_plan,\ncontext={}\n)",
+      "occurrences": [
+        {
+          "file": "tests\\test_plan_execution.py",
+          "start_line": 61,
+          "end_line": 65,
+          "block": "            result = await step_executor.execute_step(\n                step=sample_step,\n                plan=sample_plan,\n                context={}\n            )"
+        },
+        {
+          "file": "tests\\test_plan_execution.py",
+          "start_line": 78,
+          "end_line": 82,
+          "block": "            result = await step_executor.execute_step(\n                step=sample_step,\n                plan=sample_plan,\n                context={}\n            )"
+        },
+        {
+          "file": "tests\\test_plan_execution.py",
+          "start_line": 100,
+          "end_line": 104,
+          "block": "            result = await step_executor.execute_step(\n                step=sample_step,\n                plan=sample_plan,\n                context={}\n            )"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "block": "@pytest.fixture\ndef db():\n\"\"\"Database session fixture\"\"\"\ndb = SessionLocal()\ntry:\nyield db\nfinally:\ndb.close()",
+      "occurrences": [
+        {
+          "file": "tests\\test_plan_tree_api.py",
+          "start_line": 17,
+          "end_line": 24,
+          "block": "@pytest.fixture\ndef db():\n    \"\"\"Database session fixture\"\"\"\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\integration\\test_checkpoint_api_integration.py",
+          "start_line": 17,
+          "end_line": 24,
+          "block": "@pytest.fixture\ndef db():\n    \"\"\"Database session fixture\"\"\"\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\integration\\test_planning_system_complete.py",
+          "start_line": 18,
+          "end_line": 25,
+          "block": "@pytest.fixture\ndef db():\n    \"\"\"Database session fixture\"\"\"\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\integration\\test_plan_visualization.py",
+          "start_line": 17,
+          "end_line": 24,
+          "block": "@pytest.fixture\ndef db():\n    \"\"\"Database session fixture\"\"\"\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "block": "sa.Column('status', sa.String(50), nullable=False, server_default='draft'),\nsa.Column('created_by', sa.String(255), nullable=True),\nsa.Column('created_at', sa.DateTime(), nullable=False, server_defaul",
+      "occurrences": [
+        {
+          "file": "alembic\\versions\\009_add_agents.py",
+          "start_line": 32,
+          "end_line": 37,
+          "block": "        sa.Column('status', sa.String(50), nullable=False, server_default='draft'),\n        sa.Column('created_by', sa.String(255), nullable=True),\n        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),\n        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),\n        sa.Column('activated_at', sa.DateTime(), nullable=True),\n        sa.Column('last_used_at', sa.DateTime(), nullable=True),"
+        },
+        {
+          "file": "alembic\\versions\\010_add_tools.py",
+          "start_line": 33,
+          "end_line": 38,
+          "block": "        sa.Column('status', sa.String(50), nullable=False, server_default='draft'),\n        sa.Column('created_by', sa.String(255), nullable=True),\n        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),\n        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),\n        sa.Column('activated_at', sa.DateTime(), nullable=True),\n        sa.Column('last_used_at', sa.DateTime(), nullable=True),"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "if not user:\nraise HTTPException(\nstatus_code=status.HTTP_401_UNAUTHORIZED,\ndetail=\"Authentication required\",\nheaders={\"WWW-Authenticate\": \"Bearer\"},\n)",
+      "occurrences": [
+        {
+          "file": "app\\core\\auth.py",
+          "start_line": 120,
+          "end_line": 125,
+          "block": "    if not user:\n        raise HTTPException(\n            status_code=status.HTTP_401_UNAUTHORIZED,\n            detail=\"Authentication required\",\n            headers={\"WWW-Authenticate\": \"Bearer\"},\n        )"
+        },
+        {
+          "file": "app\\core\\permissions.py",
+          "start_line": 142,
+          "end_line": 147,
+          "block": "    if not user:\n        raise HTTPException(\n            status_code=status.HTTP_401_UNAUTHORIZED,\n            detail=\"Authentication required\",\n            headers={\"WWW-Authenticate\": \"Bearer\"},\n        )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "server = OllamaService.get_default_server(self.db)\nif not server:\nservers = OllamaService.get_all_active_servers(self.db)\nif servers:\nserver = servers[0]\nelse:\nlogger.warning(\"No active servers found\"",
+      "occurrences": [
+        {
+          "file": "app\\core\\model_selector.py",
+          "start_line": 60,
+          "end_line": 67,
+          "block": "                server = OllamaService.get_default_server(self.db)\n                if not server:\n                    servers = OllamaService.get_all_active_servers(self.db)\n                    if servers:\n                        server = servers[0]\n                    else:\n                        logger.warning(\"No active servers found\")\n                        return None"
+        },
+        {
+          "file": "app\\core\\model_selector.py",
+          "start_line": 129,
+          "end_line": 136,
+          "block": "                server = OllamaService.get_default_server(self.db)\n                if not server:\n                    servers = OllamaService.get_all_active_servers(self.db)\n                    if servers:\n                        server = servers[0]\n                    else:\n                        logger.warning(\"No active servers found\")\n                        return None"
+        },
+        {
+          "file": "app\\core\\model_selector.py",
+          "start_line": 197,
+          "end_line": 204,
+          "block": "                server = OllamaService.get_default_server(self.db)\n                if not server:\n                    servers = OllamaService.get_all_active_servers(self.db)\n                    if servers:\n                        server = servers[0]\n                    else:\n                        logger.warning(\"No active servers found\")\n                        return None"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "block": "base_url = server_url\nif base_url.endswith(\"/v1\"):\nbase_url = base_url[:-3]\nelif base_url.endswith(\"/v1/\"):\nbase_url = base_url[:-4]",
+      "occurrences": [
+        {
+          "file": "app\\core\\ollama_client.py",
+          "start_line": 212,
+          "end_line": 216,
+          "block": "            base_url = server_url\n            if base_url.endswith(\"/v1\"):\n                base_url = base_url[:-3]\n            elif base_url.endswith(\"/v1/\"):\n                base_url = base_url[:-4]"
+        },
+        {
+          "file": "app\\api\\routes\\models.py",
+          "start_line": 106,
+          "end_line": 110,
+          "block": "        base_url = server_url\n        if base_url.endswith(\"/v1\"):\n            base_url = base_url[:-3]\n        elif base_url.endswith(\"/v1/\"):\n            base_url = base_url[:-4]"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "messages = []\nif system_prompt:\nmessages.append({\"role\": \"system\", \"content\": system_prompt})\nif history:\nmessages.extend(history)\nmessages.append({\"role\": \"user\", \"content\": prompt})",
+      "occurrences": [
+        {
+          "file": "app\\core\\ollama_client.py",
+          "start_line": 419,
+          "end_line": 424,
+          "block": "        messages = []\n        if system_prompt:\n            messages.append({\"role\": \"system\", \"content\": system_prompt})\n        if history:\n            messages.extend(history)\n        messages.append({\"role\": \"user\", \"content\": prompt})"
+        },
+        {
+          "file": "app\\core\\ollama_client.py",
+          "start_line": 745,
+          "end_line": 750,
+          "block": "        messages = []\n        if system_prompt:\n            messages.append({\"role\": \"system\", \"content\": system_prompt})\n        if history:\n            messages.extend(history)\n        messages.append({\"role\": \"user\", \"content\": prompt})"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "request_base_url = instance.url\nif request_base_url.endswith(\"/v1\"):\nrequest_base_url = request_base_url[:-3]\nelif request_base_url.endswith(\"/v1/\"):\nrequest_base_url = request_base_url[:-4]",
+      "occurrences": [
+        {
+          "file": "app\\core\\ollama_client.py",
+          "start_line": 439,
+          "end_line": 443,
+          "block": "        request_base_url = instance.url\n        if request_base_url.endswith(\"/v1\"):\n            request_base_url = request_base_url[:-3]\n        elif request_base_url.endswith(\"/v1/\"):\n            request_base_url = request_base_url[:-4]"
+        },
+        {
+          "file": "app\\core\\ollama_client.py",
+          "start_line": 753,
+          "end_line": 757,
+          "block": "        request_base_url = instance.url\n        if request_base_url.endswith(\"/v1\"):\n            request_base_url = request_base_url[:-3]\n        elif request_base_url.endswith(\"/v1/\"):\n            request_base_url = request_base_url[:-4]"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "servers = OllamaService.get_all_active_servers(self.db)\nfor server in servers:\nmodel = OllamaService.get_model_by_name(self.db, str(server.id), model_name)\nif model:\nreturn OllamaService.convert_to_in",
+      "occurrences": [
+        {
+          "file": "app\\core\\ollama_db_client.py",
+          "start_line": 48,
+          "end_line": 52,
+          "block": "        servers = OllamaService.get_all_active_servers(self.db)\n        for server in servers:\n            model = OllamaService.get_model_by_name(self.db, str(server.id), model_name)\n            if model:\n                return OllamaService.convert_to_instance_config(server)"
+        },
+        {
+          "file": "app\\core\\ollama_manager.py",
+          "start_line": 50,
+          "end_line": 54,
+          "block": "        servers = OllamaService.get_all_active_servers(self.db)\n        for server in servers:\n            model = OllamaService.get_model_by_name(self.db, str(server.id), model_name)\n            if model:\n                return OllamaService.convert_to_instance_config(server)"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "total_score = (\ncapability_score * 0.5 +\nsuccess_score * 0.3 +\ntime_score * 0.2\n)",
+      "occurrences": [
+        {
+          "file": "app\\services\\agent_service.py",
+          "start_line": 199,
+          "end_line": 203,
+          "block": "            total_score = (\n                capability_score * 0.5 +\n                success_score * 0.3 +\n                time_score * 0.2\n            )"
+        },
+        {
+          "file": "app\\services\\agent_service.py",
+          "start_line": 633,
+          "end_line": 637,
+          "block": "            total_score = (\n                capability_score * 0.5 +\n                success_score * 0.3 +\n                time_score * 0.2\n            )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "Returns:\nValidationResult\n\"\"\"\nissues = []\nscore = 1.0",
+      "occurrences": [
+        {
+          "file": "app\\services\\critic_service.py",
+          "start_line": 142,
+          "end_line": 146,
+          "block": "        Returns:\n            ValidationResult\n        \"\"\"\n        issues = []\n        score = 1.0"
+        },
+        {
+          "file": "app\\services\\critic_service.py",
+          "start_line": 229,
+          "end_line": 233,
+          "block": "        Returns:\n            ValidationResult\n        \"\"\"\n        issues = []\n        score = 1.0"
+        },
+        {
+          "file": "app\\services\\critic_service.py",
+          "start_line": 332,
+          "end_line": 336,
+          "block": "        Returns:\n            ValidationResult\n        \"\"\"\n        issues = []\n        score = 1.0"
+        },
+        {
+          "file": "app\\services\\critic_service.py",
+          "start_line": 391,
+          "end_line": 395,
+          "block": "        Returns:\n            ValidationResult\n        \"\"\"\n        issues = []\n        score = 1.0"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "block": "try:\nresponse = await self.ollama_client.generate(\nprompt=prompt,\ntask_type=None,\ntemperature=0.3\n)",
+      "occurrences": [
+        {
+          "file": "app\\services\\critic_service.py",
+          "start_line": 299,
+          "end_line": 304,
+          "block": "        try:\n            response = await self.ollama_client.generate(\n                prompt=prompt,\n                task_type=None,\n                temperature=0.3\n            )"
+        },
+        {
+          "file": "app\\services\\reflection_service.py",
+          "start_line": 238,
+          "end_line": 243,
+          "block": "        try:\n            response = await self.ollama_client.generate(\n                prompt=prompt,\n                task_type=None,\n                temperature=0.3\n            )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "steps = plan.steps\nif isinstance(steps, str):\ntry:\nsteps = json.loads(steps)\nexcept:\nsteps = []",
+      "occurrences": [
+        {
+          "file": "app\\services\\execution_service.py",
+          "start_line": 769,
+          "end_line": 774,
+          "block": "        steps = plan.steps\n        if isinstance(steps, str):\n            try:\n                steps = json.loads(steps)\n            except:\n                steps = []"
+        },
+        {
+          "file": "app\\services\\execution_service.py",
+          "start_line": 1047,
+          "end_line": 1052,
+          "block": "        steps = plan.steps\n        if isinstance(steps, str):\n            try:\n                steps = json.loads(steps)\n            except:\n                steps = []"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "digital_twin_context = {}\nif task_id:\ntask = self.db.query(Task).filter(Task.id == task_id).first()\nif task:\ndigital_twin_context = task.get_context()",
+      "occurrences": [
+        {
+          "file": "app\\services\\planning_service.py",
+          "start_line": 952,
+          "end_line": 956,
+          "block": "        digital_twin_context = {}\n        if task_id:\n            task = self.db.query(Task).filter(Task.id == task_id).first()\n            if task:\n                digital_twin_context = task.get_context()"
+        },
+        {
+          "file": "app\\services\\planning_service.py",
+          "start_line": 1263,
+          "end_line": 1267,
+          "block": "        digital_twin_context = {}\n        if task_id:\n            task = self.db.query(Task).filter(Task.id == task_id).first()\n            if task:\n                digital_twin_context = task.get_context()"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "agent_id = None\nagent_metadata = getattr(plan, 'agent_metadata', None) or (plan.strategy if isinstance(plan.strategy, dict) else None)\nif agent_metadata and isinstance(agent_metadata, dict):\nagent_id_",
+      "occurrences": [
+        {
+          "file": "app\\services\\planning_service.py",
+          "start_line": 1789,
+          "end_line": 1797,
+          "block": "            agent_id = None\n            agent_metadata = getattr(plan, 'agent_metadata', None) or (plan.strategy if isinstance(plan.strategy, dict) else None)\n            if agent_metadata and isinstance(agent_metadata, dict):\n                agent_id_str = agent_metadata.get(\"agent_id\")\n                if agent_id_str:\n                    try:\n                        agent_id = UUID(agent_id_str)\n                    except (ValueError, TypeError):\n                        pass"
+        },
+        {
+          "file": "app\\services\\planning_service.py",
+          "start_line": 1883,
+          "end_line": 1891,
+          "block": "            agent_id = None\n            agent_metadata = getattr(plan, 'agent_metadata', None) or (plan.strategy if isinstance(plan.strategy, dict) else None)\n            if agent_metadata and isinstance(agent_metadata, dict):\n                agent_id_str = agent_metadata.get(\"agent_id\")\n                if agent_id_str:\n                    try:\n                        agent_id = UUID(agent_id_str)\n                    except (ValueError, TypeError):\n                        pass"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "import json\nimport re\njson_match = re.search(r'\\{[^}]+\\}', response_text, re.DOTALL)\nif json_match:\nreturn json.loads(json_match.group())",
+      "occurrences": [
+        {
+          "file": "app\\services\\reflection_service.py",
+          "start_line": 248,
+          "end_line": 252,
+          "block": "            import json\n            import re\n            json_match = re.search(r'\\{[^}]+\\}', response_text, re.DOTALL)\n            if json_match:\n                return json.loads(json_match.group())"
+        },
+        {
+          "file": "app\\services\\reflection_service.py",
+          "start_line": 357,
+          "end_line": 361,
+          "block": "            import json\n            import re\n            json_match = re.search(r'\\{[^}]+\\}', response_text, re.DOTALL)\n            if json_match:\n                return json.loads(json_match.group())"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "if not artifact:\nraise HTTPException(\nstatus_code=status.HTTP_404_NOT_FOUND,\ndetail=f\"Artifact {artifact_id} not found\"\n)",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\artifacts.py",
+          "start_line": 83,
+          "end_line": 87,
+          "block": "    if not artifact:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=f\"Artifact {artifact_id} not found\"\n        )"
+        },
+        {
+          "file": "app\\api\\routes\\artifacts.py",
+          "start_line": 128,
+          "end_line": 132,
+          "block": "    if not artifact:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=f\"Artifact {artifact_id} not found\"\n        )"
+        },
+        {
+          "file": "app\\api\\routes\\artifacts_pages.py",
+          "start_line": 63,
+          "end_line": 67,
+          "block": "    if not artifact:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=f\"Artifact {artifact_id} not found\"\n        )"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "block": "token = None\nif credentials:\ntoken = credentials.credentials\nelse:\ntoken = request.cookies.get(\"session_token\")",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\auth.py",
+          "start_line": 169,
+          "end_line": 173,
+          "block": "        token = None\n        if credentials:\n            token = credentials.credentials\n        else:\n            token = request.cookies.get(\"session_token\")"
+        },
+        {
+          "file": "app\\api\\routes\\auth.py",
+          "start_line": 227,
+          "end_line": 231,
+          "block": "        token = None\n        if credentials:\n            token = credentials.credentials\n        else:\n            token = request.cookies.get(\"session_token\")"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "return CheckpointDetailResponse(\nid=str(checkpoint.id),\nentity_type=checkpoint.entity_type,\nentity_id=str(checkpoint.entity_id),\nstate_data=checkpoint.state_data,\nstate_hash=checkpoint.state_hash,\nrea",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\checkpoints.py",
+          "start_line": 145,
+          "end_line": 155,
+          "block": "        return CheckpointDetailResponse(\n            id=str(checkpoint.id),\n            entity_type=checkpoint.entity_type,\n            entity_id=str(checkpoint.entity_id),\n            state_data=checkpoint.state_data,\n            state_hash=checkpoint.state_hash,\n            reason=checkpoint.reason,\n            created_by=checkpoint.created_by,\n            created_at=checkpoint.created_at.isoformat(),\n            trace_id=checkpoint.trace_id,\n        )"
+        },
+        {
+          "file": "app\\api\\routes\\checkpoints.py",
+          "start_line": 181,
+          "end_line": 191,
+          "block": "        return CheckpointDetailResponse(\n            id=str(checkpoint.id),\n            entity_type=checkpoint.entity_type,\n            entity_id=str(checkpoint.entity_id),\n            state_data=checkpoint.state_data,\n            state_hash=checkpoint.state_hash,\n            reason=checkpoint.reason,\n            created_by=checkpoint.created_by,\n            created_at=checkpoint.created_at.isoformat(),\n            trace_id=checkpoint.trace_id,\n        )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "active_statuses = [\nTaskStatus.PLANNING,\nTaskStatus.IN_PROGRESS,\nTaskStatus.PENDING_APPROVAL,\nTaskStatus.EXECUTING,\nTaskStatus.PAUSED\n]",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\current_work.py",
+          "start_line": 62,
+          "end_line": 68,
+          "block": "    active_statuses = [\n        TaskStatus.PLANNING,\n        TaskStatus.IN_PROGRESS,\n        TaskStatus.PENDING_APPROVAL,\n        TaskStatus.EXECUTING,\n        TaskStatus.PAUSED\n    ]"
+        },
+        {
+          "file": "app\\api\\routes\\current_work.py",
+          "start_line": 181,
+          "end_line": 187,
+          "block": "    active_statuses = [\n        TaskStatus.PLANNING,\n        TaskStatus.IN_PROGRESS,\n        TaskStatus.PENDING_APPROVAL,\n        TaskStatus.EXECUTING,\n        TaskStatus.PAUSED\n    ]"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "current_stage = \"planning\"\nif task.status == TaskStatus.IN_PROGRESS or task.status == TaskStatus.EXECUTING:\ncurrent_stage = \"executing\"\nelif task.status == TaskStatus.PENDING_APPROVAL:\ncurrent_stage =",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\current_work.py",
+          "start_line": 87,
+          "end_line": 93,
+          "block": "        current_stage = \"planning\"\n        if task.status == TaskStatus.IN_PROGRESS or task.status == TaskStatus.EXECUTING:\n            current_stage = \"executing\"\n        elif task.status == TaskStatus.PENDING_APPROVAL:\n            current_stage = \"pending_approval\"\n        elif task.status == TaskStatus.PLANNING:\n            current_stage = \"planning\""
+        },
+        {
+          "file": "app\\api\\routes\\current_work.py",
+          "start_line": 204,
+          "end_line": 210,
+          "block": "    current_stage = \"planning\"\n    if task.status == TaskStatus.IN_PROGRESS or task.status == TaskStatus.EXECUTING:\n        current_stage = \"executing\"\n    elif task.status == TaskStatus.PENDING_APPROVAL:\n        current_stage = \"pending_approval\"\n    elif task.status == TaskStatus.PLANNING:\n        current_stage = \"planning\""
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "if plan and plan.steps:\ntotal_steps = len(plan.steps)\nfor i, step in enumerate(plan.steps):\nstep_status = step.get(\"status\", \"pending\")\nif step_status == \"completed\":\ncompleted_steps += 1\nelif step_st",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\current_work.py",
+          "start_line": 100,
+          "end_line": 113,
+          "block": "        if plan and plan.steps:\n            total_steps = len(plan.steps)\n            for i, step in enumerate(plan.steps):\n                step_status = step.get(\"status\", \"pending\")\n                if step_status == \"completed\":\n                    completed_steps += 1\n                elif step_status == \"in_progress\" or (i == plan.current_step and step_status == \"pending\"):\n                    current_step_data = ActiveStep(\n                        step_id=step.get(\"step_id\", f\"step_{i}\"),\n                        step_number=i + 1,\n                        description=step.get(\"description\", \"\"),\n                        status=step_status,\n                        started_at=step.get(\"started_at\")\n                    )"
+        },
+        {
+          "file": "app\\api\\routes\\current_work.py",
+          "start_line": 216,
+          "end_line": 229,
+          "block": "    if plan and plan.steps:\n        total_steps = len(plan.steps)\n        for i, step in enumerate(plan.steps):\n            step_status = step.get(\"status\", \"pending\")\n            if step_status == \"completed\":\n                completed_steps += 1\n            elif step_status == \"in_progress\" or (i == plan.current_step and step_status == \"pending\"):\n                current_step_data = ActiveStep(\n                    step_id=step.get(\"step_id\", f\"step_{i}\"),\n                    step_number=i + 1,\n                    description=step.get(\"description\", \"\"),\n                    status=step_status,\n                    started_at=step.get(\"started_at\")\n                )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "if latest_plan:\napproval_request = db.query(ApprovalRequest).filter(\nApprovalRequest.plan_id == latest_plan.id,\nApprovalRequest.status == \"pending\"\n).first()",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\dashboard.py",
+          "start_line": 78,
+          "end_line": 82,
+          "block": "            if latest_plan:\n                approval_request = db.query(ApprovalRequest).filter(\n                    ApprovalRequest.plan_id == latest_plan.id,\n                    ApprovalRequest.status == \"pending\"\n                ).first()"
+        },
+        {
+          "file": "app\\api\\routes\\dashboard_pages.py",
+          "start_line": 62,
+          "end_line": 66,
+          "block": "            if latest_plan:\n                approval_request = db.query(ApprovalRequest).filter(\n                    ApprovalRequest.plan_id == latest_plan.id,\n                    ApprovalRequest.status == \"pending\"\n                ).first()"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "if approval_request:\napproval_requests_map[str(task.id)] = {\n\"id\": str(approval_request.id),\n\"plan_id\": str(latest_plan.id),\n\"request_data\": approval_request.request_data\n}",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\dashboard.py",
+          "start_line": 84,
+          "end_line": 89,
+          "block": "                if approval_request:\n                    approval_requests_map[str(task.id)] = {\n                        \"id\": str(approval_request.id),\n                        \"plan_id\": str(latest_plan.id),\n                        \"request_data\": approval_request.request_data\n                    }"
+        },
+        {
+          "file": "app\\api\\routes\\dashboard_pages.py",
+          "start_line": 68,
+          "end_line": 73,
+          "block": "                if approval_request:\n                    approval_requests_map[str(task.id)] = {\n                        \"id\": str(approval_request.id),\n                        \"plan_id\": str(latest_plan.id),\n                        \"request_data\": approval_request.request_data\n                    }"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "task_dict = {\n\"id\": str(task.id),\n\"description\": task.description,\n\"status\": task.status.value,\n\"priority\": task.priority,\n\"created_at\": task.created_at,\n\"updated_at\": task.updated_at,\n\"created_by_rol",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\dashboard.py",
+          "start_line": 99,
+          "end_line": 111,
+          "block": "            task_dict = {\n                \"id\": str(task.id),\n                \"description\": task.description,\n                \"status\": task.status.value,\n                \"priority\": task.priority,\n                \"created_at\": task.created_at,\n                \"updated_at\": task.updated_at,\n                \"created_by_role\": task.created_by_role,\n                \"approved_by_role\": task.approved_by_role,\n                \"autonomy_level\": task.autonomy_level,\n                \"plan\": None,\n                \"approval_request\": approval_requests_map.get(str(task.id))\n            }"
+        },
+        {
+          "file": "app\\api\\routes\\dashboard_pages.py",
+          "start_line": 83,
+          "end_line": 95,
+          "block": "            task_dict = {\n                \"id\": str(task.id),\n                \"description\": task.description,\n                \"status\": task.status.value,\n                \"priority\": task.priority,\n                \"created_at\": task.created_at,\n                \"updated_at\": task.updated_at,\n                \"created_by_role\": task.created_by_role,\n                \"approved_by_role\": task.approved_by_role,\n                \"autonomy_level\": task.autonomy_level,\n                \"plan\": None,\n                \"approval_request\": approval_requests_map.get(str(task.id))\n            }"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "task_dict[\"plan\"] = {\n\"id\": str(latest_plan.id),\n\"version\": latest_plan.version,\n\"status\": latest_plan.status,\n\"current_step\": current_step,\n\"total_steps\": total_steps,\n\"progress\": progress,\n\"goal\": l",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\dashboard.py",
+          "start_line": 120,
+          "end_line": 128,
+          "block": "                task_dict[\"plan\"] = {\n                    \"id\": str(latest_plan.id),\n                    \"version\": latest_plan.version,\n                    \"status\": latest_plan.status,\n                    \"current_step\": current_step,\n                    \"total_steps\": total_steps,\n                    \"progress\": progress,\n                    \"goal\": latest_plan.goal\n                }"
+        },
+        {
+          "file": "app\\api\\routes\\dashboard_pages.py",
+          "start_line": 104,
+          "end_line": 112,
+          "block": "                task_dict[\"plan\"] = {\n                    \"id\": str(latest_plan.id),\n                    \"version\": latest_plan.version,\n                    \"status\": latest_plan.status,\n                    \"current_step\": current_step,\n                    \"total_steps\": total_steps,\n                    \"progress\": progress,\n                    \"goal\": latest_plan.goal\n                }"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "return ModelResponse(\nid=str(model.id),\nname=model.name,\nmodel_name=model.model_name,\nis_active=model.is_active,\ncapabilities=model.capabilities or [],\npriority=model.priority or 0,\nsize_bytes=model.s",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\models_management.py",
+          "start_line": 49,
+          "end_line": 59,
+          "block": "    return ModelResponse(\n        id=str(model.id),\n        name=model.name,\n        model_name=model.model_name,\n        is_active=model.is_active,\n        capabilities=model.capabilities or [],\n        priority=model.priority or 0,\n        size_bytes=model.size_bytes,\n        created_at=model.created_at,\n        updated_at=model.updated_at\n    )"
+        },
+        {
+          "file": "app\\api\\routes\\models_management.py",
+          "start_line": 86,
+          "end_line": 96,
+          "block": "    return ModelResponse(\n        id=str(model.id),\n        name=model.name,\n        model_name=model.model_name,\n        is_active=model.is_active,\n        capabilities=model.capabilities or [],\n        priority=model.priority or 0,\n        size_bytes=model.size_bytes,\n        created_at=model.created_at,\n        updated_at=model.updated_at\n    )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "try:\nbase_url = server.url.rstrip(\"/\")\nif base_url.endswith(\"/v1\"):\nbase_url = base_url[:-3]\nelif base_url.endswith(\"/v1/\"):\nbase_url = base_url[:-4]",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\models_management.py",
+          "start_line": 110,
+          "end_line": 115,
+          "block": "    try:\n        base_url = server.url.rstrip(\"/\")\n        if base_url.endswith(\"/v1\"):\n            base_url = base_url[:-3]\n        elif base_url.endswith(\"/v1/\"):\n            base_url = base_url[:-4]"
+        },
+        {
+          "file": "app\\api\\routes\\models_management.py",
+          "start_line": 184,
+          "end_line": 189,
+          "block": "    try:\n        base_url = server.url.rstrip(\"/\")\n        if base_url.endswith(\"/v1\"):\n            base_url = base_url[:-3]\n        elif base_url.endswith(\"/v1/\"):\n            base_url = base_url[:-4]"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "return PlanResponse(\nid=plan.id,\ntask_id=plan.task_id,\nversion=plan.version,\ngoal=plan.goal,\nstrategy=plan.strategy,\nsteps=plan.steps,\nalternatives=plan.alternatives,\nstatus=plan.status,\ncurrent_step=",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\plans.py",
+          "start_line": 153,
+          "end_line": 167,
+          "block": "    return PlanResponse(\n        id=plan.id,\n        task_id=plan.task_id,\n        version=plan.version,\n        goal=plan.goal,\n        strategy=plan.strategy,\n        steps=plan.steps,\n        alternatives=plan.alternatives,\n        status=plan.status,\n        current_step=plan.current_step,\n        estimated_duration=plan.estimated_duration,\n        actual_duration=plan.actual_duration,\n        created_at=plan.created_at,\n        approved_at=plan.approved_at\n    )"
+        },
+        {
+          "file": "app\\api\\routes\\plans.py",
+          "start_line": 199,
+          "end_line": 213,
+          "block": "    return PlanResponse(\n        id=plan.id,\n        task_id=plan.task_id,\n        version=plan.version,\n        goal=plan.goal,\n        strategy=plan.strategy,\n        steps=plan.steps,\n        alternatives=plan.alternatives,\n        status=plan.status,\n        current_step=plan.current_step,\n        estimated_duration=plan.estimated_duration,\n        actual_duration=plan.actual_duration,\n        created_at=plan.created_at,\n        approved_at=plan.approved_at\n    )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "total_steps = 0\nif plan.steps:\nif isinstance(plan.steps, list):\ntotal_steps = len(plan.steps)\nelif isinstance(plan.steps, str):\nimport json\ntry:\nsteps_list = json.loads(plan.steps)\ntotal_steps = len(s",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\plans_pages.py",
+          "start_line": 49,
+          "end_line": 59,
+          "block": "            total_steps = 0\n            if plan.steps:\n                if isinstance(plan.steps, list):\n                    total_steps = len(plan.steps)\n                elif isinstance(plan.steps, str):\n                    import json\n                    try:\n                        steps_list = json.loads(plan.steps)\n                        total_steps = len(steps_list) if isinstance(steps_list, list) else 0\n                    except:\n                        total_steps = 0"
+        },
+        {
+          "file": "app\\api\\routes\\plans_pages.py",
+          "start_line": 137,
+          "end_line": 147,
+          "block": "    total_steps = 0\n    if plan.steps:\n        if isinstance(plan.steps, list):\n            total_steps = len(plan.steps)\n        elif isinstance(plan.steps, str):\n            import json\n            try:\n                steps_list = json.loads(plan.steps)\n                total_steps = len(steps_list) if isinstance(steps_list, list) else 0\n            except:\n                total_steps = 0"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "steps = plan.steps\nif isinstance(steps, str):\nimport json\ntry:\nsteps = json.loads(steps)\nexcept:\nsteps = []",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\plans_pages.py",
+          "start_line": 152,
+          "end_line": 158,
+          "block": "    steps = plan.steps\n    if isinstance(steps, str):\n        import json\n        try:\n            steps = json.loads(steps)\n        except:\n            steps = []"
+        },
+        {
+          "file": "tests\\integration\\test_execution_engine.py",
+          "start_line": 82,
+          "end_line": 88,
+          "block": "        steps = plan.steps\n        if isinstance(steps, str):\n            import json\n            try:\n                steps = json.loads(steps)\n            except:\n                steps = []"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "if not prompt:\nraise HTTPException(\nstatus_code=status.HTTP_404_NOT_FOUND,\ndetail=f\"Prompt {prompt_id} not found\"\n)",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\prompts.py",
+          "start_line": 86,
+          "end_line": 90,
+          "block": "    if not prompt:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=f\"Prompt {prompt_id} not found\"\n        )"
+        },
+        {
+          "file": "app\\api\\routes\\prompts.py",
+          "start_line": 166,
+          "end_line": 170,
+          "block": "    if not prompt:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=f\"Prompt {prompt_id} not found\"\n        )"
+        },
+        {
+          "file": "app\\api\\routes\\prompts.py",
+          "start_line": 195,
+          "end_line": 199,
+          "block": "    if not prompt:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=f\"Prompt {prompt_id} not found\"\n        )"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "block": "return QueueResponse(\nid=str(queue.id),\nname=queue.name,\ndescription=queue.description,\nmax_concurrent=queue.max_concurrent,\npriority=queue.priority,\nis_active=queue.is_active,\ncreated_at=queue.create",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\queues.py",
+          "start_line": 89,
+          "end_line": 98,
+          "block": "        return QueueResponse(\n            id=str(queue.id),\n            name=queue.name,\n            description=queue.description,\n            max_concurrent=queue.max_concurrent,\n            priority=queue.priority,\n            is_active=queue.is_active,\n            created_at=queue.created_at.isoformat(),\n            updated_at=queue.updated_at.isoformat(),\n        )"
+        },
+        {
+          "file": "app\\api\\routes\\queues.py",
+          "start_line": 150,
+          "end_line": 159,
+          "block": "        return QueueResponse(\n            id=str(queue.id),\n            name=queue.name,\n            description=queue.description,\n            max_concurrent=queue.max_concurrent,\n            priority=queue.priority,\n            is_active=queue.is_active,\n            created_at=queue.created_at.isoformat(),\n            updated_at=queue.updated_at.isoformat(),\n        )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "return [\nTaskResponse(\nid=str(t.id),\nqueue_id=str(t.queue_id),\ntask_type=t.task_type,\nstatus=t.status,\npriority=t.priority,\nretry_count=t.retry_count,\nmax_retries=t.max_retries,\nassigned_worker=t.assi",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\queues.py",
+          "start_line": 235,
+          "end_line": 249,
+          "block": "        return [\n            TaskResponse(\n                id=str(t.id),\n                queue_id=str(t.queue_id),\n                task_type=t.task_type,\n                status=t.status,\n                priority=t.priority,\n                retry_count=t.retry_count,\n                max_retries=t.max_retries,\n                assigned_worker=t.assigned_worker,\n                created_at=t.created_at.isoformat(),\n                updated_at=t.updated_at.isoformat(),\n            )\n            for t in tasks\n        ]"
+        },
+        {
+          "file": "app\\api\\routes\\queues.py",
+          "start_line": 373,
+          "end_line": 387,
+          "block": "        return [\n            TaskResponse(\n                id=str(t.id),\n                queue_id=str(t.queue_id),\n                task_type=t.task_type,\n                status=t.status,\n                priority=t.priority,\n                retry_count=t.retry_count,\n                max_retries=t.max_retries,\n                assigned_worker=t.assigned_worker,\n                created_at=t.created_at.isoformat(),\n                updated_at=t.updated_at.isoformat(),\n            )\n            for t in tasks\n        ]"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "request_responses = [\nRequestLogResponse(\nid=str(req.id),\nrequest_type=req.request_type,\nstatus=req.status,\nmodel_used=req.model_used,\nserver_url=req.server_url,\nduration_ms=req.duration_ms,\nsuccess_s",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\requests.py",
+          "start_line": 137,
+          "end_line": 158,
+          "block": "        request_responses = [\n            RequestLogResponse(\n                id=str(req.id),\n                request_type=req.request_type,\n                status=req.status,\n                model_used=req.model_used,\n                server_url=req.server_url,\n                duration_ms=req.duration_ms,\n                success_score=req.success_score,\n                importance_score=req.importance_score,\n                impact_score=req.impact_score,\n                overall_rank=req.overall_rank,\n                created_artifacts=[str(aid) for aid in req.created_artifacts] if req.created_artifacts else None,\n                created_plans=[str(pid) for pid in req.created_plans] if req.created_plans else None,\n                created_approvals=[str(aid) for aid in req.created_approvals] if req.created_approvals else None,\n                modified_artifacts=[str(aid) for aid in req.modified_artifacts] if req.modified_artifacts else None,\n                session_id=req.session_id,\n                trace_id=req.trace_id,\n                created_at=req.created_at,\n            )\n            for req in requests\n        ]"
+        },
+        {
+          "file": "app\\api\\routes\\requests.py",
+          "start_line": 185,
+          "end_line": 206,
+          "block": "        request_responses = [\n            RequestLogResponse(\n                id=str(req.id),\n                request_type=req.request_type,\n                status=req.status,\n                model_used=req.model_used,\n                server_url=req.server_url,\n                duration_ms=req.duration_ms,\n                success_score=req.success_score,\n                importance_score=req.importance_score,\n                impact_score=req.impact_score,\n                overall_rank=req.overall_rank,\n                created_artifacts=[str(aid) for aid in req.created_artifacts] if req.created_artifacts else None,\n                created_plans=[str(pid) for pid in req.created_plans] if req.created_plans else None,\n                created_approvals=[str(aid) for aid in req.created_approvals] if req.created_approvals else None,\n                modified_artifacts=[str(aid) for aid in req.modified_artifacts] if req.modified_artifacts else None,\n                session_id=req.session_id,\n                trace_id=req.trace_id,\n                created_at=req.created_at,\n            )\n            for req in requests\n        ]"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "return ServerResponse(\nid=str(server.id),\nname=server.name,\nurl=server.url,\napi_version=server.api_version,\nis_active=server.is_active,\nis_default=server.is_default,\nis_available=server.is_available,\n",
+      "occurrences": [
+        {
+          "file": "app\\api\\routes\\servers.py",
+          "start_line": 193,
+          "end_line": 209,
+          "block": "    return ServerResponse(\n        id=str(server.id),\n        name=server.name,\n        url=server.url,\n        api_version=server.api_version,\n        is_active=server.is_active,\n        is_default=server.is_default,\n        is_available=server.is_available,\n        description=server.description,\n        capabilities=server.capabilities,\n        max_concurrent=server.max_concurrent,\n        priority=server.priority,\n        created_at=server.created_at,\n        updated_at=server.updated_at,\n        last_checked_at=server.last_checked_at,\n        models_count=models_count\n    )"
+        },
+        {
+          "file": "app\\api\\routes\\servers.py",
+          "start_line": 242,
+          "end_line": 258,
+          "block": "    return ServerResponse(\n        id=str(server.id),\n        name=server.name,\n        url=server.url,\n        api_version=server.api_version,\n        is_active=server.is_active,\n        is_default=server.is_default,\n        is_available=server.is_available,\n        description=server.description,\n        capabilities=server.capabilities,\n        max_concurrent=server.max_concurrent,\n        priority=server.priority,\n        created_at=server.created_at,\n        updated_at=server.updated_at,\n        last_checked_at=server.last_checked_at,\n        models_count=models_count\n    )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "@pytest.fixture\ndef test_task(db: Session) -> Task:\n\"\"\"Create a test task\"\"\"\ntask = Task(\nid=uuid4(),\ndescription=\"Test task\",\nstatus=TaskStatus.PENDING.value,\npriority=5\n)\ndb.add(task)\ndb.commit()\ndb",
+      "occurrences": [
+        {
+          "file": "tests\\integration\\test_adaptive_approval.py",
+          "start_line": 16,
+          "end_line": 30,
+          "block": "@pytest.fixture\ndef test_task(db: Session) -> Task:\n    \"\"\"Create a test task\"\"\"\n    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.PENDING.value,\n        priority=5\n    )\n    db.add(task)\n    db.commit()\n    db.refresh(task)\n    yield task\n    db.delete(task)\n    db.commit()"
+        },
+        {
+          "file": "tests\\integration\\test_feedback_learning.py",
+          "start_line": 16,
+          "end_line": 30,
+          "block": "@pytest.fixture\ndef test_task(db: Session) -> Task:\n    \"\"\"Create a test task\"\"\"\n    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.PENDING.value,\n        priority=5\n    )\n    db.add(task)\n    db.commit()\n    db.refresh(task)\n    yield task\n    db.delete(task)\n    db.commit()"
+        },
+        {
+          "file": "tests\\integration\\test_planning_metrics.py",
+          "start_line": 15,
+          "end_line": 29,
+          "block": "@pytest.fixture\ndef test_task(db: Session) -> Task:\n    \"\"\"Create a test task\"\"\"\n    task = Task(\n        id=uuid4(),\n        description=\"Test task\",\n        status=TaskStatus.PENDING.value,\n        priority=5\n    )\n    db.add(task)\n    db.commit()\n    db.refresh(task)\n    yield task\n    db.delete(task)\n    db.commit()"
+        }
+      ],
+      "count": 3
+    },
+    {
+      "block": "@pytest.fixture(scope=\"function\")\ndef db_session():\n\"\"\"Create a database session for testing\"\"\"\nBase.metadata.create_all(bind=engine)\nsession = SessionLocal()\ntry:\nyield session\nfinally:\nsession.close",
+      "occurrences": [
+        {
+          "file": "tests\\integration\\test_agent_planning.py",
+          "start_line": 17,
+          "end_line": 26,
+          "block": "@pytest.fixture(scope=\"function\")\ndef db_session():\n    \"\"\"Create a database session for testing\"\"\"\n    Base.metadata.create_all(bind=engine)\n    session = SessionLocal()\n    try:\n        yield session\n    finally:\n        session.close()\n        Base.metadata.drop_all(bind=engine)"
+        },
+        {
+          "file": "tests\\integration\\test_full_plan_execution.py",
+          "start_line": 21,
+          "end_line": 30,
+          "block": "@pytest.fixture(scope=\"function\")\ndef db_session():\n    \"\"\"Create a database session for testing\"\"\"\n    Base.metadata.create_all(bind=engine)\n    session = SessionLocal()\n    try:\n        yield session\n    finally:\n        session.close()\n        Base.metadata.drop_all(bind=engine)"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "adaptive_approval = AdaptiveApprovalService(db)\ncritical_info = adaptive_approval.detect_critical_steps(\nsteps=plan.steps,\ntask_description=plan.goal\n)",
+      "occurrences": [
+        {
+          "file": "tests\\integration\\test_auto_approval_transition.py",
+          "start_line": 154,
+          "end_line": 158,
+          "block": "    adaptive_approval = AdaptiveApprovalService(db)\n    critical_info = adaptive_approval.detect_critical_steps(\n        steps=plan.steps,\n        task_description=plan.goal\n    )"
+        },
+        {
+          "file": "tests\\integration\\test_auto_approval_transition.py",
+          "start_line": 203,
+          "end_line": 207,
+          "block": "    adaptive_approval = AdaptiveApprovalService(db)\n    critical_info = adaptive_approval.detect_critical_steps(\n        steps=plan.steps,\n        task_description=plan.goal\n    )"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "except Exception as e:\nprint(f\"\\n✗ Ошибка: {e}\")\nimport traceback\ntraceback.print_exc()\nreturn False\nfinally:\ndb.close()",
+      "occurrences": [
+        {
+          "file": "tests\\integration\\test_execution_engine.py",
+          "start_line": 143,
+          "end_line": 149,
+          "block": "    except Exception as e:\n        print(f\"\\n✗ Ошибка: {e}\")\n        import traceback\n        traceback.print_exc()\n        return False\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\integration\\test_plan_approval_integration.py",
+          "start_line": 111,
+          "end_line": 117,
+          "block": "    except Exception as e:\n        print(f\"\\n✗ Ошибка: {e}\")\n        import traceback\n        traceback.print_exc()\n        return False\n    finally:\n        db.close()"
+        }
+      ],
+      "count": 2
+    },
+    {
+      "block": "agent = Agent(\nid=uuid4(),\nname=\"Test Agent\",\ndescription=\"Test agent for memory integration\",\nsystem_prompt=\"You are a test agent\"\n)\ndb.add(agent)\ndb.commit()\ndb.refresh(agent)",
+      "occurrences": [
+        {
+          "file": "tests\\integration\\test_plan_memory_integration.py",
+          "start_line": 20,
+          "end_line": 28,
+          "block": "    agent = Agent(\n        id=uuid4(),\n        name=\"Test Agent\",\n        description=\"Test agent for memory integration\",\n        system_prompt=\"You are a test agent\"\n    )\n    db.add(agent)\n    db.commit()\n    db.refresh(agent)"
+        },
+        {
+          "file": "tests\\integration\\test_plan_memory_integration.py",
+          "start_line": 86,
+          "end_line": 94,
+          "block": "    agent = Agent(\n        id=uuid4(),\n        name=\"Test Agent\",\n        description=\"Test agent for memory integration\",\n        system_prompt=\"You are a test agent\"\n    )\n    db.add(agent)\n    db.commit()\n    db.refresh(agent)"
+        },
+        {
+          "file": "tests\\integration\\test_plan_memory_integration.py",
+          "start_line": 152,
+          "end_line": 160,
+          "block": "    agent = Agent(\n        id=uuid4(),\n        name=\"Test Agent\",\n        description=\"Test agent for memory integration\",\n        system_prompt=\"You are a test agent\"\n    )\n    db.add(agent)\n    db.commit()\n    db.refresh(agent)"
+        },
+        {
+          "file": "tests\\integration\\test_plan_memory_integration.py",
+          "start_line": 198,
+          "end_line": 206,
+          "block": "    agent = Agent(\n        id=uuid4(),\n        name=\"Test Agent\",\n        description=\"Test agent for memory integration\",\n        system_prompt=\"You are a test agent\"\n    )\n    db.add(agent)\n    db.commit()\n    db.refresh(agent)"
+        }
+      ],
+      "count": 4
+    },
+    {
+      "block": "except Exception as e:\nprint(f\"\\n❌ TEST FAILED: {e}\")\nimport traceback\ntraceback.print_exc()\nraise\nfinally:\ndb.close()",
+      "occurrences": [
+        {
+          "file": "tests\\scripts\\test_real_integration_chat.py",
+          "start_line": 96,
+          "end_line": 102,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ TEST FAILED: {e}\")\n        import traceback\n        traceback.print_exc()\n        raise\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\scripts\\test_real_integration_planning.py",
+          "start_line": 226,
+          "end_line": 232,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ TEST FAILED: {e}\")\n        import traceback\n        traceback.print_exc()\n        raise\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\scripts\\test_websocket_integration.py",
+          "start_line": 140,
+          "end_line": 146,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ TEST FAILED: {e}\")\n        import traceback\n        traceback.print_exc()\n        raise\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\scripts\\test_workflow_events.py",
+          "start_line": 128,
+          "end_line": 134,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ TEST FAILED: {e}\")\n        import traceback\n        traceback.print_exc()\n        raise\n    finally:\n        db.close()"
+        },
+        {
+          "file": "tests\\scripts\\test_workflow_events_detailed.py",
+          "start_line": 200,
+          "end_line": 206,
+          "block": "    except Exception as e:\n        print(f\"\\n❌ TEST FAILED: {e}\")\n        import traceback\n        traceback.print_exc()\n        raise\n    finally:\n        db.close()"
+        }
+      ],
+      "count": 5
+    },
+    {
+      "block": "from sqlalchemy.orm import Session\nfrom app.core.database import get_db\nfrom app.services.workflow_event_service import WorkflowEventService\nfrom app.models.workflow_event import (\nEventSource, EventT",
+      "occurrences": [
+        {
+          "file": "tests\\scripts\\test_workflow_events.py",
+          "start_line": 11,
+          "end_line": 18,
+          "block": "from sqlalchemy.orm import Session\nfrom app.core.database import get_db\nfrom app.services.workflow_event_service import WorkflowEventService\nfrom app.models.workflow_event import (\n    EventSource, EventType, EventStatus, WorkflowStage\n)\nfrom datetime import datetime\nimport uuid"
+        },
+        {
+          "file": "tests\\scripts\\test_workflow_events_detailed.py",
+          "start_line": 11,
+          "end_line": 18,
+          "block": "from sqlalchemy.orm import Session\nfrom app.core.database import get_db\nfrom app.services.workflow_event_service import WorkflowEventService\nfrom app.models.workflow_event import (\n    EventSource, EventType, EventStatus, WorkflowStage\n)\nfrom datetime import datetime\nimport uuid"
+        }
+      ],
+      "count": 2
+    }
+  ],
+  "unused_imports": [
+    {
+      "file": "init_servers.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "main.py",
+      "imports": [
+        "contextlib",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "run.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "run_migration.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "run_migration_fixed.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "alembic\\env.py",
+      "imports": [
+        "*",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\apply_migration_019.py",
+      "imports": [
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\apply_migration_020.py",
+      "imports": [
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\check_logs_after_test.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\check_plan_details.py",
+      "imports": [
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\clear_and_restore.py",
+      "imports": [
+        "scripts",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\clear_database.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\code_audit.py",
+      "imports": [
+        "collections",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\consolidate_plans.py",
+      "imports": [
+        "collections",
+        "defaultdict",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\init_ollama_servers.py",
+      "imports": [
+        "app",
+        "OllamaModel",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\reorganize_project.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\restore_servers.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\run_planning_tests.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\run_test1.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\run_test2.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\run_test3.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\run_test4.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\run_test5.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\run_test6_complex_decomposition.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\setup_main_models.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "scripts\\switch_model_for_tests.py",
+      "imports": [
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\conftest.py",
+      "imports": [
+        "fastapi",
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\test_agent_selection.py",
+      "imports": [
+        "unittest",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\test_auto_replan_service.py",
+      "imports": [
+        "unittest",
+        "ErrorSeverity",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "imports": [
+        "app"
+      ]
+    },
+    {
+      "file": "tests\\test_ollama_client.py",
+      "imports": [
+        "app"
+      ]
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "imports": [
+        "unittest"
+      ]
+    },
+    {
+      "file": "tests\\test_plan_execution.py",
+      "imports": [
+        "unittest"
+      ]
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "imports": [
+        "fastapi",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "imports": [
+        "app"
+      ]
+    },
+    {
+      "file": "tests\\test_replan_config.py",
+      "imports": [
+        "unittest",
+        "app",
+        "Settings"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\001_initial_tables.py",
+      "imports": [
+        "sqlalchemy",
+        "alembic"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\002_ollama_servers_models.py",
+      "imports": [
+        "sqlalchemy",
+        "alembic"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\003_evolution_system.py",
+      "imports": [
+        "sqlalchemy",
+        "alembic"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\004_add_plan_id_to_approval_requests.py",
+      "imports": [
+        "sqlalchemy",
+        "alembic"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\005_add_execution_traces.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\006_add_request_logs.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\007_add_task_queues.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\008_add_checkpoints.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\009_add_agents.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\010_add_tools.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\011_add_agent_heartbeat.py",
+      "imports": [
+        "alembic",
+        "postgresql",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\012_add_agent_experiments.py",
+      "imports": [
+        "sqlalchemy",
+        "alembic"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\013_add_agent_gym.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\014_add_agent_memory.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\015_add_authentication.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\016_add_learning_patterns.py",
+      "imports": [
+        "alembic",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\017_extend_task_lifecycle.py",
+      "imports": [
+        "Sequence",
+        "sqlalchemy",
+        "postgresql",
+        "alembic"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\018_add_task_digital_twin.py",
+      "imports": [
+        "Sequence",
+        "sqlalchemy",
+        "alembic"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\019_add_chat_sessions.py",
+      "imports": [
+        "Sequence",
+        "sqlalchemy",
+        "alembic"
+      ]
+    },
+    {
+      "file": "alembic\\versions\\020_add_workflow_events.py",
+      "imports": [
+        "Sequence",
+        "sqlalchemy",
+        "alembic"
+      ]
+    },
+    {
+      "file": "app\\agents\\base_agent.py",
+      "imports": [
+        "abc",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\agents\\simple_agent.py",
+      "imports": [
+        "uuid",
+        "app",
+        "OllamaClient",
+        "AgentService",
+        "UUID"
+      ]
+    },
+    {
+      "file": "app\\agents\\__init__.py",
+      "imports": [
+        "app"
+      ]
+    },
+    {
+      "file": "app\\core\\a2a_protocol.py",
+      "imports": [
+        "app",
+        "pydantic"
+      ]
+    },
+    {
+      "file": "app\\core\\auth.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\core\\chat_session.py",
+      "imports": [
+        "and_",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\core\\config.py",
+      "imports": [
+        "functools",
+        "pydantic",
+        "pydantic_settings",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "app\\core\\decision_framework.py",
+      "imports": [
+        "abc"
+      ]
+    },
+    {
+      "file": "app\\core\\execution_error_types.py",
+      "imports": [
+        "enum"
+      ]
+    },
+    {
+      "file": "app\\core\\function_calling.py",
+      "imports": [
+        "pydantic"
+      ]
+    },
+    {
+      "file": "app\\core\\logging_config.py",
+      "imports": [
+        "contextvars",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "app\\core\\metrics.py",
+      "imports": [
+        "prometheus_client"
+      ]
+    },
+    {
+      "file": "app\\core\\middleware.py",
+      "imports": [
+        "app",
+        "fastapi",
+        "starlette"
+      ]
+    },
+    {
+      "file": "app\\core\\middleware_metrics.py",
+      "imports": [
+        "Response",
+        "app",
+        "fastapi",
+        "starlette"
+      ]
+    },
+    {
+      "file": "app\\core\\model_selector.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "imports": [
+        "pydantic",
+        "ABC",
+        "abc"
+      ]
+    },
+    {
+      "file": "app\\core\\ollama_db_client.py",
+      "imports": [
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\core\\ollama_manager.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "OllamaServer",
+        "OllamaModel"
+      ]
+    },
+    {
+      "file": "app\\core\\permissions.py",
+      "imports": [
+        "sqlalchemy",
+        "List",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\core\\templates.py",
+      "imports": [
+        "jinja2",
+        "fastapi",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "app\\core\\trace_exporter.py",
+      "imports": [
+        "Optional",
+        "uuid",
+        "opentelemetry"
+      ]
+    },
+    {
+      "file": "app\\core\\tracing.py",
+      "imports": [
+        "contextlib"
+      ]
+    },
+    {
+      "file": "app\\core\\workflow_tracker.py",
+      "imports": [
+        "collections",
+        "enum"
+      ]
+    },
+    {
+      "file": "app\\models\\agent.py",
+      "imports": [
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\models\\agent_experiment.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\models\\agent_memory.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\agent_test.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\models\\approval.py",
+      "imports": [
+        "Optional",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\artifact.py",
+      "imports": [
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\models\\chat_session.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\checkpoint.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\evolution.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\models\\learning_pattern.py",
+      "imports": [
+        "enum",
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\models\\ollama_model.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\ollama_server.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\plan.py",
+      "imports": [
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\models\\prompt.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\models\\request_log.py",
+      "imports": [
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\task.py",
+      "imports": [
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\task_queue.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\tool.py",
+      "imports": [
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\models\\trace.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\user.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\models\\workflow_event.py",
+      "imports": [
+        "enum",
+        "sqlalchemy",
+        "Optional"
+      ]
+    },
+    {
+      "file": "app\\services\\a2a_router.py",
+      "imports": [
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\adaptive_approval_service.py",
+      "imports": [
+        "sqlalchemy",
+        "func",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\agent_experiment_service.py",
+      "imports": [
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\agent_gym_service.py",
+      "imports": [
+        "and_",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\services\\agent_heartbeat_background.py",
+      "imports": [
+        "app"
+      ]
+    },
+    {
+      "file": "app\\services\\agent_heartbeat_service.py",
+      "imports": [
+        "asyncio",
+        "get_db",
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\agent_registry.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\agent_service.py",
+      "imports": [
+        "and_",
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\approval_service.py",
+      "imports": [
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\artifact_generator.py",
+      "imports": [
+        "sqlalchemy",
+        "UUID"
+      ]
+    },
+    {
+      "file": "app\\services\\auth_service.py",
+      "imports": [
+        "uuid",
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\services\\checkpoint_service.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\code_execution_sandbox.py",
+      "imports": [
+        "Path",
+        "signal",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "app\\services\\critic_service.py",
+      "imports": [
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\services\\decision_pipeline.py",
+      "imports": [
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\decision_router.py",
+      "imports": [
+        "sqlalchemy",
+        "UUID",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\execution_service.py",
+      "imports": [
+        "OllamaService",
+        "sqlalchemy",
+        "MemoryService"
+      ]
+    },
+    {
+      "file": "app\\services\\feedback_learning_service.py",
+      "imports": [
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\interactive_execution_service.py",
+      "imports": [
+        "uuid",
+        "sqlalchemy",
+        "enum"
+      ]
+    },
+    {
+      "file": "app\\services\\memory_service.py",
+      "imports": [
+        "app",
+        "and_",
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\meta_learning_service.py",
+      "imports": [
+        "sqlalchemy",
+        "Agent",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\ollama_service.py",
+      "imports": [
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\services\\planning_metrics_service.py",
+      "imports": [
+        "and_",
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\planning_service.py",
+      "imports": [
+        "OllamaService",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\services\\plan_tree_service.py",
+      "imports": [
+        "uuid",
+        "UUID"
+      ]
+    },
+    {
+      "file": "app\\services\\reflection_service.py",
+      "imports": [
+        "uuid",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\services\\request_logger.py",
+      "imports": [
+        "uuid",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\services\\task_queue_manager.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\tool_service.py",
+      "imports": [
+        "and_",
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\services\\workflow_event_service.py",
+      "imports": [
+        "sqlalchemy",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\tools\\base_tool.py",
+      "imports": [
+        "importlib",
+        "StringIO",
+        "abc",
+        "uuid"
+      ]
+    },
+    {
+      "file": "app\\tools\\python_tool.py",
+      "imports": [
+        "uuid",
+        "app",
+        "ToolService",
+        "UUID"
+      ]
+    },
+    {
+      "file": "app\\tools\\__init__.py",
+      "imports": [
+        "app"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\a2a.py",
+      "imports": [
+        "app",
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\agents.py",
+      "imports": [
+        "app",
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\agents_pages.py",
+      "imports": [
+        "sqlalchemy",
+        "Optional",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\agent_gym.py",
+      "imports": [
+        "app",
+        "and_",
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\agent_gym_pages.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "Jinja2Templates",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\agent_memory.py",
+      "imports": [
+        "app",
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\approvals.py",
+      "imports": [
+        "pydantic",
+        "sqlalchemy",
+        "HTMLResponse",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\approvals_pages.py",
+      "imports": [
+        "sqlalchemy",
+        "uuid",
+        "fastapi",
+        "List"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\artifacts.py",
+      "imports": [
+        "app",
+        "pydantic",
+        "sqlalchemy",
+        "HTTPAuthorizationCredentials",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\artifacts_pages.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\auth.py",
+      "imports": [
+        "app",
+        "pydantic",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\auth_pages.py",
+      "imports": [
+        "app",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\chat.py",
+      "imports": [
+        "traceback",
+        "pydantic",
+        "sqlalchemy",
+        "HTMLResponse",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\checkpoints.py",
+      "imports": [
+        "app",
+        "pydantic",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\current_work.py",
+      "imports": [
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\dashboard.py",
+      "imports": [
+        "pydantic",
+        "sqlalchemy",
+        "InteractiveExecutionService",
+        "uuid",
+        "fastapi",
+        "List"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\dashboard_pages.py",
+      "imports": [
+        "sqlalchemy",
+        "Optional",
+        "UUID",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\experiments.py",
+      "imports": [
+        "app",
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\health.py",
+      "imports": [
+        "asyncio",
+        "Dict",
+        "sqlalchemy",
+        "Checkpoint",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\logging.py",
+      "imports": [
+        "pydantic",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\metrics.py",
+      "imports": [
+        "app",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\models.py",
+      "imports": [
+        "pydantic",
+        "OllamaServer",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\models_management.py",
+      "imports": [
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\model_logs.py",
+      "imports": [
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\pages.py",
+      "imports": [
+        "app",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\plans.py",
+      "imports": [
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "Task",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\plans_pages.py",
+      "imports": [
+        "sqlalchemy",
+        "Optional",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\prompts.py",
+      "imports": [
+        "app",
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\queues.py",
+      "imports": [
+        "app",
+        "pydantic",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\requests.py",
+      "imports": [
+        "and_",
+        "pydantic",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\servers.py",
+      "imports": [
+        "OllamaService",
+        "pydantic",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\settings_pages.py",
+      "imports": [
+        "OllamaServer",
+        "OllamaModel",
+        "fastapi",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\tools.py",
+      "imports": [
+        "pydantic",
+        "sqlalchemy",
+        "uuid",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\tools_pages.py",
+      "imports": [
+        "Optional",
+        "uuid",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\traces.py",
+      "imports": [
+        "app",
+        "and_",
+        "pydantic",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\traces_pages.py",
+      "imports": [
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\websocket_events.py",
+      "imports": [
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "app\\api\\routes\\workflow.py",
+      "imports": [
+        "pydantic",
+        "sqlalchemy",
+        "fastapi"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "imports": [
+        "ExecutionTrace",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_agent_planning.py",
+      "imports": [
+        "uuid",
+        "app",
+        "AgentService",
+        "sqlalchemy",
+        "uuid4"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_api.py",
+      "imports": [
+        "Dict"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_app.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_auto_approval_transition.py",
+      "imports": [
+        "pytest",
+        "PlanningService",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_auto_replanning.py",
+      "imports": [
+        "AsyncMock",
+        "unittest",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_auto_replan_trigger.py",
+      "imports": [
+        "unittest",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_chat_api.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_chat_with_model.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_checkpoint_api_integration.py",
+      "imports": [
+        "fastapi",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "imports": [
+        "pytest"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_config.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "imports": [
+        "pytest",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_db_connection.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_env_loading.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_execution_engine.py",
+      "imports": [
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "imports": [
+        "LearningPattern",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_full_plan_execution.py",
+      "imports": [
+        "sqlalchemy",
+        "ApprovalService",
+        "ApprovalRequest",
+        "uuid4",
+        "uuid",
+        "PlanningService"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "imports": [
+        "app"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_instance_selection.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_interactive_execution.py",
+      "imports": [
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_logging_system.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_migration.py",
+      "imports": [
+        "sqlalchemy",
+        "pathlib",
+        "EvolutionHistory"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_model_generation.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "imports": [
+        "OllamaService",
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_new_features.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_ollama_connection.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_ollama_integration.py",
+      "imports": [
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_planning_api.py",
+      "imports": [
+        "Optional"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_planning_api_simple.py",
+      "imports": [
+        "Optional"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_planning_digital_twin.py",
+      "imports": [
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "imports": [
+        "app",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_planning_system_complete.py",
+      "imports": [
+        "fastapi",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_plan_approval_integration.py",
+      "imports": [
+        "ApprovalRequestType",
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_plan_memory_integration.py",
+      "imports": [
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_plan_visualization.py",
+      "imports": [
+        "fastapi",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_startup.py",
+      "imports": [
+        "approvals",
+        "Base",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_task_lifecycle.py",
+      "imports": [
+        "pytest",
+        "sqlalchemy"
+      ]
+    },
+    {
+      "file": "tests\\integration\\test_web_interface.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\scripts\\test_branching.py",
+      "imports": [
+        "uuid4",
+        "uuid",
+        "app",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\scripts\\test_branching_endpoints.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\scripts\\test_planning_step_by_step.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\scripts\\test_real_integration_chat.py",
+      "imports": [
+        "EventType",
+        "app",
+        "OllamaClient",
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\scripts\\test_real_integration_planning.py",
+      "imports": [
+        "uuid",
+        "UUID",
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\scripts\\test_websocket_integration.py",
+      "imports": [
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\scripts\\test_websocket_simple.py",
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\scripts\\test_workflow_events.py",
+      "imports": [
+        "app",
+        "sqlalchemy",
+        "pathlib"
+      ]
+    },
+    {
+      "file": "tests\\scripts\\test_workflow_events_detailed.py",
+      "imports": [
+        "sqlalchemy",
+        "pathlib"
+      ]
+    }
+  ],
+  "unused_functions": [
+    {
+      "file": "tests\\conftest.py",
+      "function": "db",
+      "line": 18
+    },
+    {
+      "file": "tests\\conftest.py",
+      "function": "client",
+      "line": 34
+    },
+    {
+      "file": "tests\\conftest.py",
+      "function": "override_get_db",
+      "line": 55
+    },
+    {
+      "file": "tests\\test_agent_selection.py",
+      "function": "mock_db",
+      "line": 17
+    },
+    {
+      "file": "tests\\test_agent_selection.py",
+      "function": "agent_service",
+      "line": 22
+    },
+    {
+      "file": "tests\\test_agent_selection.py",
+      "function": "sample_agents",
+      "line": 27
+    },
+    {
+      "file": "tests\\test_agent_selection.py",
+      "function": "test_select_agent_for_task_no_capabilities",
+      "line": 54
+    },
+    {
+      "file": "tests\\test_agent_selection.py",
+      "function": "test_select_agent_for_task_with_capabilities",
+      "line": 67
+    },
+    {
+      "file": "tests\\test_agent_selection.py",
+      "function": "test_select_agent_preferred_agent",
+      "line": 91
+    },
+    {
+      "file": "tests\\test_agent_selection.py",
+      "function": "test_select_agent_no_matching_agents",
+      "line": 107
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_critical_plan_structure_error",
+      "line": 18
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_critical_dependency_error",
+      "line": 26
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_critical_environment_error",
+      "line": 34
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_high_severity_agent_error",
+      "line": 42
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_high_severity_validation_error",
+      "line": 50
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_timeout_error",
+      "line": 58
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_timeout_after_retries",
+      "line": 66
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_medium_severity_unknown_error",
+      "line": 77
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_requires_replanning_function",
+      "line": 85
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_error_with_context",
+      "line": 91
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_error_with_type",
+      "line": 109
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_error_to_dict",
+      "line": 120
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_case_insensitive_patterns",
+      "line": 133
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_multiple_pattern_matching",
+      "line": 143
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_resource_error_detection",
+      "line": 151
+    },
+    {
+      "file": "tests\\test_execution_error_detection.py",
+      "function": "test_circular_dependency_error",
+      "line": 159
+    },
+    {
+      "file": "tests\\test_ollama_client.py",
+      "function": "ollama_client",
+      "line": 9
+    },
+    {
+      "file": "tests\\test_ollama_client.py",
+      "function": "test_model_selection",
+      "line": 14
+    },
+    {
+      "file": "tests\\test_ollama_client.py",
+      "function": "test_cache_key_generation",
+      "line": 26
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "mock_db",
+      "line": 18
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "planning_service",
+      "line": 23
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "test_estimate_duration_empty_steps",
+      "line": 27
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "test_estimate_duration_with_default_timeout",
+      "line": 32
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "test_estimate_duration_with_custom_timeout",
+      "line": 42
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "test_parse_and_validate_json_valid",
+      "line": 52
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "test_parse_and_validate_json_with_code_block",
+      "line": 58
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "test_parse_and_validate_json_with_markdown",
+      "line": 66
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "test_parse_and_validate_json_array",
+      "line": 75
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "test_parse_and_validate_json_invalid",
+      "line": 83
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "function": "test_parse_json_from_response",
+      "line": 91
+    },
+    {
+      "file": "tests\\test_plan_execution.py",
+      "function": "mock_db",
+      "line": 19
+    },
+    {
+      "file": "tests\\test_plan_execution.py",
+      "function": "step_executor",
+      "line": 24
+    },
+    {
+      "file": "tests\\test_plan_execution.py",
+      "function": "sample_step",
+      "line": 29
+    },
+    {
+      "file": "tests\\test_plan_execution.py",
+      "function": "sample_plan",
+      "line": 39
+    },
+    {
+      "file": "tests\\test_plan_execution.py",
+      "function": "mock_db",
+      "line": 132
+    },
+    {
+      "file": "tests\\test_plan_execution.py",
+      "function": "execution_service",
+      "line": 141
+    },
+    {
+      "file": "tests\\test_plan_execution.py",
+      "function": "sample_plan",
+      "line": 146
+    },
+    {
+      "file": "tests\\test_plan_execution.py",
+      "function": "test_get_execution_status",
+      "line": 287
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "function": "db",
+      "line": 18
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "function": "sample_plan",
+      "line": 28
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "function": "test_get_plan_tree_success",
+      "line": 85
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "function": "test_get_plan_tree_not_found",
+      "line": 105
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "function": "test_get_plan_tree_with_metadata",
+      "line": 113
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "function": "test_get_plan_tree_without_metadata",
+      "line": 129
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "function": "test_get_plan_tree_empty_steps",
+      "line": 143
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "function": "test_get_plan_tree_hierarchy_structure",
+      "line": 179
+    },
+    {
+      "file": "tests\\test_plan_tree_api.py",
+      "function": "test_get_plan_tree_includes_plan_info",
+      "line": 209
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_empty_steps",
+      "line": 11
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_single_step",
+      "line": 21
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_linear_steps",
+      "line": 40
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_branched_steps",
+      "line": 77
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_multiple_roots",
+      "line": 114
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_complex_hierarchy",
+      "line": 145
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_include_metadata",
+      "line": 194
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_exclude_metadata",
+      "line": 215
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_build_flat_tree",
+      "line": 234
+    },
+    {
+      "file": "tests\\test_plan_tree_service.py",
+      "function": "test_level_calculation",
+      "line": 259
+    },
+    {
+      "file": "tests\\test_replan_config.py",
+      "function": "test_replanning_config_defaults",
+      "line": 10
+    },
+    {
+      "file": "tests\\test_replan_config.py",
+      "function": "test_replanning_config_custom_values",
+      "line": 38
+    },
+    {
+      "file": "tests\\test_replan_config.py",
+      "function": "test_replanning_config_validation",
+      "line": 74
+    },
+    {
+      "file": "tests\\test_replan_config.py",
+      "function": "test_replanning_config_bounds",
+      "line": 96
+    },
+    {
+      "file": "alembic\\versions\\001_initial_tables.py",
+      "function": "downgrade",
+      "line": 79
+    },
+    {
+      "file": "alembic\\versions\\002_ollama_servers_models.py",
+      "function": "downgrade",
+      "line": 80
+    },
+    {
+      "file": "alembic\\versions\\003_evolution_system.py",
+      "function": "downgrade",
+      "line": 169
+    },
+    {
+      "file": "alembic\\versions\\004_add_plan_id_to_approval_requests.py",
+      "function": "downgrade",
+      "line": 46
+    },
+    {
+      "file": "alembic\\versions\\005_add_execution_traces.py",
+      "function": "downgrade",
+      "line": 57
+    },
+    {
+      "file": "alembic\\versions\\006_add_request_logs.py",
+      "function": "downgrade",
+      "line": 77
+    },
+    {
+      "file": "alembic\\versions\\007_add_task_queues.py",
+      "function": "downgrade",
+      "line": 71
+    },
+    {
+      "file": "alembic\\versions\\008_add_checkpoints.py",
+      "function": "downgrade",
+      "line": 43
+    },
+    {
+      "file": "alembic\\versions\\009_add_agents.py",
+      "function": "downgrade",
+      "line": 84
+    },
+    {
+      "file": "alembic\\versions\\010_add_tools.py",
+      "function": "downgrade",
+      "line": 94
+    },
+    {
+      "file": "alembic\\versions\\011_add_agent_heartbeat.py",
+      "function": "downgrade",
+      "line": 32
+    },
+    {
+      "file": "alembic\\versions\\012_add_agent_experiments.py",
+      "function": "downgrade",
+      "line": 95
+    },
+    {
+      "file": "alembic\\versions\\013_add_agent_gym.py",
+      "function": "downgrade",
+      "line": 118
+    },
+    {
+      "file": "alembic\\versions\\014_add_agent_memory.py",
+      "function": "downgrade",
+      "line": 87
+    },
+    {
+      "file": "alembic\\versions\\015_add_authentication.py",
+      "function": "downgrade",
+      "line": 51
+    },
+    {
+      "file": "alembic\\versions\\016_add_learning_patterns.py",
+      "function": "downgrade",
+      "line": 47
+    },
+    {
+      "file": "alembic\\versions\\017_extend_task_lifecycle.py",
+      "function": "downgrade",
+      "line": 33
+    },
+    {
+      "file": "alembic\\versions\\018_add_task_digital_twin.py",
+      "function": "downgrade",
+      "line": 49
+    },
+    {
+      "file": "alembic\\versions\\019_add_chat_sessions.py",
+      "function": "downgrade",
+      "line": 53
+    },
+    {
+      "file": "alembic\\versions\\020_add_workflow_events.py",
+      "function": "downgrade",
+      "line": 68
+    },
+    {
+      "file": "app\\agents\\base_agent.py",
+      "function": "name",
+      "line": 74
+    },
+    {
+      "file": "app\\agents\\base_agent.py",
+      "function": "capabilities",
+      "line": 79
+    },
+    {
+      "file": "app\\agents\\base_agent.py",
+      "function": "system_prompt",
+      "line": 84
+    },
+    {
+      "file": "app\\agents\\base_agent.py",
+      "function": "model_preference",
+      "line": 89
+    },
+    {
+      "file": "app\\agents\\base_agent.py",
+      "function": "list_tools_by_category",
+      "line": 427
+    },
+    {
+      "file": "app\\agents\\base_agent.py",
+      "function": "forget",
+      "line": 633
+    },
+    {
+      "file": "app\\core\\a2a_protocol.py",
+      "function": "validate_recipient",
+      "line": 78
+    },
+    {
+      "file": "app\\core\\a2a_protocol.py",
+      "function": "validate_type",
+      "line": 85
+    },
+    {
+      "file": "app\\core\\auth.py",
+      "function": "require_auth",
+      "line": 67
+    },
+    {
+      "file": "app\\core\\auth.py",
+      "function": "require_role",
+      "line": 81
+    },
+    {
+      "file": "app\\core\\auth.py",
+      "function": "decorator",
+      "line": 91
+    },
+    {
+      "file": "app\\core\\chat_session.py",
+      "function": "get_session_manager",
+      "line": 193
+    },
+    {
+      "file": "app\\core\\chat_session.py",
+      "function": "get_messages",
+      "line": 150
+    },
+    {
+      "file": "app\\core\\chat_session.py",
+      "function": "delete_session",
+      "line": 157
+    },
+    {
+      "file": "app\\core\\config.py",
+      "function": "parse_capabilities",
+      "line": 38
+    },
+    {
+      "file": "app\\core\\config.py",
+      "function": "database_url",
+      "line": 167
+    },
+    {
+      "file": "app\\core\\config.py",
+      "function": "ollama_instance_1",
+      "line": 175
+    },
+    {
+      "file": "app\\core\\config.py",
+      "function": "ollama_instance_2",
+      "line": 190
+    },
+    {
+      "file": "app\\core\\config.py",
+      "function": "ollama_instances",
+      "line": 205
+    },
+    {
+      "file": "app\\core\\config.py",
+      "function": "allowed_origins_list",
+      "line": 210
+    },
+    {
+      "file": "app\\core\\database.py",
+      "function": "__getattr__",
+      "line": 167
+    },
+    {
+      "file": "app\\core\\database.py",
+      "function": "receive_before_cursor_execute",
+      "line": 33
+    },
+    {
+      "file": "app\\core\\database.py",
+      "function": "receive_after_cursor_execute",
+      "line": 38
+    },
+    {
+      "file": "app\\core\\database.py",
+      "function": "receive_connect",
+      "line": 92
+    },
+    {
+      "file": "app\\core\\database.py",
+      "function": "receive_checkout",
+      "line": 101
+    },
+    {
+      "file": "app\\core\\database.py",
+      "function": "receive_checkin",
+      "line": 110
+    },
+    {
+      "file": "app\\core\\decision_framework.py",
+      "function": "create_hybrid_decision_maker",
+      "line": 386
+    },
+    {
+      "file": "app\\core\\execution_error_types.py",
+      "function": "is_critical_error",
+      "line": 211
+    },
+    {
+      "file": "app\\core\\function_calling.py",
+      "function": "validate_function_name",
+      "line": 24
+    },
+    {
+      "file": "app\\core\\logging_config.py",
+      "function": "emit",
+      "line": 302
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "function": "settings",
+      "line": 80
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "function": "instances",
+      "line": 87
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "function": "task_type_mapping",
+      "line": 97
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "function": "get_instance_by_model_name",
+      "line": 795
+    },
+    {
+      "file": "app\\core\\ollama_db_client.py",
+      "function": "get_ollama_db_client",
+      "line": 69
+    },
+    {
+      "file": "app\\core\\ollama_db_client.py",
+      "function": "client",
+      "line": 21
+    },
+    {
+      "file": "app\\core\\ollama_db_client.py",
+      "function": "get_instances",
+      "line": 27
+    },
+    {
+      "file": "app\\core\\ollama_db_client.py",
+      "function": "get_instance_by_url",
+      "line": 31
+    },
+    {
+      "file": "app\\core\\ollama_db_client.py",
+      "function": "get_instance_by_model_name",
+      "line": 38
+    },
+    {
+      "file": "app\\core\\ollama_manager.py",
+      "function": "get_instances",
+      "line": 20
+    },
+    {
+      "file": "app\\core\\ollama_manager.py",
+      "function": "get_instance_by_url",
+      "line": 26
+    },
+    {
+      "file": "app\\core\\ollama_manager.py",
+      "function": "get_instance_by_model_name",
+      "line": 37
+    },
+    {
+      "file": "app\\core\\ollama_manager.py",
+      "function": "create_dynamic_instance",
+      "line": 58
+    },
+    {
+      "file": "app\\core\\ollama_manager.py",
+      "function": "reload",
+      "line": 84
+    },
+    {
+      "file": "app\\core\\permissions.py",
+      "function": "require_permission",
+      "line": 101
+    },
+    {
+      "file": "app\\core\\permissions.py",
+      "function": "decorator",
+      "line": 111
+    },
+    {
+      "file": "app\\core\\templates.py",
+      "function": "render_template",
+      "line": 24
+    },
+    {
+      "file": "app\\core\\trace_exporter.py",
+      "function": "export",
+      "line": 33
+    },
+    {
+      "file": "app\\core\\trace_exporter.py",
+      "function": "export_async",
+      "line": 55
+    },
+    {
+      "file": "app\\core\\tracing.py",
+      "function": "get_current_span_id",
+      "line": 188
+    },
+    {
+      "file": "app\\core\\workflow_tracker.py",
+      "function": "clear_current",
+      "line": 176
+    },
+    {
+      "file": "app\\models\\agent.py",
+      "function": "__repr__",
+      "line": 107
+    },
+    {
+      "file": "app\\models\\agent_experiment.py",
+      "function": "__repr__",
+      "line": 79
+    },
+    {
+      "file": "app\\models\\agent_experiment.py",
+      "function": "__repr__",
+      "line": 117
+    },
+    {
+      "file": "app\\models\\agent_memory.py",
+      "function": "__repr__",
+      "line": 73
+    },
+    {
+      "file": "app\\models\\agent_memory.py",
+      "function": "__repr__",
+      "line": 116
+    },
+    {
+      "file": "app\\models\\agent_memory.py",
+      "function": "__repr__",
+      "line": 159
+    },
+    {
+      "file": "app\\models\\agent_test.py",
+      "function": "__repr__",
+      "line": 69
+    },
+    {
+      "file": "app\\models\\agent_test.py",
+      "function": "__repr__",
+      "line": 116
+    },
+    {
+      "file": "app\\models\\agent_test.py",
+      "function": "__repr__",
+      "line": 152
+    },
+    {
+      "file": "app\\models\\agent_test.py",
+      "function": "__repr__",
+      "line": 186
+    },
+    {
+      "file": "app\\models\\approval.py",
+      "function": "__repr__",
+      "line": 67
+    },
+    {
+      "file": "app\\models\\artifact.py",
+      "function": "__repr__",
+      "line": 47
+    },
+    {
+      "file": "app\\models\\chat_session.py",
+      "function": "__repr__",
+      "line": 33
+    },
+    {
+      "file": "app\\models\\chat_session.py",
+      "function": "__repr__",
+      "line": 60
+    },
+    {
+      "file": "app\\models\\checkpoint.py",
+      "function": "__repr__",
+      "line": 47
+    },
+    {
+      "file": "app\\models\\evolution.py",
+      "function": "__repr__",
+      "line": 70
+    },
+    {
+      "file": "app\\models\\evolution.py",
+      "function": "__repr__",
+      "line": 106
+    },
+    {
+      "file": "app\\models\\learning_pattern.py",
+      "function": "__repr__",
+      "line": 59
+    },
+    {
+      "file": "app\\models\\ollama_model.py",
+      "function": "__repr__",
+      "line": 45
+    },
+    {
+      "file": "app\\models\\ollama_server.py",
+      "function": "__repr__",
+      "line": 43
+    },
+    {
+      "file": "app\\models\\plan.py",
+      "function": "__repr__",
+      "line": 56
+    },
+    {
+      "file": "app\\models\\prompt.py",
+      "function": "__repr__",
+      "line": 60
+    },
+    {
+      "file": "app\\models\\request_log.py",
+      "function": "__repr__",
+      "line": 70
+    },
+    {
+      "file": "app\\models\\request_log.py",
+      "function": "__repr__",
+      "line": 104
+    },
+    {
+      "file": "app\\models\\task.py",
+      "function": "__repr__",
+      "line": 109
+    },
+    {
+      "file": "app\\models\\task_queue.py",
+      "function": "__repr__",
+      "line": 38
+    },
+    {
+      "file": "app\\models\\task_queue.py",
+      "function": "__repr__",
+      "line": 95
+    },
+    {
+      "file": "app\\models\\tool.py",
+      "function": "__repr__",
+      "line": 103
+    },
+    {
+      "file": "app\\models\\trace.py",
+      "function": "__repr__",
+      "line": 57
+    },
+    {
+      "file": "app\\models\\user.py",
+      "function": "__repr__",
+      "line": 38
+    },
+    {
+      "file": "app\\models\\user.py",
+      "function": "__repr__",
+      "line": 56
+    },
+    {
+      "file": "app\\models\\workflow_event.py",
+      "function": "__repr__",
+      "line": 121
+    },
+    {
+      "file": "app\\services\\agent_heartbeat_service.py",
+      "function": "get_unhealthy_agents",
+      "line": 232
+    },
+    {
+      "file": "app\\services\\agent_heartbeat_service.py",
+      "function": "get_agents_without_heartbeat",
+      "line": 246
+    },
+    {
+      "file": "app\\services\\agent_registry.py",
+      "function": "get_agent_identity",
+      "line": 192
+    },
+    {
+      "file": "app\\services\\agent_registry.py",
+      "function": "cleanup_unhealthy_agents",
+      "line": 229
+    },
+    {
+      "file": "app\\services\\agent_service.py",
+      "function": "get_agent_by_name",
+      "line": 84
+    },
+    {
+      "file": "app\\services\\agent_service.py",
+      "function": "find_agent_for_task",
+      "line": 558
+    },
+    {
+      "file": "app\\services\\auth_service.py",
+      "function": "logout_all_user_sessions",
+      "line": 198
+    },
+    {
+      "file": "app\\services\\auth_service.py",
+      "function": "cleanup_expired_sessions",
+      "line": 220
+    },
+    {
+      "file": "app\\services\\checkpoint_service.py",
+      "function": "create_task_checkpoint",
+      "line": 311
+    },
+    {
+      "file": "app\\services\\code_execution_sandbox.py",
+      "function": "set_limits",
+      "line": 180
+    },
+    {
+      "file": "app\\services\\critic_service.py",
+      "function": "check_requirements",
+      "line": 453
+    },
+    {
+      "file": "app\\services\\critic_service.py",
+      "function": "identify_issues",
+      "line": 470
+    },
+    {
+      "file": "app\\services\\execution_service.py",
+      "function": "json_serial",
+      "line": 242
+    },
+    {
+      "file": "app\\services\\memory_service.py",
+      "function": "forget_expired_memories",
+      "line": 269
+    },
+    {
+      "file": "app\\services\\memory_service.py",
+      "function": "clear_expired_context",
+      "line": 480
+    },
+    {
+      "file": "app\\services\\memory_service.py",
+      "function": "delete_association",
+      "line": 613
+    },
+    {
+      "file": "app\\services\\meta_learning_service.py",
+      "function": "analyze_execution_patterns",
+      "line": 40
+    },
+    {
+      "file": "app\\services\\meta_learning_service.py",
+      "function": "extract_successful_patterns",
+      "line": 109
+    },
+    {
+      "file": "app\\services\\meta_learning_service.py",
+      "function": "improve_planning_strategy",
+      "line": 291
+    },
+    {
+      "file": "app\\services\\meta_learning_service.py",
+      "function": "evolve_prompts",
+      "line": 357
+    },
+    {
+      "file": "app\\services\\task_queue_manager.py",
+      "function": "cancel_task",
+      "line": 338
+    },
+    {
+      "file": "app\\services\\workflow_event_service.py",
+      "function": "update_event_status",
+      "line": 131
+    },
+    {
+      "file": "app\\services\\workflow_event_service.py",
+      "function": "run_broadcast",
+      "line": 191
+    },
+    {
+      "file": "app\\tools\\base_tool.py",
+      "function": "name",
+      "line": 67
+    },
+    {
+      "file": "app\\tools\\base_tool.py",
+      "function": "category",
+      "line": 72
+    },
+    {
+      "file": "app\\tools\\base_tool.py",
+      "function": "entry_point",
+      "line": 77
+    },
+    {
+      "file": "app\\tools\\base_tool.py",
+      "function": "timeout_seconds",
+      "line": 82
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_task",
+      "line": 17
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_plan",
+      "line": 34
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "high_trust_agent",
+      "line": 59
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "low_trust_agent",
+      "line": 78
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_calculate_agent_trust_score_high",
+      "line": 96
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_calculate_agent_trust_score_low",
+      "line": 105
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_calculate_agent_trust_score_new_agent",
+      "line": 114
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_calculate_task_risk_level_simple",
+      "line": 139
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_calculate_task_risk_level_complex",
+      "line": 151
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_should_require_approval_high_risk",
+      "line": 168
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_should_require_approval_low_risk_high_trust",
+      "line": 188
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_should_require_approval_medium_risk_low_trust",
+      "line": 206
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_should_require_approval_override",
+      "line": 224
+    },
+    {
+      "file": "tests\\integration\\test_adaptive_approval.py",
+      "function": "test_get_approval_statistics",
+      "line": 239
+    },
+    {
+      "file": "tests\\integration\\test_agent_planning.py",
+      "function": "db_session",
+      "line": 18
+    },
+    {
+      "file": "tests\\integration\\test_agent_planning.py",
+      "function": "test_agent",
+      "line": 30
+    },
+    {
+      "file": "tests\\integration\\test_auto_approval_transition.py",
+      "function": "test_detect_critical_steps_create_agent",
+      "line": 14
+    },
+    {
+      "file": "tests\\integration\\test_auto_approval_transition.py",
+      "function": "test_detect_critical_steps_modify_tool",
+      "line": 39
+    },
+    {
+      "file": "tests\\integration\\test_auto_approval_transition.py",
+      "function": "test_detect_critical_steps_system_operation",
+      "line": 58
+    },
+    {
+      "file": "tests\\integration\\test_auto_approval_transition.py",
+      "function": "test_detect_critical_steps_protected_data",
+      "line": 77
+    },
+    {
+      "file": "tests\\integration\\test_auto_approval_transition.py",
+      "function": "test_detect_critical_steps_no_critical",
+      "line": 96
+    },
+    {
+      "file": "tests\\integration\\test_auto_approval_transition.py",
+      "function": "test_task_transition_draft_to_pending_approval",
+      "line": 120
+    },
+    {
+      "file": "tests\\integration\\test_auto_approval_transition.py",
+      "function": "test_task_no_transition_when_no_critical_steps",
+      "line": 169
+    },
+    {
+      "file": "tests\\integration\\test_checkpoint_api_integration.py",
+      "function": "db",
+      "line": 18
+    },
+    {
+      "file": "tests\\integration\\test_checkpoint_api_integration.py",
+      "function": "sample_plan",
+      "line": 28
+    },
+    {
+      "file": "tests\\integration\\test_checkpoint_api_integration.py",
+      "function": "test_create_checkpoint_via_api",
+      "line": 65
+    },
+    {
+      "file": "tests\\integration\\test_checkpoint_api_integration.py",
+      "function": "test_list_checkpoints_for_plan",
+      "line": 88
+    },
+    {
+      "file": "tests\\integration\\test_checkpoint_api_integration.py",
+      "function": "test_get_checkpoint_by_id",
+      "line": 116
+    },
+    {
+      "file": "tests\\integration\\test_checkpoint_api_integration.py",
+      "function": "test_restore_checkpoint_via_api",
+      "line": 137
+    },
+    {
+      "file": "tests\\integration\\test_checkpoint_api_integration.py",
+      "function": "test_get_latest_checkpoint",
+      "line": 158
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "function": "test_validate_code_safety_safe",
+      "line": 8
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "function": "test_validate_code_safety_dangerous",
+      "line": 26
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "function": "test_validate_code_safety_empty",
+      "line": 42
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "function": "test_execute_code_safely_simple",
+      "line": 52
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "function": "test_execute_code_safely_with_error",
+      "line": 67
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "function": "test_execute_code_safely_dangerous_blocked",
+      "line": 82
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "function": "test_execute_code_safely_with_timeout",
+      "line": 97
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "function": "test_apply_resource_limits",
+      "line": 117
+    },
+    {
+      "file": "tests\\integration\\test_code_sandbox.py",
+      "function": "test_execute_code_safely_unsupported_language",
+      "line": 128
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "function": "test_get_dashboard_tasks",
+      "line": 12
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "function": "test_get_dashboard_tasks_with_status_filter",
+      "line": 70
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "function": "test_get_plan_history",
+      "line": 94
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "function": "test_cancel_task",
+      "line": 129
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "function": "test_cancel_task_invalid_status",
+      "line": 171
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "function": "test_create_task_manual",
+      "line": 189
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "function": "test_create_task_manual_invalid_priority",
+      "line": 218
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "function": "test_create_task_manual_invalid_autonomy",
+      "line": 231
+    },
+    {
+      "file": "tests\\integration\\test_dashboard_api.py",
+      "function": "test_dashboard_statistics",
+      "line": 244
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "function": "test_task",
+      "line": 17
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "function": "test_plan",
+      "line": 34
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "function": "test_approval",
+      "line": 53
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "function": "test_learn_from_approval_feedback_approved",
+      "line": 75
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "function": "test_learn_from_approval_feedback_rejected",
+      "line": 93
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "function": "test_extract_improvements_from_feedback",
+      "line": 112
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "function": "test_apply_learned_patterns",
+      "line": 124
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "function": "test_categorize_task",
+      "line": 139
+    },
+    {
+      "file": "tests\\integration\\test_feedback_learning.py",
+      "function": "test_get_feedback_statistics",
+      "line": 153
+    },
+    {
+      "file": "tests\\integration\\test_full_plan_execution.py",
+      "function": "db_session",
+      "line": 22
+    },
+    {
+      "file": "tests\\integration\\test_full_plan_execution.py",
+      "function": "sample_task",
+      "line": 34
+    },
+    {
+      "file": "tests\\integration\\test_full_plan_execution.py",
+      "function": "approved_plan",
+      "line": 48
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_create_function_call",
+      "line": 8
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_create_function_call_invalid_name",
+      "line": 25
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_validate_function_call_valid",
+      "line": 40
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_validate_function_call_missing_required",
+      "line": 56
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_validate_function_call_safety_checks",
+      "line": 72
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_parse_function_call_from_llm_json",
+      "line": 90
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_parse_function_call_from_llm_with_text",
+      "line": 108
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_parse_function_call_from_llm_invalid",
+      "line": 126
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_validate_against_schema",
+      "line": 135
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_validate_against_schema_type_mismatch",
+      "line": 158
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_format_function_call_for_llm",
+      "line": 181
+    },
+    {
+      "file": "tests\\integration\\test_function_calling.py",
+      "function": "test_function_call_to_dict",
+      "line": 198
+    },
+    {
+      "file": "tests\\integration\\test_interactive_execution.py",
+      "function": "test_plan_id",
+      "line": 13
+    },
+    {
+      "file": "tests\\integration\\test_interactive_execution.py",
+      "function": "test_pause_for_clarification",
+      "line": 18
+    },
+    {
+      "file": "tests\\integration\\test_interactive_execution.py",
+      "function": "test_apply_human_correction",
+      "line": 33
+    },
+    {
+      "file": "tests\\integration\\test_interactive_execution.py",
+      "function": "test_resume_execution",
+      "line": 48
+    },
+    {
+      "file": "tests\\integration\\test_interactive_execution.py",
+      "function": "test_get_execution_state",
+      "line": 62
+    },
+    {
+      "file": "tests\\integration\\test_interactive_execution.py",
+      "function": "test_clear_execution_state",
+      "line": 77
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_server",
+      "line": 15
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "planning_model",
+      "line": 39
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "code_model",
+      "line": 60
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "general_model",
+      "line": 81
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_get_planning_model",
+      "line": 101
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_get_planning_model_fallback_to_reasoning",
+      "line": 111
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_get_code_model",
+      "line": 128
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_get_code_model_fallback",
+      "line": 140
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_get_model_by_capability",
+      "line": 153
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_get_model_by_capability_not_found",
+      "line": 163
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_get_server_for_model",
+      "line": 172
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_get_planning_model_with_specific_server",
+      "line": 181
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_get_code_model_with_specific_server",
+      "line": 196
+    },
+    {
+      "file": "tests\\integration\\test_model_selector.py",
+      "function": "test_model_selector_prioritizes_planning_over_reasoning",
+      "line": 211
+    },
+    {
+      "file": "tests\\integration\\test_planning_api.py",
+      "function": "test_create_plan",
+      "line": 31
+    },
+    {
+      "file": "tests\\integration\\test_planning_digital_twin.py",
+      "function": "db",
+      "line": 17
+    },
+    {
+      "file": "tests\\integration\\test_planning_digital_twin.py",
+      "function": "planning_service",
+      "line": 27
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "function": "test_task",
+      "line": 16
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "function": "test_plan",
+      "line": 33
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "function": "test_calculate_plan_quality_score",
+      "line": 63
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "function": "test_calculate_plan_quality_score_optimal_steps",
+      "line": 73
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "function": "test_track_plan_execution_success",
+      "line": 100
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "function": "test_track_plan_execution_failure",
+      "line": 115
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "function": "test_get_planning_statistics",
+      "line": 128
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "function": "test_get_plan_quality_breakdown",
+      "line": 142
+    },
+    {
+      "file": "tests\\integration\\test_planning_metrics.py",
+      "function": "test_get_plan_quality_breakdown_with_execution",
+      "line": 155
+    },
+    {
+      "file": "tests\\integration\\test_planning_system_complete.py",
+      "function": "db",
+      "line": 19
+    },
+    {
+      "file": "tests\\integration\\test_planning_system_complete.py",
+      "function": "sample_plan_with_steps",
+      "line": 29
+    },
+    {
+      "file": "tests\\integration\\test_planning_system_complete.py",
+      "function": "test_error_detection_and_auto_replan",
+      "line": 72
+    },
+    {
+      "file": "tests\\integration\\test_planning_system_complete.py",
+      "function": "test_plan_visualization_with_tree",
+      "line": 107
+    },
+    {
+      "file": "tests\\integration\\test_planning_system_complete.py",
+      "function": "test_complete_workflow",
+      "line": 119
+    },
+    {
+      "file": "tests\\integration\\test_plan_visualization.py",
+      "function": "db",
+      "line": 18
+    },
+    {
+      "file": "tests\\integration\\test_plan_visualization.py",
+      "function": "hierarchical_plan",
+      "line": 28
+    },
+    {
+      "file": "tests\\integration\\test_plan_visualization.py",
+      "function": "test_tree_api_with_hierarchical_plan",
+      "line": 83
+    },
+    {
+      "file": "tests\\integration\\test_plan_visualization.py",
+      "function": "test_tree_service_with_plan_steps",
+      "line": 99
+    },
+    {
+      "file": "tests\\integration\\test_plan_visualization.py",
+      "function": "test_tree_api_includes_plan_metadata",
+      "line": 115
+    },
+    {
+      "file": "tests\\integration\\test_plan_visualization.py",
+      "function": "test_tree_api_metadata_parameter",
+      "line": 127
+    },
+    {
+      "file": "tests\\integration\\test_task_lifecycle.py",
+      "function": "test_task_status_enum",
+      "line": 11
+    },
+    {
+      "file": "tests\\integration\\test_task_lifecycle.py",
+      "function": "test_task_with_new_fields",
+      "line": 24
+    },
+    {
+      "file": "tests\\integration\\test_task_lifecycle.py",
+      "function": "test_task_approval_workflow",
+      "line": 43
+    },
+    {
+      "file": "tests\\integration\\test_task_lifecycle.py",
+      "function": "test_task_autonomy_levels",
+      "line": 70
+    },
+    {
+      "file": "tests\\integration\\test_task_lifecycle.py",
+      "function": "test_task_on_hold_status",
+      "line": 85
+    },
+    {
+      "file": "tests\\integration\\test_task_lifecycle.py",
+      "function": "test_task_cancelled_status",
+      "line": 103
+    }
+  ],
+  "deprecated_components": [
+    {
+      "file": "init_servers.py",
+      "line": 39,
+      "content": "# Remove /v1 if present to get base URL",
+      "keyword": "remove"
+    },
+    {
+      "file": "init_servers.py",
+      "line": 62,
+      "content": "# Remove /v1 if present to get base URL",
+      "keyword": "remove"
+    },
+    {
+      "file": "scripts\\clear_database.py",
+      "line": 41,
+      "content": "# Disable foreign key checks temporarily",
+      "keyword": "temp"
+    },
+    {
+      "file": "scripts\\consolidate_plans.py",
+      "line": 1142,
+      "content": "output.append(f\"#### Не начато ({len(area_todo)})\\n\\n\")",
+      "keyword": "todo"
+    },
+    {
+      "file": "scripts\\init_ollama_servers.py",
+      "line": 39,
+      "content": "# Remove /v1 if present to get base URL",
+      "keyword": "remove"
+    },
+    {
+      "file": "scripts\\init_ollama_servers.py",
+      "line": 62,
+      "content": "# Remove /v1 if present to get base URL",
+      "keyword": "remove"
+    },
+    {
+      "file": "scripts\\restore_servers.py",
+      "line": 51,
+      "content": "# Remove /v1 if present to get base URL",
+      "keyword": "remove"
+    },
+    {
+      "file": "scripts\\restore_servers.py",
+      "line": 75,
+      "content": "# Remove /v1 if present to get base URL",
+      "keyword": "remove"
+    },
+    {
+      "file": "scripts\\run_test2.py",
+      "line": 62,
+      "content": "# Check active_todos",
+      "keyword": "todo"
+    },
+    {
+      "file": "scripts\\run_test2.py",
+      "line": 80,
+      "content": "# Show active todos",
+      "keyword": "todo"
+    },
+    {
+      "file": "tests\\test_planning_service_unit.py",
+      "line": 92,
+      "content": "\"\"\"Test legacy parse_json_from_response method\"\"\"",
+      "keyword": "legacy"
+    },
+    {
+      "file": "tests\\test_replan_config.py",
+      "line": 86,
+      "content": "\"AUTO_REPLANNING_MAX_ATTEMPTS\": \"0\"  # Invalid: should be >= 1",
+      "keyword": "temp"
+    },
+    {
+      "file": "tests\\test_replan_config.py",
+      "line": 108,
+      "content": "\"AUTO_REPLANNING_MAX_ATTEMPTS\": \"15\"  # Invalid: should be <= 10",
+      "keyword": "temp"
+    },
+    {
+      "file": "alembic\\versions\\017_extend_task_lifecycle.py",
+      "line": 34,
+      "content": "# Remove columns",
+      "keyword": "remove"
+    },
+    {
+      "file": "alembic\\versions\\018_add_task_digital_twin.py",
+      "line": 25,
+      "content": "# - active and historical ToDo lists",
+      "keyword": "todo"
+    },
+    {
+      "file": "alembic\\versions\\018_add_task_digital_twin.py",
+      "line": 50,
+      "content": "# Remove index",
+      "keyword": "remove"
+    },
+    {
+      "file": "alembic\\versions\\018_add_task_digital_twin.py",
+      "line": 53,
+      "content": "# Remove context column",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\agents\\base_agent.py",
+      "line": 145,
+      "content": "# Use agent's temperature if not specified",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\core\\logging_config.py",
+      "line": 68,
+      "content": "# Remove format string if provided (we don't use it for JSON)",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\core\\middleware_metrics.py",
+      "line": 49,
+      "content": "# Remove UUIDs and IDs from path for better aggregation",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "line": 162,
+      "content": "# Remove /v1 from base URL for client",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "line": 185,
+      "content": "base_url = base_url[:-3]  # Remove /v1",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "line": 187,
+      "content": "base_url = base_url[:-4]  # Remove /v1/",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "line": 189,
+      "content": "# Create a temporary client for health check",
+      "keyword": "temporary"
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "line": 218,
+      "content": "# Create temporary client for check",
+      "keyword": "temporary"
+    },
+    {
+      "file": "app\\core\\ollama_client.py",
+      "line": 438,
+      "content": "# Prepare request URL (remove /v1 for API calls)",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\core\\templates.py",
+      "line": 9,
+      "content": "# Get templates directory",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\core\\templates.py",
+      "line": 20,
+      "content": "# Create FastAPI templates instance",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\core\\templates.py",
+      "line": 25,
+      "content": "\"\"\"Render template with context\"\"\"",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\core\\workflow_tracker.py",
+      "line": 118,
+      "content": "# No active workflow, create a temporary one",
+      "keyword": "temporary"
+    },
+    {
+      "file": "app\\models\\agent.py",
+      "line": 80,
+      "content": "temperature = Column(String(10), default=\"0.7\", nullable=True)  # Default temperature",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\models\\agent_experiment.py",
+      "line": 46,
+      "content": "success_threshold = Column(Float, nullable=True)  # Minimum improvement to consider success",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\models\\task.py",
+      "line": 26,
+      "content": "WAITING_APPROVAL = \"waiting_approval\"  # Waiting for approval (legacy, use PENDING_APPROVAL)",
+      "keyword": "legacy"
+    },
+    {
+      "file": "app\\models\\task.py",
+      "line": 31,
+      "content": "EXECUTING = \"executing\"  # Plan is executing (legacy, use IN_PROGRESS)",
+      "keyword": "legacy"
+    },
+    {
+      "file": "app\\models\\task.py",
+      "line": 32,
+      "content": "PAUSED = \"paused\"  # Temporarily paused",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\models\\task.py",
+      "line": 33,
+      "content": "ON_HOLD = \"on_hold\"  # On hold (waiting for data, human, external event)",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\models\\task.py",
+      "line": 68,
+      "content": "# - active_todos: Current ToDo list (from plan steps)",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\models\\task.py",
+      "line": 69,
+      "content": "# - historical_todos: Historical ToDo lists (plan versions)",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\services\\adaptive_approval_service.py",
+      "line": 29,
+      "content": "# Thresholds for approval decisions",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\adaptive_approval_service.py",
+      "line": 30,
+      "content": "TRUST_SCORE_THRESHOLD = 0.8  # Agents with trust > 0.8 may skip approval for low-risk tasks",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\adaptive_approval_service.py",
+      "line": 31,
+      "content": "HIGH_RISK_THRESHOLD = 0.7  # Tasks with risk > 0.7 always require approval",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\adaptive_approval_service.py",
+      "line": 32,
+      "content": "MEDIUM_RISK_THRESHOLD = 0.4  # Tasks with risk > 0.4 require approval if trust < threshold",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\adaptive_approval_service.py",
+      "line": 478,
+      "content": "pass  # TODO: Implement agent-specific filtering",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\services\\agent_heartbeat_background.py",
+      "line": 66,
+      "content": "# Check if heartbeat is missing or too old",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\agent_heartbeat_service.py",
+      "line": 29,
+      "content": "self.unhealthy_threshold = 3  # consecutive missed heartbeats",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\agent_heartbeat_service.py",
+      "line": 30,
+      "content": "self.removal_threshold = 10  # minutes without heartbeat",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\agent_registry.py",
+      "line": 32,
+      "content": "self.unhealthy_threshold = 3  # consecutive missed heartbeats",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\agent_registry.py",
+      "line": 33,
+      "content": "self.removal_threshold = 5  # minutes without heartbeat",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\agent_service.py",
+      "line": 354,
+      "content": "# Remove version suffix if exists",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\services\\artifact_generator.py",
+      "line": 135,
+      "content": "# TODO: Parse JSON from response.response",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\services\\artifact_generator.py",
+      "line": 217,
+      "content": "# Fallback to template",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\services\\artifact_generator.py",
+      "line": 264,
+      "content": "# Fallback to template",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\services\\artifact_generator.py",
+      "line": 345,
+      "content": "\"\"\"Generate template code as fallback\"\"\"",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\services\\artifact_generator.py",
+      "line": 362,
+      "content": "# TODO: Implement tool logic",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\services\\artifact_generator.py",
+      "line": 373,
+      "content": "\"\"\"Generate template prompt as fallback\"\"\"",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\services\\code_execution_sandbox.py",
+      "line": 173,
+      "content": "# Create temporary file for code",
+      "keyword": "temporary"
+    },
+    {
+      "file": "app\\services\\code_execution_sandbox.py",
+      "line": 231,
+      "content": "# Clean up temporary file",
+      "keyword": "temporary"
+    },
+    {
+      "file": "app\\services\\critic_service.py",
+      "line": 409,
+      "content": "# Check for placeholder text",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\decision_router.py",
+      "line": 240,
+      "content": "return list(set(capabilities))  # Remove duplicates",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\services\\execution_service.py",
+      "line": 703,
+      "content": "# Check replanning attempts limit",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\services\\execution_service.py",
+      "line": 710,
+      "content": "# Count replanning attempts",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\services\\interactive_execution_service.py",
+      "line": 105,
+      "content": "# Execute step (placeholder - actual execution would be done by ExecutionService)",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\services\\ollama_service.py",
+      "line": 83,
+      "content": "if server.is_available or True:  # TODO: check health",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\services\\planning_metrics_service.py",
+      "line": 197,
+      "content": "pass  # TODO: Implement agent filtering if needed",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\services\\planning_service.py",
+      "line": 286,
+      "content": "# 0. Try to apply procedural memory patterns (successful plan templates)",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\services\\planning_service.py",
+      "line": 616,
+      "content": "# Save active ToDo list to working memory",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\services\\planning_service.py",
+      "line": 1376,
+      "content": "\"\"\"Parse JSON from LLM response (legacy method, use _parse_and_validate_json instead)\"\"\"",
+      "keyword": "legacy"
+    },
+    {
+      "file": "app\\services\\planning_service.py",
+      "line": 1806,
+      "content": "# Get steps as ToDo list",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\services\\request_logger.py",
+      "line": 285,
+      "content": "recency_score = max(0.0, 1.0 - (days_old / 365.0))  # Loses relevance over a year",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\api\\routes\\approvals.py",
+      "line": 106,
+      "content": "approved_by=\"user\",  # TODO: Get from auth",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\api\\routes\\approvals.py",
+      "line": 132,
+      "content": "rejected_by=\"user\",  # TODO: Get from auth",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\api\\routes\\approvals.py",
+      "line": 155,
+      "content": "modified_by=\"user\",  # TODO: Get from auth",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\api\\routes\\auth.py",
+      "line": 247,
+      "content": "# Invalidate old session",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\api\\routes\\chat.py",
+      "line": 103,
+      "content": "username = \"user\"  # TODO: Get from auth context when available",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\api\\routes\\chat.py",
+      "line": 175,
+      "content": "# Try to create new session if old one not found",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\api\\routes\\chat.py",
+      "line": 313,
+      "content": "# TODO: Implement smart selection based on task_type and model capabilities",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\api\\routes\\dashboard.py",
+      "line": 55,
+      "content": "# Get active tasks (in progress, pending approval, on hold)",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\api\\routes\\dashboard.py",
+      "line": 60,
+      "content": "TaskStatus.EXECUTING  # Legacy",
+      "keyword": "legacy"
+    },
+    {
+      "file": "app\\api\\routes\\dashboard_pages.py",
+      "line": 32,
+      "content": "TaskStatus.EXECUTING  # Legacy",
+      "keyword": "legacy"
+    },
+    {
+      "file": "app\\api\\routes\\health.py",
+      "line": 171,
+      "content": "if total_failed > 100:  # Threshold for unhealthy",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\api\\routes\\health.py",
+      "line": 175,
+      "content": "elif total_pending > 1000:  # Threshold for degraded",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\api\\routes\\models.py",
+      "line": 58,
+      "content": "# Get base URL (remove /v1 if present)",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\api\\routes\\models.py",
+      "line": 105,
+      "content": "# Remove /v1 if present for API calls",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\api\\routes\\models.py",
+      "line": 150,
+      "content": "# This is a placeholder for future dynamic server management",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\api\\routes\\models_management.py",
+      "line": 210,
+      "content": "# TODO: Implement actual unload when Ollama API supports it",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\api\\routes\\models_management.py",
+      "line": 270,
+      "content": "# TODO: Implement actual GPU unload logic",
+      "keyword": "todo"
+    },
+    {
+      "file": "app\\api\\routes\\models_management.py",
+      "line": 271,
+      "content": "# For now, return a placeholder response",
+      "keyword": "old"
+    },
+    {
+      "file": "app\\api\\routes\\plans_pages.py",
+      "line": 70,
+      "content": "\"steps\": plan.steps  # Pass steps for template",
+      "keyword": "temp"
+    },
+    {
+      "file": "app\\api\\routes\\websocket_events.py",
+      "line": 46,
+      "content": "\"\"\"Remove WebSocket connection\"\"\"",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\api\\routes\\websocket_events.py",
+      "line": 78,
+      "content": "# Remove disconnected connections",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\api\\routes\\websocket_events.py",
+      "line": 92,
+      "content": "# Remove disconnected connections",
+      "keyword": "remove"
+    },
+    {
+      "file": "app\\api\\routes\\workflow.py",
+      "line": 106,
+      "content": "# (for backwards compatibility with old format)",
+      "keyword": "old"
+    },
+    {
+      "file": "tests\\integration\\test_plan_memory_integration.py",
+      "line": 18,
+      "content": "\"\"\"Test that active ToDo list is saved to working memory\"\"\"",
+      "keyword": "todo"
+    },
+    {
+      "file": "tests\\integration\\test_plan_memory_integration.py",
+      "line": 59,
+      "content": "# Test saving ToDo to working memory",
+      "keyword": "todo"
+    },
+    {
+      "file": "tests\\integration\\test_task_lifecycle.py",
+      "line": 86,
+      "content": "\"\"\"Test ON_HOLD status\"\"\"",
+      "keyword": "old"
+    },
+    {
+      "file": "tests\\integration\\test_task_lifecycle.py",
+      "line": 96,
+      "content": "# Put on hold",
+      "keyword": "old"
+    },
+    {
+      "file": "tests\\scripts\\test_planning_step_by_step.py",
+      "line": 97,
+      "content": "# Show active todos",
+      "keyword": "todo"
+    }
+  ],
+  "summary": {
+    "total_duplicated_functions": 9,
+    "total_duplicated_blocks": 59,
+    "total_unused_imports": 555,
+    "total_unused_functions": 322,
+    "total_deprecated": 97
+  }
+}
