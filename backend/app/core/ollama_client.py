@@ -424,26 +424,27 @@ class OllamaClient:
         messages.append({"role": "user", "content": prompt})
         
         # Prepare request
+        # Применить глобальные ограничения из конфигурации (стопоры)
+        from app.core.config import get_settings
+        settings = get_settings()
+        
+        # Использовать значения из kwargs, если указаны, иначе из конфигурации
         payload = {
             "model": model_to_use,
             "messages": messages,
             "stream": stream,
-            # Применить глобальные ограничения из конфигурации (стопоры)
-            from app.core.config import get_settings
-            settings = get_settings()
-            
-            # Использовать значения из kwargs, если указаны, иначе из конфигурации
-            payload["options"] = {
+            "options": {
                 "temperature": kwargs.get("temperature", settings.llm_temperature),
                 "top_p": kwargs.get("top_p", settings.llm_top_p),
                 "num_ctx": kwargs.get("num_ctx", settings.llm_num_ctx),
             }
-            
-            # num_predict (максимальное количество токенов) - критично для предотвращения "думать час"
-            if "num_predict" in kwargs:
-                payload["options"]["num_predict"] = kwargs["num_predict"]
-            else:
-                payload["options"]["num_predict"] = settings.llm_max_tokens
+        }
+        
+        # num_predict (максимальное количество токенов) - критично для предотвращения "думать час"
+        if "num_predict" in kwargs:
+            payload["options"]["num_predict"] = kwargs["num_predict"]
+        else:
+            payload["options"]["num_predict"] = settings.llm_max_tokens
         
         # Prepare request URL (remove /v1 for API calls)
         request_base_url = instance.url
