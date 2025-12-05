@@ -282,19 +282,33 @@ async def get_benchmark_result(
         if not result:
             raise HTTPException(status_code=404, detail=f"Result {result_id} not found")
         
-        return BenchmarkResultResponse(
-            id=str(result.id),
-            benchmark_task_id=str(result.benchmark_task_id),
-            model_id=str(result.model_id) if result.model_id else None,
-            server_id=str(result.server_id) if result.server_id else None,
-            execution_time=result.execution_time,
-            output=result.output,
-            score=result.score,
-            metrics=result.metrics,
-            passed=result.passed,
-            error_message=result.error_message,
-            created_at=result.created_at.isoformat() if result.created_at else None
-        )
+        # Include task information
+        task = result.task
+        task_info = None
+        if task:
+            task_info = {
+                "id": str(task.id),
+                "name": task.name,
+                "task_type": task.task_type.value,
+                "task_description": task.task_description
+            }
+        
+        response_data = {
+            "id": str(result.id),
+            "benchmark_task_id": str(result.benchmark_task_id),
+            "model_id": str(result.model_id) if result.model_id else None,
+            "server_id": str(result.server_id) if result.server_id else None,
+            "execution_time": result.execution_time,
+            "output": result.output,
+            "score": result.score,
+            "metrics": result.metrics,
+            "passed": result.passed,
+            "error_message": result.error_message,
+            "created_at": result.created_at.isoformat() if result.created_at else None,
+            "task": task_info
+        }
+        
+        return response_data
     except HTTPException:
         raise
     except Exception as e:

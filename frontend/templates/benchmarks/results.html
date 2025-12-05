@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title %}Benchmark Results{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body.iframe-page {
+        background: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        display: block;
+    }
+    
+    .results-container {
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .results-header {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .results-header h1 {
+        margin: 0;
+        font-size: 24px;
+        color: #212529;
+    }
+    
+    .summary-stats {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 12px 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 4px;
+    }
+    
+    .results-list {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .result-item {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        transition: all 0.2s;
+    }
+    
+    .result-item:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .result-item.passed {
+        border-left: 4px solid #28a745;
+    }
+    
+    .result-item.failed {
+        border-left: 4px solid #dc3545;
+    }
+    
+    .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 12px;
+    }
+    
+    .result-title {
+        flex: 1;
+    }
+    
+    .result-title h3 {
+        margin: 0 0 4px 0;
+        font-size: 16px;
+        color: #212529;
+    }
+    
+    .result-title .task-name {
+        color: #6c757d;
+        font-size: 14px;
+    }
+    
+    .result-status {
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .result-status.passed {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .result-status.failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .result-metrics {
+        display: flex;
+        gap: 20px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .metric {
+        flex: 1;
+    }
+    
+    .metric-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    
+    .metric-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #212529;
+    }
+    
+    .metric-value.score {
+        color: #667eea;
+    }
+    
+    .result-output {
+        margin-top: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        max-height: 200px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .result-error {
+        margin-top: 12px;
+        padding: 12px;
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        border-radius: 6px;
+        color: #856404;
+        font-size: 13px;
+    }
+    
+    .expand-btn {
+        margin-top: 8px;
+        padding: 6px 12px;
+        background: #e9ecef;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #495057;
+    }
+    
+    .expand-btn:hover {
+        background: #dee2e6;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div class="results-header">
+        <h1>Результаты Benchmark Тестов</h1>
+        <div class="summary-stats" id="summary-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-results">-</div>
+                <div class="stat-label">Всего</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="passed-results" style="color: #28a745;">-</div>
+                <div class="stat-label">Пройдено</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="failed-results" style="color: #dc3545;">-</div>
+                <div class="stat-label">Провалено</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-score" style="color: #667eea;">-</div>
+                <div class="stat-label">Средний Score</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="results-list">
+        <div id="results-content">
+            <div class="loading">
+                <div class="spinner"></div>
+                <div>Загрузка результатов...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const resultIds = {{ result_ids | tojson }};
+let results = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (resultIds && resultIds.length > 0) {
+        loadResults();
+    } else {
+        showNoResults();
+    }
+});
+
+async function loadResults() {
+    try {
+        // Load each result
+        const promises = resultIds.map(id => 
+            fetch(`/api/benchmarks/results/${id}`).then(r => r.json())
+        );
+        
+        results = await Promise.all(promises);
+        renderResults();
+        updateSummary();
+    } catch (error) {
+        console.error('Error loading results:', error);
+        document.getElementById('results-content').innerHTML = 
+            '<div class="no-results">Ошибка загрузки результатов</div>';
+    }
+}
+
+function renderResults() {
+    const container = document.getElementById('results-content');
+    
+    if (results.length === 0) {
+        showNoResults();
+        return;
+    }
+    
+    container.innerHTML = results.map(result => {
+        const task = result.task || {};
+        const passed = result.passed;
+        const score = result.score !== null ? (result.score * 100).toFixed(1) : 'N/A';
+        const executionTime = result.execution_time ? result.execution_time.toFixed(2) : 'N/A';
+        
+        return `
+            <div class="result-item ${passed ? 'passed' : 'failed'}">
+                <div class="result-header">
+                    <div class="result-title">
+                        <h3>${escapeHtml(task.name || 'Unknown Task')}</h3>
+                        <div class="task-name">${escapeHtml(task.task_type || '')}</div>
+                    </div>
+                    <span class="result-status ${passed ? 'passed' : 'failed'}">
+                        ${passed ? '✓ Пройдено' : '✗ Провалено'}
+                    </span>
+                </div>
+                
+                <div class="result-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Score</div>
+                        <div class="metric-value score">${score}%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Время выполнения</div>
+                        <div class="metric-value">${executionTime}s</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Модель</div>
+                        <div class="metric-value">${escapeHtml(result.model_id || 'N/A')}</div>
+                    </div>
+                </div>
+                
+                ${result.error_message ? `
+                    <div class="result-error">
+                        <strong>Ошибка:</strong> ${escapeHtml(result.error_message)}
+                    </div>
+                ` : ''}
+                
+                ${result.output ? `
+                    <div class="result-output" id="output-${result.id}">
+                        ${escapeHtml(result.output.substring(0, 200))}
+                        ${result.output.length > 200 ? '...' : ''}
+                    </div>
+                    ${result.output.length > 200 ? `
+                        <button class="expand-btn" onclick="toggleOutput('${result.id}')">
+                            Показать полностью
+                        </button>
+                    ` : ''}
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleOutput(resultId) {
+    const outputDiv = document.getElementById(`output-${resultId}`);
+    const result = results.find(r => r.id === resultId);
+    
+    if (outputDiv.textContent.length < result.output.length) {
+        outputDiv.textContent = result.output;
+        outputDiv.previousElementSibling.textContent = 'Скрыть';
+    } else {
+        outputDiv.textContent = result.output.substring(0, 200) + '...';
+        outputDiv.nextElementSibling.textContent = 'Показать полностью';
+    }
+}
+
+function updateSummary() {
+    const total = results.length;
+    const passed = results.filter(r => r.passed).length;
+    const failed = total - passed;
+    const scores = results.filter(r => r.score !== null).map(r => r.score);
+    const avgScore = scores.length > 0 
+        ? (scores.reduce((a, b) => a + b, 0) / scores.length * 100).toFixed(1)
+        : 'N/A';
+    
+    document.getElementById('total-results').textContent = total;
+    document.getElementById('passed-results').textContent = passed;
+    document.getElementById('failed-results').textContent = failed;
+    document.getElementById('avg-score').textContent = avgScore + (avgScore !== 'N/A' ? '%' : '');
+}
+
+function showNoResults() {
+    document.getElementById('results-content').innerHTML = `
+        <div class="no-results">
+            <h3>Результаты не найдены</h3>
+            <p>Выберите задачи и запустите тесты на <a href="/benchmarks">странице выбора</a></p>
+        </div>
+    `;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
+
