@@ -64,7 +64,20 @@ try:
         current_rev = None
     
     # Strategy: Stamp to base, then upgrade
-    print("\nStrategy: Stamping to base revision, then upgrading...")
+    print("\n⚠️  WARNING: This will reset migration state!")
+    print("   This should only be done if you want to reapply all migrations.")
+    print("   Existing tables will NOT be dropped, but migration state will be reset.")
+    print("\n   Type 'RESET MIGRATIONS' to confirm (or Ctrl+C to cancel):")
+    
+    try:
+        confirmation = input("> ").strip()
+        if confirmation != "RESET MIGRATIONS":
+            print(f"\n❌ Confirmation failed. Expected 'RESET MIGRATIONS', got: '{confirmation}'")
+            print("   Operation cancelled.")
+            sys.exit(1)
+    except KeyboardInterrupt:
+        print("\n❌ Cancelled.")
+        sys.exit(1)
     
     try:
         # Stamp to base (001) to reset migration state

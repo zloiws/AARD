@@ -44,7 +44,21 @@ def restore_tables():
         
         if missing_tables:
             print(f"Found {len(missing_tables)} missing tables")
-            print("Creating missing tables...\n")
+            print("⚠️  WARNING: This will create tables directly, bypassing migrations!")
+            print("   This should only be used after explicit database clear.")
+            print("   Type 'CREATE TABLES' to confirm (or Ctrl+C to cancel):")
+            
+            try:
+                confirmation = input("> ").strip()
+                if confirmation != "CREATE TABLES":
+                    print(f"\n❌ Confirmation failed. Expected 'CREATE TABLES', got: '{confirmation}'")
+                    print("   Operation cancelled.")
+                    return False
+            except KeyboardInterrupt:
+                print("\n❌ Cancelled.")
+                return False
+            
+            print("\nCreating missing tables...\n")
             
             # Create all tables
             Base.metadata.create_all(bind=engine)
