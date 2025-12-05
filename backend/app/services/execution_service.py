@@ -1093,7 +1093,7 @@ class ExecutionService:
             from datetime import timedelta
             from app.models.project_metric import MetricType, MetricPeriod
             
-            now = datetime.datetime.utcnow()
+            now = datetime.utcnow()
             # Round to hour for consistent period boundaries
             period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
             period_end = now.replace(minute=0, second=0, microsecond=0)
