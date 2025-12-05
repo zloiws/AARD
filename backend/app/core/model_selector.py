@@ -51,6 +51,61 @@ class ModelSelector:
             if m.model_name and not ("embedding" in m.model_name.lower() or "embed" in m.model_name.lower())
         ]
     
+    def _get_best_model_from_benchmark(
+        self,
+        models: List[OllamaModel],
+        task_type: str
+    ) -> Optional[OllamaModel]:
+        """
+        Выбрать лучшую модель на основе результатов бенчмарков
+        
+        Args:
+            models: Список моделей
+            task_type: Тип задачи ("planning", "code_generation")
+            
+        Returns:
+            Лучшая модель или None если нет результатов бенчмарков
+        """
+        models_with_benchmarks = []
+        
+        for model in models:
+            if not model.details or "avg_quality_score" not in model.details:
+                continue
+            
+            quality_score = model.details["avg_quality_score"].get(task_type, 0)
+            response_time = model.details["avg_response_time"].get(task_type, float('inf'))
+            
+            # Только модели с успешными тестами
+            if quality_score > 0 and response_time < float('inf'):
+                # Комбинированный score: качество / нормализованное время
+                if response_time > 0:
+                    combined_score = quality_score / (response_time / 10.0)
+                else:
+                    combined_score = quality_score
+                
+                models_with_benchmarks.append((model, combined_score, quality_score, response_time))
+        
+        if not models_with_benchmarks:
+            return None
+        
+        # Сортировать по combined_score
+        models_with_benchmarks.sort(key=lambda x: x[1], reverse=True)
+        
+        best_model, best_score, quality, time = models_with_benchmarks[0]
+        
+        logger.info(
+            f"Best model from benchmark: {best_model.name} (score: {best_score:.2f}, quality: {quality:.2f}, time: {time:.2f}s)",
+            extra={
+                "model_id": str(best_model.id),
+                "model_name": best_model.name,
+                "benchmark_score": best_score,
+                "quality_score": quality,
+                "response_time": time
+            }
+        )
+        
+        return best_model
+    
     def get_planning_model(
         self,
         server: Optional[OllamaServer] = None
@@ -109,13 +164,27 @@ class ModelSelector:
                             )
                             return model
             
+            # Second: try to use benchmark results (реальные тесты!)
+            best_model_from_benchmark = self._get_best_model_from_benchmark(models, "planning")
+            if best_model_from_benchmark:
+                logger.info(
+                    f"Selected planning model from benchmark: {best_model_from_benchmark.name}",
+                    extra={
+                        "model_id": str(best_model_from_benchmark.id),
+                        "model_name": best_model_from_benchmark.name,
+                        "selection_method": "benchmark_results"
+                    }
+                )
+                return best_model_from_benchmark
+            
             # Fallback: return first active model
             if models:
                 logger.warning(
                     f"No planning-capable model found, using fallback: {models[0].name}",
                     extra={
                         "model_id": str(models[0].id),
-                        "model_name": models[0].name
+                        "model_name": models[0].name,
+                        "selection_method": "alphabetical_fallback"
                     }
                 )
                 return models[0]
