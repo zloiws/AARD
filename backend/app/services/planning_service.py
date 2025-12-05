@@ -1570,6 +1570,10 @@ Return a JSON array of steps."""
             ollama_client = OllamaClient()
             
             # IMPORTANT: Add timeout to prevent infinite loops
+            # Использовать глобальные ограничения из конфигурации (стопоры)
+            from app.core.config import get_settings
+            settings = get_settings()
+            
             import asyncio
             import time
             start_time = time.time()
@@ -1582,7 +1586,7 @@ Return a JSON array of steps."""
                         model=planning_model.model_name,
                         server_url=server.get_api_url()
                     ),
-                    timeout=300.0  # 5 minutes max for strategy analysis
+                    timeout=float(settings.planning_timeout_seconds)  # Использовать глобальное ограничение
                 )
                 duration_ms = int((time.time() - start_time) * 1000)
                 
@@ -1956,7 +1960,7 @@ Break down this task into executable steps. Return only a valid JSON array."""
                         model=planning_model.model_name,
                         server_url=server.get_api_url()
                     ),
-                    timeout=300.0  # 5 minutes max for task decomposition
+                    timeout=float(settings.planning_timeout_seconds)  # Использовать глобальное ограничение
                 )
                 duration_ms = int((time.time() - start_time) * 1000)
                 

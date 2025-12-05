@@ -124,6 +124,97 @@ class Settings(BaseSettings):
     )
     enable_caching: bool = Field(default=True, description="Enable caching")
     
+    # ========================================================================
+    # ГЛОБАЛЬНЫЕ ОГРАНИЧЕНИЯ ДЛЯ ЛЛМ И КОДА (СТОПОРЫ)
+    # Цель: скорость и экономия ресурсов, нет неограниченным размышлениям
+    # ========================================================================
+    
+    # LLM Ограничения (стопоры для размышлений)
+    llm_timeout_seconds: int = Field(
+        default=30,
+        ge=5,
+        le=300,
+        description="Максимальное время ожидания ответа LLM (секунды)"
+    )
+    llm_max_tokens: int = Field(
+        default=500,
+        ge=50,
+        le=2000,
+        description="Максимальное количество токенов в ответе LLM (ограничение 'думать час')"
+    )
+    llm_temperature: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=1.0,
+        description="Температура LLM (низкая = быстрые детерминированные ответы)"
+    )
+    llm_top_p: float = Field(
+        default=0.8,
+        ge=0.0,
+        le=1.0,
+        description="Top-p для LLM (ограничение выборки)"
+    )
+    llm_num_ctx: int = Field(
+        default=2048,
+        ge=512,
+        le=8192,
+        description="Размер контекста LLM (уменьшен для скорости)"
+    )
+    
+    # Планирование ограничения
+    planning_timeout_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=300,
+        description="Максимальное время генерации плана (секунды)"
+    )
+    planning_max_steps: int = Field(
+        default=10,
+        ge=1,
+        le=50,
+        description="Максимальное количество шагов в плане"
+    )
+    
+    # Выполнение ограничения
+    execution_timeout_seconds: int = Field(
+        default=45,
+        ge=5,
+        le=300,
+        description="Максимальное время выполнения одного шага (секунды)"
+    )
+    execution_max_total_timeout_seconds: int = Field(
+        default=180,
+        ge=30,
+        le=600,
+        description="Максимальное время выполнения всего плана (секунды)"
+    )
+    
+    # Код выполнение ограничения (sandbox)
+    code_execution_timeout_seconds: int = Field(
+        default=30,
+        ge=5,
+        le=120,
+        description="Максимальное время выполнения кода (секунды)"
+    )
+    code_execution_memory_limit_mb: int = Field(
+        default=256,
+        ge=64,
+        le=1024,
+        description="Максимальное использование памяти для выполнения кода (MB)"
+    )
+    code_execution_max_output_size_mb: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Максимальный размер вывода кода (MB)"
+    )
+    code_execution_cpu_limit_percent: int = Field(
+        default=50,
+        ge=10,
+        le=100,
+        description="Максимальное использование CPU для выполнения кода (процент)"
+    )
+    
     # Automatic Replanning Configuration
     enable_auto_replanning: bool = Field(
         default=True,

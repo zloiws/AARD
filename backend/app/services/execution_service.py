@@ -394,8 +394,9 @@ Execute the given step and return the result in JSON format:
 
 Верни результат выполнения в формате JSON."""
         
-        # Execute with timeout
-        timeout = step.get("timeout", 300)
+        # Execute with timeout - использовать глобальные ограничения (стопоры)
+        # Использовать таймаут из шага, если указан, иначе из конфигурации
+        timeout = step.get("timeout", settings.execution_timeout_seconds)
         try:
             response = await asyncio.wait_for(
                 ollama_client.generate(
@@ -405,7 +406,7 @@ Execute the given step and return the result in JSON format:
                     system_prompt=system_prompt,
                     task_type="code_generation"
                 ),
-                timeout=timeout
+                timeout=float(timeout)
             )
             
             # Parse response - OllamaResponse has .response attribute
@@ -813,6 +814,9 @@ class ExecutionService:
         self.db.commit()
         self.db.refresh(plan)
         
+        # ГЛОБАЛЬНОЕ ОГРАНИЧЕНИЕ: Общий таймаут выполнения плана (стопор)
+        max_total_time = settings.execution_max_total_timeout_seconds
+        
         # Parse steps
         steps = plan.steps
         if isinstance(steps, str):
@@ -836,8 +840,26 @@ class ExecutionService:
         # Execution context (results from previous steps)
         execution_context = {}
         
-        # Execute steps in order
+        # Execute steps in order с проверкой общего таймаута
         for i, step in enumerate(steps):
+            # Проверка общего таймаута (стопор)
+            elapsed_time = time.time() - plan_start_time
+            if elapsed_time > max_total_time:
+                logger.warning(
+                    f"Plan execution timeout exceeded: {elapsed_time:.1f}s > {max_total_time}s",
+                    extra={
+                        "plan_id": str(plan.id),
+                        "elapsed_time": elapsed_time,
+                        "max_total_time": max_total_time,
+                        "step_index": i
+                    }
+                )
+                plan.status = "failed"
+                plan.current_step = i
+                self.db.commit()
+                error_msg = f"Plan execution timeout: exceeded {max_total_time}s limit"
+                await self._handle_plan_failure(plan, error_msg, execution_context)
+                return plan
             # Create checkpoint before each step
             try:
                 checkpoint = self.checkpoint_service.create_plan_checkpoint(

@@ -30,10 +30,31 @@ class CodeExecutionSandbox:
     - Isolated execution environment
     """
     
-    # Default resource limits
+    # Default resource limits (будут переопределены из конфигурации)
     DEFAULT_TIMEOUT_SECONDS = 30
     DEFAULT_MEMORY_LIMIT_MB = 512
     MAX_OUTPUT_SIZE = 10 * 1024 * 1024  # 10MB max output
+    
+    def __init__(self):
+        """Initialize Code Execution Sandbox with global limits from config"""
+        from app.core.config import get_settings
+        settings = get_settings()
+        
+        # Применить глобальные ограничения из конфигурации (стопоры)
+        self.DEFAULT_TIMEOUT_SECONDS = settings.code_execution_timeout_seconds
+        self.DEFAULT_MEMORY_LIMIT_MB = settings.code_execution_memory_limit_mb
+        self.MAX_OUTPUT_SIZE = settings.code_execution_max_output_size_mb * 1024 * 1024
+        self.CPU_LIMIT_PERCENT = settings.code_execution_cpu_limit_percent
+        
+        logger.info(
+            "Code execution sandbox initialized with limits",
+            extra={
+                "timeout_seconds": self.DEFAULT_TIMEOUT_SECONDS,
+                "memory_limit_mb": self.DEFAULT_MEMORY_LIMIT_MB,
+                "max_output_size_mb": settings.code_execution_max_output_size_mb,
+                "cpu_limit_percent": self.CPU_LIMIT_PERCENT
+            }
+        )
     
     # Dangerous operations to block
     DANGEROUS_IMPORTS = [
