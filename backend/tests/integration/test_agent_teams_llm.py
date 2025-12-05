@@ -17,14 +17,7 @@ from app.models.ollama_model import OllamaModel
 from app.core.database import SessionLocal
 
 
-@pytest.fixture
-def db():
-    """Database session fixture"""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Use db fixture from conftest.py
 
 
 @pytest.fixture
