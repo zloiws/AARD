@@ -58,7 +58,7 @@ async def test_real_team_coordination_sequential(db):
     
     # Test planning with team - this will use real LLM through PlanningService
     try:
-        plan = await planning_service.create_plan(
+        plan = await planning_service.generate_plan(
             task_description="Analyze the following code and suggest improvements: def hello(): print('Hello')",
             context={"team_id": str(team.id)}
         )
@@ -131,7 +131,7 @@ async def test_real_planning_with_team(db):
     
     # Create plan with team using real LLM
     try:
-        plan = await planning_service.create_plan(
+        plan = await planning_service.generate_plan(
             task_description="Create a simple Python function that calculates the factorial of a number",
             context={"team_id": str(team.id)}
         )
@@ -216,7 +216,7 @@ async def test_real_team_collaborative_task(db):
         task_prompt = "Create a Python function that calculates factorial and write a test for it"
         
         # Create plan with team - this will use real LLM through PlanningService
-        plan = await planning_service.create_plan(
+        plan = await planning_service.generate_plan(
             task_description=task_prompt,
             context={"team_id": str(team.id), "language": "Python"}
         )
@@ -280,7 +280,7 @@ async def test_real_team_planning_and_execution(db):
     
     # Create plan with team using real LLM
     try:
-        plan = await planning_service.create_plan(
+        plan = await planning_service.generate_plan(
             task_description="Write a Python function that adds two numbers and returns the result",
             context={"team_id": str(team.id)}
         )
@@ -336,7 +336,7 @@ async def test_real_llm_through_planning_service(db):
     planning_service = PlanningService(db)
     
     try:
-        plan = await planning_service.create_plan(
+        plan = await planning_service.generate_plan(
             task_description="Write a simple Python function that adds two numbers",
             context={}
         )
