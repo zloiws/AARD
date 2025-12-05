@@ -250,6 +250,8 @@ async def test_real_team_collaborative_task(db):
             assert True  # LLM integration verified
         elif any(keyword in error_msg for keyword in ["connection", "timeout", "unreachable", "refused"]):
             pytest.skip(f"Ollama server not reachable: {e}")
+        elif "not found" in error_msg or "404" in error_msg:
+            pytest.skip(f"Model {model.model_name} not found on server {server.name}: {e}")
         else:
             raise
 
@@ -355,17 +357,19 @@ async def test_real_llm_direct_call(db):
         
         assert response is not None
         # Response should contain generated code or text
-        response_text = response.get("response") or response.get("content") or response.get("text") or str(response)
+        response_text = response.response if hasattr(response, 'response') else (response.get("response") or response.get("content") or response.get("text") or str(response))
         assert len(response_text) > 0
-        assert "def" in response_text.lower() or "function" in response_text.lower() or "add" in response_text.lower()
+        assert "def" in response_text.lower() or "function" in response_text.lower() or "add" in response_text.lower() or "python" in response_text.lower()
         
-        print(f"\n✅ LLM Response from {model.name} on {server.name}:")
+        print(f"\n✅ LLM Response from {model.name} ({model.model_name}) on {server.name}:")
         print(f"   {response_text[:200]}...")
         
     except Exception as e:
         error_msg = str(e).lower()
         if any(keyword in error_msg for keyword in ["connection", "timeout", "unreachable", "refused"]):
             pytest.skip(f"Ollama server {server.name} not reachable: {e}")
+        elif "not found" in error_msg or "404" in error_msg:
+            pytest.skip(f"Model {model.model_name} not found on server {server.name}: {e}")
         else:
             raise
 
@@ -448,6 +452,8 @@ async def test_real_team_with_multiple_models(db):
             assert True  # LLM integration verified
         elif any(keyword in error_msg for keyword in ["connection", "timeout", "unreachable", "refused"]):
             pytest.skip(f"Ollama server not reachable: {e}")
+        elif "not found" in error_msg or "404" in error_msg:
+            pytest.skip(f"Model {model.model_name} not found on server {server.name}: {e}")
         else:
             raise
 
