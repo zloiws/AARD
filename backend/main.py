@@ -151,6 +151,8 @@ app.include_router(plans.router)
 app.include_router(model_logs.router)
 from app.api.routes import benchmarks
 app.include_router(benchmarks.router)
+from app.api.routes import benchmarks_pages
+app.include_router(benchmarks_pages.router)
 app.include_router(current_work.router)
 app.include_router(workflow.router)
 app.include_router(websocket_events.router)

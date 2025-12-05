@@ -1,0 +1,564 @@
+{% extends "base.html" %}
+
+{% block title %}Benchmark Tests{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body.iframe-page {
+        background: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        display: block;
+    }
+    
+    .benchmark-container {
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+        min-height: calc(100vh - 40px);
+    }
+    
+    .filters-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .filters-row {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .filter-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .tasks-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .tasks-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .tasks-header h2 {
+        margin: 0;
+        font-size: 20px;
+        color: #212529;
+    }
+    
+    .tasks-count {
+        color: #6c757d;
+        font-size: 14px;
+    }
+    
+    .tasks-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 16px;
+    }
+    
+    .task-card {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #f8f9fa;
+    }
+    
+    .task-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .task-card.selected {
+        border-color: #667eea;
+        background: #f0f4ff;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+    
+    .task-card input[type="checkbox"] {
+        margin-right: 12px;
+        cursor: pointer;
+    }
+    
+    .task-header {
+        display: flex;
+        align-items: start;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .task-name {
+        font-weight: 600;
+        color: #212529;
+        font-size: 15px;
+        flex: 1;
+    }
+    
+    .task-type-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .task-type-badge.code_generation { background: #e3f2fd; color: #1976d2; }
+    .task-type-badge.code_analysis { background: #fff3e0; color: #f57c00; }
+    .task-type-badge.reasoning { background: #f3e5f5; color: #7b1fa2; }
+    .task-type-badge.planning { background: #e8f5e9; color: #388e3c; }
+    .task-type-badge.general_chat { background: #fce4ec; color: #c2185b; }
+    
+    .task-description {
+        color: #6c757d;
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 12px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .task-meta {
+        display: flex;
+        gap: 12px;
+        font-size: 12px;
+        color: #868e96;
+    }
+    
+    .task-meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .model-selection-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .model-selection-section h3 {
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        color: #212529;
+    }
+    
+    .model-selection-row {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .action-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .selected-count {
+        color: #495057;
+        font-size: 14px;
+    }
+    
+    .btn-run {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-run:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-run:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .loading-overlay.active {
+        display: flex;
+    }
+    
+    .loading-spinner {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="benchmark-container">
+    <div class="filters-section">
+        <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #212529;">Фильтры</h3>
+        <div class="filters-row">
+            <div class="filter-group">
+                <label>Тип задачи</label>
+                <select id="filter-task-type" onchange="loadTasks()">
+                    <option value="">Все типы</option>
+                    <option value="code_generation">Генерация кода</option>
+                    <option value="code_analysis">Анализ кода</option>
+                    <option value="reasoning">Рассуждения</option>
+                    <option value="planning">Планирование</option>
+                    <option value="general_chat">Общий чат</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Категория</label>
+                <select id="filter-category" onchange="loadTasks()">
+                    <option value="">Все категории</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Сложность</label>
+                <select id="filter-difficulty" onchange="loadTasks()">
+                    <option value="">Все уровни</option>
+                    <option value="easy">Легкая</option>
+                    <option value="medium">Средняя</option>
+                    <option value="hard">Сложная</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Поиск</label>
+                <input type="text" id="filter-search" placeholder="Название задачи..." oninput="loadTasks()">
+            </div>
+        </div>
+    </div>
+    
+    <div class="tasks-section">
+        <div class="tasks-header">
+            <div>
+                <h2>Benchmark Задачи</h2>
+                <div class="tasks-count" id="tasks-count">Загрузка...</div>
+            </div>
+            <div>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="select-all" onchange="toggleSelectAll()">
+                    <span>Выбрать все</span>
+                </label>
+            </div>
+        </div>
+        <div class="tasks-grid" id="tasks-grid">
+            <div style="text-align: center; padding: 40px; color: #6c757d;">
+                Загрузка задач...
+            </div>
+        </div>
+    </div>
+    
+    <div class="model-selection-section">
+        <h3>Выбор модели для тестирования</h3>
+        <div class="model-selection-row">
+            <div class="filter-group">
+                <label>Сервер</label>
+                <select id="model-server" onchange="loadServerModels()">
+                    <option value="">Загрузка...</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Модель</label>
+                <select id="model-name">
+                    <option value="">Выберите модель</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Таймаут (сек)</label>
+                <input type="number" id="timeout" value="60" min="1" max="300" style="width: 100px;">
+            </div>
+        </div>
+    </div>
+    
+    <div class="action-section">
+        <div class="selected-count">
+            Выбрано задач: <span id="selected-count">0</span>
+        </div>
+        <button class="btn-run" id="btn-run" onclick="runBenchmark()" disabled>
+            Запустить тесты
+        </button>
+    </div>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner">
+        <div class="spinner"></div>
+        <div>Выполнение тестов...</div>
+    </div>
+</div>
+
+<script>
+let allTasks = [];
+let selectedTasks = new Set();
+let servers = [];
+let models = [];
+
+// Load tasks on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadTasks();
+    loadServers();
+});
+
+async function loadTasks() {
+    const taskType = document.getElementById('filter-task-type').value;
+    const category = document.getElementById('filter-category').value;
+    const difficulty = document.getElementById('filter-difficulty').value;
+    const search = document.getElementById('filter-search').value;
+    
+    const params = new URLSearchParams();
+    if (taskType) params.append('task_type', taskType);
+    if (category) params.append('category', category);
+    if (difficulty) params.append('difficulty', difficulty);
+    if (search) params.append('name', search);
+    
+    try {
+        const response = await fetch(`/api/benchmarks/tasks/?${params}`);
+        const tasks = await response.json();
+        
+        allTasks = tasks;
+        renderTasks();
+        updateSelectedCount();
+    } catch (error) {
+        console.error('Error loading tasks:', error);
+        document.getElementById('tasks-grid').innerHTML = 
+            '<div style="text-align: center; padding: 40px; color: #f44336;">Ошибка загрузки задач</div>';
+    }
+}
+
+function renderTasks() {
+    const grid = document.getElementById('tasks-grid');
+    const count = document.getElementById('tasks-count');
+    
+    count.textContent = `Найдено задач: ${allTasks.length}`;
+    
+    if (allTasks.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Задачи не найдены</div>';
+        return;
+    }
+    
+    grid.innerHTML = allTasks.map(task => `
+        <div class="task-card ${selectedTasks.has(task.id) ? 'selected' : ''}" onclick="toggleTask('${task.id}')">
+            <div class="task-header">
+                <input type="checkbox" ${selectedTasks.has(task.id) ? 'checked' : ''} 
+                       onclick="event.stopPropagation(); toggleTask('${task.id}')">
+                <div class="task-name">${escapeHtml(task.name)}</div>
+                <span class="task-type-badge ${task.task_type}">${task.task_type}</span>
+            </div>
+            <div class="task-description">${escapeHtml(task.task_description)}</div>
+            <div class="task-meta">
+                ${task.category ? `<span>📁 ${escapeHtml(task.category)}</span>` : ''}
+                ${task.difficulty ? `<span>⚡ ${escapeHtml(task.difficulty)}</span>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function toggleTask(taskId) {
+    if (selectedTasks.has(taskId)) {
+        selectedTasks.delete(taskId);
+    } else {
+        selectedTasks.add(taskId);
+    }
+    renderTasks();
+    updateSelectedCount();
+    updateRunButton();
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('select-all').checked;
+    if (selectAll) {
+        allTasks.forEach(task => selectedTasks.add(task.id));
+    } else {
+        selectedTasks.clear();
+    }
+    renderTasks();
+    updateSelectedCount();
+    updateRunButton();
+}
+
+function updateSelectedCount() {
+    document.getElementById('selected-count').textContent = selectedTasks.size;
+    document.getElementById('select-all').checked = 
+        selectedTasks.size > 0 && selectedTasks.size === allTasks.length;
+}
+
+function updateRunButton() {
+    const btn = document.getElementById('btn-run');
+    const modelName = document.getElementById('model-name').value;
+    btn.disabled = selectedTasks.size === 0 || !modelName;
+}
+
+async function loadServers() {
+    try {
+        const response = await fetch('/api/servers/?active_only=true');
+        servers = await response.json();
+        
+        const select = document.getElementById('model-server');
+        select.innerHTML = '<option value="">Выберите сервер</option>' +
+            servers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    } catch (error) {
+        console.error('Error loading servers:', error);
+    }
+}
+
+async function loadServerModels() {
+    const serverId = document.getElementById('model-server').value;
+    const select = document.getElementById('model-name');
+    
+    if (!serverId) {
+        select.innerHTML = '<option value="">Выберите сервер</option>';
+        updateRunButton();
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/servers/${serverId}/models`);
+        const data = await response.json();
+        models = data.models || [];
+        
+        select.innerHTML = '<option value="">Выберите модель</option>' +
+            models.map(m => `<option value="${m.model_name}">${m.name || m.model_name}</option>`).join('');
+    } catch (error) {
+        console.error('Error loading models:', error);
+        select.innerHTML = '<option value="">Ошибка загрузки</option>';
+    }
+    
+    updateRunButton();
+}
+
+document.getElementById('model-name').addEventListener('change', updateRunButton);
+
+async function runBenchmark() {
+    const selectedTaskIds = Array.from(selectedTasks);
+    const modelName = document.getElementById('model-name').value;
+    const serverId = document.getElementById('model-server').value;
+    const timeout = parseInt(document.getElementById('timeout').value) || 60;
+    
+    if (selectedTaskIds.length === 0 || !modelName) {
+        alert('Выберите задачи и модель');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('loading-overlay').classList.add('active');
+    
+    try {
+        // Run each task
+        const results = [];
+        for (const taskId of selectedTaskIds) {
+            const response = await fetch('/api/benchmarks/run/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    task_id: taskId,
+                    model_name: modelName,
+                    server_id: serverId,
+                    timeout: timeout,
+                    evaluate: true
+                })
+            });
+            
+            if (response.ok) {
+                const taskResults = await response.json();
+                results.push(...taskResults);
+            }
+        }
+        
+        // Redirect to results page
+        if (results.length > 0) {
+            const resultIds = results.map(r => r.id).join(',');
+            window.location.href = `/benchmarks/results?ids=${resultIds}`;
+        } else {
+            alert('Не удалось выполнить тесты. Проверьте подключение к серверу и модели.');
+        }
+    } catch (error) {
+        console.error('Error running benchmark:', error);
+        alert('Ошибка выполнения тестов: ' + error.message);
+    } finally {
+        document.getElementById('loading-overlay').classList.remove('active');
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
+
