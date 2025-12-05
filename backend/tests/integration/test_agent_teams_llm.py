@@ -40,6 +40,7 @@ def test_ollama_model(db, test_ollama_server):
     model = OllamaModel(
         server_id=test_ollama_server.id,
         name="deepseek-r1-abliterated:8b",
+        model_name="deepseek-r1-abliterated:8b",
         is_active=True
     )
     db.add(model)
