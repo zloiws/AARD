@@ -289,6 +289,40 @@ document.addEventListener('DOMContentLoaded', function() {
     // Enable compare button when both models selected
     document.getElementById('model1-select').addEventListener('change', updateCompareButton);
     document.getElementById('model2-select').addEventListener('change', updateCompareButton);
+    
+    // Check for model_ids in URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const modelIds = urlParams.get('model_ids');
+    if (modelIds) {
+        const ids = modelIds.split(',');
+        if (ids.length >= 2) {
+            // Wait for models to load, then set values
+            setTimeout(() => {
+                const select1 = document.getElementById('model1-select');
+                const select2 = document.getElementById('model2-select');
+                
+                // Find options with matching IDs
+                for (let option of select1.options) {
+                    if (option.value === ids[0].trim()) {
+                        select1.value = ids[0].trim();
+                        break;
+                    }
+                }
+                for (let option of select2.options) {
+                    if (option.value === ids[1].trim()) {
+                        select2.value = ids[1].trim();
+                        break;
+                    }
+                }
+                
+                updateCompareButton();
+                // Auto-compare if both models are set
+                if (select1.value && select2.value) {
+                    compareModels();
+                }
+            }, 1000);
+        }
+    }
 });
 
 async function loadModels() {
