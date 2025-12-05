@@ -128,7 +128,7 @@ class StepExecutor:
                 result["status"] = "skipped"
                 result["message"] = f"Unknown step type: {step_type}"
             
-            result["completed_at"] = datetime.datetime.utcnow()
+            result["completed_at"] = datetime.utcnow()
             if result["started_at"]:
                 result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
             
@@ -145,7 +145,7 @@ class StepExecutor:
             
             # Record project metrics for step execution
             try:
-                from datetime import datetime, timedelta
+                from datetime import timedelta
                 from app.models.project_metric import MetricType, MetricPeriod
                 
                 now = datetime.utcnow()
@@ -187,7 +187,7 @@ class StepExecutor:
             
             result["status"] = "failed"
             result["error"] = str(e)
-            result["completed_at"] = datetime.datetime.utcnow()
+            result["completed_at"] = datetime.utcnow()
             if result["started_at"]:
                 result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
             
@@ -1093,7 +1093,7 @@ class ExecutionService:
             from datetime import timedelta
             from app.models.project_metric import MetricType, MetricPeriod
             
-            now = datetime.utcnow()
+            now = datetime.datetime.utcnow()
             # Round to hour for consistent period boundaries
             period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
             period_end = now.replace(minute=0, second=0, microsecond=0)
