@@ -11,8 +11,9 @@ from app.models.agent import Agent, AgentStatus
 
 def test_agent_team_creation(db):
     """Test creating an agent team"""
+    from uuid import uuid4
     team = AgentTeam(
-        name="Test Team",
+        name=f"Test Team {uuid4()}",
         description="A test team",
         coordination_strategy=CoordinationStrategy.COLLABORATIVE.value,
         roles={"developer": "Writes code", "reviewer": "Reviews code"},
@@ -24,29 +25,34 @@ def test_agent_team_creation(db):
     db.refresh(team)
     
     assert team.id is not None
-    assert team.name == "Test Team"
+    assert team.name.startswith("Test Team")
     assert team.description == "A test team"
     assert team.coordination_strategy == CoordinationStrategy.COLLABORATIVE.value
     assert team.status == TeamStatus.ACTIVE.value
     assert team.roles == {"developer": "Writes code", "reviewer": "Reviews code"}
 
 
-def test_agent_team_unique_name(db_session):
+def test_agent_team_unique_name(db):
     """Test that team names must be unique"""
-    team1 = AgentTeam(name="Unique Team")
-    team2 = AgentTeam(name="Unique Team")
+    from uuid import uuid4
+    unique_name = f"Unique Team {uuid4()}"
+    team1 = AgentTeam(name=unique_name)
+    team2 = AgentTeam(name=unique_name)
     
     db.add(team1)
     db.commit()
     
     db.add(team2)
-    with pytest.raises(Exception):  # IntegrityError or similar
+    from sqlalchemy.exc import IntegrityError
+    with pytest.raises(IntegrityError):
         db.commit()
+    db.rollback()
 
 
-def test_agent_team_defaults(db_session):
+def test_agent_team_defaults(db):
     """Test default values for agent team"""
-    team = AgentTeam(name="Default Team")
+    from uuid import uuid4
+    team = AgentTeam(name=f"Default Team {uuid4()}")
     
     db.add(team)
     db.commit()
@@ -58,10 +64,11 @@ def test_agent_team_defaults(db_session):
     assert team.updated_at is not None
 
 
-def test_agent_team_to_dict(db_session):
+def test_agent_team_to_dict(db):
     """Test converting team to dictionary"""
+    from uuid import uuid4
     team = AgentTeam(
-        name="Dict Test Team",
+        name=f"Dict Test Team {uuid4()}",
         description="Testing to_dict",
         roles={"role1": "Description 1"},
         coordination_strategy=CoordinationStrategy.PARALLEL.value
@@ -73,7 +80,7 @@ def test_agent_team_to_dict(db_session):
     
     team_dict = team.to_dict()
     
-    assert team_dict["name"] == "Dict Test Team"
+    assert team_dict["name"].startswith("Dict Test Team")
     assert team_dict["description"] == "Testing to_dict"
     assert team_dict["coordination_strategy"] == CoordinationStrategy.PARALLEL.value
     assert team_dict["roles"] == {"role1": "Description 1"}
@@ -82,8 +89,9 @@ def test_agent_team_to_dict(db_session):
     assert "agent_count" in team_dict
 
 
-def test_agent_team_coordination_strategies(db_session):
+def test_agent_team_coordination_strategies(db):
     """Test all coordination strategies"""
+    from uuid import uuid4
     strategies = [
         CoordinationStrategy.SEQUENTIAL,
         CoordinationStrategy.PARALLEL,
@@ -92,22 +100,26 @@ def test_agent_team_coordination_strategies(db_session):
         CoordinationStrategy.PIPELINE
     ]
     
+    team_ids = []
     for i, strategy in enumerate(strategies):
         team = AgentTeam(
-            name=f"Team {strategy.value}",
+            name=f"Team {strategy.value} {uuid4()}",
             coordination_strategy=strategy.value
         )
         db.add(team)
+        db.flush()  # Get ID without committing
+        team_ids.append(team.id)
     
     db.commit()
     
-    # Verify all teams were created
-    teams = db.query(AgentTeam).all()
+    # Verify all teams were created (filter by IDs we created)
+    teams = db.query(AgentTeam).filter(AgentTeam.id.in_(team_ids)).all()
     assert len(teams) == len(strategies)
 
 
-def test_agent_team_status_enum(db_session):
+def test_agent_team_status_enum(db):
     """Test team status values"""
+    from uuid import uuid4
     statuses = [
         TeamStatus.DRAFT,
         TeamStatus.ACTIVE,
@@ -115,16 +127,19 @@ def test_agent_team_status_enum(db_session):
         TeamStatus.DEPRECATED
     ]
     
+    team_ids = []
     for i, status in enumerate(statuses):
         team = AgentTeam(
-            name=f"Team {status.value}",
+            name=f"Team {status.value} {uuid4()}",
             status=status.value
         )
         db.add(team)
+        db.flush()  # Get ID without committing
+        team_ids.append(team.id)
     
     db.commit()
     
-    # Verify all teams were created
-    teams = db.query(AgentTeam).all()
+    # Verify all teams were created (filter by IDs we created)
+    teams = db.query(AgentTeam).filter(AgentTeam.id.in_(team_ids)).all()
     assert len(teams) == len(statuses)
 
