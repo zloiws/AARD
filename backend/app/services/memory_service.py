@@ -207,6 +207,135 @@ class MemoryService:
         
         return query.order_by(desc(AgentMemory.importance), desc(AgentMemory.last_accessed_at)).limit(limit).all()
     
+    async def search_memories_vector(
+        self,
+        agent_id: UUID,
+        query_text: str,
+        limit: int = 10,
+        similarity_threshold: float = 0.7,
+        memory_type: Optional[str] = None,
+        combine_with_text_search: bool = True
+    ) -> List[AgentMemory]:
+        """
+        Search memories using vector similarity (semantic search).
+        
+        Args:
+            agent_id: Agent ID
+            query_text: Text to search for (will be converted to embedding)
+            limit: Maximum number of results
+            similarity_threshold: Minimum cosine similarity (0.0 to 1.0)
+            memory_type: Optional filter by memory type
+            combine_with_text_search: Whether to combine with text search results
+            
+        Returns:
+            List of AgentMemory sorted by similarity
+        """
+        try:
+            # Generate embedding for query text
+            query_embedding = await self.embedding_service.generate_embedding(query_text)
+            
+            # Build base query
+            query = self.db.query(AgentMemory).filter(
+                AgentMemory.agent_id == agent_id,
+                AgentMemory.embedding.isnot(None)  # Only memories with embeddings
+            )
+            
+            # Filter by memory type if provided
+            if memory_type:
+                query = query.filter(AgentMemory.memory_type == memory_type)
+            
+            # Filter out expired memories
+            query = query.filter(
+                or_(
+                    AgentMemory.expires_at.is_(None),
+                    AgentMemory.expires_at > datetime.utcnow()
+                )
+            )
+            
+            # Use pgvector cosine similarity search
+            # Convert embedding list to PostgreSQL array format
+            embedding_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+            
+            # Raw SQL query for vector similarity search
+            # Using cosine distance: 1 - cosine_similarity
+            # Lower distance = higher similarity
+            sql_query = text("""
+                SELECT 
+                    id,
+                    1 - (embedding <=> :query_embedding::vector) as similarity
+                FROM agent_memories
+                WHERE agent_id = :agent_id::uuid
+                    AND embedding IS NOT NULL
+                    AND (expires_at IS NULL OR expires_at > NOW())
+                    {memory_type_filter}
+                ORDER BY embedding <=> :query_embedding::vector
+                LIMIT :limit
+            """.format(
+                memory_type_filter="AND memory_type = :memory_type" if memory_type else ""
+            ))
+            
+            params = {
+                "query_embedding": embedding_str,
+                "agent_id": str(agent_id),
+                "limit": limit
+            }
+            if memory_type:
+                params["memory_type"] = memory_type
+            
+            # Execute vector search
+            result = self.db.execute(sql_query, params)
+            rows = result.fetchall()
+            
+            # Get memory IDs and similarities
+            memory_ids = [UUID(row[0]) for row in rows]
+            similarities = [float(row[1]) for row in rows]
+            
+            # Filter by similarity threshold
+            filtered_results = []
+            for mem_id, similarity in zip(memory_ids, similarities):
+                if similarity >= similarity_threshold:
+                    memory = self.db.query(AgentMemory).filter(AgentMemory.id == mem_id).first()
+                    if memory:
+                        filtered_results.append(memory)
+            
+            logger.info(
+                f"Vector search found {len(filtered_results)} memories",
+                extra={
+                    "agent_id": str(agent_id),
+                    "query": query_text[:50],
+                    "threshold": similarity_threshold
+                }
+            )
+            
+            # Optionally combine with text search
+            if combine_with_text_search and len(filtered_results) < limit:
+                text_results = self.search_memories(
+                    agent_id=agent_id,
+                    query_text=query_text,
+                    limit=limit - len(filtered_results),
+                    memory_type=memory_type
+                )
+                
+                # Merge results, avoiding duplicates
+                vector_ids = {mem.id for mem in filtered_results}
+                for text_mem in text_results:
+                    if text_mem.id not in vector_ids:
+                        filtered_results.append(text_mem)
+            
+            return filtered_results[:limit]
+            
+        except Exception as e:
+            logger.error(f"Error in vector search: {e}", exc_info=True)
+            # Fallback to text search on error
+            if combine_with_text_search:
+                return self.search_memories(
+                    agent_id=agent_id,
+                    query_text=query_text,
+                    limit=limit,
+                    memory_type=memory_type
+                )
+            return []
+    
     def update_memory(
         self,
         memory_id: UUID,
