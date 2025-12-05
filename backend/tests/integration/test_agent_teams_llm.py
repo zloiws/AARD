@@ -24,9 +24,9 @@ from app.core.database import SessionLocal
 def test_ollama_server(db):
     """Create test Ollama server"""
     server = OllamaServer(
-        name="Test Server",
-        url="http://10.39.0.101:11434",
-        status="active"
+        name=f"Test Server {uuid4()}",
+        url=f"http://10.39.0.101:11434",
+        is_active=True
     )
     db.add(server)
     db.commit()
@@ -40,7 +40,7 @@ def test_ollama_model(db, test_ollama_server):
     model = OllamaModel(
         server_id=test_ollama_server.id,
         name="deepseek-r1-abliterated:8b",
-        status="active"
+        is_active=True
     )
     db.add(model)
     db.commit()
