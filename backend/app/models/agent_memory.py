@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 from uuid import uuid4, UUID
 
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float, Index
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -42,6 +42,10 @@ class AgentMemory(Base):
     memory_type = Column(String(50), nullable=False)  # MemoryType enum
     content = Column(JSONB, nullable=False)  # Memory content (flexible structure)
     summary = Column(Text, nullable=True)  # Human-readable summary
+    
+    # Vector embedding for semantic search
+    # Using ARRAY(Float) for compatibility, pgvector will handle it as vector type
+    embedding = Column(ARRAY(Float), nullable=True)  # Vector embedding for semantic search
     
     # Importance and access tracking
     importance = Column(Float, default=0.5, nullable=False)  # 0.0 to 1.0
@@ -88,6 +92,7 @@ class AgentMemory(Base):
             "source": self.source,
             "created_at": self.created_at.isoformat(),
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "has_embedding": self.embedding is not None,
         }
 
 

@@ -1,7 +1,7 @@
 """
 Database configuration and session management
 """
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text as sa_text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator, Optional
@@ -141,6 +141,17 @@ def get_engine():
                 "timeout": 5  # For SQLite
             }
         )
+        
+        # Enable pgvector extension on first connection (if using PostgreSQL)
+        if "postgresql" in settings.database_url:
+            try:
+                with _engine.connect() as conn:
+                    conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                    conn.commit()
+            except Exception as e:
+                # Extension might already exist or user might not have permissions
+                # This is not critical - migration will handle it
+                logging.getLogger(__name__).debug(f"Could not enable vector extension: {e}")
         
         # Explicitly set SQLAlchemy logger level
         sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
