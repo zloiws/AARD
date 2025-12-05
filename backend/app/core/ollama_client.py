@@ -283,6 +283,7 @@ class OllamaClient:
         system_prompt: Optional[str] = None,
         history: Optional[List[Dict[str, str]]] = None,
         stream: bool = False,
+        use_cache: bool = True,
         **kwargs
     ) -> OllamaResponse:
         """
@@ -371,18 +372,24 @@ class OllamaClient:
             }
         )
         
-        # Check cache
-        cache_key = self._get_cache_key(prompt, model_to_use, **kwargs)
-        cached_response = self._get_from_cache(cache_key)
-        if cached_response:
+        # Check cache (only if use_cache is True)
+        if use_cache:
+            cache_key = self._get_cache_key(prompt, model_to_use, **kwargs)
+            cached_response = self._get_from_cache(cache_key)
+            if cached_response:
+                logger.debug(
+                    "Using cached response",
+                    extra={"model": model_to_use, "cache_key": cache_key[:20]}
+                )
+                return OllamaResponse(
+                    model=model_to_use,
+                    response=cached_response,
+                    done=True
+                )
+        else:
             logger.debug(
-                "Using cached response",
-                extra={"model": model_to_use, "cache_key": cache_key[:20]}
-            )
-            return OllamaResponse(
-                model=model_to_use,
-                response=cached_response,
-                done=True
+                "Cache disabled for this request",
+                extra={"model": model_to_use}
             )
         
         # Health check (but don't fallback if server_url was explicitly provided)
@@ -422,6 +429,18 @@ class OllamaClient:
         if history:
             messages.extend(history)
         messages.append({"role": "user", "content": prompt})
+        
+        # Логирование реального вызова к LLM (если кэш отключен)
+        if not use_cache:
+            logger.info(
+                "🔄 РЕАЛЬНЫЙ ВЫЗОВ К LLM (кэш отключен)",
+                extra={
+                    "model": model_to_use,
+                    "server_url": instance.url,
+                    "prompt_length": len(prompt),
+                    "task_type": task_type.value
+                }
+            )
         
         # Prepare request
         # Применить глобальные ограничения из конфигурации (стопоры)
@@ -527,13 +546,27 @@ class OllamaClient:
                             }
                         )
                     
-                    # Save to cache
-                    if data.get("done") and response_text:
+                    # Save to cache (только если кэш включен)
+                    if use_cache and data.get("done") and response_text:
+                        cache_key = self._get_cache_key(prompt, model_to_use, **kwargs)
                         self._save_to_cache(
                             cache_key,
                             response_text,
                             model_to_use,
                             metadata={"attempt": attempt + 1}
+                        )
+                    elif not use_cache:
+                        # Логирование реального ответа от LLM
+                        duration = time.time() - request_start_time
+                        logger.info(
+                            "✅ РЕАЛЬНЫЙ ОТВЕТ ОТ LLM получен",
+                            extra={
+                                "model": model_to_use,
+                                "server_url": instance.url,
+                                "response_length": len(response_text),
+                                "duration_seconds": round(duration, 2),
+                                "task_type": task_type.value
+                            }
                         )
                     
                     # Record successful request metrics

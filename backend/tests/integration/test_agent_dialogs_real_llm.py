@@ -259,7 +259,8 @@ async def test_real_agent_dialog_with_llm(db):
                         prompt=agent1_prompt,
                         task_type=TaskType.PLANNING,
                         model=planning_model.model_name,
-                        server_url=server_url
+                        server_url=server_url,
+                        use_cache=False  # Отключить кэш для реальных тестов
                     ),
                     timeout=TIMEOUTS["llm_call"]
                 )
@@ -309,7 +310,8 @@ async def test_real_agent_dialog_with_llm(db):
                         prompt=agent2_prompt,
                         task_type=TaskType.CODE_GENERATION,
                         model=planning_model.model_name,
-                        server_url=server_url
+                        server_url=server_url,
+                        use_cache=False  # Отключить кэш для реальных тестов
                     ),
                     timeout=TIMEOUTS["llm_call"]
                 )
@@ -525,7 +527,8 @@ async def test_real_agent_dialog_multiturn_llm(db):
                         prompt=prompt,
                         task_type=TaskType.PLANNING,
                         model=planning_model.model_name,
-                        server_url=server_url
+                        server_url=server_url,
+                        use_cache=False  # Отключить кэш для реальных тестов
                     ),
                     timeout=TIMEOUTS["llm_call"]
                 )

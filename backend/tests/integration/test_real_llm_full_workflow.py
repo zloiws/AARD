@@ -110,7 +110,8 @@ async def test_real_llm_full_workflow_with_errors(db):
             prompt="Напиши привет мир на Python",
             task_type=TaskType.CODE_GENERATION,
             model=model.model_name,
-            server_url=server.get_api_url()
+            server_url=server.get_api_url(),
+            use_cache=False  # Отключить кэш для реальных тестов
         )
         
         response_text = response.response if hasattr(response, 'response') else str(response)

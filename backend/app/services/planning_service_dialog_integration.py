@@ -238,7 +238,8 @@ async def conduct_agent_dialog(
                 task_type=TaskType.PLANNING,
                 model=planning_model.model_name,
                 server_url=server_url,
-                num_predict=200
+                num_predict=200,
+                use_cache=False  # Отключить кэш для реальных вызовов
             ),
             timeout=30
         )
@@ -273,7 +274,8 @@ async def conduct_agent_dialog(
                     task_type=TaskType.PLANNING,
                     model=planning_model.model_name,
                     server_url=server_url,
-                    num_predict=200
+                    num_predict=200,
+                    use_cache=False  # Отключить кэш для реальных вызовов
                 ),
                 timeout=30
             )
