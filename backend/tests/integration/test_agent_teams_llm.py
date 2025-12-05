@@ -25,14 +25,14 @@ def test_ollama_server(db):
     """Create test Ollama server or get existing"""
     # Try to get existing server first
     server = db.query(OllamaServer).filter(
-        OllamaServer.url == "http://10.39.0.101:11434"
+        OllamaServer.url == "http://10.39.0.6:11434"
     ).first()
     
     if not server:
         # Create new server with unique URL
         server = OllamaServer(
             name=f"Test Server {uuid4()}",
-            url=f"http://10.39.0.101:11434",
+            url=f"http://10.39.0.6:11434",
             is_active=True
         )
         db.add(server)

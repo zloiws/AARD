@@ -60,15 +60,24 @@ async def test_real_llm_full_workflow_with_errors(db):
     if not servers:
         pytest.skip("No active Ollama servers available")
     
+    # Prefer server 10.39.0.6 if available
+    server = None
+    for s in servers:
+        if "10.39.0.6" in s.url:
+            server = s
+            break
+    
+    if not server:
+        server = servers[0]
+    
     print_result(True, f"Found {len(servers)} active server(s)")
-    for server in servers:
-        print(f"     Server: {server.name} ({server.url})")
-        models = OllamaService.get_models_for_server(db, str(server.id))
+    for s in servers:
+        marker = " <-- USING" if s.id == server.id else ""
+        print(f"     Server: {s.name} ({s.url}){marker}")
+        models = OllamaService.get_models_for_server(db, str(s.id))
         print(f"     Models: {len(models)}")
         for model in models:
             print(f"       - {model.name} ({model.model_name})")
-    
-    server = servers[0]
     models = OllamaService.get_models_for_server(db, str(server.id))
     if not models:
         pytest.skip(f"No active models on server {server.name}")
