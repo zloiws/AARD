@@ -232,6 +232,9 @@ async def test_real_modules_interaction_full_workflow(db):
                     stage.set_success(False)
                     pytest.skip("Нет модели для планирования")
                 
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Модель должна быть активна
+                assert planning_model.is_active, f"Модель планирования {planning_model.model_name} должна быть активна"
+                
                 stage.add_detail("Модель планирования", planning_model.model_name)
                 
                 # Выбор модели для генерации кода
@@ -240,14 +243,30 @@ async def test_real_modules_interaction_full_workflow(db):
                     stage.add_warning("Не удалось выбрать модель для генерации кода, будет использована модель планирования")
                     code_model = planning_model
                 
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Модель должна быть активна
+                assert code_model.is_active, f"Модель генерации кода {code_model.model_name} должна быть активна"
+                
                 stage.add_detail("Модель генерации кода", code_model.model_name)
                 
                 # Получение сервера для моделей
                 planning_server = model_selector.get_server_for_model(planning_model)
                 code_server = model_selector.get_server_for_model(code_model)
                 
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Серверы должны существовать
+                assert planning_server is not None, "Сервер для модели планирования должен существовать"
+                assert code_server is not None, "Сервер для модели генерации кода должен существовать"
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Серверы должны быть активны
+                assert planning_server.is_active, "Сервер планирования должен быть активен"
+                assert code_server.is_active, "Сервер генерации кода должен быть активен"
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Модели должны принадлежать правильным серверам
+                assert planning_model.server_id == planning_server.id, "Модель планирования должна принадлежать серверу планирования"
+                assert code_model.server_id == code_server.id, "Модель генерации кода должна принадлежать серверу генерации кода"
+                
                 stage.add_detail("Сервер планирования", planning_server.url if planning_server else "Не найден")
                 stage.add_detail("Сервер генерации кода", code_server.url if code_server else "Не найден")
+                stage.add_detail("Согласованность моделей", "✓ Модели и серверы согласованы")
                 
                 stage.set_success(True)
                 
@@ -311,6 +330,11 @@ async def test_real_modules_interaction_full_workflow(db):
                 if plan.task_id:
                     assert plan.task_id == task.id, f"План должен быть связан с задачей {task.id}, но связан с {plan.task_id}"
                     stage.add_detail("Связь с задачей", f"✓ План связан с задачей {task.id}")
+                    
+                    # ПРОВЕРКА СОГЛАСОВАННОСТИ: Задача должна существовать в БД
+                    task_from_db = db.query(Task).filter(Task.id == task.id).first()
+                    assert task_from_db is not None, "Задача должна существовать в БД"
+                    assert task_from_db.id == task.id, "ID задачи должен совпадать"
                 else:
                     stage.add_warning("План не связан с задачей (task_id отсутствует)")
                 
@@ -462,6 +486,16 @@ async def test_real_modules_interaction_full_workflow(db):
                 executed_status = executed_plan.status.value if hasattr(executed_plan.status, 'value') else str(executed_plan.status)
                 valid_execution_statuses = ["executing", "completed", "failed", "in_progress"]
                 assert executed_status in valid_execution_statuses, f"План должен быть в статусе выполнения ({valid_execution_statuses}), но в статусе {executed_status}"
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Если план выполняется, должен быть current_step
+                if executed_status in ["executing", "in_progress"]:
+                    current_step = executed_plan.current_step_index or executed_plan.current_step
+                    assert current_step is not None or current_step == 0, "При выполнении плана должен быть указан текущий шаг"
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен быть сохранен в БД
+                plan_from_db = db.query(Plan).filter(Plan.id == executed_plan.id).first()
+                assert plan_from_db is not None, "План должен существовать в БД после выполнения"
+                assert plan_from_db.status == executed_plan.status, "Статус плана в БД должен совпадать с возвращенным"
                 
                 # plan.status может быть строкой или enum
                 status_value = executed_plan.status.value if hasattr(executed_plan.status, 'value') else str(executed_plan.status)
