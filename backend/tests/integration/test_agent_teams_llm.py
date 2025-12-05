@@ -22,15 +22,23 @@ from app.core.database import SessionLocal
 
 @pytest.fixture
 def test_ollama_server(db):
-    """Create test Ollama server"""
-    server = OllamaServer(
-        name=f"Test Server {uuid4()}",
-        url=f"http://10.39.0.101:11434",
-        is_active=True
-    )
-    db.add(server)
-    db.commit()
-    db.refresh(server)
+    """Create test Ollama server or get existing"""
+    # Try to get existing server first
+    server = db.query(OllamaServer).filter(
+        OllamaServer.url == "http://10.39.0.101:11434"
+    ).first()
+    
+    if not server:
+        # Create new server with unique URL
+        server = OllamaServer(
+            name=f"Test Server {uuid4()}",
+            url=f"http://10.39.0.101:11434",
+            is_active=True
+        )
+        db.add(server)
+        db.commit()
+        db.refresh(server)
+    
     return server
 
 
