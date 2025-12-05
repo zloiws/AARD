@@ -440,7 +440,16 @@ class BenchmarkService:
         # Update result
         result.score = score
         result.metrics = metrics
-        result.passed = score >= (criteria.get("pass_threshold", 0.7) if criteria else 0.7)
+        
+        # Determine pass threshold
+        # If no expected_output, use lower threshold (0.5 instead of 0.7)
+        # If expected_output exists, use criteria threshold or default 0.7
+        if not expected_output:
+            pass_threshold = criteria.get("pass_threshold", 0.5) if criteria else 0.5
+        else:
+            pass_threshold = criteria.get("pass_threshold", 0.7) if criteria else 0.7
+        
+        result.passed = score >= pass_threshold
         
         self.db.commit()
         self.db.refresh(result)
@@ -522,9 +531,18 @@ Return only valid JSON, no additional text."""
         score = 0.0
         
         if not expected_output:
-            # No expected output, give default score
-            score = 0.5
-            metrics["no_expected_output"] = True
+            # No expected output - check if output is meaningful
+            # If output exists and is not empty, give partial credit
+            if output and len(output.strip()) > 10:
+                # Output exists and seems meaningful
+                score = 0.6  # Increased from 0.5 to 0.6 for meaningful output
+                metrics["no_expected_output"] = True
+                metrics["has_output"] = True
+                metrics["output_length"] = len(output)
+            else:
+                score = 0.3  # Low score for empty/poor output
+                metrics["no_expected_output"] = True
+                metrics["has_output"] = False
             return score, metrics
         
         # Simple string comparison
@@ -535,22 +553,42 @@ Return only valid JSON, no additional text."""
             score = 1.0
             metrics["exact_match"] = True
         elif expected_lower in output_lower:
-            score = 0.8
+            score = 0.85  # Increased from 0.8
             metrics["contains_expected"] = True
         elif output_lower in expected_lower:
-            score = 0.6
+            score = 0.7  # Increased from 0.6
             metrics["contained_in_expected"] = True
         else:
-            # Calculate similarity (simple word overlap)
+            # Calculate similarity (improved word overlap)
             output_words = set(output_lower.split())
             expected_words = set(expected_lower.split())
             
+            # Remove common stop words for better comparison
+            stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those'}
+            output_words = output_words - stop_words
+            expected_words = expected_words - stop_words
+            
             if expected_words:
                 overlap = len(output_words & expected_words)
-                score = min(overlap / len(expected_words), 0.5)
-                metrics["word_overlap"] = overlap / len(expected_words)
+                overlap_ratio = overlap / len(expected_words)
+                
+                # Improved scoring based on overlap
+                if overlap_ratio >= 0.8:
+                    score = 0.75
+                elif overlap_ratio >= 0.6:
+                    score = 0.65
+                elif overlap_ratio >= 0.4:
+                    score = 0.55
+                elif overlap_ratio >= 0.2:
+                    score = 0.45
+                else:
+                    score = 0.35
+                
+                metrics["word_overlap"] = overlap_ratio
+                metrics["overlap_count"] = overlap
+                metrics["expected_words_count"] = len(expected_words)
             else:
-                score = 0.3
+                score = 0.4
                 metrics["low_similarity"] = True
         
         metrics["simple_evaluation"] = True

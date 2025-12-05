@@ -13,6 +13,7 @@ from app.core.database import SessionLocal
 from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
 from app.services.benchmark_service import BenchmarkService
+from app.models.benchmark_result import BenchmarkResult
 
 
 def find_model_by_name(db, server_name, model_name):
@@ -33,6 +34,58 @@ def find_model_by_name(db, server_name, model_name):
         return None
     
     return model
+
+
+async def run_tests_for_model(service, model, db, limit=None):
+    """Run benchmark tests for a model"""
+    print(f"\n{'='*70}")
+    print(f" Запуск тестов для модели: {model.name or model.model_name}")
+    print(f"{'='*70}\n")
+    
+    server = model.server
+    server_url = server.get_api_url()
+    
+    # Get all tasks or limited set
+    tasks = service.list_tasks(limit=limit)
+    
+    if not tasks:
+        print("⚠️  Нет доступных задач для тестирования")
+        return 0
+    
+    print(f"Найдено задач: {len(tasks)}")
+    print(f"Запуск тестов...\n")
+    
+    results_count = 0
+    for i, task in enumerate(tasks, 1):
+        print(f"[{i}/{len(tasks)}] {task.name}... ", end="", flush=True)
+        
+        try:
+            result = await service.run_benchmark(
+                task_id=task.id,
+                model_id=model.id,
+                model_name=model.model_name,
+                server_id=server.id,
+                server_url=server_url,
+                timeout=90.0
+            )
+            
+            # Evaluate result
+            if result.output and not result.error_message:
+                await service.evaluate_result(result.id, use_llm=False)
+                db.refresh(result)
+            
+            if result.passed:
+                print(f"✓ (score: {result.score*100:.1f}%, time: {result.execution_time:.2f}s)")
+            else:
+                print(f"✗ (score: {result.score*100 if result.score else 0:.1f}%, time: {result.execution_time:.2f}s)")
+            
+            results_count += 1
+            
+        except Exception as e:
+            print(f"✗ Ошибка: {str(e)[:50]}")
+    
+    print(f"\n✅ Выполнено тестов: {results_count}/{len(tasks)}")
+    return results_count
 
 
 async def compare_models():
@@ -56,12 +109,43 @@ async def compare_models():
         print(f"✅ Модель 2: {model2.name or model2.model_name} (ID: {model2.id})")
         print(f"   Сервер: {model2.server.name}")
         
+        # Check existing results
+        service = BenchmarkService(db)
+        
+        results1 = db.query(BenchmarkResult).filter(BenchmarkResult.model_id == model1.id).count()
+        results2 = db.query(BenchmarkResult).filter(BenchmarkResult.model_id == model2.id).count()
+        
+        total_tasks = len(service.list_tasks())
+        
+        # Run tests if needed
+        print("\n" + "=" * 70)
+        print(" Проверка существующих результатов")
+        print("=" * 70)
+        print(f"Модель 1: {results1} результатов из {total_tasks} задач")
+        print(f"Модель 2: {results2} результатов из {total_tasks} задач")
+        
+        if results1 < total_tasks or results2 < total_tasks:
+            print("\n" + "=" * 70)
+            print(" Запуск тестов для моделей")
+            print("=" * 70)
+            
+            if results1 < total_tasks:
+                await run_tests_for_model(service, model1, db)
+            else:
+                print(f"\n✅ Модель 1 уже протестирована ({results1} результатов)")
+            
+            if results2 < total_tasks:
+                await run_tests_for_model(service, model2, db)
+            else:
+                print(f"\n✅ Модель 2 уже протестирована ({results2} результатов)")
+        else:
+            print("\n✅ Обе модели уже протестированы")
+        
         # Run comparison
         print("\n" + "=" * 70)
         print(" Запуск сравнения")
         print("=" * 70 + "\n")
         
-        service = BenchmarkService(db)
         comparison = service.compare_models(
             model_ids=[model1.id, model2.id],
             task_type=None,  # All task types
