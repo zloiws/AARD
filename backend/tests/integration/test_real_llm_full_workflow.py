@@ -82,7 +82,15 @@ async def test_real_llm_full_workflow_with_errors(db):
     if not models:
         pytest.skip(f"No active models on server {server.name}")
     
-    model = models[0]
+    # Filter out embedding models (they don't support chat API)
+    non_embedding_models = [
+        m for m in models 
+        if m.model_name and not ("embedding" in m.model_name.lower() or "embed" in m.model_name.lower())
+    ]
+    if not non_embedding_models:
+        pytest.skip(f"No non-embedding models on server {server.name}")
+    
+    model = non_embedding_models[0]
     print_result(True, f"Using server: {server.name}", {
         "url": server.url,
         "model": model.name,
