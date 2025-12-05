@@ -14,7 +14,9 @@ from app.models.task import Task, TaskStatus
 from app.core.ollama_client import OllamaClient, TaskType
 from app.services.ollama_service import OllamaService
 from app.services.approval_service import ApprovalService
+from app.services.prompt_service import PromptService
 from app.models.approval import ApprovalRequestType
+from app.models.prompt import PromptType
 from app.core.tracing import get_tracer, add_span_attributes, get_current_trace_id
 from app.services.request_logger import RequestLogger
 
@@ -29,6 +31,7 @@ class PlanningService:
         self.current_task_id = None  # Track current task_id for real-time log saving
         self.workflow_id = None  # Track workflow ID for real-time display
         self.workflow_tracker = None  # WorkflowTracker instance for real-time events
+        self.prompt_service = PromptService(db)  # Prompt management service
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
     
@@ -118,6 +121,119 @@ class PlanningService:
             return LoggingConfig.get_logger(__name__)
         except:
             return None
+    
+    def _get_analysis_prompt(self) -> str:
+        """Get prompt for task analysis from database or fallback to default
+        
+        Returns:
+            System prompt for task analysis
+        """
+        # Default fallback prompt
+        DEFAULT_ANALYSIS_PROMPT = """You are an expert at task analysis and strategic planning.
+Analyze the task and create a strategy that includes:
+1. approach: General approach to solving the task
+2. assumptions: List of assumptions made
+3. constraints: List of constraints and limitations
+4. success_criteria: List of criteria for successful completion
+
+Return a JSON object with these fields. Only return valid JSON, no additional text."""
+        
+        try:
+            prompt = self.prompt_service.get_active_prompt(
+                name="task_analysis",
+                prompt_type=PromptType.SYSTEM,
+                level=0
+            )
+            
+            if prompt:
+                logger = self._get_logger()
+                if logger:
+                    logger.debug(
+                        f"Using prompt from database: task_analysis (id: {prompt.id})",
+                        extra={"prompt_id": str(prompt.id), "prompt_name": "task_analysis"}
+                    )
+                return prompt.prompt_text
+            else:
+                logger = self._get_logger()
+                if logger:
+                    logger.warning(
+                        "Prompt 'task_analysis' not found in database, using fallback",
+                        extra={"prompt_name": "task_analysis"}
+                    )
+                return DEFAULT_ANALYSIS_PROMPT
+        except Exception as e:
+            logger = self._get_logger()
+            if logger:
+                logger.warning(
+                    f"Error loading prompt from database, using fallback: {e}",
+                    exc_info=True
+                )
+            return DEFAULT_ANALYSIS_PROMPT
+    
+    def _get_decomposition_prompt(self) -> str:
+        """Get prompt for task decomposition from database or fallback to default
+        
+        Returns:
+            System prompt for task decomposition
+        """
+        # Default fallback prompt
+        DEFAULT_DECOMPOSITION_PROMPT = """You are an expert at breaking down complex tasks into executable steps.
+Create a detailed plan with steps. Each step should have:
+- step_id: unique identifier (e.g., "step_1", "step_2")
+- description: clear description of what to do
+- type: one of "action", "decision", "validation", "approval"
+- inputs: what inputs are needed (object)
+- expected_outputs: what outputs are expected (object)
+- timeout: timeout in seconds (integer)
+- retry_policy: {max_attempts: 3, delay: 10}
+- dependencies: list of step_ids that must complete first (array)
+- approval_required: boolean
+- risk_level: "low", "medium", or "high"
+- function_call: (optional) if step requires code execution, include function call in format:
+  {
+    "function": "code_execution_tool",
+    "parameters": {
+      "code": "python code here",
+      "language": "python"
+    }
+  }
+
+IMPORTANT: For steps that require code execution, use function_call instead of generating code directly.
+This ensures safe execution in a sandboxed environment.
+
+Return a JSON array of steps."""
+        
+        try:
+            prompt = self.prompt_service.get_active_prompt(
+                name="task_decomposition",
+                prompt_type=PromptType.SYSTEM,
+                level=0
+            )
+            
+            if prompt:
+                logger = self._get_logger()
+                if logger:
+                    logger.debug(
+                        f"Using prompt from database: task_decomposition (id: {prompt.id})",
+                        extra={"prompt_id": str(prompt.id), "prompt_name": "task_decomposition"}
+                    )
+                return prompt.prompt_text
+            else:
+                logger = self._get_logger()
+                if logger:
+                    logger.warning(
+                        "Prompt 'task_decomposition' not found in database, using fallback",
+                        extra={"prompt_name": "task_decomposition"}
+                    )
+                return DEFAULT_DECOMPOSITION_PROMPT
+        except Exception as e:
+            logger = self._get_logger()
+            if logger:
+                logger.warning(
+                    f"Error loading prompt from database, using fallback: {e}",
+                    exc_info=True
+                )
+            return DEFAULT_DECOMPOSITION_PROMPT
     
     def _add_and_save_workflow_event(
         self,
@@ -700,17 +816,45 @@ class PlanningService:
                 task_description=task_description[:100],
             )
             
-            system_prompt = """You are an expert at task analysis and strategic planning.
-Analyze the task and create a strategy that includes:
-1. approach: General approach to solving the task
-2. assumptions: List of assumptions made
-3. constraints: List of constraints and limitations
-4. success_criteria: List of criteria for successful completion
-
-Return a JSON object with these fields. Only return valid JSON, no additional text."""
+            # Get system prompt from database or fallback
+            system_prompt = self._get_analysis_prompt()
+            
+            # Track which prompt was used
+            prompt_used = None
+            try:
+                prompt_used = self.prompt_service.get_active_prompt(
+                    name="task_analysis",
+                    prompt_type=PromptType.SYSTEM,
+                    level=0
+                )
+            except Exception:
+                pass  # Already logged in _get_analysis_prompt
         
             # Build enhanced prompt with Digital Twin context
-        user_prompt = self._build_enhanced_analysis_prompt(task_description, context, task_id)
+            user_prompt = self._build_enhanced_analysis_prompt(task_description, context, task_id)
+            
+            # Save used prompt ID to Digital Twin context
+            if task_id and prompt_used:
+                try:
+                    task = self.db.query(Task).filter(Task.id == task_id).first()
+                    if task:
+                        task_context = task.get_context()
+                        prompt_usage = task_context.get("prompt_usage", {})
+                        if "prompts_used" not in prompt_usage:
+                            prompt_usage["prompts_used"] = []
+                        prompt_usage["prompts_used"].append({
+                            "prompt_id": str(prompt_used.id),
+                            "prompt_name": prompt_used.name,
+                            "stage": "analysis",
+                            "timestamp": datetime.utcnow().isoformat()
+                        })
+                        task_context["prompt_usage"] = prompt_usage
+                        task.update_context(task_context, merge=False)
+                        self.db.commit()
+                except Exception as e:
+                    logger = self._get_logger()
+                    if logger:
+                        logger.warning(f"Failed to save prompt usage to context: {e}", exc_info=True)
         
         try:
             # Use ModelSelector for dual-model architecture
@@ -919,31 +1063,19 @@ Return a JSON object with these fields. Only return valid JSON, no additional te
                 task_description=task_description[:100],
             )
             
-            system_prompt = """You are an expert at breaking down complex tasks into executable steps.
-Create a detailed plan with steps. Each step should have:
-- step_id: unique identifier (e.g., "step_1", "step_2")
-- description: clear description of what to do
-- type: one of "action", "decision", "validation", "approval"
-- inputs: what inputs are needed (object)
-- expected_outputs: what outputs are expected (object)
-- timeout: timeout in seconds (integer)
-- retry_policy: {max_attempts: 3, delay: 10}
-- dependencies: list of step_ids that must complete first (array)
-- approval_required: boolean
-- risk_level: "low", "medium", or "high"
-- function_call: (optional) if step requires code execution, include function call in format:
-  {
-    "function": "code_execution_tool",
-    "parameters": {
-      "code": "python code here",
-      "language": "python"
-    }
-  }
-
-IMPORTANT: For steps that require code execution, use function_call instead of generating code directly.
-This ensures safe execution in a sandboxed environment.
-
-Return a JSON array of steps."""
+            # Get system prompt from database or fallback
+            system_prompt = self._get_decomposition_prompt()
+            
+            # Track which prompt was used
+            prompt_used = None
+            try:
+                prompt_used = self.prompt_service.get_active_prompt(
+                    name="task_decomposition",
+                    prompt_type=PromptType.SYSTEM,
+                    level=0
+                )
+            except Exception:
+                pass  # Already logged in _get_decomposition_prompt
         
         # Build enhanced prompt with Digital Twin context
         strategy_str = json.dumps(strategy, indent=2, ensure_ascii=False)
@@ -954,6 +1086,26 @@ Return a JSON array of steps."""
             task = self.db.query(Task).filter(Task.id == task_id).first()
             if task:
                 digital_twin_context = task.get_context()
+                
+                # Save used prompt ID to Digital Twin context
+                if prompt_used:
+                    try:
+                        prompt_usage = digital_twin_context.get("prompt_usage", {})
+                        if "prompts_used" not in prompt_usage:
+                            prompt_usage["prompts_used"] = []
+                        prompt_usage["prompts_used"].append({
+                            "prompt_id": str(prompt_used.id),
+                            "prompt_name": prompt_used.name,
+                            "stage": "decomposition",
+                            "timestamp": datetime.utcnow().isoformat()
+                        })
+                        digital_twin_context["prompt_usage"] = prompt_usage
+                        task.update_context(digital_twin_context, merge=False)
+                        self.db.commit()
+                    except Exception as e:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to save prompt usage to context: {e}", exc_info=True)
         
         # Build context sections
         sections = []

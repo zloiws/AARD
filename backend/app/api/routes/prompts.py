@@ -16,6 +16,7 @@ from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
 from app.core.auth import get_current_user_optional
 from app.models.prompt import Prompt, PromptType, PromptStatus
+from app.services.prompt_service import PromptService
 
 router = APIRouter(prefix="/api/prompts", tags=["prompts"])
 logger = LoggingConfig.get_logger(__name__)
@@ -53,25 +54,31 @@ class UpdatePromptRequest(BaseModel):
     status: Optional[PromptStatus] = None
 
 
+class PromptVersionRequest(BaseModel):
+    """Request model for creating prompt version"""
+    prompt_text: str = Field(..., description="New prompt text for the version")
+
+
 @router.get("/", response_model=List[PromptResponse])
 async def list_prompts(
     prompt_type: Optional[PromptType] = None,
     status: Optional[PromptStatus] = None,
     level: Optional[int] = None,
+    name: Optional[str] = None,
     limit: int = 50,
+    offset: int = 0,
     db: Session = Depends(get_db)
 ):
-    """List prompts"""
-    query = db.query(Prompt)
-    
-    if prompt_type:
-        query = query.filter(Prompt.prompt_type == prompt_type)
-    if status:
-        query = query.filter(Prompt.status == status)
-    if level is not None:
-        query = query.filter(Prompt.level == level)
-    
-    prompts = query.order_by(Prompt.created_at.desc()).limit(limit).all()
+    """List prompts with filtering"""
+    prompt_service = PromptService(db)
+    prompts = prompt_service.list_prompts(
+        prompt_type=prompt_type,
+        status=status,
+        level=level,
+        name_search=name,
+        limit=limit,
+        offset=offset
+    )
     return prompts
 
 
@@ -101,53 +108,22 @@ async def create_prompt(
 ):
     """Create a new prompt"""
     try:
-        # Ensure lowercase values for DB constraints
-        prompt_type_str = request.prompt_type.value.lower() if hasattr(request.prompt_type, 'value') else str(request.prompt_type).lower()
-        status_str = "active"  # Always lowercase
+        prompt_service = PromptService(db)
+        created_by = current_user.username if current_user else "system"
         
-        logger.debug(
-            "Creating prompt",
-            extra={
-                "prompt_type": prompt_type_str,
-                "status": status_str,
-                "name": request.name,
-                "level": request.level,
-            }
-        )
-        
-        prompt = Prompt(
+        prompt = prompt_service.create_prompt(
             name=request.name,
             prompt_text=request.prompt_text,
-            prompt_type=prompt_type_str,
+            prompt_type=request.prompt_type,
             level=request.level,
-            status=status_str,
-            created_by=current_user.username if current_user else "system"
+            created_by=created_by
         )
-        
-        # Verify values are lowercase before commit
-        if prompt.status != "active":
-            prompt.status = "active"
-        if hasattr(prompt.prompt_type, 'upper') and prompt.prompt_type.upper() == prompt.prompt_type:
-            prompt.prompt_type = prompt.prompt_type.lower()
-        
-        logger.debug(
-            "Prompt object created",
-            extra={
-                "prompt_id": str(prompt.id) if hasattr(prompt, 'id') and prompt.id else None,
-                "prompt_type": prompt.prompt_type,
-                "status": prompt.status,
-            }
-        )
-        
-        db.add(prompt)
-        db.commit()
-        db.refresh(prompt)
         
         return prompt
     except Exception as e:
-        db.rollback()
         import traceback
         error_detail = f"Error creating prompt: {str(e)}\n{traceback.format_exc()}"
+        logger.error(f"Error creating prompt: {error_detail}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_detail
@@ -161,7 +137,14 @@ async def update_prompt(
     db: Session = Depends(get_db)
 ):
     """Update a prompt"""
-    prompt = db.query(Prompt).filter(Prompt.id == prompt_id).first()
+    prompt_service = PromptService(db)
+    
+    prompt = prompt_service.update_prompt(
+        prompt_id=prompt_id,
+        prompt_text=request.prompt_text,
+        name=request.name,
+        level=None  # Level update not supported in UpdatePromptRequest
+    )
     
     if not prompt:
         raise HTTPException(
@@ -169,19 +152,81 @@ async def update_prompt(
             detail=f"Prompt {prompt_id} not found"
         )
     
-    if request.prompt_text is not None:
-        prompt.prompt_text = request.prompt_text
-    if request.name is not None:
-        prompt.name = request.name
+    # Update status separately if provided
     if request.status is not None:
-        prompt.status = request.status
-    
-    prompt.version += 1
-    
-    db.commit()
-    db.refresh(prompt)
+        if request.status == PromptStatus.DEPRECATED:
+            prompt = prompt_service.deprecate_prompt(prompt_id)
+        else:
+            prompt.status = request.status.value.lower() if hasattr(request.status, 'value') else str(request.status).lower()
+            db.commit()
+            db.refresh(prompt)
     
     return prompt
+
+
+@router.post("/{prompt_id}/version", response_model=PromptResponse)
+async def create_prompt_version(
+    prompt_id: UUID,
+    request: PromptVersionRequest,
+    http_request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional["User"] = Depends(get_current_user_optional)
+):
+    """Create a new version of a prompt"""
+    prompt_service = PromptService(db)
+    created_by = current_user.username if current_user else "system"
+    
+    new_version = prompt_service.create_version(
+        parent_prompt_id=prompt_id,
+        prompt_text=request.prompt_text,
+        created_by=created_by
+    )
+    
+    if not new_version:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Parent prompt {prompt_id} not found"
+        )
+    
+    return new_version
+
+
+@router.post("/{prompt_id}/deprecate", response_model=PromptResponse)
+async def deprecate_prompt(
+    prompt_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Deprecate (disable) a prompt"""
+    prompt_service = PromptService(db)
+    
+    deprecated = prompt_service.deprecate_prompt(prompt_id)
+    
+    if not deprecated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prompt {prompt_id} not found"
+        )
+    
+    return deprecated
+
+
+@router.get("/{prompt_id}/versions", response_model=List[PromptResponse])
+async def get_prompt_versions(
+    prompt_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get all versions of a prompt"""
+    prompt_service = PromptService(db)
+    
+    versions = prompt_service.get_prompt_versions(prompt_id)
+    
+    if not versions:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prompt {prompt_id} not found"
+        )
+    
+    return versions
 
 
 @router.delete("/{prompt_id}")
