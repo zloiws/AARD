@@ -32,6 +32,7 @@ from app.models.chat_session import ChatSession, ChatMessage  # noqa: F401
 from app.models.workflow_event import (  # noqa: F401
     WorkflowEvent, EventSource, EventType, EventStatus, WorkflowStage
 )
+from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType  # noqa: F401
 
 __all__ = [
     "Base",
@@ -111,5 +112,8 @@ __all__ = [
     "EventType",
     "EventStatus",
     "WorkflowStage",
+    # Benchmark
+    "BenchmarkTask",
+    "BenchmarkTaskType",
 ]
 
