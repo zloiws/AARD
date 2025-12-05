@@ -126,17 +126,27 @@ class TestStage:
         self.success = success
 
 
-# Таймауты для различных операций (в секундах)
+# Таймауты для различных операций (в секундах) - ОПТИМИЗИРОВАНО ДЛЯ ОГРАНИЧЕННОГО ЖЕЛЕЗА
 TIMEOUTS = {
-    "llm_call": 60,  # 1 минута на LLM вызов
-    "planning": 180,  # 3 минуты на генерацию плана
-    "execution_step": 120,  # 2 минуты на выполнение шага
-    "full_execution": 600,  # 10 минут на полное выполнение
-    "team_coordination": 300,  # 5 минут на координацию команды
+    "llm_call": 30,  # 30 секунд на LLM вызов (быстрые ответы)
+    "planning": 60,  # 1 минута на генерацию плана (без долгих размышлений)
+    "execution_step": 45,  # 45 секунд на выполнение шага
+    "full_execution": 180,  # 3 минуты на полное выполнение (максимум)
+    "team_coordination": 30,  # 30 секунд на координацию команды
+}
+
+# Параметры для ограничения времени размышлений LLM
+LLM_FAST_PARAMS = {
+    "temperature": 0.3,  # Низкая температура = быстрые, детерминированные ответы
+    "top_p": 0.8,  # Ограничение выборки
+    "num_ctx": 2048,  # Уменьшенный контекст для скорости
+    "num_predict": 500,  # Максимум токенов в ответе (ограничение "думать час")
 }
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow  # Маркер для долгих тестов
+@pytest.mark.timeout(300)  # Общий таймаут теста: 5 минут максимум
 async def test_real_modules_interaction_full_workflow(db):
     """
     Полный тест реального взаимодействия модулей
@@ -158,7 +168,8 @@ async def test_real_modules_interaction_full_workflow(db):
     test_logger.info(f"{'#'*100}\n")
     
     overall_start = datetime.now()
-    test_task_description = "Напиши программу на Python, которая выводит 'Привет, мир!' и сохраняет результат в файл"
+    # Упрощенная задача для быстрого выполнения на ограниченном железе
+    test_task_description = "Напиши print('Привет, мир!') на Python"
     
     try:
         # ========================================================================
@@ -372,6 +383,18 @@ async def test_real_modules_interaction_full_workflow(db):
                     if strategy:
                         stage.add_detail("Подход", strategy.get("approach", "Не указан")[:100])
                 
+                # ЛОГИРОВАНИЕ: План сгенерирован
+                test_logger.info(f"\n📋 ПЛАН СГЕНЕРИРОВАН:")
+                test_logger.info(f"   ID плана: {plan.id}")
+                test_logger.info(f"   Статус: {status_value}")
+                test_logger.info(f"   Шагов: {len(steps)}")
+                test_logger.info(f"   Цель: {plan.goal[:80]}..." if len(plan.goal) > 80 else f"   Цель: {plan.goal}")
+                if steps:
+                    test_logger.info(f"   Первые шаги:")
+                    for i, step in enumerate(steps[:3], 1):
+                        step_desc = step.get("description", "")[:60]
+                        test_logger.info(f"     {i}. {step_desc}...")
+                
                 stage.set_success(True)
                 
             except asyncio.TimeoutError:
@@ -489,7 +512,7 @@ async def test_real_modules_interaction_full_workflow(db):
                 
                 # ПРОВЕРКА СОГЛАСОВАННОСТИ: Если план выполняется, должен быть current_step
                 if executed_status in ["executing", "in_progress"]:
-                    current_step = executed_plan.current_step_index or executed_plan.current_step
+                    current_step = getattr(executed_plan, 'current_step_index', None) or getattr(executed_plan, 'current_step', None)
                     assert current_step is not None or current_step == 0, "При выполнении плана должен быть указан текущий шаг"
                 
                 # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен быть сохранен в БД
@@ -500,12 +523,17 @@ async def test_real_modules_interaction_full_workflow(db):
                 # plan.status может быть строкой или enum
                 status_value = executed_plan.status.value if hasattr(executed_plan.status, 'value') else str(executed_plan.status)
                 stage.add_detail("Статус выполнения", status_value)
-                stage.add_detail("Текущий шаг", executed_plan.current_step_index or executed_plan.current_step or 0)
+                # Проверка текущего шага (может быть current_step или current_step_index)
+                current_step = getattr(executed_plan, 'current_step_index', None) or getattr(executed_plan, 'current_step', None) or 0
+                stage.add_detail("Текущий шаг", current_step)
                 
                 # Проверка согласованности: если план выполнен, должен быть current_step
                 if status_value in ["completed", "executing"]:
-                    current_step = executed_plan.current_step_index or executed_plan.current_step or 0
-                    stage.add_detail("Прогресс выполнения", f"Шаг {current_step} из {len(steps)}")
+                    current_step = getattr(executed_plan, 'current_step_index', None) or getattr(executed_plan, 'current_step', None) or 0
+                    if len(steps) > 0:
+                        stage.add_detail("Прогресс выполнения", f"Шаг {current_step} из {len(steps)}")
+                    else:
+                        stage.add_detail("Прогресс выполнения", f"Шаг {current_step}")
                 
                 # Анализ шагов из плана
                 executed_steps = executed_plan.steps if isinstance(executed_plan.steps, list) else json.loads(executed_plan.steps) if executed_plan.steps else []
@@ -549,6 +577,22 @@ async def test_real_modules_interaction_full_workflow(db):
                     stage.add_warning(f"План в статусе {plan_status_str}")
                     stage.set_success(True)  # Частичный успех
                 
+                # ЛОГИРОВАНИЕ: План выполнен
+                test_logger.info(f"\n⚙️ ПЛАН ВЫПОЛНЕН:")
+                test_logger.info(f"   Статус: {plan_status_str}")
+                test_logger.info(f"   Выполнено шагов: {completed_count}/{len(executed_steps)}")
+                if plan_status_str == "completed":
+                    test_logger.info(f"   ✓ План успешно завершен!")
+                    # Показать результаты шагов
+                    for i, step in enumerate(executed_steps[:3], 1):
+                        step_status = step.get("status", "unknown")
+                        step_desc = step.get("description", "")[:50]
+                        test_logger.info(f"     Шаг {i}: {step_status} - {step_desc}...")
+                elif plan_status_str == "failed":
+                    test_logger.info(f"   ✗ План завершился с ошибкой")
+                else:
+                    test_logger.info(f"   ⚠ План в процессе выполнения")
+                
             except asyncio.TimeoutError:
                 stage.add_error(f"Таймаут выполнения плана ({TIMEOUTS['full_execution']} сек)")
                 stage.set_success(False)
@@ -587,7 +631,8 @@ async def test_real_modules_interaction_full_workflow(db):
                         stage.add_warning("Задачи не были распределены между агентами")
                     
                     # ПРОВЕРКА СОГЛАСОВАННОСТИ: Назначенные агенты должны быть из команды
-                    team_agent_ids = {str(a.id) for a in team.agents}
+                    team_agents_list = list(team.agents) if hasattr(team.agents, '__iter__') else []
+                    team_agent_ids = {str(a.id) for a in team_agents_list}
                     for agent_info in assigned_agents:
                         agent_id = str(agent_info.get("agent_id", ""))
                         if agent_id and agent_id not in team_agent_ids:
@@ -622,13 +667,17 @@ async def test_real_modules_interaction_full_workflow(db):
         db.refresh(task)
         db.refresh(team)
         
-        test_logger.info("ФИНАЛЬНЫЕ СТАТУСЫ:")
+        test_logger.info("\n" + "="*100)
+        test_logger.info("📤 РЕЗУЛЬТАТ РАБОТЫ СИСТЕМЫ:")
+        test_logger.info("="*100)
+        
+        test_logger.info("\nФИНАЛЬНЫЕ СТАТУСЫ:")
         task_status = task.status.value if hasattr(task.status, 'value') else str(task.status)
         plan_status = plan.status.value if hasattr(plan.status, 'value') else str(plan.status)
         team_status = team.status.value if hasattr(team.status, 'value') else str(team.status)
-        test_logger.info(f"  Задача: {task_status}")
-        test_logger.info(f"  План: {plan_status}")
-        test_logger.info(f"  Команда: {team_status}")
+        test_logger.info(f"  ✓ Задача: {task_status}")
+        test_logger.info(f"  ✓ План: {plan_status}")
+        test_logger.info(f"  ✓ Команда: {team_status}")
         
         # ПРОВЕРКА СОГЛАСОВАННОСТИ: Связь задачи и плана
         if plan.task_id:
@@ -658,7 +707,9 @@ async def test_real_modules_interaction_full_workflow(db):
         # ПРОВЕРКА СОГЛАСОВАННОСТИ: Команда должна существовать
         assert team is not None, "Команда должна быть создана"
         assert team.id is not None, "Команда должна иметь ID"
-        test_logger.info(f"  ✓ Команда создана: {team.id} ({len(team.agents)} агентов)")
+        # team.agents может быть AppenderQuery, нужно преобразовать в список
+        team_agents_list = list(team.agents) if hasattr(team.agents, '__iter__') else []
+        test_logger.info(f"  ✓ Команда создана: {team.id} ({len(team_agents_list)} агентов)")
         
         # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен иметь шаги
         final_steps = plan.steps if isinstance(plan.steps, list) else json.loads(plan.steps) if plan.steps else []

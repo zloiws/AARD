@@ -435,6 +435,10 @@ class OllamaClient:
             }
         }
         
+        # Добавить num_predict для ограничения длины ответа (предотвратить "думать час")
+        if "num_predict" in kwargs:
+            payload["options"]["num_predict"] = kwargs["num_predict"]
+        
         # Prepare request URL (remove /v1 for API calls)
         request_base_url = instance.url
         if request_base_url.endswith("/v1"):
