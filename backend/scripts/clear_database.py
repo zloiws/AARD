@@ -61,14 +61,14 @@ def clear_database():
         print(" ✅ Database cleared successfully!")
         print("=" * 70 + "\n")
         
-        # Restore Ollama servers from .env
-        print("Restoring Ollama servers from .env configuration...")
+        # Restore database (tables, servers, prompts)
+        print("Restoring database (tables, servers, initial prompts)...")
         try:
-            from scripts.restore_servers import restore_servers
-            restore_servers()
+            from scripts.restore_after_clear import main as restore_main
+            restore_main()
         except Exception as e:
-            print(f"⚠️  Warning: Failed to restore servers: {e}")
-            print("   You can manually restore them by running: python scripts/restore_servers.py")
+            print(f"⚠️  Warning: Failed to restore database: {e}")
+            print("   You can manually restore by running: python scripts/restore_after_clear.py")
         
         return True
         
