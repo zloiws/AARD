@@ -143,12 +143,13 @@ from app.api.routes import a2a
 app.include_router(a2a.router)
 
 # Evolution system routers
-from app.api.routes import approvals, artifacts, prompts, plans, model_logs
+from app.api.routes import approvals, artifacts, prompts, plans, model_logs, project_metrics
 app.include_router(approvals.router)
 app.include_router(artifacts.router)
 app.include_router(prompts.router)
 app.include_router(plans.router)
 app.include_router(model_logs.router)
+app.include_router(project_metrics.router)
 from app.api.routes import benchmarks
 app.include_router(benchmarks.router)
 from app.api.routes import benchmarks_pages

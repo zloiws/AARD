@@ -213,9 +213,159 @@ print(f"Success rate: {overview['performance']['success_rate']}")
 print(f"Avg execution time: {overview['performance']['avg_execution_time']}")
 ```
 
+## Этап 3.1.3: API для метрик проекта
+
+### Endpoints
+
+#### GET /api/metrics/project/overview
+
+Получить обзор метрик проекта за указанный период.
+
+**Параметры:**
+- `days` (int, default=30): Количество дней для анализа (1-365)
+
+**Ответ:**
+```json
+{
+  "period": {
+    "days": 30,
+    "start": "2025-11-05T00:00:00Z",
+    "end": "2025-12-05T00:00:00Z"
+  },
+  "performance": {
+    "success_rate": 0.85,
+    "avg_execution_time": 2.5,
+    "total_tasks": 100
+  },
+  "distribution": {
+    "by_status": {...},
+    "by_type": {...}
+  },
+  "plans": {
+    "total": 50,
+    "completed": 45,
+    "failed": 5
+  },
+  "recent_metrics": [...]
+}
+```
+
+#### GET /api/metrics/project/trends
+
+Получить тренды для конкретной метрики.
+
+**Параметры:**
+- `metric_name` (str, required): Имя метрики
+- `metric_type` (str, optional): Тип метрики (performance, task_success, execution_time, etc.)
+- `days` (int, default=30): Количество дней для анализа (1-365)
+- `period` (str, default="day"): Период агрегации (hour, day, week, month)
+
+**Ответ:**
+```json
+{
+  "metric_name": "task_success_rate",
+  "metric_type": "task_success",
+  "period": "day",
+  "days": 30,
+  "data_points": [
+    {
+      "period_start": "2025-12-01T00:00:00Z",
+      "period_end": "2025-12-02T00:00:00Z",
+      "value": 0.85,
+      "count": 10
+    },
+    ...
+  ]
+}
+```
+
+#### GET /api/metrics/project/comparison
+
+Сравнить метрики между двумя периодами.
+
+**Параметры:**
+- `period1_start` (str, required): Начало первого периода (ISO format)
+- `period1_end` (str, required): Конец первого периода (ISO format)
+- `period2_start` (str, required): Начало второго периода (ISO format)
+- `period2_end` (str, required): Конец второго периода (ISO format)
+
+**Ответ:**
+```json
+{
+  "period1": {
+    "start": "2025-11-01T00:00:00Z",
+    "end": "2025-11-15T00:00:00Z",
+    "metrics": {...}
+  },
+  "period2": {
+    "start": "2025-11-16T00:00:00Z",
+    "end": "2025-11-30T00:00:00Z",
+    "metrics": {...}
+  },
+  "changes": {
+    "success_rate": {
+      "period1": 0.80,
+      "period2": 0.85,
+      "change": 0.05,
+      "change_percent": 6.25
+    },
+    ...
+  }
+}
+```
+
+#### GET /api/metrics/project/metrics
+
+Список метрик с фильтрацией и пагинацией.
+
+**Параметры:**
+- `metric_type` (str, optional): Фильтр по типу метрики
+- `metric_name` (str, optional): Фильтр по имени метрики
+- `period` (str, optional): Фильтр по периоду агрегации
+- `limit` (int, default=100): Максимальное количество результатов (1-1000)
+- `offset` (int, default=0): Смещение для пагинации
+
+**Ответ:**
+```json
+[
+  {
+    "id": "uuid",
+    "metric_type": "performance",
+    "metric_name": "task_success_rate",
+    "period": "hour",
+    "period_start": "2025-12-05T12:00:00Z",
+    "period_end": "2025-12-05T13:00:00Z",
+    "value": 0.85,
+    "count": 10,
+    "min_value": 0.70,
+    "max_value": 0.95,
+    "sum_value": 8.5,
+    "metadata": {...},
+    "created_at": "2025-12-05T13:00:00Z",
+    "updated_at": "2025-12-05T13:00:00Z"
+  },
+  ...
+]
+```
+
+### Примеры использования
+
+```bash
+# Получить обзор за последние 7 дней
+curl "http://localhost:8000/api/metrics/project/overview?days=7"
+
+# Получить тренды успешности задач за месяц
+curl "http://localhost:8000/api/metrics/project/trends?metric_name=task_success_rate&days=30&period=day"
+
+# Сравнить два периода
+curl "http://localhost:8000/api/metrics/project/comparison?period1_start=2025-11-01T00:00:00Z&period1_end=2025-11-15T00:00:00Z&period2_start=2025-11-16T00:00:00Z&period2_end=2025-11-30T00:00:00Z"
+
+# Список метрик производительности
+curl "http://localhost:8000/api/metrics/project/metrics?metric_type=performance&limit=50"
+```
+
 ## Дальнейшее развитие
 
-- **Этап 3.1.3**: API endpoints для метрик проекта
 - **Этап 3.2**: Регулярный самоаудит с автоматическими рекомендациями
 - **Этап 3.3**: Dashboard для визуализации метрик
 
