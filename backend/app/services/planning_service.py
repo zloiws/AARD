@@ -18,6 +18,8 @@ from app.services.prompt_service import PromptService
 from app.services.project_metrics_service import ProjectMetricsService
 from app.services.plan_template_service import PlanTemplateService
 from app.services.plan_evaluation_service import PlanEvaluationService
+from app.services.agent_team_service import AgentTeamService
+from app.services.agent_team_coordination import AgentTeamCoordination
 from app.models.approval import ApprovalRequestType
 from app.models.prompt import PromptType
 from app.core.tracing import get_tracer, add_span_attributes, get_current_trace_id
@@ -38,6 +40,8 @@ class PlanningService:
         self.metrics_service = ProjectMetricsService(db)  # Project metrics service
         self.plan_template_service = PlanTemplateService(db)  # Plan template service
         self.plan_evaluation_service = PlanEvaluationService(db)  # Plan evaluation service for A/B testing
+        self.agent_team_service = AgentTeamService(db)  # Agent team service
+        self.agent_team_coordination = AgentTeamCoordination(db)  # Agent team coordination service
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
     
@@ -604,25 +608,47 @@ Return a JSON array of steps."""
         procedural_pattern = None
         agent_id = None
         selected_agent = None
+        team_id = None
+        selected_team = None
         
-        # Get agent_id from context if provided
+        # Get team_id or agent_id from context if provided
         if context and isinstance(context, dict):
-            agent_id_str = context.get("agent_id")
-            if agent_id_str:
+            # Check for team_id first (teams take precedence)
+            team_id_str = context.get("team_id")
+            if team_id_str:
                 try:
-                    agent_id = UUID(agent_id_str)
-                    # Get agent info if agent_id was provided
-                    try:
-                        from app.services.agent_service import AgentService
-                        agent_service = AgentService(self.db)
-                        selected_agent = agent_service.get_agent(agent_id)
-                    except Exception:
-                        pass
+                    team_id = UUID(team_id_str)
+                    selected_team = self.agent_team_service.get_team(team_id)
+                    if selected_team and selected_team.status == "active":
+                        logger = self._get_logger()
+                        if logger:
+                            logger.info(
+                                f"Using agent team {selected_team.name} for planning",
+                                extra={"team_id": str(team_id), "team_name": selected_team.name}
+                            )
+                    else:
+                        team_id = None  # Invalid or inactive team
                 except (ValueError, TypeError):
                     pass
+            
+            # Get agent_id from context if no team specified
+            if not team_id:
+                agent_id_str = context.get("agent_id")
+                if agent_id_str:
+                    try:
+                        agent_id = UUID(agent_id_str)
+                        # Get agent info if agent_id was provided
+                        try:
+                            from app.services.agent_service import AgentService
+                            agent_service = AgentService(self.db)
+                            selected_agent = agent_service.get_agent(agent_id)
+                        except Exception:
+                            pass
+                    except (ValueError, TypeError):
+                        pass
         
-        # If no agent_id provided, try to select an agent automatically
-        if not agent_id:
+        # If no agent_id or team_id provided, try to select an agent automatically
+        if not agent_id and not team_id:
             try:
                 from app.services.agent_service import AgentService
                 from app.models.agent import AgentCapability
@@ -799,8 +825,21 @@ Return a JSON array of steps."""
             task_id=task_id
         )
         
-        # Assign selected agent to steps if available
-        if agent_id and steps:
+        # Assign selected agent or team to steps if available
+        if team_id and selected_team and steps:
+            # Assign team to steps - distribution will happen during execution
+            for step in steps:
+                if not step.get("agent") and not step.get("team_id"):
+                    step["team_id"] = str(team_id)
+                    # Optionally assign specific agent from team based on step requirements
+                    step_role = step.get("role") or step.get("required_role")
+                    if step_role:
+                        # Try to find agent with matching role in team
+                        role_agents = self.agent_team_service.get_agents_by_role(team_id, step_role)
+                        if role_agents:
+                            step["agent"] = str(role_agents[0].id)
+        elif agent_id and steps:
+            # Assign single agent to steps
             for step in steps:
                 if not step.get("agent"):
                     step["agent"] = str(agent_id)

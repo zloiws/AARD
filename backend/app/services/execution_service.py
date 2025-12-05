@@ -213,9 +213,25 @@ class StepExecutor:
         """Execute an action step"""
         description = step.get("description", "")
         
-        # Check if step specifies an agent
+        # Check if step specifies a team or agent
+        team_id = step.get("team_id")
         agent_id = step.get("agent")
         tool_id = step.get("tool")
+        
+        # If team is specified, use team coordination to execute the step
+        if team_id:
+            try:
+                return await self._execute_with_team(step, plan, context, result, team_id, tool_id)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to execute step with team {team_id}, falling back to agent/LLM: {e}",
+                    extra={
+                        "step_id": step.get("step_id"),
+                        "team_id": team_id,
+                        "error": str(e)
+                    }
+                )
+                # Fall back to agent or LLM execution
         
         # If agent is specified, use agent to execute the step
         if agent_id:
