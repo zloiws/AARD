@@ -47,10 +47,13 @@ class MemoryService:
         importance: float = 0.5,
         tags: Optional[List[str]] = None,
         source: Optional[str] = None,
-        expires_at: Optional[datetime] = None
+        expires_at: Optional[datetime] = None,
+        generate_embedding: bool = False
     ) -> AgentMemory:
         """
-        Save a memory to long-term storage
+        Save a memory to long-term storage (synchronous version).
+        
+        For automatic embedding generation, use save_memory_async() instead.
         
         Args:
             agent_id: Agent ID
@@ -61,6 +64,7 @@ class MemoryService:
             tags: Tags for categorization
             source: Source of memory (task_id, user, etc.)
             expires_at: Optional expiration date
+            generate_embedding: If True, will generate embedding asynchronously in background
             
         Returns:
             Created AgentMemory
@@ -88,16 +92,134 @@ class MemoryService:
         self.db.commit()
         self.db.refresh(memory)
         
+        # Generate embedding in background if requested
+        if generate_embedding:
+            # Run async embedding generation in background
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            # Schedule embedding generation (fire and forget)
+            asyncio.create_task(self._generate_and_save_embedding(memory))
+        
         logger.info(
             f"Saved memory for agent {agent_id}",
             extra={
                 "memory_id": str(memory.id),
                 "memory_type": memory_type,
-                "importance": importance
+                "importance": importance,
+                "embedding_scheduled": generate_embedding
             }
         )
         
         return memory
+    
+    async def save_memory_async(
+        self,
+        agent_id: UUID,
+        memory_type: str,
+        content: Dict[str, Any],
+        summary: Optional[str] = None,
+        importance: float = 0.5,
+        tags: Optional[List[str]] = None,
+        source: Optional[str] = None,
+        expires_at: Optional[datetime] = None,
+        generate_embedding: bool = True
+    ) -> AgentMemory:
+        """
+        Save a memory to long-term storage with automatic embedding generation (async version).
+        
+        Args:
+            agent_id: Agent ID
+            memory_type: Type of memory (fact, experience, pattern, rule)
+            content: Memory content (dict)
+            summary: Human-readable summary
+            importance: Importance score (0.0 to 1.0)
+            tags: Tags for categorization
+            source: Source of memory (task_id, user, etc.)
+            expires_at: Optional expiration date
+            generate_embedding: Whether to generate embedding automatically (default: True)
+            
+        Returns:
+            Created AgentMemory with embedding if generate_embedding=True
+        """
+        # Validate agent exists
+        agent = self.db.query(Agent).filter(Agent.id == agent_id).first()
+        if not agent:
+            raise ValueError(f"Agent {agent_id} not found")
+        
+        # Validate importance range
+        importance = max(0.0, min(1.0, importance))
+        
+        memory = AgentMemory(
+            agent_id=agent_id,
+            memory_type=memory_type,
+            content=content,
+            summary=summary,
+            importance=importance,
+            tags=tags or [],
+            source=source,
+            expires_at=expires_at
+        )
+        
+        self.db.add(memory)
+        self.db.commit()
+        self.db.refresh(memory)
+        
+        # Generate embedding automatically if requested
+        if generate_embedding:
+            await self._generate_and_save_embedding(memory)
+        
+        logger.info(
+            f"Saved memory for agent {agent_id}",
+            extra={
+                "memory_id": str(memory.id),
+                "memory_type": memory_type,
+                "importance": importance,
+                "has_embedding": memory.embedding is not None
+            }
+        )
+        
+        return memory
+    
+    async def _generate_and_save_embedding(self, memory: AgentMemory):
+        """
+        Generate and save embedding for a memory.
+        
+        Args:
+            memory: AgentMemory instance to generate embedding for
+        """
+        try:
+            # Use summary or content for embedding generation
+            text_for_embedding = memory.summary
+            if not text_for_embedding:
+                # Extract text from content if summary is not available
+                if isinstance(memory.content, dict):
+                    # Try to get text from common fields
+                    text_for_embedding = (
+                        memory.content.get("description") or
+                        memory.content.get("text") or
+                        memory.content.get("content") or
+                        str(memory.content)
+                    )
+                else:
+                    text_for_embedding = str(memory.content)
+            
+            if text_for_embedding:
+                embedding = await self.embedding_service.generate_embedding(text_for_embedding)
+                memory.embedding = embedding
+                self.db.commit()
+                self.db.refresh(memory)
+                logger.debug(f"Generated embedding for memory {memory.id}")
+            else:
+                logger.warning(f"No text available for embedding generation (memory {memory.id})")
+                
+        except Exception as e:
+            # Log error but don't fail memory saving
+            logger.error(f"Error generating embedding for memory {memory.id}: {e}", exc_info=True)
     
     def get_memory(self, memory_id: UUID) -> Optional[AgentMemory]:
         """
