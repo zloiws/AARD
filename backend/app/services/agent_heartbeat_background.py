@@ -52,6 +52,15 @@ class AgentHeartbeatMonitor:
         """Check all active agents"""
         try:
             db = next(get_db())
+            
+            # Check if agents table exists
+            from sqlalchemy import inspect, text
+            inspector = inspect(db.bind)
+            if 'agents' not in inspector.get_table_names():
+                logger.debug("Agents table does not exist, skipping heartbeat check")
+                db.close()
+                return
+            
             heartbeat_service = AgentHeartbeatService(db)
             
             # Get all active agents

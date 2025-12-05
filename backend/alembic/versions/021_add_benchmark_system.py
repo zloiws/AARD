@@ -46,6 +46,7 @@ def upgrade() -> None:
     op.create_index('idx_benchmark_tasks_name', 'benchmark_tasks', ['name'], unique=True)
     
     # Create benchmark_results table
+    # First create table without foreign keys to ollama tables (they may not exist)
     op.create_table(
         'benchmark_results',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
@@ -61,9 +62,29 @@ def upgrade() -> None:
         sa.Column('execution_metadata', postgresql.JSONB(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(['benchmark_task_id'], ['benchmark_tasks.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['model_id'], ['ollama_models.id'], ondelete='SET NULL'),
-        sa.ForeignKeyConstraint(['server_id'], ['ollama_servers.id'], ondelete='SET NULL'),
     )
+    
+    # Add foreign keys to ollama tables only if they exist
+    from sqlalchemy import inspect
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    existing_tables = inspector.get_table_names()
+    
+    if 'ollama_models' in existing_tables:
+        op.create_foreign_key(
+            'fk_benchmark_results_model',
+            'benchmark_results', 'ollama_models',
+            ['model_id'], ['id'],
+            ondelete='SET NULL'
+        )
+    
+    if 'ollama_servers' in existing_tables:
+        op.create_foreign_key(
+            'fk_benchmark_results_server',
+            'benchmark_results', 'ollama_servers',
+            ['server_id'], ['id'],
+            ondelete='SET NULL'
+        )
     
     # Create indexes for benchmark_results
     op.create_index('idx_benchmark_results_task_id', 'benchmark_results', ['benchmark_task_id'])
@@ -73,6 +94,20 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Drop foreign keys if they exist
+    from sqlalchemy import inspect
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    
+    try:
+        op.drop_constraint('fk_benchmark_results_server', 'benchmark_results', type_='foreignkey')
+    except:
+        pass
+    try:
+        op.drop_constraint('fk_benchmark_results_model', 'benchmark_results', type_='foreignkey')
+    except:
+        pass
+    
     # Drop benchmark_results indexes
     op.drop_index('idx_benchmark_results_created_at', table_name='benchmark_results')
     op.drop_index('idx_benchmark_results_server_id', table_name='benchmark_results')
