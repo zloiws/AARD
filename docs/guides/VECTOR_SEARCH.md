@@ -78,11 +78,30 @@ embeddings = await embedding_service.generate_embeddings_batch(texts)
 
 ### Сохранение памяти с embedding
 
+#### Автоматическая генерация (рекомендуется)
+
 ```python
 from app.services.memory_service import MemoryService
-from uuid import UUID
 
 memory_service = MemoryService(db)
+
+# Сохранить память с автоматической генерацией embedding (async)
+memory = await memory_service.save_memory_async(
+    agent_id=agent_id,
+    memory_type="fact",
+    content={"fact": "Python is a programming language"},
+    summary="Python programming language fact",
+    generate_embedding=True  # Автоматически генерирует embedding
+)
+
+# Embedding уже сохранен в memory.embedding
+```
+
+#### Ручная генерация
+
+```python
+from app.services.embedding_service import EmbeddingService
+
 embedding_service = EmbeddingService(db)
 
 # Сохранить память
@@ -93,7 +112,7 @@ memory = memory_service.save_memory(
     summary="Python programming language fact"
 )
 
-# Генерировать и сохранить embedding
+# Генерировать и сохранить embedding вручную
 embedding = await embedding_service.generate_embedding(memory.summary or "")
 memory.embedding = embedding
 db.commit()
