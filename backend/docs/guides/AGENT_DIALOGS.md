@@ -333,11 +333,153 @@ if "agent_dialog" in context:
     # Использовать результаты диалога
 ```
 
+## API для управления диалогами
+
+API предоставляет полный набор эндпоинтов для управления диалогами между агентами.
+
+### Эндпоинты
+
+#### POST `/api/agent-dialogs/`
+Создание нового диалога между агентами.
+
+**Request:**
+```json
+{
+  "participant_ids": ["agent_id_1", "agent_id_2"],
+  "goal": "Цель диалога",
+  "title": "Название диалога",
+  "description": "Описание",
+  "task_id": "task_id (опционально)",
+  "initial_context": {}
+}
+```
+
+**Response:** `ConversationResponse` (201)
+
+#### GET `/api/agent-dialogs/{conversation_id}`
+Получение диалога по ID.
+
+**Response:** `ConversationResponse` (200)
+
+#### GET `/api/agent-dialogs/`
+Список диалогов с фильтрацией:
+- `task_id` - фильтр по задаче
+- `agent_id` - фильтр по участнику
+- `status` - фильтр по статусу
+
+**Response:** `List[ConversationResponse]` (200)
+
+#### POST `/api/agent-dialogs/{conversation_id}/message`
+Добавление сообщения в диалог.
+
+**Request:**
+```json
+{
+  "agent_id": "agent_id",
+  "content": "Текст сообщения",
+  "role": "agent",
+  "metadata": {}
+}
+```
+
+**Response:** `MessageResponse` (200)
+
+#### POST `/api/agent-dialogs/{conversation_id}/send-message`
+Отправка сообщения с уведомлениями через A2A протокол.
+
+**Request:**
+```json
+{
+  "sender_agent_id": "agent_id",
+  "content": "Текст сообщения",
+  "recipient_agent_ids": ["agent_id_1", "agent_id_2"],
+  "metadata": {}
+}
+```
+
+**Response:** `MessageResponse` (200)
+
+#### PUT `/api/agent-dialogs/{conversation_id}/context`
+Обновление контекста диалога.
+
+**Request:**
+```json
+{
+  "updates": {
+    "key": "value"
+  }
+}
+```
+
+**Response:** `Dict[str, Any]` (200)
+
+#### POST `/api/agent-dialogs/{conversation_id}/complete`
+Завершение диалога.
+
+**Query params:**
+- `success` (bool) - успешно ли завершен
+- `result` (dict) - результат диалога
+
+**Response:** `ConversationResponse` (200)
+
+#### POST `/api/agent-dialogs/{conversation_id}/pause`
+Приостановка диалога.
+
+**Response:** `ConversationResponse` (200)
+
+#### POST `/api/agent-dialogs/{conversation_id}/resume`
+Возобновление диалога.
+
+**Response:** `ConversationResponse` (200)
+
+#### GET `/api/agent-dialogs/{conversation_id}/messages`
+Получение всех сообщений диалога.
+
+**Response:** `List[MessageResponse]` (200)
+
+### Примеры использования
+
+#### Создание диалога
+```python
+import requests
+
+response = requests.post(
+    "http://localhost:8000/api/agent-dialogs/",
+    json={
+        "participant_ids": ["agent_1_id", "agent_2_id"],
+        "goal": "Обсудить архитектуру системы",
+        "title": "Архитектурный диалог"
+    }
+)
+
+conversation = response.json()
+conversation_id = conversation["id"]
+```
+
+#### Добавление сообщения
+```python
+response = requests.post(
+    f"http://localhost:8000/api/agent-dialogs/{conversation_id}/message",
+    json={
+        "agent_id": "agent_1_id",
+        "content": "Предлагаю использовать микросервисную архитектуру"
+    }
+)
+```
+
+#### Получение диалога
+```python
+response = requests.get(
+    f"http://localhost:8000/api/agent-dialogs/{conversation_id}"
+)
+conversation = response.json()
+```
+
 ## Следующие шаги
 
 - ✅ Реализация `AgentDialogService` для управления диалогами (выполнено)
 - ✅ Интеграционные тесты (выполнено)
 - ✅ Интеграция диалогов в `PlanningService` (Этап 8.2.1 - выполнено)
-- API для управления диалогами (Этап 8.2.2)
+- ✅ API для управления диалогами (Этап 8.2.2 - выполнено)
 - Полный цикл диалога с реальными агентами и LLM
 

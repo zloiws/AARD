@@ -27,7 +27,7 @@ from app.api.routes import (
     artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages, tools_pages,
     experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages, model_logs, current_work, workflow,
     websocket_events, benchmarks, project_metrics, project_metrics_pages, audit_reports, audit_reports_pages,
-    plan_templates
+    plan_templates, agent_dialogs
 )
 
 # Configure logging first
@@ -146,6 +146,7 @@ app.include_router(metrics.router)
 app.include_router(health.router)
 app.include_router(agents.router)
 app.include_router(tools.router)
+app.include_router(agent_dialogs.router)
 
 # A2A communication
 from app.api.routes import a2a
