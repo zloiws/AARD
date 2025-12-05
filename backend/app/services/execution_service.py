@@ -128,7 +128,7 @@ class StepExecutor:
                 result["status"] = "skipped"
                 result["message"] = f"Unknown step type: {step_type}"
             
-            result["completed_at"] = datetime.utcnow()
+            result["completed_at"] = datetime.datetime.utcnow()
             if result["started_at"]:
                 result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
             
@@ -187,7 +187,7 @@ class StepExecutor:
             
             result["status"] = "failed"
             result["error"] = str(e)
-            result["completed_at"] = datetime.utcnow()
+            result["completed_at"] = datetime.datetime.utcnow()
             if result["started_at"]:
                 result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
             
