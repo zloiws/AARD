@@ -156,10 +156,114 @@ conversation = AgentConversation(
 - Связь с задачами
 - Преобразование в словарь
 
+## AgentDialogService
+
+Сервис для управления диалогами между агентами.
+
+### Основные методы
+
+#### Создание диалога
+
+```python
+from app.services.agent_dialog_service import AgentDialogService
+
+service = AgentDialogService(db)
+
+conversation = service.create_conversation(
+    participant_ids=[agent1.id, agent2.id],
+    goal="Решить сложную задачу",
+    title="Диалог о планировании",
+    task_id=task.id  # Опционально
+)
+```
+
+#### Добавление сообщений
+
+```python
+# Простое добавление сообщения
+message = service.add_message(
+    conversation_id=conversation.id,
+    agent_id=agent1.id,
+    content="Привет! Давай обсудим задачу.",
+    role=MessageRole.AGENT
+)
+
+# Отправка сообщения с уведомлением других участников через A2A
+message = await service.send_message_to_participants(
+    conversation_id=conversation.id,
+    sender_agent_id=agent1.id,
+    content="Важное сообщение",
+    recipient_agent_ids=[agent2.id]  # Опционально, если None - всем остальным
+)
+```
+
+#### Управление контекстом
+
+```python
+# Обновить контекст
+context = service.update_context(
+    conversation_id=conversation.id,
+    updates={
+        "shared_knowledge": "Важная информация",
+        "intermediate_result": "Промежуточный результат"
+    }
+)
+```
+
+#### Проверка завершения
+
+```python
+# Проверить, завершен ли диалог
+is_complete = service.is_conversation_complete(
+    conversation_id=conversation.id,
+    check_conditions={
+        "max_messages": 10,  # Максимум сообщений
+        "min_messages": 3,   # Минимум сообщений
+        "timeout_seconds": 300,  # Таймаут в секундах
+        "goal_achieved": True  # Цель достигнута
+    }
+)
+```
+
+#### Завершение диалога
+
+```python
+# Завершить диалог
+completed = service.complete_conversation(
+    conversation_id=conversation.id,
+    success=True,
+    result={"outcome": "success", "plan": "..."}
+)
+```
+
+#### Пауза и возобновление
+
+```python
+# Приостановить диалог
+paused = service.pause_conversation(conversation.id)
+
+# Возобновить диалог
+resumed = service.resume_conversation(conversation.id)
+```
+
+#### Поиск диалогов
+
+```python
+# Получить диалоги по задаче
+conversations = service.get_conversations_by_task(task.id)
+
+# Получить диалоги агента
+conversations = service.get_conversations_by_agent(agent.id)
+```
+
+### Интеграция с A2A протоколом
+
+`AgentDialogService` автоматически отправляет A2A сообщения другим участникам при использовании `send_message_to_participants()`. Это позволяет агентам получать уведомления о новых сообщениях в диалоге.
+
 ## Следующие шаги
 
-- Реализация `AgentDialogService` для управления диалогами
+- ✅ Реализация `AgentDialogService` для управления диалогами (выполнено)
 - Интеграция диалогов в `PlanningService`
 - API для управления диалогами
-- Интеграция с A2A протоколом для обмена сообщениями
+- Полный цикл диалога с реальными агентами
 
