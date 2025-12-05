@@ -206,8 +206,71 @@ service.activate_team(team_id)
 service.pause_team(team_id)
 ```
 
+## AgentTeamCoordination
+
+### Координация через A2A протокол
+
+`AgentTeamCoordination` обеспечивает координацию работы команды агентов через A2A (Agent-to-Agent) протокол.
+
+#### Распределение задач
+
+```python
+from app.services.agent_team_coordination import AgentTeamCoordination
+
+coordination = AgentTeamCoordination(db)
+
+# Распределить задачу команде
+result = await coordination.distribute_task_to_team(
+    team_id=team.id,
+    task_description="Выполнить анализ кода",
+    task_context={"file": "main.py"},
+    assign_to_role="developer"  # Опционально: назначить конкретной роли
+)
+
+# Результат содержит:
+# {
+#     "distributed_to": [agent_ids],
+#     "strategy_used": "collaborative",
+#     "messages_sent": 3,
+#     "responses": [...]
+# }
+```
+
+#### Стратегии координации
+
+1. **SEQUENTIAL** - Последовательное выполнение
+   - Задачи выполняются по очереди
+   - Каждый агент получает результат предыдущего
+
+2. **PARALLEL** - Параллельное выполнение
+   - Все агенты работают одновременно
+   - Результаты собираются независимо
+
+3. **HIERARCHICAL** - Иерархическая координация
+   - Лидер команды координирует остальных
+   - Лидер получает задачу и распределяет подзадачи
+
+4. **COLLABORATIVE** - Коллаборативная работа
+   - Все агенты получают задачу
+   - Результаты делятся между всеми для финальной коллаборации
+
+5. **PIPELINE** - Конвейерная обработка
+   - Каждый агент обрабатывает свою стадию
+   - Результат передается следующему агенту
+
+#### Обмен результатами
+
+```python
+# Поделиться результатом между агентами команды
+result = await coordination.share_result_between_agents(
+    team_id=team.id,
+    from_agent_id=agent1.id,
+    result={"analysis": "Code is clean"},
+    target_agents=[agent2.id, agent3.id]  # Опционально: конкретные агенты
+)
+```
+
 ## Следующие шаги
 
-- Интеграция с A2A протоколом для координации
 - Интеграция с `PlanningService` для назначения команд задачам
 

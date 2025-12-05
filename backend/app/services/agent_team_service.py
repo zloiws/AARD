@@ -11,6 +11,8 @@ from sqlalchemy import and_
 from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus, agent_team_association
 from app.models.agent import Agent, AgentStatus
 from app.core.logging_config import LoggingConfig
+from app.services.a2a_router import A2ARouter
+from app.core.a2a_protocol import A2AMessage, A2AMessageType, A2AResponse
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -26,6 +28,7 @@ class AgentTeamService:
             db: Database session
         """
         self.db = db
+        self.a2a_router = A2ARouter(db)
     
     def create_team(
         self,
