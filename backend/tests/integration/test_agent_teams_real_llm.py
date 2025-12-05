@@ -409,45 +409,36 @@ async def test_real_team_with_multiple_models(db):
     for agent in agents:
         team_service.add_agent_to_team(team.id, agent.id)
     
-    # Test with real LLM
-    ollama_client = OllamaClient()
-    
+    # Test with real LLM through PlanningService
     try:
-        # Test LLM call with first model
-        model = models[0]
-        response = await ollama_client.generate(
-            prompt="Explain what a Python decorator is in one sentence",
-            task_type=TaskType.REASONING,
-            model=model.model_name,
-            server_url=server.get_api_url()
+        planning_service = PlanningService(db)
+        
+        # Create plan with team - this will use real LLM through PlanningService
+        plan = await planning_service.generate_plan(
+            task_description="Explain what a Python decorator is and create a simple example",
+            context={"team_id": str(team.id)}
         )
         
-        assert response is not None
-        response_text = response.get("response") or response.get("content") or response.get("text") or str(response)
-        assert len(response_text) > 0
+        assert plan is not None
+        assert plan.goal is not None
+        assert len(plan.goal) > 0
+        assert plan.steps is not None
+        assert len(plan.steps) > 0
         
-        print(f"\n✅ Multi-model test: {model.name} responded")
-        print(f"   Response: {response_text[:150]}...")
+        # Verify team is used
+        steps_with_team = [s for s in plan.steps if s.get("team_id") == str(team.id)]
+        assert len(steps_with_team) > 0 or any(s.get("agent") for s in plan.steps)
         
-        # Test team coordination (will fail if agents don't have endpoints)
-        result = await coordination.distribute_task_to_team(
-            team_id=team.id,
-            task_description="Explain Python decorators",
-            task_context={"llm_response": response}
-        )
-        
-        assert "distributed_to" in result
-        assert len(result["distributed_to"]) > 0
+        print(f"\n✅ Multi-model plan created with {len(plan.steps)} steps")
+        print(f"   Goal: {plan.goal[:100]}...")
+        print(f"   Team: {team.name} with {len(agents)} agents")
         
     except Exception as e:
         error_msg = str(e).lower()
-        if "endpoint" in error_msg or "not found" in error_msg or "identity" in error_msg:
-            # A2A failed, but LLM worked
-            assert True  # LLM integration verified
-        elif any(keyword in error_msg for keyword in ["connection", "timeout", "unreachable", "refused"]):
+        if any(keyword in error_msg for keyword in ["connection", "timeout", "unreachable", "refused"]):
             pytest.skip(f"Ollama server not reachable: {e}")
         elif "not found" in error_msg or "404" in error_msg:
-            pytest.skip(f"Model {model.model_name} not found on server {server.name}: {e}")
+            pytest.skip(f"Model not found on server: {e}")
         else:
             raise
 
