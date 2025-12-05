@@ -461,4 +461,598 @@ class PromptService:
             self.db.rollback()
             logger.error(f"Error recording prompt result: {e}", exc_info=True)
             raise
+    
+    async def analyze_prompt_performance(
+        self,
+        prompt_id: UUID,
+        task_description: str,
+        result: Any,
+        success: bool,
+        execution_metadata: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Analyze prompt performance using ReflectionService
+        
+        Args:
+            prompt_id: Prompt UUID
+            task_description: Description of the task that used the prompt
+            result: Result of prompt usage (successful or failed)
+            success: Whether the usage was successful
+            execution_metadata: Additional metadata about execution
+            
+        Returns:
+            Analysis result dictionary or None if prompt not found
+        """
+        prompt = self.get_prompt(prompt_id)
+        if not prompt:
+            return None
+        
+        try:
+            from app.services.reflection_service import ReflectionService
+            
+            reflection_service = ReflectionService(db=self.db)
+            
+            # Analyze based on success/failure
+            if success:
+                # For successful usage, suggest improvements
+                improvements = await reflection_service.suggest_improvement(
+                    task_description=task_description,
+                    result=result,
+                    execution_metadata=execution_metadata
+                )
+                analysis = {
+                    "type": "success_analysis",
+                    "improvements": improvements,
+                    "suggestions": improvements
+                }
+            else:
+                # For failed usage, analyze failure
+                error_message = str(result) if result else "Unknown error"
+                reflection_result = await reflection_service.analyze_failure(
+                    task_description=task_description,
+                    error=error_message,
+                    context=execution_metadata
+                )
+                analysis = {
+                    "type": "failure_analysis",
+                    "analysis": reflection_result.analysis,
+                    "suggested_fix": reflection_result.suggested_fix,
+                    "improvements": reflection_result.improvements,
+                    "similar_situations": reflection_result.similar_situations
+                }
+            
+            # Save analysis to improvement_history
+            history = prompt.improvement_history or []
+            history.append({
+                "timestamp": datetime.utcnow().isoformat(),
+                "type": "performance_analysis",
+                "success": success,
+                "task_description": task_description[:500],  # Truncate long descriptions
+                "analysis": analysis,
+                "execution_metadata": execution_metadata
+            })
+            
+            # Keep only last 50 analyses
+            analyses = [h for h in history if h.get("type") == "performance_analysis"]
+            if len(analyses) > 50:
+                # Remove old analyses, keep only last 50
+                history = [h for h in history if h.get("type") != "performance_analysis"]
+                history.extend(analyses[-50:])
+            
+            prompt.improvement_history = history
+            prompt.last_improved_at = datetime.utcnow()
+            
+            self.db.commit()
+            self.db.refresh(prompt)
+            
+            logger.info(
+                f"Analyzed prompt performance: {prompt.name} (id: {prompt_id})",
+                extra={
+                    "prompt_id": str(prompt_id),
+                    "success": success,
+                    "analysis_type": analysis.get("type")
+                }
+            )
+            
+            return analysis
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error analyzing prompt performance: {e}", exc_info=True)
+            return None
+    
+    async def suggest_improvements(
+        self,
+        prompt_id: UUID
+    ) -> Optional[Dict[str, Any]]:
+        """Generate improvement suggestions for a prompt based on metrics and history
+        
+        Args:
+            prompt_id: Prompt UUID
+            
+        Returns:
+            Dictionary with improvement suggestions including:
+            - suggestions: List of improvement suggestions
+            - priority: Priority level (high/medium/low)
+            - expected_effect: Expected effect of improvements
+            - analysis: Analysis of current performance
+        """
+        prompt = self.get_prompt(prompt_id)
+        if not prompt:
+            return None
+        
+        try:
+            # Analyze metrics
+            metrics_analysis = self._analyze_metrics(prompt)
+            
+            # Analyze improvement history
+            history_analysis = self._analyze_improvement_history(prompt)
+            
+            # Generate LLM-based suggestions
+            llm_suggestions = await self._generate_llm_suggestions(
+                prompt,
+                metrics_analysis,
+                history_analysis
+            )
+            
+            # Combine all suggestions
+            all_suggestions = []
+            
+            # Add metric-based suggestions
+            if metrics_analysis.get("issues"):
+                all_suggestions.extend(metrics_analysis["issues"])
+            
+            # Add history-based suggestions
+            if history_analysis.get("patterns"):
+                all_suggestions.extend(history_analysis["patterns"])
+            
+            # Add LLM suggestions
+            if llm_suggestions:
+                all_suggestions.extend(llm_suggestions)
+            
+            # Determine priority
+            priority = "low"
+            if metrics_analysis.get("success_rate") and metrics_analysis["success_rate"] < 0.5:
+                priority = "high"
+            elif metrics_analysis.get("success_rate") and metrics_analysis["success_rate"] < 0.7:
+                priority = "medium"
+            elif metrics_analysis.get("avg_execution_time") and metrics_analysis["avg_execution_time"] > 5000:
+                priority = "medium"
+            
+            result = {
+                "suggestions": all_suggestions,
+                "priority": priority,
+                "expected_effect": self._estimate_expected_effect(metrics_analysis, all_suggestions),
+                "analysis": {
+                    "metrics": metrics_analysis,
+                    "history": history_analysis
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            # Save suggestions to improvement_history
+            history = prompt.improvement_history or []
+            history.append({
+                "timestamp": datetime.utcnow().isoformat(),
+                "type": "improvement_suggestions",
+                "suggestions": result
+            })
+            
+            # Keep only last 20 suggestion sets
+            suggestions = [h for h in history if h.get("type") == "improvement_suggestions"]
+            if len(suggestions) > 20:
+                history = [h for h in history if h.get("type") != "improvement_suggestions"]
+                history.extend(suggestions[-20:])
+            
+            prompt.improvement_history = history
+            self.db.commit()
+            self.db.refresh(prompt)
+            
+            logger.info(
+                f"Generated improvement suggestions for prompt: {prompt.name} (id: {prompt_id})",
+                extra={
+                    "prompt_id": str(prompt_id),
+                    "suggestions_count": len(all_suggestions),
+                    "priority": priority
+                }
+            )
+            
+            return result
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error generating improvement suggestions: {e}", exc_info=True)
+            return None
+    
+    def _analyze_metrics(self, prompt: Prompt) -> Dict[str, Any]:
+        """Analyze prompt metrics to identify issues"""
+        issues = []
+        analysis = {}
+        
+        # Success rate analysis
+        if prompt.success_rate is not None:
+            analysis["success_rate"] = prompt.success_rate
+            if prompt.success_rate < 0.5:
+                issues.append({
+                    "type": "low_success_rate",
+                    "message": f"Success rate is low ({prompt.success_rate:.1%}). Consider reviewing prompt clarity and instructions.",
+                    "priority": "high"
+                })
+            elif prompt.success_rate < 0.7:
+                issues.append({
+                    "type": "moderate_success_rate",
+                    "message": f"Success rate could be improved ({prompt.success_rate:.1%}). Review common failure patterns.",
+                    "priority": "medium"
+                })
+        
+        # Execution time analysis
+        if prompt.avg_execution_time is not None:
+            analysis["avg_execution_time"] = prompt.avg_execution_time
+            if prompt.avg_execution_time > 10000:  # > 10 seconds
+                issues.append({
+                    "type": "slow_execution",
+                    "message": f"Average execution time is high ({prompt.avg_execution_time/1000:.1f}s). Consider simplifying prompt or breaking into steps.",
+                    "priority": "medium"
+                })
+            elif prompt.avg_execution_time > 5000:  # > 5 seconds
+                issues.append({
+                    "type": "moderate_execution_time",
+                    "message": f"Execution time could be optimized ({prompt.avg_execution_time/1000:.1f}s).",
+                    "priority": "low"
+                })
+        
+        # Usage count analysis
+        analysis["usage_count"] = prompt.usage_count
+        if prompt.usage_count < 10:
+            issues.append({
+                "type": "low_usage",
+                "message": f"Low usage count ({prompt.usage_count}). Need more data for reliable metrics.",
+                "priority": "low"
+            })
+        
+        return {
+            "issues": issues,
+            **analysis
+        }
+    
+    def _analyze_improvement_history(self, prompt: Prompt) -> Dict[str, Any]:
+        """Analyze improvement history to identify patterns"""
+        history = prompt.improvement_history or []
+        patterns = []
+        
+        # Analyze performance analyses
+        analyses = [h for h in history if h.get("type") == "performance_analysis"]
+        if analyses:
+            success_count = sum(1 for a in analyses if a.get("success", False))
+            failure_count = len(analyses) - success_count
+            
+            if failure_count > success_count:
+                patterns.append({
+                    "type": "failure_pattern",
+                    "message": f"More failures than successes in recent analyses ({failure_count} failures, {success_count} successes). Review failure patterns.",
+                    "priority": "high"
+                })
+            
+            # Extract common failure reasons
+            failure_analyses = [a for a in analyses if not a.get("success", False)]
+            if failure_analyses:
+                error_types = {}
+                for a in failure_analyses:
+                    metadata = a.get("execution_metadata", {})
+                    error_type = metadata.get("error_type", "unknown")
+                    error_types[error_type] = error_types.get(error_type, 0) + 1
+                
+                if error_types:
+                    most_common = max(error_types.items(), key=lambda x: x[1])
+                    if most_common[1] > 2:
+                        patterns.append({
+                            "type": "common_error",
+                            "message": f"Common error type: {most_common[0]} (occurred {most_common[1]} times). Consider addressing this in prompt.",
+                            "priority": "medium"
+                        })
+        
+        return {
+            "patterns": patterns,
+            "total_analyses": len(analyses),
+            "recent_analyses": len([a for a in analyses if a.get("timestamp")])  # Count with timestamps
+        }
+    
+    async def _generate_llm_suggestions(
+        self,
+        prompt: Prompt,
+        metrics_analysis: Dict[str, Any],
+        history_analysis: Dict[str, Any]
+    ) -> Optional[List[str]]:
+        """Use LLM to generate improvement suggestions"""
+        try:
+            from app.core.ollama_client import OllamaClient, TaskType
+            from app.core.model_selector import ModelSelector
+            
+            # Get planning model for suggestions
+            model_selector = ModelSelector(self.db)
+            planning_model = model_selector.get_planning_model()
+            
+            if not planning_model:
+                logger.warning("No planning model available for LLM suggestions")
+                return None
+            
+            server = model_selector.get_server_for_model(planning_model)
+            if not server:
+                logger.warning("No server available for LLM suggestions")
+                return None
+            
+            # Build context for LLM
+            context_parts = []
+            context_parts.append(f"Prompt Name: {prompt.name}")
+            context_parts.append(f"Prompt Text: {prompt.prompt_text[:1000]}")  # First 1000 chars
+            
+            if metrics_analysis.get("success_rate") is not None:
+                context_parts.append(f"Success Rate: {metrics_analysis['success_rate']:.1%}")
+            if metrics_analysis.get("avg_execution_time") is not None:
+                context_parts.append(f"Average Execution Time: {metrics_analysis['avg_execution_time']/1000:.1f}s")
+            context_parts.append(f"Usage Count: {prompt.usage_count}")
+            
+            if metrics_analysis.get("issues"):
+                context_parts.append(f"Issues Identified: {len(metrics_analysis['issues'])}")
+                for issue in metrics_analysis["issues"][:3]:  # First 3 issues
+                    context_parts.append(f"- {issue['message']}")
+            
+            if history_analysis.get("patterns"):
+                context_parts.append(f"Patterns Found: {len(history_analysis['patterns'])}")
+                for pattern in history_analysis["patterns"][:3]:  # First 3 patterns
+                    context_parts.append(f"- {pattern['message']}")
+            
+            context = "\n".join(context_parts)
+            
+            system_prompt = """You are an expert at analyzing and improving prompts for AI systems.
+Analyze the provided prompt and its performance metrics, then suggest specific, actionable improvements.
+Focus on clarity, specificity, and addressing identified issues.
+Return a JSON array of improvement suggestions, each as a string."""
+            
+            user_prompt = f"""Analyze this prompt and suggest improvements:
+
+{context}
+
+Provide 3-5 specific, actionable suggestions for improving this prompt. Return as JSON array of strings."""
+            
+            ollama_client = OllamaClient()
+            response = await ollama_client.generate(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                task_type=TaskType.PLANNING,
+                model=planning_model.model_name,
+                server_url=server.get_api_url()
+            )
+            
+            # Parse JSON response
+            try:
+                import json
+                suggestions = json.loads(response.response)
+                if isinstance(suggestions, list):
+                    return suggestions[:5]  # Limit to 5 suggestions
+                elif isinstance(suggestions, str):
+                    return [suggestions]
+            except json.JSONDecodeError:
+                # If not JSON, try to extract suggestions from text
+                lines = response.response.strip().split('\n')
+                suggestions = [line.strip('- ').strip() for line in lines if line.strip() and len(line.strip()) > 20]
+                return suggestions[:5] if suggestions else None
+            
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to generate LLM suggestions: {e}", exc_info=True)
+            return None
+    
+    def _estimate_expected_effect(
+        self,
+        metrics_analysis: Dict[str, Any],
+        suggestions: List[Any]
+    ) -> str:
+        """Estimate expected effect of implementing suggestions"""
+        if not suggestions:
+            return "No suggestions available"
+        
+        # Simple heuristic based on current metrics
+        if metrics_analysis.get("success_rate") and metrics_analysis["success_rate"] < 0.5:
+            return "High potential impact: Could significantly improve success rate"
+        elif metrics_analysis.get("success_rate") and metrics_analysis["success_rate"] < 0.7:
+            return "Medium potential impact: Could improve success rate by 10-20%"
+        elif metrics_analysis.get("avg_execution_time") and metrics_analysis["avg_execution_time"] > 5000:
+            return "Medium potential impact: Could reduce execution time by 20-30%"
+        else:
+            return "Low to medium impact: Incremental improvements expected"
+    
+    async def create_improved_version(
+        self,
+        prompt_id: UUID,
+        suggestions: Optional[List[str]] = None,
+        created_by: Optional[str] = None
+    ) -> Optional[Prompt]:
+        """Create an improved version of a prompt based on suggestions
+        
+        Args:
+            prompt_id: Prompt UUID to improve
+            suggestions: Optional list of improvement suggestions (if None, will generate)
+            created_by: Creator identifier
+            
+        Returns:
+            New Prompt version with status TESTING or None if error
+        """
+        prompt = self.get_prompt(prompt_id)
+        if not prompt:
+            return None
+        
+        try:
+            # Generate suggestions if not provided
+            if not suggestions:
+                suggestions_result = await self.suggest_improvements(prompt_id)
+                if suggestions_result and suggestions_result.get("suggestions"):
+                    # Extract suggestion messages
+                    suggestions = []
+                    for s in suggestions_result["suggestions"]:
+                        if isinstance(s, dict):
+                            suggestions.append(s.get("message", str(s)))
+                        else:
+                            suggestions.append(str(s))
+            
+            if not suggestions:
+                logger.warning(f"No suggestions available for prompt {prompt_id}")
+                return None
+            
+            # Use LLM to generate improved version
+            improved_text = await self._generate_improved_prompt_text(
+                prompt,
+                suggestions
+            )
+            
+            if not improved_text:
+                logger.warning(f"Failed to generate improved prompt text for {prompt_id}")
+                return None
+            
+            # Create new version with status TESTING
+            new_version = self.create_version(
+                parent_prompt_id=prompt_id,
+                prompt_text=improved_text,
+                created_by=created_by or "system"
+            )
+            
+            if new_version:
+                # Set status to TESTING
+                new_version.status = PromptStatus.TESTING.value.lower()
+                self.db.commit()
+                self.db.refresh(new_version)
+                
+                # Save improvement metadata
+                history = new_version.improvement_history or []
+                history.append({
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "type": "version_creation",
+                    "parent_version": prompt.version,
+                    "suggestions_used": suggestions,
+                    "status": "testing"
+                })
+                new_version.improvement_history = history
+                self.db.commit()
+                self.db.refresh(new_version)
+                
+                logger.info(
+                    f"Created improved version {new_version.version} of prompt: {prompt.name} (id: {prompt_id})",
+                    extra={
+                        "parent_id": str(prompt_id),
+                        "new_id": str(new_version.id),
+                        "new_version": new_version.version
+                    }
+                )
+            
+            return new_version
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error creating improved version: {e}", exc_info=True)
+            return None
+    
+    async def _generate_improved_prompt_text(
+        self,
+        prompt: Prompt,
+        suggestions: List[str]
+    ) -> Optional[str]:
+        """Use LLM to generate improved prompt text based on suggestions"""
+        try:
+            from app.core.ollama_client import OllamaClient, TaskType
+            from app.core.model_selector import ModelSelector
+            
+            # Get planning model
+            model_selector = ModelSelector(self.db)
+            planning_model = model_selector.get_planning_model()
+            
+            if not planning_model:
+                logger.warning("No planning model available for prompt improvement")
+                return None
+            
+            server = model_selector.get_server_for_model(planning_model)
+            if not server:
+                logger.warning("No server available for prompt improvement")
+                return None
+            
+            # Build prompt for LLM
+            suggestions_text = "\n".join([f"- {s}" for s in suggestions[:10]])  # Limit to 10 suggestions
+            
+            system_prompt = """You are an expert at writing and improving prompts for AI systems.
+Your task is to improve a prompt based on specific suggestions while maintaining its core purpose and structure.
+Return ONLY the improved prompt text, without any additional explanation or commentary."""
+            
+            user_prompt = f"""Original Prompt:
+{prompt.prompt_text}
+
+Improvement Suggestions:
+{suggestions_text}
+
+Generate an improved version of the prompt that addresses these suggestions while maintaining the original purpose and structure. Return only the improved prompt text."""
+            
+            ollama_client = OllamaClient()
+            response = await ollama_client.generate(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                task_type=TaskType.PLANNING,
+                model=planning_model.model_name,
+                server_url=server.get_api_url()
+            )
+            
+            improved_text = response.response.strip()
+            
+            # Basic validation - ensure we got something meaningful
+            if len(improved_text) < len(prompt.prompt_text) * 0.5:
+                logger.warning(f"Generated prompt text seems too short: {len(improved_text)} chars")
+                return None
+            
+            return improved_text
+        except Exception as e:
+            logger.error(f"Error generating improved prompt text: {e}", exc_info=True)
+            return None
+    
+    async def auto_create_improved_version_if_needed(
+        self,
+        prompt_id: UUID,
+        success_rate_threshold: float = 0.5,
+        execution_time_threshold_ms: float = 10000.0
+    ) -> Optional[Prompt]:
+        """Automatically create improved version if metrics are below thresholds
+        
+        Args:
+            prompt_id: Prompt UUID
+            success_rate_threshold: Threshold below which to trigger improvement (default 0.5)
+            execution_time_threshold_ms: Threshold above which to trigger improvement (default 10000ms)
+            
+        Returns:
+            New improved version or None if not needed/error
+        """
+        prompt = self.get_prompt(prompt_id)
+        if not prompt:
+            return None
+        
+        # Check if improvement is needed
+        needs_improvement = False
+        reason = []
+        
+        if prompt.success_rate is not None and prompt.success_rate < success_rate_threshold:
+            needs_improvement = True
+            reason.append(f"low success rate ({prompt.success_rate:.1%} < {success_rate_threshold:.1%})")
+        
+        if prompt.avg_execution_time is not None and prompt.avg_execution_time > execution_time_threshold_ms:
+            needs_improvement = True
+            reason.append(f"high execution time ({prompt.avg_execution_time/1000:.1f}s > {execution_time_threshold_ms/1000:.1f}s)")
+        
+        if not needs_improvement:
+            logger.debug(
+                f"Prompt {prompt.name} does not need improvement",
+                extra={"prompt_id": str(prompt_id)}
+            )
+            return None
+        
+        logger.info(
+            f"Auto-creating improved version for prompt {prompt.name}: {', '.join(reason)}",
+            extra={
+                "prompt_id": str(prompt_id),
+                "reasons": reason
+            }
+        )
+        
+        # Create improved version
+        return await self.create_improved_version(prompt_id, created_by="system")
 

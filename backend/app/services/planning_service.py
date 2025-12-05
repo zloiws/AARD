@@ -1055,6 +1055,27 @@ Return a JSON array of steps."""
             if prompt_used:
                 try:
                     self.prompt_service.record_success(prompt_used.id)
+                    
+                    # Analyze prompt performance asynchronously (don't block)
+                    try:
+                        import asyncio
+                        asyncio.create_task(
+                            self.prompt_service.analyze_prompt_performance(
+                                prompt_id=prompt_used.id,
+                                task_description=task_description[:500],
+                                result=strategy,
+                                success=True,
+                                execution_metadata={
+                                    "duration_ms": duration_ms,
+                                    "stage": "analysis",
+                                    "response_length": len(response.response) if 'response' in locals() else 0
+                                }
+                            )
+                        )
+                    except Exception as e2:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to analyze prompt performance: {e2}", exc_info=True)
                 except Exception as e:
                     logger = self._get_logger()
                     if logger:
@@ -1067,6 +1088,26 @@ Return a JSON array of steps."""
             if prompt_used:
                 try:
                     self.prompt_service.record_failure(prompt_used.id)
+                    
+                    # Analyze prompt performance asynchronously (don't block)
+                    try:
+                        import asyncio
+                        asyncio.create_task(
+                            self.prompt_service.analyze_prompt_performance(
+                                prompt_id=prompt_used.id,
+                                task_description=task_description[:500],
+                                result=str(e),
+                                success=False,
+                                execution_metadata={
+                                    "error_type": type(e).__name__,
+                                    "stage": "analysis"
+                                }
+                            )
+                        )
+                    except Exception as e3:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to analyze prompt performance: {e3}", exc_info=True)
                 except Exception as e2:
                     logger = self._get_logger()
                     if logger:
@@ -1326,6 +1367,27 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 if prompt_used:
                     try:
                         self.prompt_service.record_failure(prompt_used.id)
+                        
+                        # Analyze prompt performance asynchronously (don't block)
+                        try:
+                            import asyncio
+                            asyncio.create_task(
+                                self.prompt_service.analyze_prompt_performance(
+                                    prompt_id=prompt_used.id,
+                                    task_description=task_description[:500],
+                                    result="Task decomposition timed out after 5 minutes",
+                                    success=False,
+                                    execution_metadata={
+                                        "error_type": "timeout",
+                                        "stage": "decomposition",
+                                        "duration_ms": duration_ms
+                                    }
+                                )
+                            )
+                        except Exception as e3:
+                            logger = self._get_logger()
+                            if logger:
+                                logger.warning(f"Failed to analyze prompt performance: {e3}", exc_info=True)
                     except Exception as e2:
                         logger = self._get_logger()
                         if logger:
@@ -1393,6 +1455,28 @@ Break down this task into executable steps. Return only a valid JSON array."""
             if prompt_used and len(validated_steps) > 0:
                 try:
                     self.prompt_service.record_success(prompt_used.id)
+                    
+                    # Analyze prompt performance asynchronously (don't block)
+                    try:
+                        import asyncio
+                        asyncio.create_task(
+                            self.prompt_service.analyze_prompt_performance(
+                                prompt_id=prompt_used.id,
+                                task_description=task_description[:500],
+                                result={"steps_count": len(validated_steps), "steps": validated_steps[:3]},  # First 3 steps as sample
+                                success=True,
+                                execution_metadata={
+                                    "duration_ms": duration_ms,
+                                    "stage": "decomposition",
+                                    "steps_count": len(validated_steps),
+                                    "response_length": len(response.response) if 'response' in locals() else 0
+                                }
+                            )
+                        )
+                    except Exception as e3:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to analyze prompt performance: {e3}", exc_info=True)
                 except Exception as e2:
                     logger = self._get_logger()
                     if logger:
@@ -1405,6 +1489,26 @@ Break down this task into executable steps. Return only a valid JSON array."""
             if prompt_used:
                 try:
                     self.prompt_service.record_failure(prompt_used.id)
+                    
+                    # Analyze prompt performance asynchronously (don't block)
+                    try:
+                        import asyncio
+                        asyncio.create_task(
+                            self.prompt_service.analyze_prompt_performance(
+                                prompt_id=prompt_used.id,
+                                task_description=task_description[:500],
+                                result=str(e),
+                                success=False,
+                                execution_metadata={
+                                    "error_type": type(e).__name__,
+                                    "stage": "decomposition"
+                                }
+                            )
+                        )
+                    except Exception as e3:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to analyze prompt performance: {e3}", exc_info=True)
                 except Exception as e2:
                     logger = self._get_logger()
                     if logger:
