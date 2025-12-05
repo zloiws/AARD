@@ -47,8 +47,8 @@ class BenchmarkTask(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
-    # Relationships (will be added after BenchmarkResult model is created)
-    # results = relationship("BenchmarkResult", back_populates="task", cascade="all, delete-orphan")
+    # Relationships
+    results = relationship("BenchmarkResult", back_populates="task", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<BenchmarkTask(id={self.id}, name='{self.name}', type='{self.task_type}')>"

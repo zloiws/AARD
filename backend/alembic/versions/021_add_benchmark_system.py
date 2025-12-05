@@ -44,14 +44,49 @@ def upgrade() -> None:
     op.create_index('idx_benchmark_tasks_task_type', 'benchmark_tasks', ['task_type'])
     op.create_index('idx_benchmark_tasks_category', 'benchmark_tasks', ['category'])
     op.create_index('idx_benchmark_tasks_name', 'benchmark_tasks', ['name'], unique=True)
+    
+    # Create benchmark_results table
+    op.create_table(
+        'benchmark_results',
+        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column('benchmark_task_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('model_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('server_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('execution_time', sa.Float(), nullable=True),
+        sa.Column('output', sa.Text(), nullable=True),
+        sa.Column('score', sa.Float(), nullable=True),
+        sa.Column('metrics', postgresql.JSONB(), nullable=True),
+        sa.Column('passed', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('error_message', sa.Text(), nullable=True),
+        sa.Column('execution_metadata', postgresql.JSONB(), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.ForeignKeyConstraint(['benchmark_task_id'], ['benchmark_tasks.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['model_id'], ['ollama_models.id'], ondelete='SET NULL'),
+        sa.ForeignKeyConstraint(['server_id'], ['ollama_servers.id'], ondelete='SET NULL'),
+    )
+    
+    # Create indexes for benchmark_results
+    op.create_index('idx_benchmark_results_task_id', 'benchmark_results', ['benchmark_task_id'])
+    op.create_index('idx_benchmark_results_model_id', 'benchmark_results', ['model_id'])
+    op.create_index('idx_benchmark_results_server_id', 'benchmark_results', ['server_id'])
+    op.create_index('idx_benchmark_results_created_at', 'benchmark_results', ['created_at'])
 
 
 def downgrade() -> None:
-    # Drop indexes
+    # Drop benchmark_results indexes
+    op.drop_index('idx_benchmark_results_created_at', table_name='benchmark_results')
+    op.drop_index('idx_benchmark_results_server_id', table_name='benchmark_results')
+    op.drop_index('idx_benchmark_results_model_id', table_name='benchmark_results')
+    op.drop_index('idx_benchmark_results_task_id', table_name='benchmark_results')
+    
+    # Drop benchmark_results table
+    op.drop_table('benchmark_results')
+    
+    # Drop benchmark_tasks indexes
     op.drop_index('idx_benchmark_tasks_name', table_name='benchmark_tasks')
     op.drop_index('idx_benchmark_tasks_category', table_name='benchmark_tasks')
     op.drop_index('idx_benchmark_tasks_task_type', table_name='benchmark_tasks')
     
-    # Drop table
+    # Drop benchmark_tasks table
     op.drop_table('benchmark_tasks')
 

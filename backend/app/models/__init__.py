@@ -33,6 +33,7 @@ from app.models.workflow_event import (  # noqa: F401
     WorkflowEvent, EventSource, EventType, EventStatus, WorkflowStage
 )
 from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType  # noqa: F401
+from app.models.benchmark_result import BenchmarkResult  # noqa: F401
 
 __all__ = [
     "Base",
@@ -115,5 +116,6 @@ __all__ = [
     # Benchmark
     "BenchmarkTask",
     "BenchmarkTaskType",
+    "BenchmarkResult",
 ]
 
