@@ -17,6 +17,8 @@ from app.models.agent_memory import (
     MemoryType, AssociationType
 )
 from app.models.agent import Agent
+from app.services.embedding_service import EmbeddingService
+from sqlalchemy import text
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -32,6 +34,7 @@ class MemoryService:
             db: Database session (optional, will create if not provided)
         """
         self.db = db or SessionLocal()
+        self.embedding_service = EmbeddingService(self.db)
     
     # Long-term memory methods
     
