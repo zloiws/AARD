@@ -51,10 +51,18 @@ async def lifespan(app: FastAPI):
     heartbeat_monitor = get_heartbeat_monitor()
     await heartbeat_monitor.start()
     
+    # Start audit scheduler
+    from app.services.audit_scheduler import get_audit_scheduler
+    audit_scheduler = get_audit_scheduler()
+    await audit_scheduler.start()
+    
     yield
     
     # Shutdown
     logger.info(f"Shutting down {settings.app_name}...")
+    
+    # Stop audit scheduler
+    await audit_scheduler.stop()
     
     # Stop heartbeat monitor
     await heartbeat_monitor.stop()

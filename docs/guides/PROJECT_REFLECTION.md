@@ -444,9 +444,89 @@ print(f"Summary: {report.summary}")
 print(f"Findings: {len(report.findings.get('all_findings', []))}")
 ```
 
+## Этап 3.2.2: Планировщик регулярных аудитов
+
+### AuditScheduler
+
+Планировщик для автоматического запуска аудитов по расписанию.
+
+#### Расписания
+
+**DAILY** - Ежедневный аудит
+- По умолчанию: каждый день в 2:00
+- Период: последние 24 часа
+- Тип: FULL
+- LLM: отключен
+
+**WEEKLY** - Еженедельный аудит
+- По умолчанию: каждый понедельник в 3:00
+- Период: последние 7 дней
+- Тип: FULL
+- LLM: включен (для генерации сводки)
+
+**MONTHLY** - Ежемесячный аудит
+- По умолчанию: 1-го числа каждого месяца в 4:00
+- Период: последние 30 дней
+- Тип: FULL
+- LLM: включен (для генерации сводки)
+
+#### Функциональность
+
+- Автоматический запуск по расписанию
+- Проверка каждые 60 минут
+- Предотвращение дублирования (проверка существующих отчетов)
+- Настраиваемые расписания
+- Ручной запуск аудитов
+- Сохранение истории всех аудитов
+
+#### Управление расписанием
+
+```python
+from app.services.audit_scheduler import get_audit_scheduler, AuditSchedule
+from app.models.audit_report import AuditType
+
+scheduler = get_audit_scheduler()
+
+# Получить текущее расписание
+daily_schedule = scheduler.get_schedule(AuditSchedule.DAILY)
+
+# Обновить расписание
+scheduler.update_schedule(
+    AuditSchedule.DAILY,
+    enabled=True,
+    hour=3,  # Изменить время на 3:00
+    use_llm=True  # Включить LLM для сводки
+)
+
+# Запустить аудит вручную
+await scheduler.run_audit_now(AuditSchedule.DAILY, use_llm=True)
+```
+
+#### Интеграция
+
+Планировщик автоматически запускается при старте приложения через `lifespan` в `main.py`:
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    audit_scheduler = get_audit_scheduler()
+    await audit_scheduler.start()
+    
+    yield
+    
+    # Shutdown
+    await audit_scheduler.stop()
+```
+
+#### История аудитов
+
+Все отчеты сохраняются в таблице `audit_reports` с метаданными:
+- `schedule_type`: тип расписания (daily, weekly, monthly)
+- `scheduled_at`: время запуска по расписанию
+
 ## Дальнейшее развитие
 
-- **Этап 3.2.2**: Планировщик регулярных аудитов
 - **Этап 3.2.3**: Анализ трендов и рекомендации
 - **Этап 3.3**: Dashboard для визуализации метрик
 
