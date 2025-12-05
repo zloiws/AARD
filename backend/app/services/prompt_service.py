@@ -156,7 +156,7 @@ class PromptService:
         name: Optional[str] = None,
         level: Optional[int] = None
     ) -> Optional[Prompt]:
-        """Update prompt
+        """Update prompt (in-place update, does not create new version)
         
         Args:
             prompt_id: Prompt UUID
@@ -166,6 +166,10 @@ class PromptService:
             
         Returns:
             Updated Prompt object or None if not found
+            
+        Note:
+            This method updates the prompt in place. To create a new version,
+            use create_version() instead.
         """
         prompt = self.get_prompt(prompt_id)
         if not prompt:
@@ -178,9 +182,8 @@ class PromptService:
         if level is not None:
             prompt.level = level
         
-        # Increment version when content changes
-        if prompt_text is not None:
-            prompt.version += 1
+        # Do NOT increment version - this is an in-place update
+        # Use create_version() if you want to create a new version
         
         try:
             self.db.commit()
@@ -203,16 +206,32 @@ class PromptService:
         """Create a new version of existing prompt
         
         Args:
-            parent_prompt_id: ID of parent prompt
+            parent_prompt_id: ID of parent prompt (can be any version)
             prompt_text: New prompt text for the version
             created_by: Creator identifier
             
         Returns:
             New Prompt version or None if parent not found
+            
+        Note:
+            All versions share the same root parent. If parent_prompt_id is
+            a version, we find the root parent and use it.
         """
         parent = self.get_prompt(parent_prompt_id)
         if not parent:
             return None
+        
+        # Find root parent (original prompt)
+        root_parent_id = parent_prompt_id
+        if parent.parent_prompt_id:
+            # This is a version, find the root
+            root_parent = self.get_prompt(parent.parent_prompt_id)
+            while root_parent and root_parent.parent_prompt_id:
+                root_parent = self.get_prompt(root_parent.parent_prompt_id)
+            if root_parent:
+                root_parent_id = root_parent.id
+            else:
+                root_parent_id = parent.parent_prompt_id
         
         # Get the highest version number for this prompt name
         max_version = self.db.query(Prompt).filter(
@@ -228,7 +247,7 @@ class PromptService:
                 prompt_type=parent.prompt_type,
                 level=parent.level,
                 version=new_version,
-                parent_prompt_id=parent_prompt_id,
+                parent_prompt_id=root_parent_id,  # Always use root parent
                 status=PromptStatus.ACTIVE.value.lower(),
                 created_by=created_by or "system"
             )
@@ -239,7 +258,7 @@ class PromptService:
             
             logger.info(
                 f"Created new version {new_version} of prompt: {parent.name}",
-                extra={"parent_id": str(parent_prompt_id), "new_id": str(new_prompt.id)}
+                extra={"parent_id": str(parent_prompt_id), "root_parent_id": str(root_parent_id), "new_id": str(new_prompt.id)}
             )
             
             return new_prompt
@@ -413,8 +432,9 @@ class PromptService:
             return None
         
         try:
-            # Get or initialize improvement_history
-            history = prompt.improvement_history or []
+            # Get or initialize improvement_history (create a copy to avoid mutation issues)
+            import copy
+            history = copy.deepcopy(prompt.improvement_history) if prompt.improvement_history else []
             
             # Add new result
             history.append({
@@ -423,20 +443,23 @@ class PromptService:
                 "type": "usage_result"
             })
             
-            # Keep only last 100 results for sliding window
+            # Extract all usage results and keep only last 100 for sliding window
             window_size = 100
-            if len(history) > window_size:
-                # Keep only usage results from last window_size entries
+            usage_results = [h for h in history if h.get("type") == "usage_result"]
+            
+            if len(usage_results) > window_size:
+                # Keep only last window_size results
+                usage_results = usage_results[-window_size:]
+                # Rebuild history: keep non-usage-result entries + last window_size usage results
+                other_entries = [h for h in history if h.get("type") != "usage_result"]
+                history = other_entries + usage_results
+            else:
+                # No need to trim, but ensure usage_results is up to date
                 usage_results = [h for h in history if h.get("type") == "usage_result"]
-                if len(usage_results) > window_size:
-                    # Keep only last window_size results
-                    history = [h for h in history if h.get("type") != "usage_result"]
-                    history.extend(usage_results[-window_size:])
             
             prompt.improvement_history = history
             
-            # Calculate success_rate from last 100 results
-            usage_results = [h for h in history if h.get("type") == "usage_result"]
+            # Calculate success_rate from usage results (already limited to window_size)
             if usage_results:
                 successful = sum(1 for h in usage_results if h.get("success", False))
                 total = len(usage_results)
@@ -520,8 +543,9 @@ class PromptService:
                     "similar_situations": reflection_result.similar_situations
                 }
             
-            # Save analysis to improvement_history
-            history = prompt.improvement_history or []
+            # Save analysis to improvement_history (create a copy to avoid mutation issues)
+            import copy
+            history = copy.deepcopy(prompt.improvement_history) if prompt.improvement_history else []
             history.append({
                 "timestamp": datetime.utcnow().isoformat(),
                 "type": "performance_analysis",
@@ -535,8 +559,8 @@ class PromptService:
             analyses = [h for h in history if h.get("type") == "performance_analysis"]
             if len(analyses) > 50:
                 # Remove old analyses, keep only last 50
-                history = [h for h in history if h.get("type") != "performance_analysis"]
-                history.extend(analyses[-50:])
+                other_entries = [h for h in history if h.get("type") != "performance_analysis"]
+                history = other_entries + analyses[-50:]
             
             prompt.improvement_history = history
             prompt.last_improved_at = datetime.utcnow()
@@ -735,8 +759,11 @@ class PromptService:
             if failure_analyses:
                 error_types = {}
                 for a in failure_analyses:
-                    metadata = a.get("execution_metadata", {})
-                    error_type = metadata.get("error_type", "unknown")
+                    metadata = a.get("execution_metadata")
+                    if metadata and isinstance(metadata, dict):
+                        error_type = metadata.get("error_type", "unknown")
+                    else:
+                        error_type = "unknown"
                     error_types[error_type] = error_types.get(error_type, 0) + 1
                 
                 if error_types:

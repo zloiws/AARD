@@ -28,10 +28,10 @@ def prompt_service(db: Session):
     return PromptService(db)
 
 
-@pytest.mark.asyncio
 class TestPromptImprovementSuggestions:
     """Test cases for prompt improvement suggestions"""
     
+    @pytest.mark.asyncio
     async def test_suggest_improvements_low_success_rate(self, prompt_service: PromptService):
         """Test suggestions for prompt with low success rate"""
         # Create prompt
@@ -56,6 +56,7 @@ class TestPromptImprovementSuggestions:
         assert suggestions["priority"] in ["high", "medium", "low"]
         assert len(suggestions["suggestions"]) > 0
     
+    @pytest.mark.asyncio
     async def test_suggest_improvements_high_execution_time(self, prompt_service: PromptService):
         """Test suggestions for prompt with high execution time"""
         # Create prompt
@@ -78,6 +79,7 @@ class TestPromptImprovementSuggestions:
         suggestion_texts = [s.get("message", s) if isinstance(s, dict) else s for s in suggestions["suggestions"]]
         assert any("execution time" in str(s).lower() or "slow" in str(s).lower() for s in suggestion_texts)
     
+    @pytest.mark.asyncio
     async def test_suggest_improvements_nonexistent(self, prompt_service: PromptService):
         """Test suggestions for nonexistent prompt"""
         fake_id = uuid4()
@@ -86,6 +88,7 @@ class TestPromptImprovementSuggestions:
         
         assert suggestions is None
     
+    @pytest.mark.asyncio
     async def test_suggestions_saved_to_history(self, prompt_service: PromptService):
         """Test that suggestions are saved to improvement_history"""
         # Create prompt
@@ -151,9 +154,10 @@ class TestPromptImprovementSuggestions:
                     prompt_id=prompt.id,
                     task_description=f"Task {i}",
                     result={"result": i},
-                    success=(i % 2 == 0)  # Alternating success/failure
+                    success=(i % 2 == 0),  # Alternating success/failure
+                    execution_metadata={"error_type": "ValueError"} if i % 2 != 0 else None
                 )
-        
+
         # Run async function
         import asyncio
         loop = asyncio.get_event_loop()

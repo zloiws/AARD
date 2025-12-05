@@ -40,33 +40,33 @@ class TestPromptServiceIntegration:
         assert prompt.version == 1
         assert prompt.status == "active"
         
-        # Update prompt
+        # Update prompt (in-place, version stays 1)
         updated = service.update_prompt(
             prompt.id,
             prompt_text="Updated version"
         )
-        assert updated.version == 2
+        assert updated.version == 1  # Version doesn't change on update
         
         # Create new version
-        v3 = service.create_version(
+        v2 = service.create_version(
             prompt.id,
-            "Version 3 text",
+            "Version 2 text",
             created_by="test_user"
         )
-        assert v3.version == 3
-        assert v3.parent_prompt_id == prompt.id
+        assert v2.version == 2  # Next version after v1
+        assert v2.parent_prompt_id == prompt.id
         
-        # Get all versions
+        # Get all versions (original v1 + v2, update doesn't create version)
         versions = service.get_prompt_versions(prompt.id)
-        assert len(versions) == 3
+        assert len(versions) == 2  # Original (v1) + v2
         
         # Deprecate old version
         deprecated = service.deprecate_prompt(prompt.id)
         assert deprecated.status == "deprecated"
         
-        # Latest active version should be v3
+        # Latest active version should be v2
         latest = service.get_latest_version("lifecycle_test")
-        assert latest.version == 3
+        assert latest.version == 2
         assert latest.status == "active"
     
     def test_version_chain(self, db: Session):

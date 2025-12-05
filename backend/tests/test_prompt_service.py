@@ -150,7 +150,7 @@ class TestPromptService:
         assert len(searched) >= 2
     
     def test_update_prompt(self, prompt_service: PromptService):
-        """Test updating a prompt"""
+        """Test updating a prompt (in-place update, version doesn't change)"""
         # Create prompt
         prompt = prompt_service.create_prompt(
             name="update_test",
@@ -159,7 +159,7 @@ class TestPromptService:
         )
         original_version = prompt.version
         
-        # Update
+        # Update (in-place, version stays the same)
         updated = prompt_service.update_prompt(
             prompt.id,
             prompt_text="Updated text"
@@ -167,7 +167,7 @@ class TestPromptService:
         
         assert updated is not None
         assert updated.prompt_text == "Updated text"
-        assert updated.version == original_version + 1
+        assert updated.version == original_version  # Version doesn't change on update
     
     def test_create_version(self, prompt_service: PromptService):
         """Test creating a new version of a prompt"""
