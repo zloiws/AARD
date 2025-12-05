@@ -76,7 +76,7 @@ class StepExecutor:
         result = {
             "step_id": step_id,
             "status": "pending",
-            "started_at": datetime.datetime.utcnow(),
+            "started_at": datetime.utcnow(),
             "output": None,
             "error": None,
             "duration": None
