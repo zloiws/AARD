@@ -394,4 +394,213 @@ class BenchmarkService:
         }
         
         return comparison
+    
+    async def evaluate_result(
+        self,
+        result_id: UUID,
+        use_llm: bool = True
+    ) -> BenchmarkResult:
+        """
+        Evaluate a benchmark result
+        
+        Args:
+            result_id: ID of the benchmark result
+            use_llm: Whether to use LLM for evaluation (if False, uses simple comparison)
+            
+        Returns:
+            Updated BenchmarkResult with score and metrics
+        """
+        result = self.db.query(BenchmarkResult).filter(BenchmarkResult.id == result_id).first()
+        if not result:
+            raise ValueError(f"Result {result_id} not found")
+        
+        task = result.task
+        if not task:
+            raise ValueError(f"Task not found for result {result_id}")
+        
+        # If no output, mark as failed
+        if not result.output or result.error_message:
+            result.passed = False
+            result.score = 0.0
+            result.metrics = {"error": True}
+            self.db.commit()
+            return result
+        
+        # Get evaluation criteria
+        criteria = task.evaluation_criteria or {}
+        expected_output = task.expected_output
+        
+        if use_llm and expected_output:
+            # Use LLM for evaluation
+            score, metrics = await self._llm_evaluate(result.output, expected_output, criteria, task.task_type)
+        else:
+            # Simple evaluation
+            score, metrics = self._simple_evaluate(result.output, expected_output, criteria)
+        
+        # Update result
+        result.score = score
+        result.metrics = metrics
+        result.passed = score >= (criteria.get("pass_threshold", 0.7) if criteria else 0.7)
+        
+        self.db.commit()
+        self.db.refresh(result)
+        
+        return result
+    
+    async def _llm_evaluate(
+        self,
+        output: str,
+        expected_output: str,
+        criteria: Dict[str, Any],
+        task_type: BenchmarkTaskType
+    ) -> tuple[float, Dict[str, Any]]:
+        """
+        Evaluate output using LLM
+        
+        Returns:
+            Tuple of (score, metrics)
+        """
+        try:
+            from app.core.ollama_client import OllamaClient, TaskType
+            
+            # Create evaluation prompt
+            eval_prompt = f"""Evaluate the following output against the expected output and criteria.
+
+Task Type: {task_type.value}
+Expected Output: {expected_output}
+Actual Output: {output}
+Evaluation Criteria: {json.dumps(criteria, indent=2)}
+
+Provide a JSON response with:
+- score: float between 0.0 and 1.0
+- metrics: object with individual metric scores
+- passed: boolean
+- reasoning: brief explanation
+
+Return only valid JSON, no additional text."""
+
+            client = OllamaClient()
+            
+            # Use reasoning task type for evaluation
+            response = await client.generate(
+                prompt=eval_prompt,
+                task_type=TaskType.REASONING
+            )
+            
+            # Parse JSON response
+            try:
+                eval_result = json.loads(response.response)
+                score = float(eval_result.get("score", 0.0))
+                metrics = eval_result.get("metrics", {})
+                metrics["reasoning"] = eval_result.get("reasoning", "")
+                metrics["llm_evaluated"] = True
+                
+                return score, metrics
+            except json.JSONDecodeError:
+                # Fallback to simple evaluation
+                logger.warning("Failed to parse LLM evaluation, using simple evaluation")
+                return self._simple_evaluate(output, expected_output, criteria)
+                
+        except Exception as e:
+            logger.error(f"Error in LLM evaluation: {e}")
+            # Fallback to simple evaluation
+            return self._simple_evaluate(output, expected_output, criteria)
+    
+    def _simple_evaluate(
+        self,
+        output: str,
+        expected_output: Optional[str],
+        criteria: Dict[str, Any]
+    ) -> tuple[float, Dict[str, Any]]:
+        """
+        Simple evaluation without LLM
+        
+        Returns:
+            Tuple of (score, metrics)
+        """
+        metrics = {}
+        score = 0.0
+        
+        if not expected_output:
+            # No expected output, give default score
+            score = 0.5
+            metrics["no_expected_output"] = True
+            return score, metrics
+        
+        # Simple string comparison
+        output_lower = output.lower().strip()
+        expected_lower = expected_output.lower().strip()
+        
+        if output_lower == expected_lower:
+            score = 1.0
+            metrics["exact_match"] = True
+        elif expected_lower in output_lower:
+            score = 0.8
+            metrics["contains_expected"] = True
+        elif output_lower in expected_lower:
+            score = 0.6
+            metrics["contained_in_expected"] = True
+        else:
+            # Calculate similarity (simple word overlap)
+            output_words = set(output_lower.split())
+            expected_words = set(expected_lower.split())
+            
+            if expected_words:
+                overlap = len(output_words & expected_words)
+                score = min(overlap / len(expected_words), 0.5)
+                metrics["word_overlap"] = overlap / len(expected_words)
+            else:
+                score = 0.3
+                metrics["low_similarity"] = True
+        
+        metrics["simple_evaluation"] = True
+        return score, metrics
+    
+    def calculate_score(
+        self,
+        result: BenchmarkResult,
+        criteria: Optional[Dict[str, Any]] = None
+    ) -> float:
+        """
+        Calculate overall score from metrics
+        
+        Args:
+            result: BenchmarkResult with metrics
+            criteria: Evaluation criteria (if None, uses task criteria)
+            
+        Returns:
+            Overall score (0.0-1.0)
+        """
+        if result.score is not None:
+            return result.score
+        
+        if not result.metrics:
+            return 0.0
+        
+        metrics = result.metrics
+        criteria = criteria or {}
+        
+        # If criteria has weights, use weighted average
+        if "weights" in criteria:
+            weights = criteria["weights"]
+            weighted_sum = 0.0
+            total_weight = 0.0
+            
+            for metric_name, weight in weights.items():
+                if metric_name in metrics:
+                    metric_value = metrics[metric_name]
+                    if isinstance(metric_value, (int, float)):
+                        weighted_sum += metric_value * weight
+                        total_weight += weight
+            
+            if total_weight > 0:
+                return weighted_sum / total_weight
+        
+        # Simple average of numeric metrics
+        numeric_metrics = [v for v in metrics.values() if isinstance(v, (int, float)) and v <= 1.0]
+        
+        if numeric_metrics:
+            return sum(numeric_metrics) / len(numeric_metrics)
+        
+        return 0.0
 

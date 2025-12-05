@@ -105,6 +105,18 @@ task = BenchmarkTask(
 - `run_suite(task_type, model_id, model_name, server_id, server_url, limit, timeout)` - запуск полного suite для модели
 - `compare_models(model_ids, task_type, limit)` - сравнение результатов разных моделей
 
+**Оценка результатов:**
+- `evaluate_result(result_id, use_llm)` - оценка результата выполнения
+  * Автоматическая оценка через LLM (если use_llm=True)
+  * Простое сравнение с expected_output (если use_llm=False)
+  * Расчет метрик: точность, релевантность
+  * Сохранение score и metrics в BenchmarkResult
+- `calculate_score(result, criteria)` - расчет общего score из метрик
+  * Поддержка весов для разных метрик
+  * Простое усреднение при отсутствии весов
+- `_llm_evaluate()` - внутренний метод для LLM-оценки
+- `_simple_evaluate()` - внутренний метод для простой оценки
+
 ## Начальный набор задач
 
 Создан начальный набор из 40 benchmark задач:
