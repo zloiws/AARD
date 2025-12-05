@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block title %}Model Comparison{% endblock %}
+
+{% block body_class %}iframe-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    body.iframe-page {
+        background: #f8f9fa;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        display: block;
+    }
+    
+    .comparison-container {
+        padding: 20px;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+    
+    .comparison-header {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .comparison-header h1 {
+        margin: 0 0 20px 0;
+        font-size: 24px;
+        color: #212529;
+    }
+    
+    .model-selection {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .model-select-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .model-select-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .model-select-group select {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 14px;
+        min-width: 200px;
+    }
+    
+    .btn-compare {
+        padding: 10px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-compare:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-compare:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .comparison-results {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    
+    .comparison-table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #212529;
+        border-bottom: 2px solid #dee2e6;
+        position: sticky;
+        top: 0;
+    }
+    
+    .comparison-table td {
+        padding: 12px;
+        border-bottom: 1px solid #e9ecef;
+        color: #212529;
+    }
+    
+    .comparison-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .task-name {
+        font-weight: 500;
+        color: #212529;
+    }
+    
+    .task-type {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .score-cell {
+        font-weight: 600;
+        text-align: center;
+    }
+    
+    .score-cell.high {
+        color: #28a745;
+    }
+    
+    .score-cell.medium {
+        color: #ffc107;
+    }
+    
+    .score-cell.low {
+        color: #dc3545;
+    }
+    
+    .time-cell {
+        text-align: center;
+        color: #6c757d;
+    }
+    
+    .status-cell {
+        text-align: center;
+    }
+    
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    
+    .status-badge.passed {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-badge.failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .summary-row {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+    
+    .summary-row td {
+        border-top: 2px solid #dee2e6;
+        padding: 16px 12px;
+    }
+    
+    .best-model {
+        background: #e7f3ff;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .no-comparison {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .filter-section {
+        margin-bottom: 20px;
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .filter-section label {
+        margin-right: 12px;
+        font-size: 13px;
+        color: #495057;
+    }
+    
+    .filter-section select {
+        padding: 6px 10px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="comparison-container">
+    <div class="comparison-header">
+        <h1>Сравнение моделей</h1>
+        
+        <div class="model-selection">
+            <div class="model-select-group">
+                <label>Модель 1</label>
+                <select id="model1-select">
+                    <option value="">Выберите модель...</option>
+                </select>
+            </div>
+            <div class="model-select-group">
+                <label>Модель 2</label>
+                <select id="model2-select">
+                    <option value="">Выберите модель...</option>
+                </select>
+            </div>
+            <div class="model-select-group">
+                <label>Тип задач</label>
+                <select id="task-type-filter">
+                    <option value="">Все типы</option>
+                    <option value="code_generation">Генерация кода</option>
+                    <option value="code_analysis">Анализ кода</option>
+                    <option value="reasoning">Рассуждения</option>
+                    <option value="planning">Планирование</option>
+                    <option value="general_chat">Общий чат</option>
+                </select>
+            </div>
+            <div class="model-select-group" style="align-self: flex-end;">
+                <button class="btn-compare" id="btn-compare" onclick="compareModels()" disabled>
+                    Сравнить
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="comparison-results" id="comparison-results">
+        <div class="no-comparison">
+            <h3>Выберите модели для сравнения</h3>
+            <p>Выберите две модели и нажмите "Сравнить" для просмотра результатов</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let allModels = [];
+let comparisonData = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadModels();
+    
+    // Enable compare button when both models selected
+    document.getElementById('model1-select').addEventListener('change', updateCompareButton);
+    document.getElementById('model2-select').addEventListener('change', updateCompareButton);
+});
+
+async function loadModels() {
+    try {
+        // Load all servers and their models
+        const serversResponse = await fetch('/api/servers/?active_only=true');
+        const servers = await serversResponse.json();
+        
+        const modelPromises = servers.map(server => 
+            fetch(`/api/servers/${server.id}/models`).then(r => r.json())
+        );
+        
+        const modelsArrays = await Promise.all(modelPromises);
+        
+        allModels = [];
+        modelsArrays.forEach((data, index) => {
+            const server = servers[index];
+            (data.models || []).forEach(model => {
+                allModels.push({
+                    id: model.id,
+                    name: model.name || model.model_name,
+                    model_name: model.model_name,
+                    server_id: server.id,
+                    server_name: server.name
+                });
+            });
+        });
+        
+        // Populate selects
+        const select1 = document.getElementById('model1-select');
+        const select2 = document.getElementById('model2-select');
+        
+        allModels.forEach(model => {
+            const option1 = document.createElement('option');
+            option1.value = model.id;
+            option1.textContent = `${model.name} (${model.server_name})`;
+            select1.appendChild(option1);
+            
+            const option2 = document.createElement('option');
+            option2.value = model.id;
+            option2.textContent = `${model.name} (${model.server_name})`;
+            select2.appendChild(option2);
+        });
+    } catch (error) {
+        console.error('Error loading models:', error);
+    }
+}
+
+function updateCompareButton() {
+    const model1 = document.getElementById('model1-select').value;
+    const model2 = document.getElementById('model2-select').value;
+    const btn = document.getElementById('btn-compare');
+    
+    btn.disabled = !model1 || !model2 || model1 === model2;
+}
+
+async function compareModels() {
+    const model1Id = document.getElementById('model1-select').value;
+    const model2Id = document.getElementById('model2-select').value;
+    const taskType = document.getElementById('task-type-filter').value;
+    
+    if (!model1Id || !model2Id || model1Id === model2Id) {
+        return;
+    }
+    
+    const resultsDiv = document.getElementById('comparison-results');
+    resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div><div>Загрузка сравнения...</div></div>';
+    
+    try {
+        const params = new URLSearchParams({
+            model_ids: [model1Id, model2Id].join(',')
+        });
+        if (taskType) {
+            params.append('task_type', taskType);
+        }
+        
+        const response = await fetch(`/api/benchmarks/comparison/?${params}`);
+        const comparison = await response.json();
+        
+        comparisonData = comparison;
+        renderComparison(comparison);
+    } catch (error) {
+        console.error('Error comparing models:', error);
+        resultsDiv.innerHTML = '<div class="no-comparison">Ошибка загрузки сравнения</div>';
+    }
+}
+
+function renderComparison(comparison) {
+    const resultsDiv = document.getElementById('comparison-results');
+    
+    if (!comparison.models || comparison.models.length === 0) {
+        resultsDiv.innerHTML = '<div class="no-comparison">Нет данных для сравнения</div>';
+        return;
+    }
+    
+    const model1 = comparison.models[0];
+    const model2 = comparison.models[1] || null;
+    
+    // Get all unique tasks
+    const allTaskIds = new Set();
+    model1.results.forEach(r => allTaskIds.add(r.benchmark_task_id));
+    if (model2) {
+        model2.results.forEach(r => allTaskIds.add(r.benchmark_task_id));
+    }
+    
+    // Build task map
+    const taskMap = new Map();
+    [...model1.results, ...(model2?.results || [])].forEach(result => {
+        if (!taskMap.has(result.benchmark_task_id)) {
+            taskMap.set(result.benchmark_task_id, {
+                id: result.benchmark_task_id,
+                name: result.task?.name || 'Unknown',
+                type: result.task?.task_type || 'unknown'
+            });
+        }
+    });
+    
+    const tasks = Array.from(taskMap.values());
+    
+    // Find best model
+    const bestModel = comparison.summary?.best_model;
+    
+    let html = `
+        <h2 style="margin: 0 0 20px 0;">Результаты сравнения</h2>
+        <div class="filter-section">
+            <label>Тип задач:</label>
+            <select id="task-type-filter-results" onchange="filterResults()">
+                <option value="">Все типы</option>
+                <option value="code_generation">Генерация кода</option>
+                <option value="code_analysis">Анализ кода</option>
+                <option value="reasoning">Рассуждения</option>
+                <option value="planning">Планирование</option>
+                <option value="general_chat">Общий чат</option>
+            </select>
+        </div>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Задача</th>
+                    <th style="text-align: center;">${escapeHtml(model1.model_name)}</th>
+                    ${model2 ? `<th style="text-align: center;">${escapeHtml(model2.model_name)}</th>` : ''}
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    tasks.forEach(task => {
+        const result1 = model1.results.find(r => r.benchmark_task_id === task.id);
+        const result2 = model2?.results.find(r => r.benchmark_task_id === task.id);
+        
+        html += '<tr>';
+        html += `<td>
+            <div class="task-name">${escapeHtml(task.name)}</div>
+            <div class="task-type">${escapeHtml(task.type)}</div>
+        </td>`;
+        
+        // Model 1 result
+        html += '<td>';
+        if (result1) {
+            const score = result1.score !== null ? (result1.score * 100).toFixed(1) : 'N/A';
+            const scoreClass = result1.score >= 0.8 ? 'high' : result1.score >= 0.5 ? 'medium' : 'low';
+            html += `
+                <div class="score-cell ${scoreClass}">${score}%</div>
+                <div class="time-cell">${result1.execution_time ? result1.execution_time.toFixed(2) + 's' : 'N/A'}</div>
+                <div class="status-cell">
+                    <span class="status-badge ${result1.passed ? 'passed' : 'failed'}">
+                        ${result1.passed ? '✓' : '✗'}
+                    </span>
+                </div>
+            `;
+        } else {
+            html += '<div style="text-align: center; color: #6c757d;">-</div>';
+        }
+        html += '</td>';
+        
+        // Model 2 result
+        if (model2) {
+            html += '<td>';
+            if (result2) {
+                const score = result2.score !== null ? (result2.score * 100).toFixed(1) : 'N/A';
+                const scoreClass = result2.score >= 0.8 ? 'high' : result2.score >= 0.5 ? 'medium' : 'low';
+                html += `
+                    <div class="score-cell ${scoreClass}">${score}%</div>
+                    <div class="time-cell">${result2.execution_time ? result2.execution_time.toFixed(2) + 's' : 'N/A'}</div>
+                    <div class="status-cell">
+                        <span class="status-badge ${result2.passed ? 'passed' : 'failed'}">
+                            ${result2.passed ? '✓' : '✗'}
+                        </span>
+                    </div>
+                `;
+            } else {
+                html += '<div style="text-align: center; color: #6c757d;">-</div>';
+            }
+            html += '</td>';
+        }
+        
+        html += '</tr>';
+    });
+    
+    // Summary row
+    html += `
+        <tr class="summary-row">
+            <td><strong>Итого</strong></td>
+            <td style="text-align: center;">
+                <div><strong>${model1.completed}/${model1.total_tasks}</strong> задач</div>
+                <div style="color: #667eea;">Score: ${(model1.avg_score * 100).toFixed(1)}%</div>
+                <div style="color: #6c757d;">Время: ${model1.avg_execution_time.toFixed(2)}s</div>
+            </td>
+    `;
+    
+    if (model2) {
+        html += `
+            <td style="text-align: center;">
+                <div><strong>${model2.completed}/${model2.total_tasks}</strong> задач</div>
+                <div style="color: #667eea;">Score: ${(model2.avg_score * 100).toFixed(1)}%</div>
+                <div style="color: #6c757d;">Время: ${model2.avg_execution_time.toFixed(2)}s</div>
+            </td>
+        `;
+    }
+    
+    html += '</tr></tbody></table>';
+    
+    resultsDiv.innerHTML = html;
+}
+
+function filterResults() {
+    // This would filter the table, but for now we'll just reload
+    if (comparisonData) {
+        renderComparison(comparisonData);
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
+
