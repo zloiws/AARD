@@ -229,6 +229,113 @@ async def get_prompt_versions(
     return versions
 
 
+@router.get("/{prompt_id}/metrics")
+async def get_prompt_metrics(
+    prompt_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get metrics for a prompt"""
+    prompt_service = PromptService(db)
+    prompt = prompt_service.get_prompt(prompt_id)
+    
+    if not prompt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prompt {prompt_id} not found"
+        )
+    
+    # Get usage history from improvement_history
+    usage_history = []
+    if prompt.improvement_history:
+        usage_results = [
+            h for h in prompt.improvement_history 
+            if h.get("type") == "usage_result"
+        ]
+        # Get last 50 results for history
+        usage_history = usage_results[-50:] if len(usage_results) > 50 else usage_results
+    
+    return {
+        "prompt_id": str(prompt.id),
+        "prompt_name": prompt.name,
+        "version": prompt.version,
+        "usage_count": prompt.usage_count,
+        "success_rate": prompt.success_rate,
+        "avg_execution_time": prompt.avg_execution_time,
+        "user_rating": prompt.user_rating,
+        "usage_history": usage_history,
+        "total_history_entries": len(usage_history)
+    }
+
+
+@router.get("/metrics/comparison")
+async def compare_prompt_metrics(
+    prompt_name: Optional[str] = None,
+    parent_prompt_id: Optional[UUID] = None,
+    db: Session = Depends(get_db)
+):
+    """Compare metrics across different versions of a prompt"""
+    prompt_service = PromptService(db)
+    
+    if parent_prompt_id:
+        # Get all versions of the parent prompt
+        versions = prompt_service.get_prompt_versions(parent_prompt_id)
+        if not versions:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Prompt {parent_prompt_id} not found"
+            )
+    elif prompt_name:
+        # Get all versions by name
+        all_prompts = prompt_service.list_prompts(name_search=prompt_name, limit=100)
+        # Group by name and get versions for each
+        versions = []
+        for prompt in all_prompts:
+            if prompt.name == prompt_name:
+                versions.extend(prompt_service.get_prompt_versions(prompt.id))
+        # Remove duplicates
+        seen_ids = set()
+        unique_versions = []
+        for v in versions:
+            if v.id not in seen_ids:
+                seen_ids.add(v.id)
+                unique_versions.append(v)
+        versions = sorted(unique_versions, key=lambda x: x.version)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either prompt_name or parent_prompt_id must be provided"
+        )
+    
+    # Build comparison data
+    comparison = []
+    for version in versions:
+        usage_history = []
+        if version.improvement_history:
+            usage_results = [
+                h for h in version.improvement_history 
+                if h.get("type") == "usage_result"
+            ]
+            usage_history = usage_results[-20:] if len(usage_results) > 20 else usage_results
+        
+        comparison.append({
+            "prompt_id": str(version.id),
+            "version": version.version,
+            "status": version.status,
+            "usage_count": version.usage_count,
+            "success_rate": version.success_rate,
+            "avg_execution_time": version.avg_execution_time,
+            "user_rating": version.user_rating,
+            "created_at": version.created_at.isoformat() if version.created_at else None,
+            "recent_usage_count": len(usage_history)
+        })
+    
+    return {
+        "prompt_name": versions[0].name if versions else None,
+        "total_versions": len(comparison),
+        "versions": comparison
+    }
+
+
 @router.delete("/{prompt_id}")
 async def delete_prompt(
     prompt_id: UUID,

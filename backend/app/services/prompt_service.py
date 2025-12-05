@@ -318,4 +318,147 @@ class PromptService:
             query = query.filter(Prompt.prompt_type == prompt_type_str)
         
         return query.order_by(Prompt.version.desc()).first()
+    
+    def record_usage(
+        self,
+        prompt_id: UUID,
+        execution_time_ms: Optional[float] = None
+    ) -> Optional[Prompt]:
+        """Record prompt usage and update metrics
+        
+        Args:
+            prompt_id: Prompt UUID
+            execution_time_ms: Execution time in milliseconds (optional)
+            
+        Returns:
+            Updated Prompt object or None if not found
+        """
+        prompt = self.get_prompt(prompt_id)
+        if not prompt:
+            return None
+        
+        try:
+            # Increment usage count
+            prompt.usage_count += 1
+            
+            # Update average execution time if provided
+            if execution_time_ms is not None:
+                # Calculate moving average (using exponential smoothing)
+                # For first usage, set directly; for subsequent, use weighted average
+                if prompt.avg_execution_time is None:
+                    prompt.avg_execution_time = execution_time_ms
+                else:
+                    # Exponential moving average with alpha=0.1 (gives more weight to recent values)
+                    alpha = 0.1
+                    prompt.avg_execution_time = (
+                        alpha * execution_time_ms + 
+                        (1 - alpha) * prompt.avg_execution_time
+                    )
+            
+            self.db.commit()
+            self.db.refresh(prompt)
+            
+            logger.debug(
+                f"Recorded usage for prompt: {prompt.name} (id: {prompt_id})",
+                extra={
+                    "prompt_id": str(prompt_id),
+                    "usage_count": prompt.usage_count,
+                    "avg_execution_time": prompt.avg_execution_time
+                }
+            )
+            
+            return prompt
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error recording prompt usage: {e}", exc_info=True)
+            raise
+    
+    def record_success(self, prompt_id: UUID) -> Optional[Prompt]:
+        """Record successful prompt usage
+        
+        Args:
+            prompt_id: Prompt UUID
+            
+        Returns:
+            Updated Prompt object or None if not found
+        """
+        return self._record_result(prompt_id, success=True)
+    
+    def record_failure(self, prompt_id: UUID) -> Optional[Prompt]:
+        """Record failed prompt usage
+        
+        Args:
+            prompt_id: Prompt UUID
+            
+        Returns:
+            Updated Prompt object or None if not found
+        """
+        return self._record_result(prompt_id, success=False)
+    
+    def _record_result(self, prompt_id: UUID, success: bool) -> Optional[Prompt]:
+        """Record success or failure and update success_rate
+        
+        Uses a sliding window approach (last 100 results) to calculate success_rate.
+        Stores results in improvement_history for tracking.
+        
+        Args:
+            prompt_id: Prompt UUID
+            success: True for success, False for failure
+            
+        Returns:
+            Updated Prompt object or None if not found
+        """
+        prompt = self.get_prompt(prompt_id)
+        if not prompt:
+            return None
+        
+        try:
+            # Get or initialize improvement_history
+            history = prompt.improvement_history or []
+            
+            # Add new result
+            history.append({
+                "timestamp": datetime.utcnow().isoformat(),
+                "success": success,
+                "type": "usage_result"
+            })
+            
+            # Keep only last 100 results for sliding window
+            window_size = 100
+            if len(history) > window_size:
+                # Keep only usage results from last window_size entries
+                usage_results = [h for h in history if h.get("type") == "usage_result"]
+                if len(usage_results) > window_size:
+                    # Keep only last window_size results
+                    history = [h for h in history if h.get("type") != "usage_result"]
+                    history.extend(usage_results[-window_size:])
+            
+            prompt.improvement_history = history
+            
+            # Calculate success_rate from last 100 results
+            usage_results = [h for h in history if h.get("type") == "usage_result"]
+            if usage_results:
+                successful = sum(1 for h in usage_results if h.get("success", False))
+                total = len(usage_results)
+                prompt.success_rate = successful / total if total > 0 else None
+            else:
+                prompt.success_rate = None
+            
+            self.db.commit()
+            self.db.refresh(prompt)
+            
+            logger.debug(
+                f"Recorded {'success' if success else 'failure'} for prompt: {prompt.name} (id: {prompt_id})",
+                extra={
+                    "prompt_id": str(prompt_id),
+                    "success": success,
+                    "success_rate": prompt.success_rate
+                }
+            )
+            
+            return prompt
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error recording prompt result: {e}", exc_info=True)
+            raise
 

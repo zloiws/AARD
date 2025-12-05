@@ -942,6 +942,18 @@ Return a JSON array of steps."""
                 )
                 duration_ms = int((time.time() - start_time) * 1000)
                 
+                # Record prompt usage metrics
+                if prompt_used:
+                    try:
+                        self.prompt_service.record_usage(
+                            prompt_id=prompt_used.id,
+                            execution_time_ms=duration_ms
+                        )
+                    except Exception as e:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to record prompt usage metrics: {e}", exc_info=True)
+                
                 # Log response from model
                 self._add_model_log(
                     log_type="response",
@@ -1039,9 +1051,27 @@ Return a JSON array of steps."""
                 stage="analysis"
             )
             
+            # Record success for prompt usage
+            if prompt_used:
+                try:
+                    self.prompt_service.record_success(prompt_used.id)
+                except Exception as e:
+                    logger = self._get_logger()
+                    if logger:
+                        logger.warning(f"Failed to record prompt success: {e}", exc_info=True)
+            
             return strategy
             
         except Exception as e:
+            # Record failure for prompt usage
+            if prompt_used:
+                try:
+                    self.prompt_service.record_failure(prompt_used.id)
+                except Exception as e2:
+                    logger = self._get_logger()
+                    if logger:
+                        logger.warning(f"Failed to record prompt failure: {e2}", exc_info=True)
+            
             # Fallback strategy
             return {
                 "approach": "Standard step-by-step approach",
@@ -1218,6 +1248,18 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 )
                 duration_ms = int((time.time() - start_time) * 1000)
                 
+                # Record prompt usage metrics
+                if prompt_used:
+                    try:
+                        self.prompt_service.record_usage(
+                            prompt_id=prompt_used.id,
+                            execution_time_ms=duration_ms
+                        )
+                    except Exception as e:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to record prompt usage metrics: {e}", exc_info=True)
+                
                 # Log response from model
                 try:
                     parsed_response = json.loads(response.response)
@@ -1279,6 +1321,16 @@ Break down this task into executable steps. Return only a valid JSON array."""
             except asyncio.TimeoutError:
                 import time
                 duration_ms = int((time.time() - start_time) * 1000)
+                
+                # Record failure for prompt usage
+                if prompt_used:
+                    try:
+                        self.prompt_service.record_failure(prompt_used.id)
+                    except Exception as e2:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to record prompt failure: {e2}", exc_info=True)
+                
                 self._add_model_log(
                     log_type="error",
                     model=planning_model.model_name,
@@ -1337,9 +1389,27 @@ Break down this task into executable steps. Return only a valid JSON array."""
                     "tool": None
                 }]
             
+            # Record success for prompt usage (if steps were successfully generated)
+            if prompt_used and len(validated_steps) > 0:
+                try:
+                    self.prompt_service.record_success(prompt_used.id)
+                except Exception as e2:
+                    logger = self._get_logger()
+                    if logger:
+                        logger.warning(f"Failed to record prompt success: {e2}", exc_info=True)
+            
             return validated_steps
             
         except Exception as e:
+            # Record failure for prompt usage
+            if prompt_used:
+                try:
+                    self.prompt_service.record_failure(prompt_used.id)
+                except Exception as e2:
+                    logger = self._get_logger()
+                    if logger:
+                        logger.warning(f"Failed to record prompt failure: {e2}", exc_info=True)
+            
             # Fallback to single step
             return [{
                 "step_id": "step_1",
