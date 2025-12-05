@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/agent-dialogs", tags=["agent-dialogs"])
 # Request/Response models
 class ConversationCreate(BaseModel):
     """Request model for creating a conversation"""
-    participant_ids: List[UUID] = Field(..., description="List of agent IDs participating in the conversation", min_items=2)
+    participant_ids: List[UUID] = Field(..., description="List of agent IDs participating in the conversation", min_length=2)
     goal: Optional[str] = Field(None, description="Goal of the conversation")
     title: Optional[str] = Field(None, description="Optional title for the conversation")
     description: Optional[str] = Field(None, description="Optional description")
