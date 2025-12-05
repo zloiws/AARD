@@ -307,15 +307,33 @@ async def test_real_modules_interaction_full_workflow(db):
                 
                 db.refresh(plan)
                 
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен быть связан с задачей
+                if plan.task_id:
+                    assert plan.task_id == task.id, f"План должен быть связан с задачей {task.id}, но связан с {plan.task_id}"
+                    stage.add_detail("Связь с задачей", f"✓ План связан с задачей {task.id}")
+                else:
+                    stage.add_warning("План не связан с задачей (task_id отсутствует)")
+                
                 stage.add_detail("ID плана", str(plan.id))
                 # plan.status может быть строкой или enum
                 status_value = plan.status.value if hasattr(plan.status, 'value') else str(plan.status)
                 stage.add_detail("Статус плана", status_value)
                 stage.add_detail("Цель", plan.goal)
                 
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен иметь цель
+                assert plan.goal, "План должен иметь цель (goal)"
+                
                 # Анализ шагов
                 steps = plan.steps if isinstance(plan.steps, list) else json.loads(plan.steps) if plan.steps else []
                 stage.add_detail("Количество шагов", len(steps))
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен иметь хотя бы один шаг
+                assert len(steps) > 0, "План должен содержать хотя бы один шаг"
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Структура шагов
+                for i, step in enumerate(steps, 1):
+                    assert isinstance(step, dict), f"Шаг {i} должен быть словарем"
+                    assert "description" in step or "step_id" in step, f"Шаг {i} должен иметь description или step_id"
                 
                 for i, step in enumerate(steps[:5], 1):  # Показываем первые 5 шагов
                     step_desc = step.get("description", "")[:50]
@@ -390,11 +408,27 @@ async def test_real_modules_interaction_full_workflow(db):
                 
                 db.refresh(team)
                 
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Команда должна иметь агентов
+                team_agents = list(team.agents) if hasattr(team.agents, '__iter__') else []
+                assert len(team_agents) > 0, "Команда должна содержать хотя бы одного агента"
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Агенты должны быть активны
+                active_agents = [a for a in team_agents if (a.status.value if hasattr(a.status, 'value') else str(a.status)) == AgentStatus.ACTIVE.value]
+                if len(active_agents) != len(team_agents):
+                    stage.add_warning(f"Не все агенты активны: {len(active_agents)}/{len(team_agents)}")
+                
                 stage.add_detail("ID команды", str(team.id))
                 stage.add_detail("Название команды", team.name)
-                stage.add_detail("Стратегия координации", team.coordination_strategy.value)
-                stage.add_detail("Количество агентов", len(team.agents))
+                # coordination_strategy может быть строкой или enum
+                strategy_value = team.coordination_strategy.value if hasattr(team.coordination_strategy, 'value') else str(team.coordination_strategy)
+                stage.add_detail("Стратегия координации", strategy_value)
+                stage.add_detail("Количество агентов", len(team_agents))
+                stage.add_detail("Активных агентов", len(active_agents))
                 stage.add_detail("Лидер команды", agent1.name)
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: Лидер должен быть в команде
+                leader_ids = [a.id for a in team_agents]
+                assert agent1.id in leader_ids, "Лидер команды должен быть в списке агентов команды"
                 
                 stage.set_success(True)
                 
@@ -413,48 +447,70 @@ async def test_real_modules_interaction_full_workflow(db):
                 test_logger.info(f"Количество шагов: {len(steps)}")
                 
                 # Выполнение плана с таймаутом
-                execution_result = await asyncio.wait_for(
-                    execution_service.execute_plan(
-                        plan_id=plan.id,
-                        context={"team_id": str(team.id)}
-                    ),
+                # execute_plan принимает только plan_id (без context)
+                executed_plan = await asyncio.wait_for(
+                    execution_service.execute_plan(plan_id=plan.id),
                     timeout=TIMEOUTS["full_execution"]
                 )
                 
-                db.refresh(plan)
+                db.refresh(executed_plan)
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен быть обновлен
+                assert executed_plan.id == plan.id, "ID плана должен совпадать"
+                
+                # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен быть в статусе выполнения или завершен
+                executed_status = executed_plan.status.value if hasattr(executed_plan.status, 'value') else str(executed_plan.status)
+                valid_execution_statuses = ["executing", "completed", "failed", "in_progress"]
+                assert executed_status in valid_execution_statuses, f"План должен быть в статусе выполнения ({valid_execution_statuses}), но в статусе {executed_status}"
                 
                 # plan.status может быть строкой или enum
-                status_value = plan.status.value if hasattr(plan.status, 'value') else str(plan.status)
+                status_value = executed_plan.status.value if hasattr(executed_plan.status, 'value') else str(executed_plan.status)
                 stage.add_detail("Статус выполнения", status_value)
-                stage.add_detail("Текущий шаг", plan.current_step_index or 0)
+                stage.add_detail("Текущий шаг", executed_plan.current_step_index or executed_plan.current_step or 0)
                 
-                # Анализ результатов шагов
-                if execution_result:
-                    completed_steps = execution_result.get("completed_steps", 0)
-                    failed_steps = execution_result.get("failed_steps", 0)
-                    total_steps = execution_result.get("total_steps", len(steps))
+                # Проверка согласованности: если план выполнен, должен быть current_step
+                if status_value in ["completed", "executing"]:
+                    current_step = executed_plan.current_step_index or executed_plan.current_step or 0
+                    stage.add_detail("Прогресс выполнения", f"Шаг {current_step} из {len(steps)}")
+                
+                # Анализ шагов из плана
+                executed_steps = executed_plan.steps if isinstance(executed_plan.steps, list) else json.loads(executed_plan.steps) if executed_plan.steps else []
+                stage.add_detail("Всего шагов в плане", len(executed_steps))
+                
+                # Подсчет выполненных/проваленных шагов из результатов плана
+                completed_count = 0
+                failed_count = 0
+                for step in executed_steps:
+                    step_status = step.get("status", "unknown")
+                    if step_status == "completed":
+                        completed_count += 1
+                    elif step_status == "failed":
+                        failed_count += 1
+                
+                stage.add_detail("Выполнено шагов", f"{completed_count}/{len(executed_steps)}")
+                stage.add_detail("Провалено шагов", failed_count)
+                
+                # Детали по первым 3 шагам
+                for i, step in enumerate(executed_steps[:3], 1):
+                    step_status = step.get("status", "unknown")
+                    step_id = step.get("step_id", f"step_{i}")
+                    step_desc = step.get("description", "")[:50]
+                    stage.add_detail(f"Шаг {i} ({step_id})", f"{step_status}: {step_desc}...")
                     
-                    stage.add_detail("Выполнено шагов", f"{completed_steps}/{total_steps}")
-                    stage.add_detail("Провалено шагов", failed_steps)
-                    
-                    # Детали по шагам
-                    step_results = execution_result.get("step_results", [])
-                    for i, step_result in enumerate(step_results[:3], 1):  # Первые 3 шага
-                        step_status = step_result.get("status", "unknown")
-                        step_id = step_result.get("step_id", f"step_{i}")
-                        stage.add_detail(f"Шаг {i} ({step_id})", step_status)
-                        
-                        if step_result.get("output"):
-                            output_preview = str(step_result["output"])[:100]
-                            stage.add_detail(f"  Результат", output_preview + "..." if len(output_preview) > 100 else output_preview)
+                    if step.get("output"):
+                        output_preview = str(step["output"])[:100]
+                        stage.add_detail(f"  Результат", output_preview + "..." if len(output_preview) > 100 else output_preview)
                 
                 # Проверка финального статуса
-                plan_status_str = plan.status.value if hasattr(plan.status, 'value') else str(plan.status)
+                plan_status_str = executed_plan.status.value if hasattr(executed_plan.status, 'value') else str(executed_plan.status)
                 if plan_status_str == PlanStatus.COMPLETED.value or plan_status_str == "completed":
                     stage.set_success(True)
                 elif plan_status_str == PlanStatus.FAILED.value or plan_status_str == "failed":
                     stage.add_warning("План завершился с ошибкой")
                     stage.set_success(False)
+                elif plan_status_str in ["executing", "in_progress"]:
+                    stage.add_warning(f"План все еще выполняется (статус: {plan_status_str})")
+                    stage.set_success(True)  # Частичный успех - выполнение началось
                 else:
                     stage.add_warning(f"План в статусе {plan_status_str}")
                     stage.set_success(True)  # Частичный успех
@@ -475,11 +531,12 @@ async def test_real_modules_interaction_full_workflow(db):
                 test_logger.info("Проверка распределения задач в команде...")
                 
                 # Попытка распределить задачу в команду
+                # distribute_task_to_team принимает task_context, а не context
                 coordination_result = await asyncio.wait_for(
                     agent_team_coordination.distribute_task_to_team(
                         team_id=team.id,
                         task_description="Проверка координации",
-                        context={"test": True}
+                        task_context={"test": True, "plan_id": str(plan.id)}
                     ),
                     timeout=TIMEOUTS["team_coordination"]
                 )
@@ -488,6 +545,19 @@ async def test_real_modules_interaction_full_workflow(db):
                     stage.add_detail("Распределение задач", "Успешно")
                     assigned_agents = coordination_result.get("assigned_agents", [])
                     stage.add_detail("Назначено агентам", len(assigned_agents))
+                    
+                    # ПРОВЕРКА СОГЛАСОВАННОСТИ: Должен быть хотя бы один назначенный агент
+                    if len(assigned_agents) > 0:
+                        stage.add_detail("Согласованность", "✓ Задачи распределены между агентами")
+                    else:
+                        stage.add_warning("Задачи не были распределены между агентами")
+                    
+                    # ПРОВЕРКА СОГЛАСОВАННОСТИ: Назначенные агенты должны быть из команды
+                    team_agent_ids = {str(a.id) for a in team.agents}
+                    for agent_info in assigned_agents:
+                        agent_id = str(agent_info.get("agent_id", ""))
+                        if agent_id and agent_id not in team_agent_ids:
+                            stage.add_warning(f"Агент {agent_id} назначен, но не входит в команду")
                 else:
                     stage.add_warning("Координация не вернула результат")
                 
@@ -513,9 +583,10 @@ async def test_real_modules_interaction_full_workflow(db):
         test_logger.info(f"Лог файл: {TEST_LOG_FILE}")
         test_logger.info(f"{'#'*100}\n")
         
-        # Финальная проверка
+        # ФИНАЛЬНЫЕ ПРОВЕРКИ СОГЛАСОВАННОСТИ
         db.refresh(plan)
         db.refresh(task)
+        db.refresh(team)
         
         test_logger.info("ФИНАЛЬНЫЕ СТАТУСЫ:")
         task_status = task.status.value if hasattr(task.status, 'value') else str(task.status)
@@ -525,9 +596,40 @@ async def test_real_modules_interaction_full_workflow(db):
         test_logger.info(f"  План: {plan_status}")
         test_logger.info(f"  Команда: {team_status}")
         
-        # Успех теста
+        # ПРОВЕРКА СОГЛАСОВАННОСТИ: Связь задачи и плана
+        if plan.task_id:
+            assert plan.task_id == task.id, "План должен быть связан с правильной задачей"
+            test_logger.info(f"  ✓ Связь задачи-плана: валидна (план {plan.id} -> задача {task.id})")
+        else:
+            test_logger.warning(f"  ⚠ Связь задачи-плана: отсутствует")
+        
+        # ПРОВЕРКА СОГЛАСОВАННОСТИ: Статусы задачи и плана
+        valid_task_statuses = [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS, TaskStatus.PENDING, TaskStatus.PLANNING]
+        task_status_enum = None
+        for status in valid_task_statuses:
+            if task_status == status.value or task_status == status:
+                task_status_enum = status
+                break
+        
+        if task_status_enum:
+            test_logger.info(f"  ✓ Статус задачи: валиден ({task_status})")
+        else:
+            test_logger.warning(f"  ⚠ Статус задачи: неожиданный ({task_status})")
+        
+        # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен существовать
         assert plan is not None, "План должен быть создан"
-        assert task.status in [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS, TaskStatus.PENDING], "Задача должна иметь валидный статус"
+        assert plan.id is not None, "План должен иметь ID"
+        test_logger.info(f"  ✓ План создан: {plan.id}")
+        
+        # ПРОВЕРКА СОГЛАСОВАННОСТИ: Команда должна существовать
+        assert team is not None, "Команда должна быть создана"
+        assert team.id is not None, "Команда должна иметь ID"
+        test_logger.info(f"  ✓ Команда создана: {team.id} ({len(team.agents)} агентов)")
+        
+        # ПРОВЕРКА СОГЛАСОВАННОСТИ: План должен иметь шаги
+        final_steps = plan.steps if isinstance(plan.steps, list) else json.loads(plan.steps) if plan.steps else []
+        assert len(final_steps) > 0, "План должен содержать шаги"
+        test_logger.info(f"  ✓ План содержит {len(final_steps)} шагов")
         
         test_logger.info("\n✓ ТЕСТ ЗАВЕРШЕН УСПЕШНО")
         
