@@ -274,11 +274,70 @@ conversations = service.get_conversations_by_agent(agent.id)
 - ✅ 5 интеграционных тестов - все проходят
 - Полный цикл диалога, диалог с задачей, пауза/возобновление, завершение по лимиту, множественные агенты
 
+## Интеграция с PlanningService
+
+Диалоги интегрированы в процесс планирования для сложных задач.
+
+### Автоматическое определение сложных задач
+
+Система автоматически определяет, является ли задача сложной:
+
+```python
+from app.services.planning_service_dialog_integration import is_complex_task
+
+# Простая задача - диалог не нужен
+is_complex_task("Напиши print(1)")  # False
+
+# Сложная задача - требуется диалог
+is_complex_task("Создай архитектуру системы с интеграцией сервисов")  # True
+
+# Явное требование диалога
+is_complex_task("Задача", {"requires_dialog": True})  # True
+```
+
+### Критерии сложности
+
+1. **Длина описания** > 200 символов
+2. **Ключевые слова сложности**: "сложн", "архитектур", "систем", "интеграц", "координац", "совместн"
+3. **Множественные компетенции**: требует и планирования, и кода, и анализа
+4. **Явное указание**: `context["requires_dialog"] = True`
+
+### Использование в PlanningService
+
+```python
+from app.services.planning_service import PlanningService
+
+planning_service = PlanningService(db)
+
+# Для сложных задач автоматически создается диалог
+plan = await planning_service.generate_plan(
+    task_description="Сложная задача с множественными компонентами",
+    task_id=task.id
+)
+
+# Результаты диалога используются при генерации плана
+# Контекст диалога сохраняется в Digital Twin
+```
+
+### Сохранение в Digital Twin
+
+Контекст диалога автоматически сохраняется в контексте задачи:
+
+```python
+task = db.query(Task).filter(Task.id == task_id).first()
+context = task.get_context()
+
+if "agent_dialog" in context:
+    conversation_id = context["agent_dialog"]["conversation_id"]
+    dialog_context = context["agent_dialog"]["context"]
+    # Использовать результаты диалога
+```
+
 ## Следующие шаги
 
 - ✅ Реализация `AgentDialogService` для управления диалогами (выполнено)
 - ✅ Интеграционные тесты (выполнено)
-- Интеграция диалогов в `PlanningService` (Этап 8.2.1)
+- ✅ Интеграция диалогов в `PlanningService` (Этап 8.2.1 - выполнено)
 - API для управления диалогами (Этап 8.2.2)
 - Полный цикл диалога с реальными агентами и LLM
 

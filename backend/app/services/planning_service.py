@@ -20,6 +20,11 @@ from app.services.plan_template_service import PlanTemplateService
 from app.services.plan_evaluation_service import PlanEvaluationService
 from app.services.agent_team_service import AgentTeamService
 from app.services.agent_team_coordination import AgentTeamCoordination
+from app.services.agent_dialog_service import AgentDialogService
+from app.services.planning_service_dialog_integration import (
+    is_complex_task,
+    initiate_agent_dialog_for_planning
+)
 from app.models.approval import ApprovalRequestType
 from app.models.prompt import PromptType
 from app.core.tracing import get_tracer, add_span_attributes, get_current_trace_id
@@ -42,6 +47,7 @@ class PlanningService:
         self.plan_evaluation_service = PlanEvaluationService(db)  # Plan evaluation service for A/B testing
         self.agent_team_service = AgentTeamService(db)  # Agent team service
         self.agent_team_coordination = AgentTeamCoordination(db)  # Agent team coordination service
+        self.agent_dialog_service = AgentDialogService(db)  # Agent dialog service for complex tasks
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
     
@@ -723,6 +729,44 @@ Return a JSON array of steps."""
         self.workflow_tracker = get_workflow_tracker()
         self.workflow_id = str(task_id)  # Use task_id as workflow_id
         
+        # Check if task is complex and needs agent dialog
+        conversation_id = None
+        dialog_context = {}
+        if is_complex_task(task_description, context):
+            logger = self._get_logger()
+            if logger:
+                logger.info(
+                    "Task is complex, initiating agent dialog",
+                    extra={"task_id": str(task_id), "task_description": task_description[:100]}
+                )
+            
+            # Initiate dialog between agents for complex tasks
+            conversation_id, dialog_context = await initiate_agent_dialog_for_planning(
+                db=self.db,
+                task_description=task_description,
+                task_id=task_id,
+                context=context
+            )
+            
+            # Save dialog context to Digital Twin
+            if conversation_id and task:
+                digital_twin_context["agent_dialog"] = {
+                    "conversation_id": str(conversation_id),
+                    "context": dialog_context,
+                    "initiated_at": datetime.utcnow().isoformat()
+                }
+                task.update_context(digital_twin_context, merge=False)
+                self.db.commit()
+        
+        # Use dialog context if available for plan generation
+        if dialog_context and "discussion_summary" in dialog_context:
+            # Enhance task description with dialog insights
+            enhanced_task_description = f"{task_description}\n\n[Insights from agent discussion]: {dialog_context.get('discussion_summary', '')}"
+            if context:
+                context["agent_dialog_insights"] = dialog_context
+        else:
+            enhanced_task_description = task_description
+        
         # Start workflow tracking
         self.workflow_tracker.start_workflow(
             self.workflow_id,
@@ -809,7 +853,9 @@ Return a JSON array of steps."""
             "Анализ задачи и создание стратегии...",
             details={"stage": "strategy_analysis"}
         )
-        strategy = await self._analyze_task(task_description, enhanced_context, task_id)
+        # Use enhanced task description if dialog was conducted
+        task_description_for_analysis = enhanced_task_description if 'enhanced_task_description' in locals() else task_description
+        strategy = await self._analyze_task(task_description_for_analysis, enhanced_context, task_id)
         
         self._add_and_save_workflow_event(
             WorkflowStage.EXECUTION,
@@ -818,8 +864,10 @@ Return a JSON array of steps."""
         )
         
         # 2. Decompose task into steps (use procedural pattern if available)
+        # Use enhanced task description if dialog was conducted
+        task_description_for_decomposition = enhanced_task_description if 'enhanced_task_description' in locals() else task_description
         steps = await self._decompose_task(
-            task_description,
+            task_description_for_decomposition,
             strategy,
             enhanced_context,
             task_id=task_id
