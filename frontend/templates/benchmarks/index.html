@@ -340,7 +340,7 @@
             </div>
             <div class="filter-group">
                 <label>Таймаут (сек)</label>
-                <input type="number" id="timeout" value="60" min="1" max="300" style="width: 100px;">
+                <input type="number" id="timeout" value="90" min="60" max="120" style="width: 100px;">
             </div>
         </div>
     </div>
@@ -486,19 +486,39 @@ async function loadServerModels() {
         return;
     }
     
+    // Show loading
+    select.innerHTML = '<option value="">Загрузка моделей...</option>';
+    select.disabled = true;
+    
     try {
         const response = await fetch(`/api/servers/${serverId}/models`);
-        const data = await response.json();
-        models = data.models || [];
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         
-        select.innerHTML = '<option value="">Выберите модель</option>' +
-            models.map(m => `<option value="${m.model_name}">${m.name || m.model_name}</option>`).join('');
+        const data = await response.json();
+        console.log('Models response:', data);
+        
+        // API returns List[dict], so data is already an array
+        models = Array.isArray(data) ? data : (data.models || []);
+        
+        if (models.length === 0) {
+            select.innerHTML = '<option value="">Модели не найдены</option>';
+        } else {
+            select.innerHTML = '<option value="">Выберите модель</option>' +
+                models.map(m => {
+                    const modelName = m.model_name || m.name || 'Unknown';
+                    const displayName = m.name || m.model_name || 'Unknown';
+                    return `<option value="${modelName}">${displayName}</option>`;
+                }).join('');
+        }
     } catch (error) {
         console.error('Error loading models:', error);
-        select.innerHTML = '<option value="">Ошибка загрузки</option>';
+        select.innerHTML = '<option value="">Ошибка загрузки: ' + error.message + '</option>';
+    } finally {
+        select.disabled = false;
+        updateRunButton();
     }
-    
-    updateRunButton();
 }
 
 document.getElementById('model-name').addEventListener('change', updateRunButton);
@@ -507,7 +527,7 @@ async function runBenchmark() {
     const selectedTaskIds = Array.from(selectedTasks);
     const modelName = document.getElementById('model-name').value;
     const serverId = document.getElementById('model-server').value;
-    const timeout = parseInt(document.getElementById('timeout').value) || 60;
+    const timeout = parseInt(document.getElementById('timeout').value) || 90;
     
     if (selectedTaskIds.length === 0 || !modelName) {
         alert('Выберите задачи и модель');
