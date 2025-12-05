@@ -124,9 +124,90 @@ alembic upgrade head
 pytest backend/tests/test_agent_team_model.py -v
 ```
 
+## AgentTeamService
+
+### Основные методы
+
+#### Создание и управление командами
+
+```python
+from app.services.agent_team_service import AgentTeamService
+
+service = AgentTeamService(db)
+
+# Создать команду
+team = service.create_team(
+    name="Development Team",
+    description="Team for software development",
+    coordination_strategy=CoordinationStrategy.COLLABORATIVE.value,
+    roles={"developer": "Writes code", "reviewer": "Reviews code"}
+)
+
+# Получить команду
+team = service.get_team(team_id)
+
+# Обновить команду
+service.update_team(
+    team_id,
+    description="Updated description",
+    status=TeamStatus.ACTIVE.value
+)
+
+# Удалить команду
+service.delete_team(team_id)
+```
+
+#### Управление составом команды
+
+```python
+# Добавить агента в команду
+service.add_agent_to_team(
+    team_id=team.id,
+    agent_id=agent.id,
+    role="developer",
+    is_lead=False
+)
+
+# Удалить агента из команды
+service.remove_agent_from_team(team_id, agent_id)
+
+# Обновить роль агента
+service.update_agent_role(
+    team_id,
+    agent_id,
+    role="senior_developer",
+    is_lead=True
+)
+
+# Установить лидера команды
+service.set_team_lead(team_id, agent_id)
+```
+
+#### Получение информации
+
+```python
+# Получить всех агентов команды
+agents = service.get_team_agents(team_id)
+
+# Получить агентов по роли
+developers = service.get_agents_by_role(team_id, "developer")
+
+# Получить лидера команды
+lead = service.get_team_lead(team_id)
+```
+
+#### Управление статусом
+
+```python
+# Активировать команду
+service.activate_team(team_id)
+
+# Приостановить команду
+service.pause_team(team_id)
+```
+
 ## Следующие шаги
 
-- Реализация `AgentTeamService` для управления командами
 - Интеграция с A2A протоколом для координации
 - Интеграция с `PlanningService` для назначения команд задачам
 
