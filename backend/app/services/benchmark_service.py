@@ -16,6 +16,7 @@ from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
 from app.core.ollama_client import OllamaClient, TaskType
 from app.core.logging_config import LoggingConfig
+from app.services.prompt_service import PromptService
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -25,6 +26,7 @@ class BenchmarkService:
     
     def __init__(self, db: Session):
         self.db = db
+        self.prompt_service = PromptService(db)
     
     def load_tasks_from_file(self, file_path: Path) -> List[Dict[str, Any]]:
         """Load benchmark tasks from a JSON file"""
@@ -217,12 +219,35 @@ class BenchmarkService:
         
         try:
             client = OllamaClient()
+            
+            # Get system prompt for task type if available
+            system_prompt = None
+            try:
+                # Use predefined system prompts based on task type
+                # These provide context to models for better performance
+                system_prompts = {
+                    BenchmarkTaskType.CODE_GENERATION: "You are an expert Python programmer. Generate clean, efficient, and well-documented code. Provide only the code solution without additional explanations unless asked.",
+                    BenchmarkTaskType.CODE_ANALYSIS: "You are a code reviewer. Analyze code for bugs, security issues, and improvements. Provide clear, actionable feedback.",
+                    BenchmarkTaskType.REASONING: "You are a logical reasoning expert. Solve problems step by step with clear explanations. Show your reasoning process.",
+                    BenchmarkTaskType.PLANNING: "You are a planning expert. Create detailed, actionable plans. Break down complex tasks into manageable steps.",
+                    BenchmarkTaskType.GENERAL_CHAT: "You are a helpful AI assistant. Provide clear, accurate, and concise responses.",
+                }
+                system_prompt = system_prompts.get(task.task_type)
+            except Exception as e:
+                logger.warning(f"Could not set system prompt for task type {task.task_type}: {e}")
+            
+            # Use task description as user prompt, add system prompt if available
+            user_prompt = task.task_description
+            
             response = await asyncio.wait_for(
                 client.generate(
-                    prompt=task.task_description,
+                    prompt=user_prompt,
                     task_type=ollama_task_type,
                     model=model_name,
-                    server_url=server_url
+                    server_url=server_url,
+                    system_prompt=system_prompt,
+                    temperature=0.7,  # Explicit temperature
+                    top_p=0.9  # Explicit top_p
                 ),
                 timeout=timeout
             )
@@ -230,14 +255,23 @@ class BenchmarkService:
             execution_time = time.time() - start_time
             output = response.response
             
-            # Store result
+            # Store result with GPU and server info
             result.execution_time = execution_time
             result.output = output
+            gpu_info = None
+            if server and server.server_metadata:
+                gpu_info = server.server_metadata.get("gpu") or server.server_metadata.get("GPU")
+            
             result.execution_metadata = {
                 "model": model_name,
                 "server_url": server_url,
+                "server_name": server.name if server else None,
+                "server_gpu": gpu_info,
                 "task_type": task.task_type.value,
-                "timeout": timeout
+                "timeout": timeout,
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "system_prompt_used": system_prompt is not None
             }
             
         except asyncio.TimeoutError:
