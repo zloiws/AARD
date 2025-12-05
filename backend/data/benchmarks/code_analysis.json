@@ -1,0 +1,68 @@
+[
+  {
+    "name": "analyze_time_complexity",
+    "task_type": "code_analysis",
+    "category": "python",
+    "task_description": "Analyze the following code and determine its time complexity in Big O notation:\n\ndef find_max(arr):\n    max_val = arr[0]\n    for i in range(1, len(arr)):\n        if arr[i] > max_val:\n            max_val = arr[i]\n    return max_val",
+    "expected_output": "O(n) - Linear time complexity. The function iterates through the array once.",
+    "evaluation_criteria": {
+      "correctness": 1.0,
+      "explanation": 0.9
+    },
+    "difficulty": "easy",
+    "tags": ["python", "complexity", "analysis"]
+  },
+  {
+    "name": "identify_bug",
+    "task_type": "code_analysis",
+    "category": "python",
+    "task_description": "Identify the bug in the following code and explain how to fix it:\n\ndef divide_numbers(a, b):\n    return a / b\n\nresult = divide_numbers(10, 0)",
+    "expected_output": "Bug: Division by zero error. Fix: Add a check for b == 0 before division.",
+    "evaluation_criteria": {
+      "bug_identification": 1.0,
+      "fix_suggestion": 0.9
+    },
+    "difficulty": "easy",
+    "tags": ["python", "debugging", "error_handling"]
+  },
+  {
+    "name": "optimize_code",
+    "task_type": "code_analysis",
+    "category": "python",
+    "task_description": "Analyze and suggest optimizations for this code:\n\ndef find_duplicates(arr):\n    duplicates = []\n    for i in range(len(arr)):\n        for j in range(i+1, len(arr)):\n            if arr[i] == arr[j] and arr[i] not in duplicates:\n                duplicates.append(arr[i])\n    return duplicates",
+    "expected_output": "Optimization: Use a set for O(1) lookup instead of list. Current complexity is O(n²), can be improved to O(n).",
+    "evaluation_criteria": {
+      "optimization_identification": 1.0,
+      "complexity_improvement": 1.0
+    },
+    "difficulty": "medium",
+    "tags": ["python", "optimization", "performance"]
+  },
+  {
+    "name": "explain_recursion",
+    "task_type": "code_analysis",
+    "category": "python",
+    "task_description": "Explain how this recursive function works and trace its execution for factorial(5):\n\ndef factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)",
+    "expected_output": "The function uses recursion to calculate factorial. For factorial(5): 5 * factorial(4) -> 4 * factorial(3) -> ... -> 1, then unwinds: 1 * 2 * 3 * 4 * 5 = 120",
+    "evaluation_criteria": {
+      "explanation": 1.0,
+      "trace_correctness": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["python", "recursion", "explanation"]
+  },
+  {
+    "name": "security_analysis",
+    "task_type": "code_analysis",
+    "category": "python",
+    "task_description": "Identify security vulnerabilities in this code:\n\nimport os\nuser_input = input('Enter filename: ')\nos.system(f'cat {user_input}')",
+    "expected_output": "Security issue: Command injection vulnerability. User input is directly passed to os.system without sanitization. Use subprocess with proper escaping or parameterized commands.",
+    "evaluation_criteria": {
+      "vulnerability_identification": 1.0,
+      "security_recommendation": 0.9
+    },
+    "difficulty": "hard",
+    "tags": ["python", "security", "vulnerability"]
+  }
+]
+

@@ -1,0 +1,143 @@
+[
+  {
+    "name": "plan_trip",
+    "task_type": "planning",
+    "category": "travel",
+    "task_description": "Create a plan for a 3-day trip to Paris. Include: transportation, accommodation, main attractions to visit, and meals. Consider budget and time constraints.",
+    "expected_output": "A structured plan with:\n1. Day-by-day itinerary\n2. Transportation options\n3. Accommodation suggestions\n4. Key attractions with time estimates\n5. Meal planning\n6. Budget considerations",
+    "evaluation_criteria": {
+      "completeness": 1.0,
+      "realistic": 0.9,
+      "organization": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["travel", "itinerary", "planning"]
+  },
+  {
+    "name": "project_timeline",
+    "task_type": "planning",
+    "category": "project_management",
+    "task_description": "Plan a 4-week software development project with the following phases: requirements (1 week), design (1 week), implementation (2 weeks), testing (1 week). Create a timeline showing dependencies and milestones.",
+    "expected_output": "A timeline showing:\n- Week 1: Requirements gathering\n- Week 2: Design phase (depends on requirements)\n- Weeks 3-4: Implementation (depends on design)\n- Week 4: Testing (parallel with final implementation)\n- Milestones and dependencies clearly marked",
+    "evaluation_criteria": {
+      "dependency_identification": 1.0,
+      "timeline_realistic": 0.9,
+      "milestone_definition": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["project", "timeline", "dependencies"]
+  },
+  {
+    "name": "meal_planning",
+    "task_type": "planning",
+    "category": "daily_life",
+    "task_description": "Create a weekly meal plan for a family of 4 with dietary restrictions: one vegetarian, one lactose-intolerant. Include breakfast, lunch, and dinner for 7 days. Consider nutrition and variety.",
+    "expected_output": "A 7-day meal plan with:\n- Breakfast, lunch, dinner for each day\n- Vegetarian options\n- Lactose-free options\n- Nutritional considerations\n- Shopping list suggestions",
+    "evaluation_criteria": {
+      "dietary_compliance": 1.0,
+      "variety": 0.9,
+      "nutrition": 0.8
+    },
+    "difficulty": "medium",
+    "tags": ["meal", "nutrition", "planning"]
+  },
+  {
+    "name": "study_schedule",
+    "task_type": "planning",
+    "category": "education",
+    "task_description": "Create a study schedule for preparing for 3 exams in 2 weeks. Subjects: Math (needs 20 hours), History (needs 15 hours), Science (needs 25 hours). Plan daily study sessions with breaks.",
+    "expected_output": "A 2-week schedule with:\n- Daily study blocks allocated to each subject\n- Break times\n- Review sessions\n- Time allocation based on subject needs\n- Realistic daily study hours",
+    "evaluation_criteria": {
+      "time_allocation": 1.0,
+      "realistic": 0.9,
+      "balance": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["education", "study", "time_management"]
+  },
+  {
+    "name": "event_planning",
+    "task_type": "planning",
+    "category": "event",
+    "task_description": "Plan a birthday party for 20 guests. Include: venue selection, food and drinks, decorations, entertainment, timeline, and budget breakdown.",
+    "expected_output": "A comprehensive plan with:\n- Venue options and selection criteria\n- Menu planning\n- Decoration ideas\n- Entertainment options\n- Hour-by-hour timeline\n- Budget breakdown by category",
+    "evaluation_criteria": {
+      "completeness": 1.0,
+      "organization": 0.9,
+      "budget_realistic": 0.8
+    },
+    "difficulty": "medium",
+    "tags": ["event", "party", "organization"]
+  },
+  {
+    "name": "workout_plan",
+    "task_type": "planning",
+    "category": "fitness",
+    "task_description": "Create a 4-week workout plan for a beginner who wants to improve overall fitness. Include: cardio, strength training, flexibility. Plan 4-5 sessions per week with rest days.",
+    "expected_output": "A 4-week progressive plan with:\n- Weekly workout schedule\n- Exercise selection and progression\n- Rest day placement\n- Intensity progression over weeks\n- Safety considerations",
+    "evaluation_criteria": {
+      "progression": 1.0,
+      "balance": 0.9,
+      "safety": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["fitness", "workout", "health"]
+  },
+  {
+    "name": "budget_planning",
+    "task_type": "planning",
+    "category": "finance",
+    "task_description": "Create a monthly budget plan for someone earning $3000/month with the following expenses: rent $1000, groceries $400, transportation $200, utilities $150, savings goal $500. Allocate remaining funds.",
+    "expected_output": "A monthly budget with:\n- Fixed expenses listed\n- Remaining income calculation\n- Allocation of remaining funds\n- Savings goal included\n- Emergency fund consideration",
+    "evaluation_criteria": {
+      "accuracy": 1.0,
+      "completeness": 0.9,
+      "realistic": 0.9
+    },
+    "difficulty": "easy",
+    "tags": ["finance", "budget", "money_management"]
+  },
+  {
+    "name": "learning_path",
+    "task_type": "planning",
+    "category": "education",
+    "task_description": "Create a 3-month learning path for someone who wants to learn Python programming from scratch. Include: topics to cover, resources, practice projects, and milestones.",
+    "expected_output": "A structured learning path with:\n- Monthly/weekly topic breakdown\n- Learning resources (books, courses, tutorials)\n- Practice projects for each phase\n- Milestones and checkpoints\n- Progression from basics to intermediate",
+    "evaluation_criteria": {
+      "progression": 1.0,
+      "resources": 0.9,
+      "practical_application": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["education", "programming", "learning"]
+  },
+  {
+    "name": "home_renovation",
+    "task_type": "planning",
+    "category": "home",
+    "task_description": "Plan a kitchen renovation project. Include: tasks breakdown, timeline, required materials, contractor needs, permits, and budget estimate. Assume 6-week timeline.",
+    "expected_output": "A renovation plan with:\n- Task breakdown (demolition, plumbing, electrical, installation, etc.)\n- Week-by-week timeline\n- Material list\n- Contractor requirements\n- Permit needs\n- Budget breakdown",
+    "evaluation_criteria": {
+      "task_breakdown": 1.0,
+      "timeline": 0.9,
+      "completeness": 0.9
+    },
+    "difficulty": "hard",
+    "tags": ["home", "renovation", "project"]
+  },
+  {
+    "name": "career_development",
+    "task_type": "planning",
+    "category": "career",
+    "task_description": "Create a 1-year career development plan for a junior software developer who wants to become a senior developer. Include: skills to learn, projects to work on, networking, and milestones.",
+    "expected_output": "A career development plan with:\n- Skills to acquire (technical and soft skills)\n- Learning resources and timeline\n- Project ideas to build portfolio\n- Networking strategies\n- Quarterly milestones\n- Goal setting",
+    "evaluation_criteria": {
+      "skill_identification": 1.0,
+      "realistic_timeline": 0.9,
+      "actionable_steps": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["career", "development", "professional_growth"]
+  }
+]
+

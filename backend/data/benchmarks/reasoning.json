@@ -1,0 +1,133 @@
+[
+  {
+    "name": "solve_linear_equation",
+    "task_type": "reasoning",
+    "category": "math",
+    "task_description": "Solve for x: 2x + 5 = 15. Show your reasoning step by step.",
+    "expected_output": "2x + 5 = 15\n2x = 15 - 5\n2x = 10\nx = 10 / 2\nx = 5",
+    "evaluation_criteria": {
+      "correctness": 1.0,
+      "reasoning_steps": 0.9
+    },
+    "difficulty": "easy",
+    "tags": ["math", "algebra", "equation"]
+  },
+  {
+    "name": "logical_puzzle",
+    "task_type": "reasoning",
+    "category": "logic",
+    "task_description": "If all roses are flowers, and some flowers are red, can we conclude that some roses are red? Explain your reasoning.",
+    "expected_output": "No, we cannot conclude that. While all roses are flowers, and some flowers are red, the red flowers might not be roses. The red flowers could be tulips, poppies, or other types of flowers.",
+    "evaluation_criteria": {
+      "logical_correctness": 1.0,
+      "explanation": 1.0
+    },
+    "difficulty": "medium",
+    "tags": ["logic", "puzzle", "deduction"]
+  },
+  {
+    "name": "word_problem",
+    "task_type": "reasoning",
+    "category": "math",
+    "task_description": "A train travels 120 km in 2 hours. How long will it take to travel 300 km at the same speed? Show your calculation.",
+    "expected_output": "Speed = Distance / Time = 120 km / 2 hours = 60 km/h\nTime = Distance / Speed = 300 km / 60 km/h = 5 hours",
+    "evaluation_criteria": {
+      "correctness": 1.0,
+      "calculation": 1.0
+    },
+    "difficulty": "easy",
+    "tags": ["math", "word_problem", "calculation"]
+  },
+  {
+    "name": "pattern_recognition",
+    "task_type": "reasoning",
+    "category": "pattern",
+    "task_description": "What is the next number in this sequence: 2, 6, 12, 20, 30, ? Explain the pattern.",
+    "expected_output": "The pattern is: n * (n+1) where n starts at 1.\n1*2=2, 2*3=6, 3*4=12, 4*5=20, 5*6=30, so next is 6*7=42",
+    "evaluation_criteria": {
+      "pattern_identification": 1.0,
+      "correctness": 1.0
+    },
+    "difficulty": "medium",
+    "tags": ["pattern", "sequence", "math"]
+  },
+  {
+    "name": "conditional_reasoning",
+    "task_type": "reasoning",
+    "category": "logic",
+    "task_description": "If it rains, I will stay home. If I stay home, I will read a book. It is raining. What can we conclude?",
+    "expected_output": "We can conclude that I will read a book. Since it is raining, I will stay home (first conditional). Since I will stay home, I will read a book (second conditional).",
+    "evaluation_criteria": {
+      "logical_correctness": 1.0,
+      "reasoning_chain": 1.0
+    },
+    "difficulty": "easy",
+    "tags": ["logic", "conditional", "deduction"]
+  },
+  {
+    "name": "percentage_calculation",
+    "task_type": "reasoning",
+    "category": "math",
+    "task_description": "A shirt originally costs $80. It's on sale for 25% off. What is the sale price? Show your work.",
+    "expected_output": "Discount = 25% of $80 = 0.25 * $80 = $20\nSale price = Original price - Discount = $80 - $20 = $60",
+    "evaluation_criteria": {
+      "correctness": 1.0,
+      "calculation": 1.0
+    },
+    "difficulty": "easy",
+    "tags": ["math", "percentage", "calculation"]
+  },
+  {
+    "name": "set_theory",
+    "task_type": "reasoning",
+    "category": "math",
+    "task_description": "In a class of 30 students, 18 study math, 15 study physics, and 10 study both. How many students study neither math nor physics?",
+    "expected_output": "Students studying math or physics = 18 + 15 - 10 = 23\nStudents studying neither = Total - (Math or Physics) = 30 - 23 = 7",
+    "evaluation_criteria": {
+      "correctness": 1.0,
+      "set_operations": 1.0
+    },
+    "difficulty": "medium",
+    "tags": ["math", "set_theory", "venn_diagram"]
+  },
+  {
+    "name": "causal_reasoning",
+    "task_type": "reasoning",
+    "category": "logic",
+    "task_description": "Every time I eat ice cream, I get a headache. Today I have a headache. Can I conclude that I ate ice cream? Explain why or why not.",
+    "expected_output": "No, I cannot conclude that. The statement 'if ice cream then headache' does not mean that headache can only come from ice cream. There could be other causes of headaches (stress, lack of sleep, etc.). This is a logical fallacy of affirming the consequent.",
+    "evaluation_criteria": {
+      "logical_correctness": 1.0,
+      "fallacy_identification": 1.0
+    },
+    "difficulty": "hard",
+    "tags": ["logic", "causality", "fallacy"]
+  },
+  {
+    "name": "geometric_reasoning",
+    "task_type": "reasoning",
+    "category": "math",
+    "task_description": "A rectangle has a length of 8 cm and a width of 5 cm. What is its area and perimeter? Show your calculations.",
+    "expected_output": "Area = length × width = 8 cm × 5 cm = 40 cm²\nPerimeter = 2 × (length + width) = 2 × (8 + 5) = 2 × 13 = 26 cm",
+    "evaluation_criteria": {
+      "correctness": 1.0,
+      "formula_application": 1.0
+    },
+    "difficulty": "easy",
+    "tags": ["math", "geometry", "calculation"]
+  },
+  {
+    "name": "analogical_reasoning",
+    "task_type": "reasoning",
+    "category": "logic",
+    "task_description": "Complete this analogy: Book is to Library as Patient is to ? Explain the relationship.",
+    "expected_output": "Hospital. A book is stored/found in a library, just as a patient is treated/found in a hospital. The relationship is: item/entity is to its typical location/institution.",
+    "evaluation_criteria": {
+      "analogy_correctness": 1.0,
+      "relationship_explanation": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["logic", "analogy", "relationship"]
+  }
+]
+

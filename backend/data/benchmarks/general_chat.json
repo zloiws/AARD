@@ -1,0 +1,73 @@
+[
+  {
+    "name": "explain_concept",
+    "task_type": "general_chat",
+    "category": "education",
+    "task_description": "Explain what machine learning is in simple terms that a beginner can understand. Use analogies if helpful.",
+    "expected_output": "A clear, beginner-friendly explanation of machine learning with analogies and examples.",
+    "evaluation_criteria": {
+      "clarity": 1.0,
+      "accuracy": 0.9,
+      "accessibility": 0.9
+    },
+    "difficulty": "easy",
+    "tags": ["education", "explanation", "machine_learning"]
+  },
+  {
+    "name": "creative_story",
+    "task_type": "general_chat",
+    "category": "creative",
+    "task_description": "Write a short story (200-300 words) about a robot who discovers emotions. Make it engaging and thought-provoking.",
+    "expected_output": "A creative short story about a robot discovering emotions, approximately 200-300 words, engaging and thought-provoking.",
+    "evaluation_criteria": {
+      "creativity": 1.0,
+      "engagement": 0.9,
+      "length": 0.8
+    },
+    "difficulty": "medium",
+    "tags": ["creative", "story", "writing"]
+  },
+  {
+    "name": "advice_giving",
+    "task_type": "general_chat",
+    "category": "advice",
+    "task_description": "Someone is feeling overwhelmed with work and personal life. Provide empathetic advice on how to manage stress and find balance.",
+    "expected_output": "Empathetic, practical advice on managing stress and work-life balance, with actionable suggestions.",
+    "evaluation_criteria": {
+      "empathy": 1.0,
+      "practicality": 0.9,
+      "helpfulness": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["advice", "wellness", "life_balance"]
+  },
+  {
+    "name": "compare_options",
+    "task_type": "general_chat",
+    "category": "comparison",
+    "task_description": "Compare the pros and cons of living in a big city versus a small town. Consider factors like career opportunities, cost of living, lifestyle, and community.",
+    "expected_output": "A balanced comparison of big city vs small town living, covering multiple factors with pros and cons for each.",
+    "evaluation_criteria": {
+      "balance": 1.0,
+      "completeness": 0.9,
+      "objectivity": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["comparison", "lifestyle", "decision_making"]
+  },
+  {
+    "name": "summarize_topic",
+    "task_type": "general_chat",
+    "category": "information",
+    "task_description": "Summarize the key points about climate change: causes, effects, and potential solutions. Keep it concise but informative.",
+    "expected_output": "A concise summary covering:\n- Main causes of climate change\n- Key effects/impacts\n- Potential solutions\n- Well-organized and informative",
+    "evaluation_criteria": {
+      "completeness": 1.0,
+      "accuracy": 0.9,
+      "conciseness": 0.9
+    },
+    "difficulty": "medium",
+    "tags": ["information", "summary", "climate"]
+  }
+]
+

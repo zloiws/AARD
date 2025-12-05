@@ -68,11 +68,73 @@ task = BenchmarkTask(
 
 - `tests/integration/test_benchmark_models.py` - интеграционные тесты с базой данных
 
+### BenchmarkResult
+
+Модель для хранения результатов выполнения benchmark тестов.
+
+**Поля:**
+- `id` (UUID) - уникальный идентификатор
+- `benchmark_task_id` (UUID, FK) - ссылка на задачу
+- `model_id` (UUID, FK, optional) - ссылка на модель
+- `server_id` (UUID, FK, optional) - ссылка на сервер
+- `execution_time` (Float) - время выполнения в секундах
+- `output` (Text) - вывод модели
+- `score` (Float) - общая оценка (0.0-1.0)
+- `metrics` (JSONB) - детальные метрики
+- `passed` (Boolean) - прошел ли тест
+- `error_message` (Text, optional) - сообщение об ошибке
+- `execution_metadata` (JSONB) - дополнительные метаданные
+- `created_at` (DateTime) - время создания
+
+## BenchmarkService
+
+Сервис для управления benchmark задачами.
+
+**Основные методы:**
+- `load_tasks_from_file(file_path)` - загрузка задач из JSON файла
+- `import_task(task_data)` - импорт одной задачи в БД
+- `import_tasks_from_directory(directory)` - импорт всех задач из директории
+- `get_task_by_name(name)` - получение задачи по имени
+- `list_tasks(task_type, category, difficulty, limit)` - список задач с фильтрами
+- `get_task_count_by_type()` - количество задач по типам
+
+## Начальный набор задач
+
+Создан начальный набор из 40 benchmark задач:
+
+- **code_generation**: 10 задач (Python функции: factorial, reverse_string, binary_search, и др.)
+- **code_analysis**: 5 задач (анализ сложности, поиск багов, оптимизация, безопасность)
+- **reasoning**: 10 задач (математика, логика, паттерны, причинно-следственные связи)
+- **planning**: 10 задач (планирование поездок, проектов, обучения, бюджета)
+- **general_chat**: 5 задач (объяснения, творчество, советы, сравнения, резюме)
+
+Задачи хранятся в `backend/data/benchmarks/` в формате JSON:
+- `code_generation.json`
+- `code_analysis.json`
+- `reasoning.json`
+- `planning.json`
+- `general_chat.json`
+
+### Импорт задач
+
+Для импорта задач в базу данных используйте скрипт:
+
+```bash
+python backend/scripts/import_benchmark_tasks.py
+```
+
+Скрипт автоматически:
+- Загружает все JSON файлы из `backend/data/benchmarks/`
+- Импортирует задачи в базу данных
+- Пропускает уже существующие задачи
+- Выводит статистику импорта
+
 ## Следующие шаги
 
-1. Создание модели BenchmarkResult для хранения результатов выполнения
-2. Реализация BenchmarkService для выполнения тестов
-3. Создание API endpoints для управления benchmark задачами
-4. Реализация системы оценки результатов
-5. Создание UI для тестирования моделей
+1. ✅ Создание модели BenchmarkResult - завершено
+2. ✅ Реализация BenchmarkService для управления задачами - завершено
+3. Реализация BenchmarkService для выполнения тестов
+4. Создание API endpoints для управления benchmark задачами
+5. Реализация системы оценки результатов
+6. Создание UI для тестирования моделей
 
