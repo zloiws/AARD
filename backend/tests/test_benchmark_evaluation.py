@@ -100,14 +100,27 @@ def test_simple_evaluate_no_expected_output(db, sample_task_with_expected):
     """Test simple evaluation when no expected output"""
     service = BenchmarkService(db)
     
+    # Test with meaningful output (length > 10)
     score, metrics = service._simple_evaluate(
-        "some output",
+        "some meaningful output that is longer than 10 characters",
         None,
         {}
     )
     
-    assert score == 0.5
+    assert score == 0.6  # Increased from 0.5 for meaningful output
     assert metrics.get("no_expected_output") is True
+    assert metrics.get("has_output") is True
+    
+    # Test with short/empty output
+    score2, metrics2 = service._simple_evaluate(
+        "short",
+        None,
+        {}
+    )
+    
+    assert score2 == 0.3  # Lower score for poor output
+    assert metrics2.get("no_expected_output") is True
+    assert metrics2.get("has_output") is False
 
 
 def test_calculate_score_from_metrics(db):
