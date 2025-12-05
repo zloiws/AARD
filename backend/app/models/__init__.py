@@ -18,7 +18,8 @@ from app.models.trace import ExecutionTrace  # noqa: F401
 from app.models.request_log import RequestLog, RequestConsequence  # noqa: F401
 from app.models.task_queue import TaskQueue, QueueTask  # noqa: F401
 from app.models.checkpoint import Checkpoint  # noqa: F401
-from app.models.agent import Agent, AgentStatus, AgentHealthStatus, AgentCapability  # noqa: F401
+from app.models.agent import Agent, AgentStatus, AgentHealthStatus, AgentCapability
+from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus, agent_team_association  # noqa: F401
 from app.models.agent_experiment import AgentExperiment, ExperimentResult  # noqa: F401
 from app.models.agent_test import (  # noqa: F401
     AgentTest, AgentTestRun, AgentBenchmark, AgentBenchmarkRun,
@@ -88,6 +89,11 @@ __all__ = [
     "AgentStatus",
     "AgentHealthStatus",
     "AgentCapability",
+    # Agent Teams
+    "AgentTeam",
+    "CoordinationStrategy",
+    "TeamStatus",
+    "agent_team_association",
     # Agent Experiments
     "AgentExperiment",
     "ExperimentResult",
