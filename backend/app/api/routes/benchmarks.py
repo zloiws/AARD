@@ -348,30 +348,60 @@ async def evaluate_benchmark_result(
 
 
 @router.post("/comparison/", response_model=dict)
+@router.get("/comparison/", response_model=dict)
 async def compare_models(
-    request: ComparisonRequest = Body(...),
+    request: Optional[ComparisonRequest] = Body(None),
+    model_ids: Optional[str] = Query(None, description="Comma-separated model IDs"),
+    task_type: Optional[str] = Query(None, description="Filter by task type"),
+    limit: Optional[int] = Query(None, description="Limit number of tasks"),
     db: Session = Depends(get_db)
 ):
     """Compare results of multiple models"""
     try:
         service = BenchmarkService(db)
         
+        # Get model IDs from request body or query params
+        if request and request.model_ids:
+            model_id_list = request.model_ids
+        elif model_ids:
+            model_id_list = model_ids.split(',')
+        else:
+            raise HTTPException(status_code=400, detail="model_ids is required")
+        
         # Convert model IDs
-        model_ids = [UUID(mid) for mid in request.model_ids]
+        model_ids_uuid = [UUID(mid.strip()) for mid in model_id_list]
         
         # Convert task_type
         task_type_enum = None
-        if request.task_type:
+        task_type_value = request.task_type if request else task_type
+        if task_type_value:
             try:
-                task_type_enum = BenchmarkTaskType(request.task_type)
+                task_type_enum = BenchmarkTaskType(task_type_value)
             except ValueError:
-                raise HTTPException(status_code=400, detail=f"Invalid task_type: {request.task_type}")
+                raise HTTPException(status_code=400, detail=f"Invalid task_type: {task_type_value}")
+        
+        limit_value = request.limit if request else limit
         
         comparison = service.compare_models(
-            model_ids=model_ids,
+            model_ids=model_ids_uuid,
             task_type=task_type_enum,
-            limit=request.limit
+            limit=limit_value
         )
+        
+        # Add task information to results
+        for model_data in comparison.get("models", []):
+            for result in model_data.get("results", []):
+                if result.get("benchmark_task_id"):
+                    task = db.query(BenchmarkTask).filter(
+                        BenchmarkTask.id == UUID(result["benchmark_task_id"])
+                    ).first()
+                    if task:
+                        result["task"] = {
+                            "id": str(task.id),
+                            "name": task.name,
+                            "task_type": task.task_type.value,
+                            "task_description": task.task_description
+                        }
         
         return comparison
         
