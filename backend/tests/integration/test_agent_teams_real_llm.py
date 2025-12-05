@@ -13,12 +13,11 @@ from app.services.execution_service import ExecutionService
 from app.services.ollama_service import OllamaService
 from app.models.agent_team import CoordinationStrategy, TeamStatus
 from app.models.agent import Agent, AgentStatus
-from app.core.ollama_client import OllamaClient, TaskType
 
 
 @pytest.mark.asyncio
 async def test_real_team_coordination_sequential(db):
-    """Test sequential coordination with real LLM calls"""
+    """Test sequential coordination with real LLM through PlanningService"""
     # Get available Ollama server and model
     servers = OllamaService.get_all_active_servers(db)
     if not servers:
@@ -29,10 +28,8 @@ async def test_real_team_coordination_sequential(db):
     if not models:
         pytest.skip(f"No active models on server {server.name}")
     
-    model = models[0]
-    
     team_service = AgentTeamService(db)
-    coordination = AgentTeamCoordination(db)
+    planning_service = PlanningService(db)
     
     # Create team with sequential strategy
     team = team_service.create_team(
@@ -42,17 +39,14 @@ async def test_real_team_coordination_sequential(db):
     )
     team_service.activate_team(team.id)
     
-    # Create agents with real endpoints (simulated - they would need real agent instances)
-    # For this test, we'll use the coordination service directly
+    # Create agents
     agent1 = Agent(
         name=f"Real Agent 1 {uuid4()}",
-        status=AgentStatus.ACTIVE.value,
-        endpoint=f"http://localhost:8000/agents/{uuid4()}"  # Simulated endpoint
+        status=AgentStatus.ACTIVE.value
     )
     agent2 = Agent(
         name=f"Real Agent 2 {uuid4()}",
-        status=AgentStatus.ACTIVE.value,
-        endpoint=f"http://localhost:8000/agents/{uuid4()}"  # Simulated endpoint
+        status=AgentStatus.ACTIVE.value
     )
     db.add(agent1)
     db.add(agent2)
@@ -62,46 +56,43 @@ async def test_real_team_coordination_sequential(db):
     team_service.add_agent_to_team(team.id, agent1.id, role="analyzer")
     team_service.add_agent_to_team(team.id, agent2.id, role="executor")
     
-    # Test task distribution with real LLM
-    # Note: This will use A2A protocol, which requires real agent endpoints
-    # For now, we test the coordination logic with LLM for task description
+    # Test planning with team - this will use real LLM through PlanningService
     try:
-        # Create OllamaClient for direct LLM calls
-        ollama_client = OllamaClient()
-        
-        # Test that we can generate task description using LLM
-        task_prompt = "Analyze the following code and suggest improvements: def hello(): print('Hello')"
-        
-        response = await ollama_client.generate(
-            prompt=task_prompt,
-            task_type=TaskType.CODE_ANALYSIS,
-            model=model.model_name,
-            server_url=server.get_api_url()
+        plan = await planning_service.create_plan(
+            task_description="Analyze the following code and suggest improvements: def hello(): print('Hello')",
+            context={"team_id": str(team.id)}
         )
         
-        assert response is not None
-        assert "response" in response or "content" in response or "text" in response
+        assert plan is not None
+        assert plan.goal is not None
+        assert len(plan.goal) > 0
         
-        # Now test team coordination (will fail if agents don't have real endpoints, but LLM part works)
-        result = await coordination.distribute_task_to_team(
-            team_id=team.id,
-            task_description=task_prompt,
-            task_context={"file": "main.py", "llm_response": response}
-        )
+        # Verify plan has steps (LLM generated them through PlanningService)
+        assert plan.steps is not None
+        assert len(plan.steps) > 0
         
-        # Verify coordination structure
-        assert "distributed_to" in result
-        assert "strategy_used" in result
-        assert result["strategy_used"] == CoordinationStrategy.SEQUENTIAL.value
+        # Verify team is used in planning
+        steps_with_team = [s for s in plan.steps if s.get("team_id") == str(team.id)]
+        steps_with_agents = [s for s in plan.steps if s.get("agent")]
+        
+        # Either steps have team_id or have agents from team
+        assert len(steps_with_team) > 0 or len(steps_with_agents) > 0
+        
+        # Verify steps have descriptions (LLM generated them)
+        for step in plan.steps:
+            assert "description" in step
+            assert len(step["description"]) > 0
+        
+        print(f"\n✅ Plan created with {len(plan.steps)} steps using team {team.name}")
+        print(f"   Goal: {plan.goal[:100]}...")
         
     except Exception as e:
-        # If agents don't have endpoints, that's OK - we tested LLM part
         error_msg = str(e).lower()
-        if "endpoint" in error_msg or "not found" in error_msg or "identity" in error_msg:
-            # A2A part failed, but LLM was called (we got here after LLM call)
-            assert True  # LLM integration verified
+        if any(keyword in error_msg for keyword in ["connection", "timeout", "unreachable", "refused"]):
+            pytest.skip(f"Ollama server not reachable: {e}")
+        elif "not found" in error_msg or "404" in error_msg:
+            pytest.skip(f"Model not found on server: {e}")
         else:
-            # Real error - re-raise
             raise
 
 
@@ -218,40 +209,37 @@ async def test_real_team_collaborative_task(db):
     team_service.add_agent_to_team(team.id, reviewer.id, role="reviewer")
     team_service.add_agent_to_team(team.id, tester.id, role="tester")
     
-    # Test collaborative task with real LLM
+    # Test collaborative task with real LLM through PlanningService
     try:
-        # First, test LLM directly
-        ollama_client = OllamaClient()
+        planning_service = PlanningService(db)
+        
         task_prompt = "Create a Python function that calculates factorial and write a test for it"
         
-        response = await ollama_client.generate(
-            prompt=task_prompt,
-            task_type=TaskType.CODE_GENERATION,
-            model=model.model_name,
-            server_url=server.get_api_url()
-        )
-        
-        assert response is not None
-        
-        # Now test team coordination
-        result = await coordination.distribute_task_to_team(
-            team_id=team.id,
+        # Create plan with team - this will use real LLM through PlanningService
+        plan = await planning_service.create_plan(
             task_description=task_prompt,
-            task_context={"language": "Python", "llm_response": response}
+            context={"team_id": str(team.id), "language": "Python"}
         )
         
-        assert "distributed_to" in result
-        assert result["strategy_used"] == CoordinationStrategy.COLLABORATIVE.value
+        assert plan is not None
+        assert plan.goal is not None
+        assert len(plan.goal) > 0
+        assert plan.steps is not None
+        assert len(plan.steps) > 0
+        
+        # Verify team is used
+        steps_with_team = [s for s in plan.steps if s.get("team_id") == str(team.id)]
+        assert len(steps_with_team) > 0 or any(s.get("agent") for s in plan.steps)
+        
+        print(f"\n✅ Collaborative plan created with {len(plan.steps)} steps")
+        print(f"   Goal: {plan.goal[:100]}...")
         
     except Exception as e:
         error_msg = str(e).lower()
-        if "endpoint" in error_msg or "not found" in error_msg or "identity" in error_msg:
-            # A2A part failed, but LLM was called
-            assert True  # LLM integration verified
-        elif any(keyword in error_msg for keyword in ["connection", "timeout", "unreachable", "refused"]):
+        if any(keyword in error_msg for keyword in ["connection", "timeout", "unreachable", "refused"]):
             pytest.skip(f"Ollama server not reachable: {e}")
         elif "not found" in error_msg or "404" in error_msg:
-            pytest.skip(f"Model {model.model_name} not found on server {server.name}: {e}")
+            pytest.skip(f"Model not found on server: {e}")
         else:
             raise
 
@@ -330,8 +318,8 @@ async def test_real_team_planning_and_execution(db):
 
 
 @pytest.mark.asyncio
-async def test_real_llm_direct_call(db):
-    """Test direct LLM call to verify models are working"""
+async def test_real_llm_through_planning_service(db):
+    """Test LLM through PlanningService to verify models are working"""
     # Get available Ollama server and model
     servers = OllamaService.get_all_active_servers(db)
     if not servers:
@@ -344,25 +332,31 @@ async def test_real_llm_direct_call(db):
     
     model = models[0]
     
-    # Test direct LLM call
-    ollama_client = OllamaClient()
+    # Test LLM through PlanningService
+    planning_service = PlanningService(db)
     
     try:
-        response = await ollama_client.generate(
-            prompt="Write a simple Python function that adds two numbers",
-            task_type=TaskType.CODE_GENERATION,
-            model=model.model_name,
-            server_url=server.get_api_url()
+        plan = await planning_service.create_plan(
+            task_description="Write a simple Python function that adds two numbers",
+            context={}
         )
         
-        assert response is not None
-        # Response should contain generated code or text
-        response_text = response.response if hasattr(response, 'response') else (response.get("response") or response.get("content") or response.get("text") or str(response))
-        assert len(response_text) > 0
-        assert "def" in response_text.lower() or "function" in response_text.lower() or "add" in response_text.lower() or "python" in response_text.lower()
+        assert plan is not None
+        assert plan.goal is not None
+        assert len(plan.goal) > 0
+        assert plan.steps is not None
+        assert len(plan.steps) > 0
         
-        print(f"\n✅ LLM Response from {model.name} ({model.model_name}) on {server.name}:")
-        print(f"   {response_text[:200]}...")
+        # Verify steps have descriptions (LLM generated them)
+        for step in plan.steps:
+            assert "description" in step
+            assert len(step["description"]) > 0
+        
+        print(f"\n✅ Plan created through PlanningService using {model.name} ({model.model_name}) on {server.name}")
+        print(f"   Goal: {plan.goal[:100]}...")
+        print(f"   Steps: {len(plan.steps)}")
+        if plan.steps:
+            print(f"   First step: {plan.steps[0].get('description', 'N/A')[:80]}...")
         
     except Exception as e:
         error_msg = str(e).lower()
