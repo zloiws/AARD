@@ -373,9 +373,13 @@ async def test_real_modules_interaction_full_workflow(db):
                 team = agent_team_service.create_team(
                     name=f"Test Team {uuid4().hex[:8]}",
                     description="Тестовая команда для проверки взаимодействия",
-                    coordination_strategy=CoordinationStrategy.COLLABORATIVE,
-                    status=TeamStatus.ACTIVE
+                    coordination_strategy=CoordinationStrategy.COLLABORATIVE.value
                 )
+                
+                # Активация команды (изменение статуса с DRAFT на ACTIVE)
+                team.status = TeamStatus.ACTIVE.value
+                db.commit()
+                db.refresh(team)
                 
                 # Добавление агентов в команду
                 agent_team_service.add_agent_to_team(team.id, agent1.id, role="developer")
