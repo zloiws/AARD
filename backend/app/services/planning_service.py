@@ -16,6 +16,8 @@ from app.services.ollama_service import OllamaService
 from app.services.approval_service import ApprovalService
 from app.services.prompt_service import PromptService
 from app.services.project_metrics_service import ProjectMetricsService
+from app.services.plan_template_service import PlanTemplateService
+from app.services.plan_evaluation_service import PlanEvaluationService
 from app.models.approval import ApprovalRequestType
 from app.models.prompt import PromptType
 from app.core.tracing import get_tracer, add_span_attributes, get_current_trace_id
@@ -34,8 +36,197 @@ class PlanningService:
         self.workflow_tracker = None  # WorkflowTracker instance for real-time events
         self.prompt_service = PromptService(db)  # Prompt management service
         self.metrics_service = ProjectMetricsService(db)  # Project metrics service
+        self.plan_template_service = PlanTemplateService(db)  # Plan template service
+        self.plan_evaluation_service = PlanEvaluationService(db)  # Plan evaluation service for A/B testing
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
+    
+    async def generate_alternative_plans(
+        self,
+        task_description: str,
+        task_id: Optional[UUID] = None,
+        context: Optional[Dict[str, Any]] = None,
+        num_alternatives: int = 3
+    ) -> List[Plan]:
+        """
+        Generate multiple alternative plans for a task using different strategies.
+        
+        This method generates 2-3 alternative plans in parallel, each with a different
+        strategic approach:
+        - Plan 1: Conservative approach (minimal risk, more steps)
+        - Plan 2: Balanced approach (moderate risk, optimal steps)
+        - Plan 3: Aggressive approach (higher risk, fewer steps, faster execution)
+        
+        Args:
+            task_description: Description of the task
+            task_id: Optional task ID to link plans to
+            context: Additional context (existing artifacts, constraints, etc.)
+            num_alternatives: Number of alternative plans to generate (2-3, default: 3)
+            
+        Returns:
+            List of alternative plans in DRAFT status
+        """
+        import asyncio
+        
+        # Limit number of alternatives to 2-3
+        num_alternatives = max(2, min(3, num_alternatives))
+        
+        # Define different strategies for each alternative
+        strategies = [
+            {
+                "name": "conservative",
+                "description": "Conservative approach: minimal risk, thorough execution",
+                "approach": "Take a careful, step-by-step approach with extensive validation at each stage",
+                "focus": "reliability and correctness",
+                "risk_tolerance": "low"
+            },
+            {
+                "name": "balanced",
+                "description": "Balanced approach: optimal trade-off between speed and quality",
+                "approach": "Balance efficiency with thoroughness, optimize for common cases",
+                "focus": "practicality and efficiency",
+                "risk_tolerance": "medium"
+            },
+            {
+                "name": "aggressive",
+                "description": "Aggressive approach: maximize speed, accept higher risk",
+                "approach": "Prioritize speed and efficiency, minimize steps, assume best-case scenarios",
+                "focus": "speed and minimal steps",
+                "risk_tolerance": "high"
+            }
+        ]
+        
+        # Use only requested number of strategies
+        strategies = strategies[:num_alternatives]
+        
+        # Create enhanced context with strategy information
+        enhanced_context = context.copy() if context else {}
+        
+        # Generate plans in parallel
+        async def generate_single_alternative(strategy_info: Dict[str, Any], index: int) -> Plan:
+            """Generate a single alternative plan with specific strategy"""
+            try:
+                # Create strategy-specific context
+                strategy_context = {
+                    **enhanced_context,
+                    "strategy": strategy_info,
+                    "alternative_index": index,
+                    "alternative_name": strategy_info["name"]
+                }
+                
+                # Generate plan with strategy context (disable alternatives to prevent recursion)
+                plan = await self.generate_plan(
+                    task_description=task_description,
+                    task_id=task_id,
+                    context=strategy_context,
+                    generate_alternatives=False
+                )
+                
+                # Mark plan as alternative and add strategy metadata
+                # Get current strategy and alternatives
+                current_strategy = plan.strategy if isinstance(plan.strategy, dict) else {}
+                current_alternatives = plan.alternatives if isinstance(plan.alternatives, dict) else {}
+                
+                # Add alternative metadata to strategy (preserve existing fields)
+                updated_strategy = {**current_strategy}
+                updated_strategy["alternative_strategy"] = strategy_info["name"]
+                updated_strategy["alternative_description"] = strategy_info["description"]
+                updated_strategy["alternative_approach"] = strategy_info["approach"]
+                updated_strategy["alternative_focus"] = strategy_info["focus"]
+                updated_strategy["alternative_risk_tolerance"] = strategy_info["risk_tolerance"]
+                
+                # Add alternative metadata to alternatives
+                updated_alternatives = {**current_alternatives}
+                updated_alternatives["is_alternative"] = True
+                updated_alternatives["alternative_index"] = index
+                updated_alternatives["alternative_name"] = strategy_info["name"]
+                
+                # Update via ORM (SQLAlchemy should handle JSON fields correctly)
+                plan.strategy = updated_strategy
+                plan.alternatives = updated_alternatives
+                
+                self.db.commit()
+                self.db.refresh(plan)
+                
+                # Verify metadata was saved (re-apply if needed)
+                if plan.strategy and isinstance(plan.strategy, dict):
+                    if "alternative_strategy" not in plan.strategy:
+                        # Re-apply if not saved
+                        plan.strategy.update({
+                            "alternative_strategy": strategy_info["name"],
+                            "alternative_description": strategy_info["description"],
+                            "alternative_approach": strategy_info["approach"],
+                            "alternative_focus": strategy_info["focus"],
+                            "alternative_risk_tolerance": strategy_info["risk_tolerance"]
+                        })
+                        if plan.alternatives and isinstance(plan.alternatives, dict):
+                            plan.alternatives.update({
+                                "is_alternative": True,
+                                "alternative_index": index,
+                                "alternative_name": strategy_info["name"]
+                            })
+                        self.db.commit()
+                        self.db.refresh(plan)
+                
+                logger = self._get_logger()
+                if logger:
+                    logger.info(
+                        f"Generated alternative plan {index + 1} ({strategy_info['name']})",
+                        extra={
+                            "plan_id": str(plan.id),
+                            "strategy": strategy_info["name"],
+                            "alternative_index": index
+                        }
+                    )
+                
+                return plan
+                
+            except Exception as e:
+                logger = self._get_logger()
+                if logger:
+                    logger.error(
+                        f"Failed to generate alternative plan {index + 1} ({strategy_info.get('name', 'unknown')}): {e}",
+                        exc_info=True,
+                        extra={
+                            "strategy": strategy_info.get("name"),
+                            "alternative_index": index
+                        }
+                    )
+                return None
+        
+        # Generate all alternatives in parallel
+        tasks = [
+            generate_single_alternative(strategy, i)
+            for i, strategy in enumerate(strategies)
+        ]
+        
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Filter out None results and exceptions
+        alternative_plans = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger = self._get_logger()
+                if logger:
+                    logger.error(
+                        f"Exception generating alternative plan {i + 1}: {result}",
+                        exc_info=True
+                    )
+            elif result is not None:
+                alternative_plans.append(result)
+        
+        logger = self._get_logger()
+        if logger:
+            logger.info(
+                f"Generated {len(alternative_plans)} alternative plans out of {num_alternatives} requested",
+                extra={
+                    "requested": num_alternatives,
+                    "generated": len(alternative_plans),
+                    "task_id": str(task_id) if task_id else None
+                }
+            )
+        
+        return alternative_plans
     
     def _add_model_log(
         self, 
@@ -381,7 +572,10 @@ Return a JSON array of steps."""
         self,
         task_description: str,
         task_id: Optional[UUID] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        generate_alternatives: bool = False,
+        num_alternatives: int = 3,
+        evaluation_weights: Optional[Dict[str, float]] = None
     ) -> Plan:
         """
         Generate a plan for a task using LLM
@@ -396,9 +590,14 @@ Return a JSON array of steps."""
             task_description: Description of the task
             task_id: Optional task ID to link plan to
             context: Additional context (existing artifacts, constraints, etc.)
+            generate_alternatives: If True, generate multiple alternative plans and select the best one (A/B testing)
+            num_alternatives: Number of alternative plans to generate (2-3, default: 3). Only used if generate_alternatives=True
+            evaluation_weights: Optional weights for plan evaluation criteria. Only used if generate_alternatives=True.
+                Default weights: execution_time=0.25, approval_points=0.20, risk_level=0.25, efficiency=0.30
             
         Returns:
-            Created plan in DRAFT status
+            Created plan in DRAFT status (or best plan if generate_alternatives=True)
+            All alternative plans are saved in database for comparison
         """
         
         # 0. Try to apply procedural memory patterns (successful plan templates)
@@ -524,12 +723,61 @@ Return a JSON array of steps."""
             details={"task_id": str(task_id)}
         )
         
+        # Search for matching plan templates
+        matching_template = None
+        try:
+            templates = self.plan_template_service.find_matching_templates(
+                task_description=task_description,
+                limit=1,
+                min_success_rate=0.7,
+                use_vector_search=True
+            )
+            if templates:
+                matching_template = templates[0]
+                logger = self._get_logger()
+                if logger:
+                    logger.info(
+                        f"Found matching plan template: {matching_template.name}",
+                        extra={
+                            "template_id": str(matching_template.id),
+                            "template_name": matching_template.name,
+                            "template_category": matching_template.category,
+                            "template_success_rate": matching_template.success_rate
+                        }
+                    )
+                self._add_and_save_workflow_event(
+                    WorkflowStage.ACTION_DETERMINATION,
+                    f"Найден подходящий шаблон плана: {matching_template.name}",
+                    details={
+                        "template_id": str(matching_template.id),
+                        "template_name": matching_template.name,
+                        "template_category": matching_template.category
+                    }
+                )
+        except Exception as e:
+            logger = self._get_logger()
+            if logger:
+                logger.warning(f"Failed to search for plan templates: {e}", exc_info=True)
+        
         # Merge Digital Twin context with provided context
         enhanced_context = {**(context or {}), **digital_twin_context}
         if procedural_pattern:
             enhanced_context["procedural_pattern"] = procedural_pattern
+        if matching_template:
+            enhanced_context["plan_template"] = {
+                "template_id": str(matching_template.id),
+                "template_name": matching_template.name,
+                "goal_pattern": matching_template.goal_pattern,
+                "strategy_template": matching_template.strategy_template,
+                "steps_template": matching_template.steps_template,
+                "alternatives_template": matching_template.alternatives_template,
+                "category": matching_template.category,
+                "tags": matching_template.tags
+            }
+            # Update template usage count
+            self.plan_template_service.update_template_usage(matching_template.id)
         
-        # 1. Analyze task and create strategy (with Digital Twin context)
+        # 1. Analyze task and create strategy (with Digital Twin context and template)
         self._add_and_save_workflow_event(
             WorkflowStage.EXECUTION,
             "Анализ задачи и создание стратегии...",
@@ -604,6 +852,20 @@ Return a JSON array of steps."""
                 "reasons": {}
             }
             
+            # Add template info if template was used
+            template_info = None
+            if matching_template:
+                template_info = {
+                    "template_id": str(matching_template.id),
+                    "template_name": matching_template.name,
+                    "goal_pattern": matching_template.goal_pattern,
+                    "strategy_template": matching_template.strategy_template,
+                    "steps_template": matching_template.steps_template,
+                    "alternatives_template": matching_template.alternatives_template,
+                    "category": matching_template.category,
+                    "tags": matching_template.tags
+                }
+            
             # If we have agent_id but not selected_agent object, fetch it
             if agent_id and not selected_agent:
                 try:
@@ -675,6 +937,20 @@ Return a JSON array of steps."""
                     "plan_id": str(plan.id)
                 }
             }
+            
+            # Add template info if template was used
+            if matching_template:
+                context_updates["plan_template"] = {
+                    "template_id": str(matching_template.id),
+                    "template_name": matching_template.name,
+                    "goal_pattern": matching_template.goal_pattern,
+                    "strategy_template": matching_template.strategy_template,
+                    "steps_template": matching_template.steps_template,
+                    "alternatives_template": matching_template.alternatives_template,
+                    "category": matching_template.category,
+                    "tags": matching_template.tags
+                }
+            
             task.update_context(context_updates, merge=False)
             self.db.commit()
             self.db.refresh(task)
@@ -806,6 +1082,321 @@ Return a JSON array of steps."""
         
         return plan
     
+    async def generate_alternative_plans(
+        self,
+        task_description: str,
+        task_id: Optional[UUID] = None,
+        context: Optional[Dict[str, Any]] = None,
+        num_alternatives: int = 3
+    ) -> List[Plan]:
+        """
+        Generate multiple alternative plans for a task using different strategies.
+        
+        This method generates 2-3 alternative plans in parallel, each with a different
+        strategic approach:
+        - Plan 1: Conservative approach (minimal risk, more steps)
+        - Plan 2: Balanced approach (moderate risk, optimal steps)
+        - Plan 3: Aggressive approach (higher risk, fewer steps, faster execution)
+        
+        Args:
+            task_description: Description of the task
+            task_id: Optional task ID to link plans to
+            context: Additional context (existing artifacts, constraints, etc.)
+            num_alternatives: Number of alternative plans to generate (2-3, default: 3)
+            
+        Returns:
+            List of alternative plans in DRAFT status
+        """
+        import asyncio
+        
+        # Limit number of alternatives to 2-3
+        num_alternatives = max(2, min(3, num_alternatives))
+        
+        # Define different strategies for each alternative
+        strategies = [
+            {
+                "name": "conservative",
+                "description": "Conservative approach: minimal risk, thorough execution",
+                "approach": "Take a careful, step-by-step approach with extensive validation at each stage",
+                "focus": "reliability and correctness",
+                "risk_tolerance": "low"
+            },
+            {
+                "name": "balanced",
+                "description": "Balanced approach: optimal trade-off between speed and quality",
+                "approach": "Balance efficiency with thoroughness, optimize for common cases",
+                "focus": "practicality and efficiency",
+                "risk_tolerance": "medium"
+            },
+            {
+                "name": "aggressive",
+                "description": "Aggressive approach: maximize speed, accept higher risk",
+                "approach": "Prioritize speed and efficiency, minimize steps, assume best-case scenarios",
+                "focus": "speed and minimal steps",
+                "risk_tolerance": "high"
+            }
+        ]
+        
+        # Use only requested number of strategies
+        strategies = strategies[:num_alternatives]
+        
+        # Create enhanced context with strategy information
+        enhanced_context = context.copy() if context else {}
+        
+        # Generate plans in parallel
+        async def generate_single_alternative(strategy_info: Dict[str, Any], index: int) -> Plan:
+            """Generate a single alternative plan with specific strategy"""
+            try:
+                # Create strategy-specific context
+                strategy_context = {
+                    **enhanced_context,
+                    "strategy": strategy_info,
+                    "alternative_index": index,
+                    "alternative_name": strategy_info["name"]
+                }
+                
+                # Generate plan with strategy context (disable alternatives to prevent recursion)
+                plan = await self.generate_plan(
+                    task_description=task_description,
+                    task_id=task_id,
+                    context=strategy_context,
+                    generate_alternatives=False
+                )
+                
+                # Mark plan as alternative and add strategy metadata
+                # Get current strategy and alternatives
+                current_strategy = plan.strategy if isinstance(plan.strategy, dict) else {}
+                current_alternatives = plan.alternatives if isinstance(plan.alternatives, dict) else {}
+                
+                # Add alternative metadata to strategy (preserve existing fields)
+                updated_strategy = {**current_strategy}
+                updated_strategy["alternative_strategy"] = strategy_info["name"]
+                updated_strategy["alternative_description"] = strategy_info["description"]
+                updated_strategy["alternative_approach"] = strategy_info["approach"]
+                updated_strategy["alternative_focus"] = strategy_info["focus"]
+                updated_strategy["alternative_risk_tolerance"] = strategy_info["risk_tolerance"]
+                
+                # Add alternative metadata to alternatives
+                updated_alternatives = {**current_alternatives}
+                updated_alternatives["is_alternative"] = True
+                updated_alternatives["alternative_index"] = index
+                updated_alternatives["alternative_name"] = strategy_info["name"]
+                
+                # Update via ORM (SQLAlchemy should handle JSON fields correctly)
+                plan.strategy = updated_strategy
+                plan.alternatives = updated_alternatives
+                
+                self.db.commit()
+                self.db.refresh(plan)
+                
+                # Verify metadata was saved (re-apply if needed)
+                if plan.strategy and isinstance(plan.strategy, dict):
+                    if "alternative_strategy" not in plan.strategy:
+                        # Re-apply if not saved
+                        plan.strategy.update({
+                            "alternative_strategy": strategy_info["name"],
+                            "alternative_description": strategy_info["description"],
+                            "alternative_approach": strategy_info["approach"],
+                            "alternative_focus": strategy_info["focus"],
+                            "alternative_risk_tolerance": strategy_info["risk_tolerance"]
+                        })
+                        if plan.alternatives and isinstance(plan.alternatives, dict):
+                            plan.alternatives.update({
+                                "is_alternative": True,
+                                "alternative_index": index,
+                                "alternative_name": strategy_info["name"]
+                            })
+                        self.db.commit()
+                        self.db.refresh(plan)
+                
+                logger = self._get_logger()
+                if logger:
+                    logger.info(
+                        f"Generated alternative plan {index + 1} ({strategy_info['name']})",
+                        extra={
+                            "plan_id": str(plan.id),
+                            "strategy": strategy_info["name"],
+                            "alternative_index": index
+                        }
+                    )
+                
+                return plan
+                
+            except Exception as e:
+                logger = self._get_logger()
+                if logger:
+                    logger.error(
+                        f"Failed to generate alternative plan {index + 1} ({strategy_info.get('name', 'unknown')}): {e}",
+                        exc_info=True,
+                        extra={
+                            "strategy": strategy_info.get("name"),
+                            "alternative_index": index
+                        }
+                    )
+                return None
+        
+        # Generate all alternatives in parallel
+        tasks = [
+            generate_single_alternative(strategy, i)
+            for i, strategy in enumerate(strategies)
+        ]
+        
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Filter out None results and exceptions
+        alternative_plans = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger = self._get_logger()
+                if logger:
+                    logger.error(
+                        f"Exception generating alternative plan {i + 1}: {result}",
+                        exc_info=True
+                    )
+            elif result is not None:
+                alternative_plans.append(result)
+        
+        logger = self._get_logger()
+        if logger:
+            logger.info(
+                f"Generated {len(alternative_plans)} alternative plans out of {num_alternatives} requested",
+                extra={
+                    "requested": num_alternatives,
+                    "generated": len(alternative_plans),
+                    "task_id": str(task_id) if task_id else None
+                }
+            )
+        
+        return alternative_plans
+    
+    async def _generate_plan_with_alternatives(
+        self,
+        task_description: str,
+        task_id: Optional[UUID] = None,
+        context: Optional[Dict[str, Any]] = None,
+        num_alternatives: int = 3,
+        evaluation_weights: Optional[Dict[str, float]] = None
+    ) -> Plan:
+        """
+        Generate multiple alternative plans, evaluate them, and return the best one.
+        All alternatives are saved for comparison.
+        
+        Args:
+            task_description: Description of the task
+            task_id: Optional task ID to link plans to
+            context: Additional context
+            num_alternatives: Number of alternative plans to generate
+            evaluation_weights: Optional weights for evaluation criteria
+            
+        Returns:
+            Best plan based on evaluation
+        """
+        logger = self._get_logger()
+        if logger:
+            logger.info(
+                f"Generating {num_alternatives} alternative plans for A/B testing",
+                extra={
+                    "task_description": task_description[:100],
+                    "num_alternatives": num_alternatives
+                }
+            )
+        
+        # Generate alternative plans
+        alternative_plans = await self.generate_alternative_plans(
+            task_description=task_description,
+            task_id=task_id,
+            context=context,
+            num_alternatives=num_alternatives
+        )
+        
+        if not alternative_plans:
+            # Fallback to single plan generation if alternatives failed
+            if logger:
+                logger.warning("Failed to generate alternatives, falling back to single plan")
+            # Generate single plan without alternatives flag to avoid recursion
+            return await self.generate_plan(
+                task_description=task_description,
+                task_id=task_id,
+                context=context,
+                generate_alternatives=False
+            )
+        
+        # Evaluate all alternatives
+        evaluation_results = self.plan_evaluation_service.evaluate_plans(
+            plans=alternative_plans,
+            weights=evaluation_weights
+        )
+        
+        if not evaluation_results:
+            # Fallback if evaluation failed
+            if logger:
+                logger.warning("Failed to evaluate alternatives, using first plan")
+            return alternative_plans[0]
+        
+        # Get best plan (first in ranked list)
+        best_result = evaluation_results[0]
+        best_plan = best_result.plan
+        
+        # Mark best plan in alternatives metadata
+        for plan in alternative_plans:
+            if plan.id == best_plan.id:
+                if not plan.alternatives:
+                    plan.alternatives = {}
+                elif not isinstance(plan.alternatives, dict):
+                    plan.alternatives = {}
+                plan.alternatives["is_best"] = True
+                plan.alternatives["evaluation_score"] = best_result.total_score
+                plan.alternatives["ranking"] = best_result.ranking
+            else:
+                if not plan.alternatives:
+                    plan.alternatives = {}
+                elif not isinstance(plan.alternatives, dict):
+                    plan.alternatives = {}
+                plan.alternatives["is_best"] = False
+                # Find evaluation result for this plan
+                for result in evaluation_results:
+                    if result.plan_id == plan.id:
+                        plan.alternatives["evaluation_score"] = result.total_score
+                        plan.alternatives["ranking"] = result.ranking
+                        break
+        
+        # Commit all plans
+        self.db.commit()
+        
+        # Log evaluation results
+        if logger:
+            logger.info(
+                f"Selected best plan from {len(alternative_plans)} alternatives",
+                extra={
+                    "best_plan_id": str(best_plan.id),
+                    "best_plan_score": best_result.total_score,
+                    "best_plan_ranking": best_result.ranking,
+                    "total_alternatives": len(alternative_plans)
+                }
+            )
+        
+        # Add workflow event
+        from app.core.workflow_tracker import WorkflowStage
+        self._add_and_save_workflow_event(
+            WorkflowStage.ACTION_DETERMINATION,
+            f"Сгенерировано {len(alternative_plans)} альтернативных планов, выбран лучший (оценка: {best_result.total_score:.2f})",
+            details={
+                "alternatives_count": len(alternative_plans),
+                "best_plan_id": str(best_plan.id),
+                "best_plan_score": best_result.total_score,
+                "evaluation_results": [
+                    {
+                        "plan_id": str(r.plan_id),
+                        "score": r.total_score,
+                        "ranking": r.ranking
+                    }
+                    for r in evaluation_results
+                ]
+            }
+        )
+        
+        return best_plan
+    
     async def _analyze_task(
         self,
         task_description: str,
@@ -832,8 +1423,20 @@ Return a JSON array of steps."""
             except Exception:
                 pass  # Already logged in _get_analysis_prompt
         
-            # Build enhanced prompt with Digital Twin context
+            # Build enhanced prompt with Digital Twin context and plan template
             user_prompt = self._build_enhanced_analysis_prompt(task_description, context, task_id)
+            
+            # If we have a plan template, add it to the prompt for strategy guidance
+            if context and context.get("plan_template"):
+                template = context["plan_template"]
+                template_guidance = f"\n\n[PLAN TEMPLATE AVAILABLE]\n"
+                template_guidance += f"Template: {template.get('template_name', 'Unknown')}\n"
+                template_guidance += f"Category: {template.get('category', 'N/A')}\n"
+                template_guidance += f"Goal Pattern: {template.get('goal_pattern', 'N/A')}\n"
+                if template.get("strategy_template"):
+                    template_guidance += f"Suggested Strategy Pattern: {json.dumps(template.get('strategy_template'), indent=2)}\n"
+                template_guidance += "\nConsider using this template as a starting point, but adapt it to the specific task requirements.\n"
+                user_prompt = user_prompt + template_guidance
             
             # Save used prompt ID to Digital Twin context
             if task_id and prompt_used:
@@ -2419,4 +3022,165 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             if logger:
                 logger.warning(f"Error applying procedural memory patterns: {e}", exc_info=True)
             return None
+    
+    async def _adapt_template_to_task(
+        self,
+        template,
+        task_description: str,
+        strategy: Dict[str, Any],
+        context: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Adapt a plan template to a specific task using LLM.
+        
+        This method uses LLM to intelligently adapt template steps to the specific task,
+        replacing placeholders and adjusting steps based on task requirements.
+        
+        Args:
+            template: PlanTemplate object to adapt
+            task_description: Description of the current task
+            strategy: Strategy dict for the task
+            context: Additional context
+            
+        Returns:
+            List of adapted steps
+        """
+        template_steps = template.steps_template if isinstance(template.steps_template, list) else []
+        
+        if not template_steps:
+            # If template has no steps, fall back to standard decomposition
+            return await self._decompose_task(task_description, strategy, context)
+        
+        # Use LLM to adapt the template steps to the specific task
+        try:
+            from app.core.model_selector import ModelSelector
+            
+            model_selector = ModelSelector(self.db)
+            planning_model = model_selector.get_planning_model()
+            
+            if not planning_model:
+                # Fallback to basic adaptation if no model available
+                return self._basic_template_adaptation(template_steps, task_description)
+            
+            server = model_selector.get_server_for_model(planning_model)
+            if not server:
+                return self._basic_template_adaptation(template_steps, task_description)
+            
+            # Build prompt for LLM adaptation
+            template_steps_json = json.dumps(template_steps, indent=2, ensure_ascii=False)
+            strategy_json = json.dumps(strategy, indent=2, ensure_ascii=False)
+            
+            system_prompt = """You are a planning assistant. Your task is to adapt a plan template to a specific task.
+Replace placeholders (like <TASK_DESCRIPTION>, <GOAL>, <MODULE_NAME>, etc.) with concrete details from the task.
+Adjust step descriptions to match the specific task requirements while maintaining the overall structure.
+Return only a valid JSON array of steps, maintaining the same structure as the template."""
+            
+            user_prompt = f"""Task: {task_description}
+
+Strategy:
+{strategy_json}
+
+Template Steps (to adapt):
+{template_steps_json}
+
+Adapt these template steps to the specific task. Replace all placeholders with concrete details.
+Maintain the step structure but make descriptions specific to the task.
+Return only a valid JSON array of adapted steps."""
+            
+            # Call LLM
+            from app.core.ollama_client import OllamaClient, TaskType
+            ollama_client = OllamaClient()
+            
+            response = ollama_client.generate(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                task_type=TaskType.PLANNING,
+                model=planning_model.model_name,
+                base_url=server.base_url,
+                temperature=0.3,  # Lower temperature for more consistent adaptation
+                response_format={"type": "json_object"}
+            )
+            
+            if response and response.get("response"):
+                # Parse adapted steps from LLM response
+                # LLM might return {"steps": [...]} or just [...]
+                response_data = self._parse_json_from_response(response["response"])
+                
+                if isinstance(response_data, dict) and "steps" in response_data:
+                    adapted_steps = response_data["steps"]
+                elif isinstance(response_data, list):
+                    adapted_steps = response_data
+                else:
+                    adapted_steps = None
+                
+                if isinstance(adapted_steps, list) and len(adapted_steps) > 0:
+                    # Ensure all steps have required fields
+                    for i, step in enumerate(adapted_steps):
+                        if not isinstance(step, dict):
+                            continue
+                        step.setdefault("step", i + 1)
+                        step.setdefault("type", "code")
+                        step.setdefault("estimated_time", 600)
+                    
+                    logger = self._get_logger()
+                    if logger:
+                        logger.info(
+                            f"Successfully adapted template {template.name} to task using LLM",
+                            extra={
+                                "template_id": str(template.id),
+                                "original_steps_count": len(template_steps),
+                                "adapted_steps_count": len(adapted_steps)
+                            }
+                        )
+                    
+                    return adapted_steps
+            
+            # If LLM adaptation failed, fall back to basic adaptation
+            logger = self._get_logger()
+            if logger:
+                logger.warning("LLM template adaptation failed, using basic adaptation")
+            return self._basic_template_adaptation(template_steps, task_description)
+            
+        except Exception as e:
+            logger = self._get_logger()
+            if logger:
+                logger.warning(f"Error in LLM template adaptation: {e}", exc_info=True)
+            # Fallback to basic adaptation
+            return self._basic_template_adaptation(template_steps, task_description)
+    
+    def _basic_template_adaptation(
+        self,
+        template_steps: List[Dict[str, Any]],
+        task_description: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Basic template adaptation without LLM (fallback method).
+        
+        Args:
+            template_steps: Template steps to adapt
+            task_description: Task description
+            
+        Returns:
+            List of adapted steps
+        """
+        adapted_steps = []
+        for i, step in enumerate(template_steps):
+            adapted_step = step.copy() if isinstance(step, dict) else {}
+            
+            # Replace common placeholders
+            if isinstance(adapted_step.get("description"), str):
+                description = adapted_step["description"]
+                # Replace generic placeholders with task-specific details
+                description = description.replace("<TASK_DESCRIPTION>", task_description[:100])
+                description = description.replace("<GOAL>", task_description[:100])
+                adapted_step["description"] = description
+            
+            # Ensure step has required fields
+            adapted_step.setdefault("step", i + 1)
+            adapted_step.setdefault("type", "code")
+            adapted_step.setdefault("estimated_time", 600)
+            
+            adapted_steps.append(adapted_step)
+        
+        return adapted_steps
 

@@ -26,7 +26,8 @@ from app.api.routes import (
     traces, traces_pages, requests, queues, checkpoints, metrics, health,
     artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages, tools_pages,
     experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages, model_logs, current_work, workflow,
-    websocket_events, benchmarks, project_metrics, project_metrics_pages, audit_reports, audit_reports_pages
+    websocket_events, benchmarks, project_metrics, project_metrics_pages, audit_reports, audit_reports_pages,
+    plan_templates
 )
 
 # Configure logging first
@@ -156,6 +157,7 @@ app.include_router(approvals.router)
 app.include_router(artifacts.router)
 app.include_router(prompts.router)
 app.include_router(plans.router)
+app.include_router(plan_templates.router)
 app.include_router(model_logs.router)
 app.include_router(project_metrics.router)
 app.include_router(project_metrics_pages.router)

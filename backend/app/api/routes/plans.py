@@ -493,6 +493,115 @@ async def get_plan_tree(
     return tree
 
 
+@router.get("/{plan_id}/alternatives")
+async def get_plan_alternatives(
+    plan_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get all alternative plans for a given plan (A/B testing)"""
+    planning_service = PlanningService(db)
+    plan = planning_service.get_plan(plan_id)
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    # Get all plans for the same task
+    if not plan.task_id:
+        return {"alternatives": [], "best_plan_id": str(plan.id)}
+    
+    all_plans = db.query(Plan).filter(Plan.task_id == plan.task_id).all()
+    
+    # Filter plans that are alternatives (have alternative metadata)
+    alternatives = []
+    best_plan_id = None
+    
+    for p in all_plans:
+        is_alternative = False
+        if p.alternatives and isinstance(p.alternatives, dict):
+            is_alternative = p.alternatives.get("is_alternative", False)
+            if p.alternatives.get("is_best", False):
+                best_plan_id = str(p.id)
+        
+        if p.strategy and isinstance(p.strategy, dict):
+            if "alternative_strategy" in p.strategy:
+                is_alternative = True
+                if p.alternatives and isinstance(p.alternatives, dict) and p.alternatives.get("is_best", False):
+                    best_plan_id = str(p.id)
+        
+        if is_alternative or p.id == plan.id:
+            # Parse steps
+            steps = p.steps
+            if isinstance(steps, str):
+                import json
+                try:
+                    steps = json.loads(steps)
+                except:
+                    steps = []
+            
+            # Parse strategy
+            strategy = p.strategy
+            if isinstance(strategy, str):
+                import json
+                try:
+                    strategy = json.loads(strategy)
+                except:
+                    strategy = {}
+            
+            alternatives.append({
+                "id": str(p.id),
+                "goal": p.goal,
+                "strategy": strategy,
+                "steps": steps,
+                "status": p.status,
+                "estimated_duration": p.estimated_duration,
+                "evaluation_score": p.alternatives.get("evaluation_score") if isinstance(p.alternatives, dict) else None,
+                "ranking": p.alternatives.get("ranking") if isinstance(p.alternatives, dict) else None,
+                "is_best": p.alternatives.get("is_best", False) if isinstance(p.alternatives, dict) else (p.id == plan.id),
+                "alternative_strategy": strategy.get("alternative_strategy") if isinstance(strategy, dict) else None
+            })
+    
+    # If no alternatives found but we have multiple plans, return all
+    if not alternatives and len(all_plans) > 1:
+        for p in all_plans:
+            steps = p.steps
+            if isinstance(steps, str):
+                import json
+                try:
+                    steps = json.loads(steps)
+                except:
+                    steps = []
+            
+            strategy = p.strategy
+            if isinstance(strategy, str):
+                import json
+                try:
+                    strategy = json.loads(strategy)
+                except:
+                    strategy = {}
+            
+            alternatives.append({
+                "id": str(p.id),
+                "goal": p.goal,
+                "strategy": strategy,
+                "steps": steps,
+                "status": p.status,
+                "estimated_duration": p.estimated_duration,
+                "evaluation_score": None,
+                "ranking": None,
+                "is_best": (p.id == plan.id),
+                "alternative_strategy": strategy.get("alternative_strategy") if isinstance(strategy, dict) else None
+            })
+    
+    # Sort by ranking if available
+    alternatives.sort(key=lambda x: (x["ranking"] if x["ranking"] is not None else 999, x["evaluation_score"] if x["evaluation_score"] is not None else 0), reverse=True)
+    
+    return {
+        "alternatives": alternatives,
+        "best_plan_id": best_plan_id or str(plan.id),
+        "total": len(alternatives)
+    }
+
+
 @router.get("/{plan_id}/execution-state")
 async def get_execution_state(
     plan_id: UUID,

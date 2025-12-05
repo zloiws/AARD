@@ -105,6 +105,11 @@
                 <i class="bi bi-play-circle"></i> Начать выполнение
             </button>
             {% endif %}
+            {% if has_alternatives %}
+            <a href="/plans/{{ plan.id }}/compare" class="btn btn-info" style="background-color: #0dcaf0; border-color: #0dcaf0; color: #000;">
+                <i class="bi bi-diagram-3"></i> Сравнить альтернативы
+            </a>
+            {% endif %}
             <a href="/plans" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Назад к списку
             </a>

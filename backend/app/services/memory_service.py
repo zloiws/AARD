@@ -166,60 +166,104 @@ class MemoryService:
         )
         
         self.db.add(memory)
-        self.db.commit()
-        self.db.refresh(memory)
+        # Flush to get ID without committing (avoids vector type issues)
+        self.db.flush()
+        # Get ID and data BEFORE commit to avoid vector type loading issues
+        memory_id = memory.id  # ID is available after flush
+        memory_summary = summary
+        memory_content = content
+        
+        try:
+            self.db.commit()
+        except Exception as e:
+            # Rollback on error
+            self.db.rollback()
+            raise
+        
+        # Don't refresh - SQLAlchemy can't read vector type directly
         
         # Generate embedding automatically if requested
         if generate_embedding:
-            await self._generate_and_save_embedding(memory)
+            try:
+                await self._generate_and_save_embedding_by_id(
+                    memory_id=memory_id,
+                    summary=memory_summary,
+                    content=memory_content
+                )
+            except Exception as e:
+                # Log error but don't fail - memory is already saved
+                logger.error(f"Failed to generate embedding for memory {memory_id}: {e}", exc_info=True)
         
         logger.info(
             f"Saved memory for agent {agent_id}",
             extra={
-                "memory_id": str(memory.id),
+                "memory_id": str(memory_id),
                 "memory_type": memory_type,
                 "importance": importance,
-                "has_embedding": memory.embedding is not None
+                "embedding_scheduled": generate_embedding
             }
         )
         
+        # Return memory object (but don't access embedding field - it's not in SQLAlchemy model)
         return memory
     
-    async def _generate_and_save_embedding(self, memory: AgentMemory):
+    async def _generate_and_save_embedding_by_id(
+        self,
+        memory_id,
+        summary: Optional[str] = None,
+        content: Optional[Any] = None
+    ):
         """
-        Generate and save embedding for a memory.
+        Generate and save embedding for a memory by ID (avoids SQLAlchemy vector type issues).
         
         Args:
-            memory: AgentMemory instance to generate embedding for
+            memory_id: Memory UUID
+            summary: Memory summary text
+            content: Memory content
         """
+        # Use a separate database session to avoid transaction conflicts
+        separate_db = SessionLocal()
         try:
             # Use summary or content for embedding generation
-            text_for_embedding = memory.summary
+            text_for_embedding = summary
             if not text_for_embedding:
                 # Extract text from content if summary is not available
-                if isinstance(memory.content, dict):
+                if isinstance(content, dict):
                     # Try to get text from common fields
                     text_for_embedding = (
-                        memory.content.get("description") or
-                        memory.content.get("text") or
-                        memory.content.get("content") or
-                        str(memory.content)
+                        content.get("description") or
+                        content.get("text") or
+                        content.get("content") or
+                        str(content)
                     )
                 else:
-                    text_for_embedding = str(memory.content)
+                    text_for_embedding = str(content) if content else None
             
             if text_for_embedding:
                 embedding = await self.embedding_service.generate_embedding(text_for_embedding)
-                memory.embedding = embedding
-                self.db.commit()
-                self.db.refresh(memory)
-                logger.debug(f"Generated embedding for memory {memory.id}")
+                # Save embedding using raw SQL to handle pgvector type
+                # Format as PostgreSQL array string and escape properly
+                embedding_list = [float(x) for x in embedding]
+                # PostgreSQL vector format: [0.1,0.2,0.3]
+                embedding_array_str = "[" + ",".join(str(x) for x in embedding_list) + "]"
+                # Escape single quotes if any (shouldn't be any in numeric array)
+                embedding_array_str_escaped = embedding_array_str.replace("'", "''")
+                # Use parameter binding for UUID - PostgreSQL will handle the cast
+                # Note: We need to use CAST for UUID parameter binding
+                sql = text(f"UPDATE agent_memories SET embedding = '{embedding_array_str_escaped}'::vector WHERE id = CAST(:memory_id AS uuid)")
+                separate_db.execute(sql, {"memory_id": str(memory_id)})
+                separate_db.commit()
+                logger.debug(f"Generated embedding for memory {memory_id}")
             else:
-                logger.warning(f"No text available for embedding generation (memory {memory.id})")
+                logger.warning(f"No text available for embedding generation (memory {memory_id})")
                 
         except Exception as e:
             # Log error but don't fail memory saving
-            logger.error(f"Error generating embedding for memory {memory.id}: {e}", exc_info=True)
+            # Rollback to clear failed transaction state
+            separate_db.rollback()
+            logger.error(f"Error generating embedding for memory {memory_id}: {e}", exc_info=True)
+        finally:
+            separate_db.close()
     
     def get_memory(self, memory_id: UUID) -> Optional[AgentMemory]:
         """
@@ -356,48 +400,30 @@ class MemoryService:
             # Generate embedding for query text
             query_embedding = await self.embedding_service.generate_embedding(query_text)
             
-            # Build base query
-            query = self.db.query(AgentMemory).filter(
-                AgentMemory.agent_id == agent_id,
-                AgentMemory.embedding.isnot(None)  # Only memories with embeddings
-            )
-            
-            # Filter by memory type if provided
-            if memory_type:
-                query = query.filter(AgentMemory.memory_type == memory_type)
-            
-            # Filter out expired memories
-            query = query.filter(
-                or_(
-                    AgentMemory.expires_at.is_(None),
-                    AgentMemory.expires_at > datetime.utcnow()
-                )
-            )
-            
-            # Use pgvector cosine similarity search
-            # Convert embedding list to PostgreSQL array format
-            embedding_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+            # Use pgvector cosine similarity search via raw SQL
+            # Convert embedding list to PostgreSQL vector format: [0.1,0.2,0.3]
+            embedding_array_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+            # Escape single quotes if any (shouldn't be any in numeric array)
+            embedding_array_str_escaped = embedding_array_str.replace("'", "''")
             
             # Raw SQL query for vector similarity search
             # Using cosine distance: 1 - cosine_similarity
             # Lower distance = higher similarity
-            sql_query = text("""
+            memory_type_filter = "AND memory_type = :memory_type" if memory_type else ""
+            sql_query = text(f"""
                 SELECT 
                     id,
-                    1 - (embedding <=> :query_embedding::vector) as similarity
+                    1 - (embedding <=> '{embedding_array_str_escaped}'::vector) as similarity
                 FROM agent_memories
-                WHERE agent_id = :agent_id::uuid
+                WHERE agent_id = CAST(:agent_id AS uuid)
                     AND embedding IS NOT NULL
                     AND (expires_at IS NULL OR expires_at > NOW())
                     {memory_type_filter}
-                ORDER BY embedding <=> :query_embedding::vector
+                ORDER BY embedding <=> '{embedding_array_str_escaped}'::vector
                 LIMIT :limit
-            """.format(
-                memory_type_filter="AND memory_type = :memory_type" if memory_type else ""
-            ))
+            """)
             
             params = {
-                "query_embedding": embedding_str,
                 "agent_id": str(agent_id),
                 "limit": limit
             }
@@ -409,8 +435,19 @@ class MemoryService:
             rows = result.fetchall()
             
             # Get memory IDs and similarities
-            memory_ids = [UUID(row[0]) for row in rows]
-            similarities = [float(row[1]) for row in rows]
+            # Handle both UUID objects and strings from raw SQL
+            memory_ids = []
+            similarities = []
+            for row in rows:
+                memory_id = row[0]
+                # Convert to UUID if it's a string
+                if isinstance(memory_id, str):
+                    memory_ids.append(UUID(memory_id))
+                elif isinstance(memory_id, UUID):
+                    memory_ids.append(memory_id)
+                else:
+                    memory_ids.append(UUID(str(memory_id)))
+                similarities.append(float(row[1]))
             
             # Filter by similarity threshold
             filtered_results = []

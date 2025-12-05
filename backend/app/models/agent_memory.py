@@ -44,8 +44,9 @@ class AgentMemory(Base):
     summary = Column(Text, nullable=True)  # Human-readable summary
     
     # Vector embedding for semantic search
-    # Using ARRAY(Float) for compatibility, pgvector will handle it as vector type
-    embedding = Column(ARRAY(Float), nullable=True)  # Vector embedding for semantic search
+    # Note: embedding is stored as vector type in DB, but SQLAlchemy can't read it directly
+    # Use raw SQL to read/write embeddings (see MemoryService)
+    # embedding = Column(ARRAY(Float), nullable=True)  # Commented out - use raw SQL instead
     
     # Importance and access tracking
     importance = Column(Float, default=0.5, nullable=False)  # 0.0 to 1.0
@@ -92,7 +93,7 @@ class AgentMemory(Base):
             "source": self.source,
             "created_at": self.created_at.isoformat(),
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "has_embedding": self.embedding is not None,
+            # Note: embedding is not accessible via SQLAlchemy - use raw SQL to check
         }
 
 

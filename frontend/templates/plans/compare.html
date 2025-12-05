@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}Сравнение альтернативных планов - AARD{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1400px; height: auto; min-height: 90vh;">
+    <div class="header">
+        <div>
+            <h1>Сравнение альтернативных планов</h1>
+            <div class="status">План ID: {{ plan_id[:8] }}...</div>
+        </div>
+        <div>
+            <a href="/plans/{{ plan_id }}" style="color: white; text-decoration: none; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px; margin-right: 10px;">
+                ← К деталям плана
+            </a>
+            <a href="/plans" style="color: white; text-decoration: none; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px;">
+                Список планов
+            </a>
+        </div>
+    </div>
+
+    <div style="padding: 20px; background: #f5f5f5; flex: 1; overflow-y: auto;">
+        <!-- Loading state -->
+        <div id="loading" style="text-align: center; padding: 40px;">
+            <div style="font-size: 18px; color: #666;">Загрузка альтернативных планов...</div>
+        </div>
+
+        <!-- Error state -->
+        <div id="error" style="display: none; background: #fee; border: 1px solid #fcc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <div style="color: #c00; font-weight: 600; margin-bottom: 10px;">Ошибка загрузки</div>
+            <div id="error-message" style="color: #800;"></div>
+        </div>
+
+        <!-- Comparison container -->
+        <div id="comparison-container" style="display: none;">
+            <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h2 style="margin-bottom: 15px; color: #333;">Найдено альтернативных планов: <span id="total-count">0</span></h2>
+                <div style="color: #666; font-size: 14px;">
+                    Лучший план отмечен зеленым цветом
+                </div>
+            </div>
+
+            <!-- Comparison table -->
+            <div style="overflow-x: auto;">
+                <table id="comparison-table" style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">План</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">Стратегия</th>
+                            <th style="padding: 15px; text-align: center; font-weight: 600;">Шагов</th>
+                            <th style="padding: 15px; text-align: center; font-weight: 600;">Время</th>
+                            <th style="padding: 15px; text-align: center; font-weight: 600;">Оценка</th>
+                            <th style="padding: 15px; text-align: center; font-weight: 600;">Ранг</th>
+                            <th style="padding: 15px; text-align: center; font-weight: 600;">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparison-tbody">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Detailed comparison -->
+            <div id="detailed-comparison" style="margin-top: 30px;">
+                <h2 style="margin-bottom: 20px; color: #333;">Детальное сравнение</h2>
+                <div id="plans-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .plan-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 2px solid transparent;
+        transition: all 0.3s;
+    }
+
+    .plan-card.best {
+        border-color: #28a745;
+        background: #f0fff4;
+    }
+
+    .plan-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+
+    .plan-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #eee;
+    }
+
+    .plan-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .best-badge {
+        background: #28a745;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .strategy-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        margin-right: 8px;
+    }
+
+    .strategy-conservative {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .strategy-balanced {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .strategy-aggressive {
+        background: #fce4ec;
+        color: #c2185b;
+    }
+
+    .score-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .score-high {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .score-medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .score-low {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .steps-list {
+        margin-top: 15px;
+    }
+
+    .step-item {
+        padding: 10px;
+        margin-bottom: 8px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border-left: 3px solid #667eea;
+    }
+
+    .step-number {
+        font-weight: 600;
+        color: #667eea;
+        margin-right: 8px;
+    }
+
+    .comparison-row {
+        transition: background 0.2s;
+    }
+
+    .comparison-row:hover {
+        background: #f8f9fa;
+    }
+
+    .comparison-row.best {
+        background: #f0fff4;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #5568d3;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+</style>
+
+<script>
+    const planId = '{{ plan_id }}';
+    
+    // Load alternatives on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            const response = await fetch(`/api/plans/${planId}/alternatives`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            document.getElementById('loading').style.display = 'none';
+            
+            if (data.alternatives && data.alternatives.length > 0) {
+                document.getElementById('comparison-container').style.display = 'block';
+                document.getElementById('total-count').textContent = data.total || data.alternatives.length;
+                renderComparison(data.alternatives, data.best_plan_id);
+            } else {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error-message').textContent = 'Альтернативные планы не найдены. Этот план не был создан через A/B тестирование.';
+            }
+        } catch (error) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error-message').textContent = `Ошибка: ${error.message}`;
+        }
+    });
+
+    function renderComparison(alternatives, bestPlanId) {
+        const tbody = document.getElementById('comparison-tbody');
+        const detailsContainer = document.getElementById('plans-details');
+        
+        tbody.innerHTML = '';
+        detailsContainer.innerHTML = '';
+        
+        alternatives.forEach((plan, index) => {
+            const isBest = plan.id === bestPlanId || plan.is_best;
+            const rowClass = isBest ? 'best' : '';
+            
+            // Table row
+            const row = document.createElement('tr');
+            row.className = `comparison-row ${rowClass}`;
+            
+            const strategyName = plan.alternative_strategy || 'standard';
+            const strategyClass = `strategy-${strategyName}`;
+            const strategyLabel = {
+                'conservative': 'Консервативная',
+                'balanced': 'Сбалансированная',
+                'aggressive': 'Агрессивная'
+            }[strategyName] || strategyName;
+            
+            const score = plan.evaluation_score || 0;
+            const scoreClass = score >= 0.8 ? 'score-high' : (score >= 0.6 ? 'score-medium' : 'score-low');
+            
+            row.innerHTML = `
+                <td style="padding: 15px;">
+                    <div style="font-weight: 600; color: #333;">План ${index + 1}</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 4px;">${plan.id.substring(0, 8)}...</div>
+                    ${isBest ? '<div class="best-badge" style="margin-top: 4px;">Лучший</div>' : ''}
+                </td>
+                <td style="padding: 15px;">
+                    <span class="strategy-badge ${strategyClass}">${strategyLabel}</span>
+                </td>
+                <td style="padding: 15px; text-align: center;">
+                    <strong>${plan.steps ? plan.steps.length : 0}</strong>
+                </td>
+                <td style="padding: 15px; text-align: center;">
+                    ${plan.estimated_duration ? `${plan.estimated_duration} мин` : 'N/A'}
+                </td>
+                <td style="padding: 15px; text-align: center;">
+                    ${score > 0 ? `<span class="score-badge ${scoreClass}">${score.toFixed(2)}</span>` : 'N/A'}
+                </td>
+                <td style="padding: 15px; text-align: center;">
+                    ${plan.ranking ? `#${plan.ranking}` : 'N/A'}
+                </td>
+                <td style="padding: 15px; text-align: center;">
+                    <a href="/plans/${plan.id}" class="btn btn-primary">Детали</a>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+            
+            // Detailed card
+            const card = document.createElement('div');
+            card.className = `plan-card ${isBest ? 'best' : ''}`;
+            
+            const stepsHtml = plan.steps && plan.steps.length > 0
+                ? plan.steps.map((step, i) => {
+                    const stepDesc = typeof step === 'object' ? (step.description || step.step || JSON.stringify(step)) : step;
+                    return `
+                        <div class="step-item">
+                            <span class="step-number">${i + 1}.</span>
+                            <span>${stepDesc}</span>
+                        </div>
+                    `;
+                }).join('')
+                : '<div style="color: #999; font-style: italic;">Шаги не определены</div>';
+            
+            card.innerHTML = `
+                <div class="plan-header">
+                    <div class="plan-title">План ${index + 1}</div>
+                    ${isBest ? '<span class="best-badge">Лучший план</span>' : ''}
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="font-weight: 600; color: #666; margin-bottom: 8px;">Цель:</div>
+                    <div style="color: #333;">${plan.goal || 'Не указана'}</div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="font-weight: 600; color: #666; margin-bottom: 8px;">Стратегия:</div>
+                    <span class="strategy-badge ${strategyClass}">${strategyLabel}</span>
+                </div>
+                
+                <div style="margin-bottom: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Шагов</div>
+                        <div style="font-size: 20px; font-weight: 600; color: #333;">${plan.steps ? plan.steps.length : 0}</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Время</div>
+                        <div style="font-size: 20px; font-weight: 600; color: #333;">${plan.estimated_duration || 'N/A'}</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Оценка</div>
+                        <div style="font-size: 20px; font-weight: 600; color: #333;">
+                            ${score > 0 ? `<span class="score-badge ${scoreClass}">${score.toFixed(2)}</span>` : 'N/A'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="font-weight: 600; color: #666; margin-bottom: 8px;">Шаги выполнения:</div>
+                    <div class="steps-list">
+                        ${stepsHtml}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                    <a href="/plans/${plan.id}" class="btn btn-primary" style="margin-right: 10px;">Подробнее</a>
+                    ${plan.status === 'draft' ? `<a href="/plans/${plan.id}" class="btn btn-secondary">Утвердить</a>` : ''}
+                </div>
+            `;
+            
+            detailsContainer.appendChild(card);
+        });
+    }
+</script>
+{% endblock %}
+

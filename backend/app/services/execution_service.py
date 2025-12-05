@@ -1021,9 +1021,11 @@ class ExecutionService:
             # Continue to next step
         
         # Check if all steps completed
+        plan_just_completed = False
         if plan.status == "executing" and plan.current_step >= len(steps) - 1:
             plan.status = "completed"
             plan.current_step = len(steps)
+            plan_just_completed = True
         
         # Calculate actual duration
         if plan.created_at:
@@ -1062,6 +1064,13 @@ class ExecutionService:
             )
         except Exception as e:
             logger.warning(f"Failed to track plan execution: {e}", exc_info=True)
+        
+        # Extract template from successfully completed plan
+        if plan_just_completed and plan.status == "completed":
+            try:
+                self._extract_template_from_completed_plan(plan)
+            except Exception as e:
+                logger.warning(f"Failed to extract template from completed plan {plan.id}: {e}", exc_info=True)
         
         # Record project metrics for plan execution
         try:
@@ -1305,4 +1314,110 @@ class ExecutionService:
                 }
             )
             return None
+
+    def _extract_template_from_completed_plan(self, plan: Plan):
+        """
+        Extract a template from a successfully completed plan if it meets quality criteria.
+        
+        Criteria for template extraction:
+        - Plan must be completed successfully
+        - Plan must have at least minimum number of steps (configurable, default: 2)
+        - Plan execution should be within reasonable time (not too fast = likely incomplete, not too slow = likely inefficient)
+        - Plan should have a clear structure (goal, steps, strategy)
+        
+        Args:
+            plan: The completed plan to extract template from
+        """
+        from app.services.plan_template_service import PlanTemplateService
+        from app.core.config import get_settings
+        
+        settings = get_settings()
+        
+        # Check if template extraction is enabled
+        if not getattr(settings, 'enable_plan_template_extraction', True):
+            logger.debug(f"Plan template extraction is disabled, skipping plan {plan.id}")
+            return
+        
+        # Quality criteria
+        min_steps = getattr(settings, 'plan_template_min_steps', 2)
+        min_duration_seconds = getattr(settings, 'plan_template_min_duration', 10)  # At least 10 seconds
+        max_duration_seconds = getattr(settings, 'plan_template_max_duration', 86400)  # Not more than 24 hours
+        
+        # Validate plan structure
+        if not plan.goal:
+            logger.debug(f"Plan {plan.id} has no goal, skipping template extraction")
+            return
+        
+        steps = plan.steps if isinstance(plan.steps, list) else []
+        if len(steps) < min_steps:
+            logger.debug(f"Plan {plan.id} has only {len(steps)} steps (minimum: {min_steps}), skipping template extraction")
+            return
+        
+        # Validate execution time
+        if plan.actual_duration:
+            if plan.actual_duration < min_duration_seconds:
+                logger.debug(f"Plan {plan.id} completed too quickly ({plan.actual_duration}s), likely incomplete, skipping template extraction")
+                return
+            if plan.actual_duration > max_duration_seconds:
+                logger.debug(f"Plan {plan.id} took too long ({plan.actual_duration}s), likely inefficient, skipping template extraction")
+                return
+        
+        # Check if plan already has a template extracted
+        template_service = PlanTemplateService(self.db)
+        existing_templates = template_service.list_templates(limit=1000)
+        for template in existing_templates:
+            if template.source_plan_ids and plan.id in template.source_plan_ids:
+                logger.debug(f"Template already exists for plan {plan.id}, skipping extraction")
+                return
+        
+        # Extract template
+        logger.info(
+            f"Extracting template from completed plan {plan.id}",
+            extra={
+                "plan_id": str(plan.id),
+                "steps_count": len(steps),
+                "duration": plan.actual_duration
+            }
+        )
+        
+        # Extract template (synchronous call, but may have async operations inside)
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If loop is running, we need to handle this differently
+                # For now, create a task
+                template = template_service.extract_template_from_plan(
+                    plan_id=plan.id,
+                    template_name=None,  # Auto-generate name
+                    category=None,  # Auto-infer category
+                    tags=None  # Auto-infer tags
+                )
+            else:
+                template = template_service.extract_template_from_plan(
+                    plan_id=plan.id,
+                    template_name=None,  # Auto-generate name
+                    category=None,  # Auto-infer category
+                    tags=None  # Auto-infer tags
+                )
+        except RuntimeError:
+            # No event loop, call directly
+            template = template_service.extract_template_from_plan(
+                plan_id=plan.id,
+                template_name=None,  # Auto-generate name
+                category=None,  # Auto-infer category
+                tags=None  # Auto-infer tags
+            )
+        
+        if template:
+            logger.info(
+                f"Successfully extracted template {template.id} from plan {plan.id}",
+                extra={
+                    "template_id": str(template.id),
+                    "template_name": template.name,
+                    "plan_id": str(plan.id)
+                }
+            )
+        else:
+            logger.warning(f"Failed to extract template from plan {plan.id}")
 

@@ -21,12 +21,13 @@ def upgrade():
     op.execute('CREATE EXTENSION IF NOT EXISTS vector;')
     
     # Add embedding column to agent_memories table
-    # Using vector(1536) for OpenAI embeddings, can be adjusted for other models
+    # Using vector(768) for nomic-embed-text embeddings (default model)
+    # Can be adjusted for other models (e.g., 1536 for OpenAI, 384 for sentence-transformers)
     # Note: We use ARRAY in SQLAlchemy model, but pgvector will handle it as vector type
     # The actual vector type is created via raw SQL
     op.execute("""
         ALTER TABLE agent_memories 
-        ADD COLUMN IF NOT EXISTS embedding vector(1536);
+        ADD COLUMN IF NOT EXISTS embedding vector(768);
     """)
     
     # Create index for vector similarity search using HNSW (Hierarchical Navigable Small World)

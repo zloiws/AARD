@@ -120,6 +120,30 @@ async def plans_metrics(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/plans/{plan_id}/compare", response_class=HTMLResponse)
+async def plan_compare(
+    request: Request,
+    plan_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Compare alternative plans page"""
+    planning_service = PlanningService(db)
+    plan = planning_service.get_plan(plan_id)
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    # Get alternatives via API (will be loaded via HTMX)
+    return templates.TemplateResponse(
+        "plans/compare.html",
+        {
+            "request": request,
+            "plan_id": str(plan_id),
+            "plan": plan
+        }
+    )
+
+
 @router.get("/plans/{plan_id}", response_class=HTMLResponse)
 async def plan_detail(
     request: Request,
@@ -196,6 +220,20 @@ async def plan_detail(
         # If metrics fail, continue without them
         pass
     
+    # Check if this plan has alternatives (A/B testing)
+    has_alternatives = False
+    if plan.task_id:
+        all_plans = db.query(Plan).filter(Plan.task_id == plan.task_id).all()
+        if len(all_plans) > 1:
+            # Check if any plan has alternative metadata
+            for p in all_plans:
+                if p.alternatives and isinstance(p.alternatives, dict) and p.alternatives.get("is_alternative"):
+                    has_alternatives = True
+                    break
+                if p.strategy and isinstance(p.strategy, dict) and "alternative_strategy" in p.strategy:
+                    has_alternatives = True
+                    break
+    
     return templates.TemplateResponse(
         "plans/detail.html",
         {
@@ -210,7 +248,8 @@ async def plan_detail(
             "can_execute": plan.status == "approved",
             "can_update": plan.status == "draft",
             "approval_request": approval_request,  # Pass approval request
-            "quality_data": quality_data  # Pass quality metrics
+            "quality_data": quality_data,  # Pass quality metrics
+            "has_alternatives": has_alternatives  # Pass has_alternatives flag
         }
     )
 

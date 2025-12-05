@@ -1,7 +1,10 @@
 """
 Service for generating text embeddings for vector search
 """
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.ollama_server import OllamaServer
 import asyncio
 import json
 import httpx
@@ -27,12 +30,13 @@ class EmbeddingService:
     """
     
     # Default embedding dimension (can be adjusted based on model)
-    DEFAULT_EMBEDDING_DIM = 1536
+    # Note: Different models have different dimensions (e.g., 768, 1536)
+    DEFAULT_EMBEDDING_DIM = 1536  # Default, but actual dimension depends on model
     
     def __init__(self, db: Session):
         self.db = db
         self.settings = get_settings()
-        self.ollama_service = OllamaService(db)
+        self.ollama_service = OllamaService()  # OllamaService is static
         self._embedding_cache: Dict[str, List[float]] = {}
         self._cache_size_limit = 1000  # Limit cache size
     
@@ -55,7 +59,8 @@ class EmbeddingService:
         """
         if not text or not text.strip():
             logger.warning("Empty text provided for embedding generation")
-            return [0.0] * self.DEFAULT_EMBEDDING_DIM
+            # Return minimal embedding - actual dimension will be determined by model
+            return [0.0] * 768  # Common minimum dimension
         
         # Check cache first
         if use_cache and text in self._embedding_cache:
@@ -82,8 +87,8 @@ class EmbeddingService:
             
         except Exception as e:
             logger.error(f"Error generating embedding: {e}", exc_info=True)
-            # Return zero vector on error
-            return [0.0] * self.DEFAULT_EMBEDDING_DIM
+            # Return zero vector on error (minimal dimension)
+            return [0.0] * 768
     
     async def generate_embeddings_batch(
         self,
@@ -113,19 +118,52 @@ class EmbeddingService:
     def _get_default_embedding_model(self) -> str:
         """
         Get default embedding model.
-        For now, we'll use a general model that supports embeddings.
-        In the future, this can be configured via settings.
+        Uses nomic-embed-text if available, otherwise falls back to any available model.
         """
-        # Try to get a model that supports embeddings
-        # Most Ollama models can generate embeddings via their API
+        return "nomic-embed-text"  # Common embedding model for Ollama
+    
+    async def _find_server_with_model(self, model_name: str) -> Optional[Any]:
+        """
+        Find a server that has the specified model available.
+        
+        Args:
+            model_name: Name of the model to find
+            
+        Returns:
+            OllamaServer instance if found, None otherwise
+        """
+        import httpx
+        
         servers = self.ollama_service.get_all_active_servers(self.db)
-        if servers:
-            # Use the default server's first available model
-            # In practice, you might want to use a specific embedding model
-            return "nomic-embed-text"  # Common embedding model for Ollama
-        else:
-            # Fallback
-            return "nomic-embed-text"
+        if not servers:
+            return None
+        
+        # Try to find a server with the model
+        for server in servers:
+            try:
+                base_url = server.url.rstrip("/")
+                if base_url.endswith("/v1"):
+                    base_url = base_url[:-3]
+                
+                async with httpx.AsyncClient(base_url=base_url, timeout=5.0) as client:
+                    # Check if model is available on this server
+                    response = await client.get("/api/tags", timeout=5.0)
+                    if response.status_code == 200:
+                        data = response.json()
+                        models = data.get("models", [])
+                        for model_data in models:
+                            # Check both 'name' and 'model' fields
+                            model_full_name = model_data.get("name", "") or model_data.get("model", "")
+                            if model_name in model_full_name:
+                                logger.debug(f"Found model {model_name} on server {server.name} ({server.url})")
+                                return server
+            except Exception as e:
+                logger.debug(f"Error checking server {server.name} for model {model_name}: {e}")
+                continue
+        
+        # If not found, return first available server (will try to use model anyway)
+        logger.warning(f"Model {model_name} not found on any server, using first available server")
+        return servers[0] if servers else None
     
     async def _generate_embedding_via_ollama(
         self,
@@ -138,13 +176,14 @@ class EmbeddingService:
         Note: Ollama's embedding API might differ from chat API.
         This is a basic implementation that can be extended.
         """
-        servers = self.ollama_service.get_all_active_servers(self.db)
-        if not servers:
+        # Find a server that has the model
+        server = await self._find_server_with_model(model)
+        if not server:
             raise ValueError("No Ollama servers available")
         
-        # Use first available server
-        server = servers[0]
         base_url = server.url.rstrip("/")
+        if base_url.endswith("/v1"):
+            base_url = base_url[:-3]
         
         # Ollama embedding endpoint
         # Note: This might need adjustment based on your Ollama version
