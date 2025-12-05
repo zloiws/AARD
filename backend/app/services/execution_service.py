@@ -45,9 +45,10 @@ settings = get_settings()
 class StepExecutor:
     """Executor for individual plan steps"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, metrics_service=None):
         self.db = db
         self.tracer = get_tracer(__name__)
+        self.metrics_service = metrics_service  # Может быть None, если не передан
     
     async def execute_step(
         self,
@@ -481,11 +482,11 @@ Execute the given step and return the result in JSON format:
             return result
         
         # Create agent instance
-        tool_service = ToolService(self.db)
+        # BaseAgent создает tool_service сам, не нужно передавать
         agent = SimpleAgent(
             agent_id=agent_uuid,
             agent_service=agent_service,
-            tool_service=tool_service
+            db_session=self.db  # Передаем db_session для создания tool_service внутри BaseAgent
         )
         
         # Prepare task description
@@ -505,8 +506,8 @@ Execute the given step and return the result in JSON format:
             # Use specific tool
             try:
                 tool_uuid = UUID(tool_id) if isinstance(tool_id, str) else tool_id
-                tool_service = ToolService(self.db)
-                tool_data = tool_service.get_tool(tool_uuid)
+                # agent уже имеет tool_service через BaseAgent
+                tool_data = agent.tool_service.get_tool(tool_uuid)
                 
                 if not tool_data:
                     result["status"] = "failed"
@@ -670,10 +671,10 @@ class ExecutionService:
     
     def __init__(self, db: Session):
         self.db = db
-        self.step_executor = StepExecutor(db)
+        self.metrics_service = ProjectMetricsService(db)
+        self.step_executor = StepExecutor(db, metrics_service=self.metrics_service)
         self.checkpoint_service = CheckpointService(db)
         self.error_detector = ExecutionErrorDetector()
-        self.metrics_service = ProjectMetricsService(db)
     
     def _is_critical_error(
         self,
