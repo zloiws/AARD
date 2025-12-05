@@ -63,32 +63,50 @@ try:
         print("\nNo revision found - starting from scratch")
         current_rev = None
     
-    # Strategy: Stamp to base, then upgrade
-    print("\n⚠️  WARNING: This will reset migration state!")
-    print("   This should only be done if you want to reapply all migrations.")
-    print("   Existing tables will NOT be dropped, but migration state will be reset.")
-    print("\n   Type 'RESET MIGRATIONS' to confirm (or Ctrl+C to cancel):")
-    
-    try:
-        confirmation = input("> ").strip()
-        if confirmation != "RESET MIGRATIONS":
-            print(f"\n❌ Confirmation failed. Expected 'RESET MIGRATIONS', got: '{confirmation}'")
-            print("   Operation cancelled.")
-            sys.exit(1)
-    except KeyboardInterrupt:
-        print("\n❌ Cancelled.")
-        sys.exit(1)
-    
-    try:
-        # Stamp to base (001) to reset migration state
-        print("\n1. Stamping database to base revision (001)...")
-        command.stamp(alembic_cfg, "001")
-        print("   ✓ Stamped to 001")
+    # Check if we need to reset or just upgrade
+    if current_rev and current_rev != "001":
+        print(f"\n⚠️  Current revision is {current_rev}, not base (001)")
+        print("   This script will reset migration state to 001 and reapply all migrations.")
+        print("   ⚠️  WARNING: This may cause issues if tables already exist!")
+        print("\n   Type 'RESET MIGRATIONS' to confirm (or Ctrl+C to cancel):")
         
+        try:
+            confirmation = input("> ").strip()
+            if confirmation != "RESET MIGRATIONS":
+                print(f"\n❌ Confirmation failed. Expected 'RESET MIGRATIONS', got: '{confirmation}'")
+                print("   Operation cancelled.")
+                print("\n   Alternative: Use 'python apply_migrations.py' to upgrade from current revision")
+                sys.exit(1)
+        except KeyboardInterrupt:
+            print("\n❌ Cancelled.")
+            sys.exit(1)
+        
+        try:
+            # Stamp to base (001) to reset migration state
+            print("\n1. Stamping database to base revision (001)...")
+            print("   ⚠️  WARNING: This resets migration state but does NOT delete tables!")
+            command.stamp(alembic_cfg, "001")
+            print("   ✓ Stamped to 001")
+        except Exception as e:
+            print(f"   ❌ Failed to stamp: {e}")
+            print("   Trying to upgrade from current revision instead...")
+            current_rev = None  # Fall through to upgrade
+    
+    if not current_rev or current_rev == "001":
         # Now upgrade to head
         print("\n2. Upgrading to head (applying all migrations)...")
-        command.upgrade(alembic_cfg, "head")
-        print("\n✅ All migrations applied successfully!")
+        try:
+            command.upgrade(alembic_cfg, "head")
+            print("\n✅ All migrations applied successfully!")
+        except Exception as e:
+            print(f"\n❌ Error applying migrations: {e}")
+            print("\nThis may happen if:")
+            print("  1. Tables from earlier migrations are missing")
+            print("  2. Migration dependencies are broken")
+            print("\nTry:")
+            print("  1. Check database state: python backend/scripts/check_database_state.py")
+            print("  2. Restore missing tables: python backend/scripts/restore_after_clear.py")
+            raise
         
         # Verify tables
         print("\n3. Verifying tables...")
