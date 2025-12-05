@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Отчеты самоаудита - AARD{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 600;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .status-completed {
+        background-color: #28a745;
+        color: #fff;
+    }
+    .status-in_progress {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+    .status-pending {
+        background-color: #ffc107;
+        color: #000;
+    }
+    .status-failed {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    .audit-type-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        background-color: #667eea;
+        color: #fff;
+    }
+    .report-card {
+        transition: box-shadow 0.2s;
+        cursor: pointer;
+    }
+    .report-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>📋 Отчеты самоаудита</h1>
+        <div>
+            <a href="/metrics/project" class="btn btn-outline-primary">
+                <i class="bi bi-graph-up"></i> Метрики проекта
+            </a>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="/audit-reports" class="row g-3">
+                <div class="col-md-4">
+                    <label for="audit_type" class="form-label">Тип аудита</label>
+                    <select name="audit_type" id="audit_type" class="form-select">
+                        <option value="">Все типы</option>
+                        {% for audit_type in audit_types %}
+                        <option value="{{ audit_type }}" {% if selected_audit_type == audit_type %}selected{% endif %}>
+                            {{ audit_type|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Статус</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">Все статусы</option>
+                        {% for status in statuses %}
+                        <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>
+                            {{ status|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Применить фильтры
+                    </button>
+                    <a href="/audit-reports" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Сбросить
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Список отчетов -->
+    {% if reports %}
+    <div class="row">
+        {% for report in reports %}
+        <div class="col-md-6 mb-3">
+            <div class="card report-card" onclick="window.location.href='/audit-reports/{{ report.id }}'">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="audit-type-badge">{{ report.audit_type|title }}</span>
+                        <span class="status-badge status-{{ report.status }}">
+                            {{ report.status|title }}
+                        </span>
+                    </div>
+                    <small class="text-muted">
+                        {{ report.created_at[:10] }}
+                    </small>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title">Период: {{ report.period_start[:10] }} - {{ report.period_end[:10] }}</h6>
+                    {% if report.summary %}
+                    <p class="card-text text-muted" style="font-size: 0.9rem;">
+                        {{ report.summary[:200] }}{% if report.summary|length > 200 %}...{% endif %}
+                    </p>
+                    {% else %}
+                    <p class="card-text text-muted">Нет сводки</p>
+                    {% endif %}
+                    
+                    {% if report.findings %}
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Найдено проблем: {{ report.findings.all_findings|length if report.findings.all_findings else 0 }}
+                        </small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.recommendations %}
+                    <div class="mt-1">
+                        <small class="text-muted">
+                            <i class="bi bi-lightbulb"></i>
+                            Рекомендаций: {{ report.recommendations.count if report.recommendations.count else (report.recommendations.all_recommendations|length if report.recommendations.all_recommendations else 0) }}
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: #6c757d;"></i>
+            <p class="text-muted mt-3">Нет отчетов аудита</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

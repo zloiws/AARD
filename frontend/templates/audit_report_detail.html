@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Отчет самоаудита - AARD{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 600;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .status-completed {
+        background-color: #28a745;
+        color: #fff;
+    }
+    .status-in_progress {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+    .status-pending {
+        background-color: #ffc107;
+        color: #000;
+    }
+    .status-failed {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    .audit-type-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        background-color: #667eea;
+        color: #fff;
+    }
+    .priority-high {
+        color: #dc3545;
+        font-weight: 600;
+    }
+    .priority-medium {
+        color: #ffc107;
+        font-weight: 600;
+    }
+    .priority-low {
+        color: #28a745;
+        font-weight: 600;
+    }
+    .trend-improving {
+        color: #28a745;
+    }
+    .trend-degrading {
+        color: #dc3545;
+    }
+    .trend-stable {
+        color: #6c757d;
+    }
+    .finding-item {
+        padding: 12px;
+        border-left: 4px solid #dee2e6;
+        margin-bottom: 8px;
+        background-color: #f8f9fa;
+    }
+    .finding-item.severity-high {
+        border-left-color: #dc3545;
+    }
+    .finding-item.severity-medium {
+        border-left-color: #ffc107;
+    }
+    .finding-item.severity-low {
+        border-left-color: #28a745;
+    }
+    .recommendation-item {
+        padding: 12px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 8px;
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="/audit-reports" class="btn btn-outline-secondary mb-2">
+                <i class="bi bi-arrow-left"></i> Назад к списку
+            </a>
+            <h1>📋 Отчет самоаудита</h1>
+        </div>
+    </div>
+
+    <!-- Заголовок отчета -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="audit-type-badge">{{ report.audit_type|title }}</span>
+                    <span class="status-badge status-{{ report.status }}">
+                        {{ report.status|title }}
+                    </span>
+                </div>
+                <small class="text-muted">
+                    Создан: {{ report.created_at[:19]|replace('T', ' ') }}
+                    {% if report.completed_at %}
+                    | Завершен: {{ report.completed_at[:19]|replace('T', ' ') }}
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        <div class="card-body">
+            <h5>Период аудита</h5>
+            <p class="text-muted">
+                {{ report.period_start[:19]|replace('T', ' ') }} - {{ report.period_end[:19]|replace('T', ' ') }}
+            </p>
+            
+            {% if report.summary %}
+            <h5 class="mt-4">Сводка</h5>
+            <div class="alert alert-info">
+                {{ report.summary|replace('\n', '<br>')|safe }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Тренды -->
+    {% if report.trends and report.trends.trend_analysis %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Анализ трендов</h5>
+        </div>
+        <div class="card-body">
+            {% set trend = report.trends.trend_analysis %}
+            {% if trend.status == "analyzed" %}
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Направление:</strong> 
+                        <span class="trend-{{ trend.trend_direction }}">
+                            {{ trend.trend_direction|title }}
+                        </span>
+                    </p>
+                    <p><strong>Серьезность:</strong> {{ trend.trend_severity|title }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Изменение:</strong> {{ "%.1f"|format(trend.change_percent) }}%</p>
+                    <p><strong>Среднее (текущее):</strong> {{ "%.2f"|format(trend.recent_average) }}</p>
+                    <p><strong>Среднее (предыдущее):</strong> {{ "%.2f"|format(trend.previous_average) }}</p>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">{{ trend.message if trend.message else "Недостаточно данных для анализа" }}</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Улучшения и деградации -->
+    {% if report.trends and report.trends.improvements_degradations %}
+    <div class="row mb-4">
+        {% set imp_deg = report.trends.improvements_degradations %}
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Улучшения ({{ imp_deg.improvements|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if imp_deg.improvements %}
+                    {% for improvement in imp_deg.improvements %}
+                    <div class="alert alert-success">
+                        <strong>{{ improvement.metric|title }}:</strong> {{ improvement.message }}
+                        <br><small>Изменение: {{ "%.1f"|format(improvement.change_percent) }}%</small>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">Нет улучшений</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Деградации ({{ imp_deg.degradations|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if imp_deg.degradations %}
+                    {% for degradation in imp_deg.degradations %}
+                    <div class="alert alert-danger">
+                        <strong>{{ degradation.metric|title }}:</strong> {{ degradation.message }}
+                        <br><small>Изменение: {{ "%.1f"|format(degradation.change_percent) }}%</small>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">Нет деградаций</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Находки -->
+    {% if report.findings %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Находки ({{ report.findings.all_findings|length if report.findings.all_findings else 0 }})</h5>
+        </div>
+        <div class="card-body">
+            {% if report.findings.all_findings %}
+            {% for finding in report.findings.all_findings %}
+            <div class="finding-item severity-{{ finding.severity|default('low') }}">
+                <div class="d-flex justify-content-between">
+                    <strong>{{ finding.type|title if finding.type else "Находка" }}</strong>
+                    <span class="badge bg-{{ 'danger' if finding.severity == 'high' else ('warning' if finding.severity == 'medium' else 'success') }}">
+                        {{ finding.severity|title if finding.severity else "Low" }}
+                    </span>
+                </div>
+                <p class="mb-0 mt-2">{{ finding.message if finding.message else "Нет описания" }}</p>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted">Нет находок</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Рекомендации -->
+    {% if report.recommendations %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Рекомендации ({{ report.recommendations.count if report.recommendations.count else (report.recommendations.all_recommendations|length if report.recommendations.all_recommendations else 0) }})</h5>
+        </div>
+        <div class="card-body">
+            {% set recommendations = report.recommendations.all_recommendations if report.recommendations.all_recommendations else [] %}
+            {% if recommendations %}
+            {% for rec in recommendations %}
+            <div class="recommendation-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="priority-{{ rec.priority|default('low') }}">
+                            {{ rec.action if rec.action else "Рекомендация" }}
+                        </h6>
+                        {% if rec.details %}
+                        <p class="mb-1">{{ rec.details }}</p>
+                        {% endif %}
+                        {% if rec.reasoning %}
+                        <small class="text-muted">{{ rec.reasoning }}</small>
+                        {% endif %}
+                    </div>
+                    <span class="badge bg-{{ 'danger' if rec.priority == 'high' else ('warning' if rec.priority == 'medium' else 'success') }}">
+                        {{ rec.priority|title if rec.priority else "Low" }}
+                    </span>
+                </div>
+                {% if rec.category %}
+                <small class="text-muted">Категория: {{ rec.category|title }}</small>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted">Нет рекомендаций</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Метрики -->
+    {% if report.metrics %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Метрики</h5>
+        </div>
+        <div class="card-body">
+            <pre style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">{{ report.metrics|tojson(indent=2) }}</pre>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
