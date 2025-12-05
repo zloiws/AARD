@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
 from app.models.prompt import Prompt, PromptType, PromptStatus
+from app.services.project_metrics_service import ProjectMetricsService
 from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
@@ -18,6 +19,7 @@ class PromptService:
     
     def __init__(self, db: Session):
         self.db = db
+        self.metrics_service = ProjectMetricsService(db)
     
     def create_prompt(
         self,
@@ -386,6 +388,37 @@ class PromptService:
                 }
             )
             
+            # Record project metrics for prompt usage
+            try:
+                from datetime import timedelta
+                from app.models.project_metric import MetricType, MetricPeriod
+                
+                now = datetime.utcnow()
+                # Round to hour for consistent period boundaries
+                period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
+                period_end = now.replace(minute=0, second=0, microsecond=0)
+                
+                if execution_time_ms is not None:
+                    self.metrics_service.record_metric(
+                        metric_type=MetricType.EXECUTION_TIME,
+                        metric_name="prompt_execution_time",
+                        value=execution_time_ms / 1000.0,  # Convert to seconds
+                        period=MetricPeriod.HOUR,
+                        period_start=period_start,
+                        period_end=period_end,
+                        count=1,
+                        min_value=execution_time_ms / 1000.0,
+                        max_value=execution_time_ms / 1000.0,
+                        sum_value=execution_time_ms / 1000.0,
+                        metric_metadata={
+                            "prompt_id": str(prompt_id),
+                            "prompt_name": prompt.name,
+                            "prompt_type": prompt.prompt_type
+                        }
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to record prompt usage metrics: {e}", exc_info=True)
+            
             return prompt
         except Exception as e:
             self.db.rollback()
@@ -427,6 +460,8 @@ class PromptService:
         Returns:
             Updated Prompt object or None if not found
         """
+        from datetime import datetime
+        
         prompt = self.get_prompt(prompt_id)
         if not prompt:
             return None
@@ -478,6 +513,36 @@ class PromptService:
                     "success_rate": prompt.success_rate
                 }
             )
+            
+            # Record project metrics for prompt success/failure
+            try:
+                from datetime import timedelta
+                from app.models.project_metric import MetricType, MetricPeriod
+                
+                now = datetime.utcnow()
+                # Round to hour for consistent period boundaries
+                period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
+                period_end = now.replace(minute=0, second=0, microsecond=0)
+                
+                # Record success rate
+                if prompt.success_rate is not None:
+                    self.metrics_service.record_metric(
+                        metric_type=MetricType.TASK_SUCCESS,
+                        metric_name="prompt_success_rate",
+                        value=prompt.success_rate,
+                        period=MetricPeriod.HOUR,
+                        period_start=period_start,
+                        period_end=period_end,
+                        count=1,
+                        metric_metadata={
+                            "prompt_id": str(prompt_id),
+                            "prompt_name": prompt.name,
+                            "prompt_type": prompt.prompt_type,
+                            "success": success
+                        }
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to record prompt result metrics: {e}", exc_info=True)
             
             return prompt
         except Exception as e:

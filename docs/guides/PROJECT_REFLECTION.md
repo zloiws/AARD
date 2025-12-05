@@ -142,9 +142,79 @@ comparison = service.compare_periods(
   - Тесты получения трендов
   - Тесты сравнения периодов
 
+## Этап 3.1.2: Сбор метрик в реальном времени
+
+### Интеграция с сервисами
+
+Метрики проекта автоматически собираются в следующих сервисах:
+
+#### PlanningService
+
+Метрики собираются при:
+- **Анализе задачи** (`_analyze_task`): время анализа задачи
+- **Декомпозиции задачи** (`_decompose_task`): время декомпозиции и количество шагов
+
+**Собираемые метрики:**
+- `task_analysis_time`: время анализа задачи (секунды)
+- `task_decomposition_time`: время декомпозиции задачи (секунды)
+
+#### ExecutionService
+
+Метрики собираются при:
+- **Выполнении шага** (`execute_step`): время выполнения каждого шага
+- **Выполнении плана** (`execute_plan`): общее время выполнения и успешность
+
+**Собираемые метрики:**
+- `step_execution_time`: время выполнения шага (секунды)
+- `plan_execution_time`: время выполнения плана (секунды)
+- `plan_execution_success`: успешность выполнения плана (1.0 = успех, 0.0 = провал)
+
+#### PromptService
+
+Метрики собираются при:
+- **Использовании промпта** (`record_usage`): время выполнения
+- **Успешном использовании** (`record_success`): успешность промпта
+- **Неудачном использовании** (`record_failure`): успешность промпта
+
+**Собираемые метрики:**
+- `prompt_execution_time`: время выполнения промпта (секунды)
+- `prompt_success_rate`: процент успешных использований промпта
+
+### Агрегация метрик
+
+Метрики автоматически агрегируются по периодам:
+- **HOUR**: Агрегация по часам
+- **DAY**: Агрегация по дням
+- **WEEK**: Агрегация по неделям
+- **MONTH**: Агрегация по месяцам
+
+Периоды округляются до границ (например, час начинается с :00:00), что обеспечивает консистентную агрегацию.
+
+### Примеры использования
+
+```python
+from app.services.project_metrics_service import ProjectMetricsService
+from app.core.database import SessionLocal
+from datetime import datetime, timedelta
+
+db = SessionLocal()
+service = ProjectMetricsService(db)
+
+# Метрики автоматически собираются при работе сервисов
+# Например, при использовании PlanningService:
+from app.services.planning_service import PlanningService
+
+planning_service = PlanningService(db)
+# При вызове create_plan метрики автоматически записываются
+
+# Получить собранные метрики
+overview = service.get_overview(days=7)
+print(f"Success rate: {overview['performance']['success_rate']}")
+print(f"Avg execution time: {overview['performance']['avg_execution_time']}")
+```
+
 ## Дальнейшее развитие
 
-- **Этап 3.1.2**: Интеграция сбора метрик в реальном времени в PlanningService, ExecutionService, PromptService
 - **Этап 3.1.3**: API endpoints для метрик проекта
 - **Этап 3.2**: Регулярный самоаудит с автоматическими рекомендациями
 - **Этап 3.3**: Dashboard для визуализации метрик

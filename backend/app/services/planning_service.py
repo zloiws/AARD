@@ -15,6 +15,7 @@ from app.core.ollama_client import OllamaClient, TaskType
 from app.services.ollama_service import OllamaService
 from app.services.approval_service import ApprovalService
 from app.services.prompt_service import PromptService
+from app.services.project_metrics_service import ProjectMetricsService
 from app.models.approval import ApprovalRequestType
 from app.models.prompt import PromptType
 from app.core.tracing import get_tracer, add_span_attributes, get_current_trace_id
@@ -32,6 +33,7 @@ class PlanningService:
         self.workflow_id = None  # Track workflow ID for real-time display
         self.workflow_tracker = None  # WorkflowTracker instance for real-time events
         self.prompt_service = PromptService(db)  # Prompt management service
+        self.metrics_service = ProjectMetricsService(db)  # Project metrics service
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
     
@@ -1036,6 +1038,33 @@ Return a JSON array of steps."""
             strategy.setdefault("constraints", [])
             strategy.setdefault("success_criteria", [])
             
+            # Record metrics for task analysis
+            try:
+                from datetime import timedelta
+                from app.models.project_metric import MetricType, MetricPeriod
+                
+                now = datetime.utcnow()
+                # Round to hour for consistent period boundaries
+                period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
+                period_end = now.replace(minute=0, second=0, microsecond=0)
+                
+                self.metrics_service.record_metric(
+                    metric_type=MetricType.PERFORMANCE,
+                    metric_name="task_analysis_time",
+                    value=duration_ms / 1000.0,  # Convert to seconds
+                    period=MetricPeriod.HOUR,
+                    period_start=period_start,
+                    period_end=period_end,
+                    count=1,
+                    min_value=duration_ms / 1000.0,
+                    max_value=duration_ms / 1000.0,
+                    sum_value=duration_ms / 1000.0
+                )
+            except Exception as e:
+                logger = self._get_logger()
+                if logger:
+                    logger.warning(f"Failed to record task analysis metrics: {e}", exc_info=True)
+            
             # Log parsed strategy
             self._add_model_log(
                 log_type="action_progress",
@@ -1346,6 +1375,34 @@ Break down this task into executable steps. Return only a valid JSON array."""
                         "parsed_steps": parsed_response if steps_count > 0 else None
                     }
                 )
+                
+                # Record metrics for task decomposition
+                try:
+                    from datetime import timedelta
+                    from app.models.project_metric import MetricType, MetricPeriod
+                    
+                    now = datetime.utcnow()
+                    # Round to hour for consistent period boundaries
+                    period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
+                    period_end = now.replace(minute=0, second=0, microsecond=0)
+                    
+                    self.metrics_service.record_metric(
+                        metric_type=MetricType.PERFORMANCE,
+                        metric_name="task_decomposition_time",
+                        value=duration_ms / 1000.0,  # Convert to seconds
+                        period=MetricPeriod.HOUR,
+                        period_start=period_start,
+                        period_end=period_end,
+                        count=1,
+                        min_value=duration_ms / 1000.0,
+                        max_value=duration_ms / 1000.0,
+                        sum_value=duration_ms / 1000.0,
+                        metric_metadata={"steps_count": steps_count}
+                    )
+                except Exception as e:
+                    logger = self._get_logger()
+                    if logger:
+                        logger.warning(f"Failed to record task decomposition metrics: {e}", exc_info=True)
                 
                 # Add workflow event for decomposition response
                 if self.workflow_tracker and self.workflow_id:

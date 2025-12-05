@@ -24,6 +24,7 @@ from app.services.ollama_service import OllamaService
 from app.services.checkpoint_service import CheckpointService
 from app.services.agent_service import AgentService
 from app.services.tool_service import ToolService
+from app.services.project_metrics_service import ProjectMetricsService
 from app.agents.simple_agent import SimpleAgent
 from app.tools.python_tool import PythonTool
 from app.core.execution_error_types import (
@@ -141,6 +142,36 @@ class StepExecutor:
             plan_step_duration_seconds.labels(
                 step_type=step_type
             ).observe(step_duration)
+            
+            # Record project metrics for step execution
+            try:
+                from datetime import datetime, timedelta
+                from app.models.project_metric import MetricType, MetricPeriod
+                
+                now = datetime.utcnow()
+                # Round to hour for consistent period boundaries
+                period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
+                period_end = now.replace(minute=0, second=0, microsecond=0)
+                
+                self.metrics_service.record_metric(
+                    metric_type=MetricType.EXECUTION_TIME,
+                    metric_name="step_execution_time",
+                    value=step_duration,
+                    period=MetricPeriod.HOUR,
+                    period_start=period_start,
+                    period_end=period_end,
+                    count=1,
+                    min_value=step_duration,
+                    max_value=step_duration,
+                    sum_value=step_duration,
+                    metric_metadata={
+                        "step_type": step_type,
+                        "status": step_status,
+                        "plan_id": str(plan.id)
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Failed to record step execution metrics: {e}", exc_info=True)
             
         except Exception as e:
             logger.error(
@@ -625,6 +656,7 @@ class ExecutionService:
         self.step_executor = StepExecutor(db)
         self.checkpoint_service = CheckpointService(db)
         self.error_detector = ExecutionErrorDetector()
+        self.metrics_service = ProjectMetricsService(db)
     
     def _is_critical_error(
         self,
@@ -1030,6 +1062,54 @@ class ExecutionService:
             )
         except Exception as e:
             logger.warning(f"Failed to track plan execution: {e}", exc_info=True)
+        
+        # Record project metrics for plan execution
+        try:
+            from datetime import timedelta
+            from app.models.project_metric import MetricType, MetricPeriod
+            
+            now = datetime.utcnow()
+            # Round to hour for consistent period boundaries
+            period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
+            period_end = now.replace(minute=0, second=0, microsecond=0)
+            
+            # Record execution time
+            if plan.actual_duration:
+                self.metrics_service.record_metric(
+                    metric_type=MetricType.EXECUTION_TIME,
+                    metric_name="plan_execution_time",
+                    value=plan.actual_duration,
+                    period=MetricPeriod.HOUR,
+                    period_start=period_start,
+                    period_end=period_end,
+                    count=1,
+                    min_value=plan.actual_duration,
+                    max_value=plan.actual_duration,
+                    sum_value=plan.actual_duration,
+                    metric_metadata={
+                        "plan_id": str(plan.id),
+                        "status": plan.status,
+                        "steps_count": len(steps) if steps else 0
+                    }
+                )
+            
+            # Record success/failure
+            success_value = 1.0 if plan.status == "completed" else 0.0
+            self.metrics_service.record_metric(
+                metric_type=MetricType.TASK_SUCCESS,
+                metric_name="plan_execution_success",
+                value=success_value,
+                period=MetricPeriod.HOUR,
+                period_start=period_start,
+                period_end=period_end,
+                count=1,
+                metric_metadata={
+                    "plan_id": str(plan.id),
+                    "status": plan.status
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to record plan execution metrics: {e}", exc_info=True)
         
         return plan
     
