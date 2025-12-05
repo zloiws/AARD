@@ -36,6 +36,21 @@ class ModelSelector:
         """
         self.db = db or SessionLocal()
     
+    def _filter_embedding_models(self, models: List[OllamaModel]) -> List[OllamaModel]:
+        """
+        Filter out embedding models (they don't support chat API)
+        
+        Args:
+            models: List of OllamaModel instances
+            
+        Returns:
+            Filtered list without embedding models
+        """
+        return [
+            m for m in models 
+            if m.model_name and not ("embedding" in m.model_name.lower() or "embed" in m.model_name.lower())
+        ]
+    
     def get_planning_model(
         self,
         server: Optional[OllamaServer] = None
@@ -70,6 +85,12 @@ class ModelSelector:
             
             if not models:
                 logger.warning(f"No models found for server {server.name if server else 'unknown'}")
+                return None
+            
+            # Filter out embedding models (they don't support chat API)
+            models = self._filter_embedding_models(models)
+            if not models:
+                logger.warning("No non-embedding models found for planning")
                 return None
             
             # First, try to find model with "planning" capability
@@ -141,6 +162,12 @@ class ModelSelector:
                 logger.warning(f"No models found for server {server.name if server else 'unknown'}")
                 return None
             
+            # Filter out embedding models (they don't support chat API)
+            models = self._filter_embedding_models(models)
+            if not models:
+                logger.warning("No non-embedding models found for code generation")
+                return None
+            
             # First, try to find model with code generation capabilities
             for capability in ["code_generation", "code_analysis", "code"]:
                 for model in models:
@@ -207,6 +234,12 @@ class ModelSelector:
             
             if not models:
                 logger.warning(f"No models found for server {server.name if server else 'unknown'}")
+                return None
+            
+            # Filter out embedding models (they don't support chat API)
+            models = self._filter_embedding_models(models)
+            if not models:
+                logger.warning("No non-embedding models found")
                 return None
             
             capability_lower = capability.lower()
