@@ -20,6 +20,7 @@ from app.models.task_queue import TaskQueue, QueueTask  # noqa: F401
 from app.models.checkpoint import Checkpoint  # noqa: F401
 from app.models.agent import Agent, AgentStatus, AgentHealthStatus, AgentCapability
 from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus, agent_team_association  # noqa: F401
+from app.models.agent_conversation import AgentConversation, ConversationStatus, MessageRole  # noqa: F401
 from app.models.agent_experiment import AgentExperiment, ExperimentResult  # noqa: F401
 from app.models.agent_test import (  # noqa: F401
     AgentTest, AgentTestRun, AgentBenchmark, AgentBenchmarkRun,
@@ -94,6 +95,10 @@ __all__ = [
     "CoordinationStrategy",
     "TeamStatus",
     "agent_team_association",
+    # Agent Conversations
+    "AgentConversation",
+    "ConversationStatus",
+    "MessageRole",
     # Agent Experiments
     "AgentExperiment",
     "ExperimentResult",
