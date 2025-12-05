@@ -535,12 +535,26 @@ class SelfAuditService:
             if audit_type in [AuditType.ERRORS, AuditType.FULL]:
                 audit_results["errors"] = await self.audit_errors(period_start, period_end)
             
-            # Get trends
+            # Get trends data
             from app.models.project_metric import MetricPeriod
-            trends = self.metrics_service.get_trends(
+            trends_data = self.metrics_service.get_trends(
                 metric_name="task_success_rate",
                 days=int((period_end - period_start).total_seconds() / 86400),
                 period=MetricPeriod.DAY
+            )
+            
+            # Analyze trends
+            trends_analysis = self.analyze_trends(
+                metric_name="task_success_rate",
+                days=int((period_end - period_start).total_seconds() / 86400),
+                period_days=7
+            )
+            
+            # Detect improvements/degradations
+            improvements_degradations = self.detect_improvements_degradations(
+                period_start=period_start,
+                period_end=period_end,
+                comparison_period_days=7
             )
             
             # Generate summary
@@ -553,24 +567,56 @@ class SelfAuditService:
                 if "recommendations" in results:
                     all_recommendations.extend(results["recommendations"])
             
+            # Generate smart recommendations
+            smart_recommendations = self.generate_smart_recommendations(
+                audit_results=audit_results,
+                trends=trends_analysis,
+                improvements_degradations=improvements_degradations
+            )
+            
+            # Merge recommendations
+            all_recommendations.extend(smart_recommendations)
+            
+            # Remove duplicates
+            seen_actions = set()
+            unique_recommendations = []
+            for rec in all_recommendations:
+                action = rec.get("action", "")
+                if action not in seen_actions:
+                    seen_actions.add(action)
+                    unique_recommendations.append(rec)
+            
             # Use LLM for summary if requested
             summary = None
             if use_llm and all_findings:
                 try:
-                    summary = await self._generate_llm_summary(audit_results, all_findings, all_recommendations)
+                    summary = await self._generate_llm_summary(audit_results, all_findings, unique_recommendations)
                 except Exception as e:
                     logger.warning(f"Failed to generate LLM summary: {e}", exc_info=True)
-                    summary = self._generate_text_summary(all_findings, all_recommendations)
+                    summary = self._generate_text_summary(all_findings, unique_recommendations)
             else:
-                summary = self._generate_text_summary(all_findings, all_recommendations)
+                summary = self._generate_text_summary(all_findings, unique_recommendations)
+            
+            # Add trend info to summary
+            if trends_analysis.get("status") == "analyzed":
+                trend_info = f"\n\nTrend: {trends_analysis.get('trend_direction', 'unknown')} ({trends_analysis.get('change_percent', 0):.1f}% change)"
+                summary = (summary or "") + trend_info
             
             # Update report
             report.status = AuditStatus.COMPLETED
             report.summary = summary
             report.findings = {"sections": audit_results, "all_findings": all_findings}
-            report.recommendations = {"all_recommendations": all_recommendations}
+            report.recommendations = {
+                "all_recommendations": unique_recommendations,
+                "smart_recommendations": smart_recommendations,
+                "count": len(unique_recommendations)
+            }
             report.metrics = {section: results.get("metrics", {}) for section, results in audit_results.items()}
-            report.trends = trends
+            report.trends = {
+                "trends_data": trends_data,
+                "trend_analysis": trends_analysis,
+                "improvements_degradations": improvements_degradations
+            }
             report.completed_at = datetime.utcnow()
             
             self.db.commit()
@@ -652,4 +698,549 @@ Return only the summary text, no additional formatting."""
                     if value is not None:
                         lines.append(f"  {key}: {value}")
         return "\n".join(lines)
+    
+    def analyze_trends(
+        self,
+        metric_name: str,
+        days: int = 30,
+        period_days: int = 7
+    ) -> Dict[str, Any]:
+        """
+        Analyze trends for a specific metric
+        
+        Args:
+            metric_name: Name of the metric to analyze
+            days: Number of days to look back
+            period_days: Period for comparison (e.g., compare last 7 days with previous 7 days)
+            
+        Returns:
+            Trend analysis results
+        """
+        try:
+            from app.models.project_metric import MetricPeriod
+            
+            # Get trends data
+            trends = self.metrics_service.get_trends(
+                metric_name=metric_name,
+                days=days,
+                period=MetricPeriod.DAY
+            )
+            
+            if len(trends) < 2:
+                return {
+                    "metric_name": metric_name,
+                    "status": "insufficient_data",
+                    "message": "Not enough data points for trend analysis",
+                    "data_points": len(trends)
+                }
+            
+            # Extract values
+            values = [t.get("value", 0) for t in trends if t.get("value") is not None]
+            
+            if len(values) < 2:
+                return {
+                    "metric_name": metric_name,
+                    "status": "insufficient_data",
+                    "message": "Not enough valid values for trend analysis",
+                    "data_points": len(values)
+                }
+            
+            # Calculate trend direction
+            recent_values = values[-period_days:] if len(values) >= period_days else values[-len(values)//2:]
+            previous_values = values[-period_days*2:-period_days] if len(values) >= period_days*2 else values[:len(values)//2]
+            
+            recent_avg = sum(recent_values) / len(recent_values) if recent_values else 0
+            previous_avg = sum(previous_values) / len(previous_values) if previous_values else 0
+            
+            # Determine trend
+            change = recent_avg - previous_avg
+            change_percent = (change / previous_avg * 100) if previous_avg > 0 else 0
+            
+            # Calculate slope (simple linear regression)
+            n = len(values)
+            x_mean = (n - 1) / 2
+            y_mean = sum(values) / n
+            
+            numerator = sum((i - x_mean) * (values[i] - y_mean) for i in range(n))
+            denominator = sum((i - x_mean) ** 2 for i in range(n))
+            
+            slope = numerator / denominator if denominator > 0 else 0
+            
+            # Classify trend
+            if abs(change_percent) < 5:
+                trend_direction = "stable"
+                trend_severity = "none"
+            elif change_percent > 20:
+                trend_direction = "improving"
+                trend_severity = "significant"
+            elif change_percent > 10:
+                trend_direction = "improving"
+                trend_severity = "moderate"
+            elif change_percent > 5:
+                trend_direction = "improving"
+                trend_severity = "minor"
+            elif change_percent < -20:
+                trend_direction = "degrading"
+                trend_severity = "significant"
+            elif change_percent < -10:
+                trend_direction = "degrading"
+                trend_severity = "moderate"
+            else:
+                trend_direction = "degrading"
+                trend_severity = "minor"
+            
+            return {
+                "metric_name": metric_name,
+                "status": "analyzed",
+                "trend_direction": trend_direction,
+                "trend_severity": trend_severity,
+                "change_absolute": change,
+                "change_percent": change_percent,
+                "recent_average": recent_avg,
+                "previous_average": previous_avg,
+                "slope": slope,
+                "data_points": len(values),
+                "period_days": period_days
+            }
+        except Exception as e:
+            logger.error(f"Error analyzing trends: {e}", exc_info=True)
+            return {
+                "metric_name": metric_name,
+                "status": "error",
+                "error": str(e)
+            }
+    
+    def detect_improvements_degradations(
+        self,
+        period_start: datetime,
+        period_end: datetime,
+        comparison_period_days: int = 7
+    ) -> Dict[str, Any]:
+        """
+        Detect improvements and degradations by comparing periods
+        
+        Args:
+            period_start: Start of current period
+            period_end: End of current period
+            comparison_period_days: Days to compare against (previous period)
+            
+        Returns:
+            Dictionary with improvements and degradations
+        """
+        try:
+            # Calculate comparison period
+            period_duration = (period_end - period_start).total_seconds() / 86400
+            comparison_period_end = period_start
+            comparison_period_start = comparison_period_end - timedelta(days=comparison_period_days)
+            
+            # Get metrics for both periods
+            current_metrics = self.metrics_service.get_overview(
+                days=int(period_duration)
+            )
+            previous_metrics = self.metrics_service.get_overview(
+                days=comparison_period_days
+            )
+            
+            improvements = []
+            degradations = []
+            
+            # Compare key metrics
+            if current_metrics and previous_metrics:
+                perf_current = current_metrics.get("performance", {})
+                perf_previous = previous_metrics.get("performance", {})
+                
+                # Success rate
+                current_sr = perf_current.get("success_rate")
+                previous_sr = perf_previous.get("success_rate")
+                if current_sr is not None and previous_sr is not None and current_sr > 0 and previous_sr > 0:
+                    change = current_sr - previous_sr
+                    if change > 0.05:  # 5% improvement
+                        improvements.append({
+                            "metric": "success_rate",
+                            "change": change,
+                            "change_percent": (change / previous_sr * 100),
+                            "current": current_sr,
+                            "previous": previous_sr,
+                            "message": f"Success rate improved by {change:.2%}"
+                        })
+                    elif change < -0.05:  # 5% degradation
+                        degradations.append({
+                            "metric": "success_rate",
+                            "change": change,
+                            "change_percent": (change / previous_sr * 100),
+                            "current": current_sr,
+                            "previous": previous_sr,
+                            "message": f"Success rate degraded by {abs(change):.2%}"
+                        })
+                
+                # Execution time
+                current_et = perf_current.get("avg_execution_time")
+                previous_et = perf_previous.get("avg_execution_time")
+                if current_et is not None and previous_et is not None and current_et > 0 and previous_et > 0:
+                    change = previous_et - current_et  # Negative is good (faster)
+                    change_percent = (change / previous_et * 100)
+                    if change > previous_et * 0.1:  # 10% faster
+                        improvements.append({
+                            "metric": "execution_time",
+                            "change": -change,  # Negative change means improvement
+                            "change_percent": change_percent,
+                            "current": current_et,
+                            "previous": previous_et,
+                            "message": f"Execution time improved by {change_percent:.1f}% (faster)"
+                        })
+                    elif change < -previous_et * 0.1:  # 10% slower
+                        degradations.append({
+                            "metric": "execution_time",
+                            "change": -change,
+                            "change_percent": abs(change_percent),
+                            "current": current_et,
+                            "previous": previous_et,
+                            "message": f"Execution time degraded by {abs(change_percent):.1f}% (slower)"
+                        })
+            
+            return {
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat(),
+                "comparison_period_start": comparison_period_start.isoformat(),
+                "comparison_period_end": comparison_period_end.isoformat(),
+                "improvements": improvements,
+                "degradations": degradations,
+                "summary": {
+                    "improvements_count": len(improvements),
+                    "degradations_count": len(degradations),
+                    "net_change": len(improvements) - len(degradations)
+                }
+            }
+        except Exception as e:
+            logger.error(f"Error detecting improvements/degradations: {e}", exc_info=True)
+            return {
+                "error": str(e),
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat()
+            }
+    
+    def generate_smart_recommendations(
+        self,
+        audit_results: Dict[str, Any],
+        trends: Dict[str, Any],
+        improvements_degradations: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate smart recommendations based on audit results, trends, and improvements/degradations
+        
+        Args:
+            audit_results: Results from audit methods
+            trends: Trend analysis results
+            improvements_degradations: Improvements and degradations detected
+            
+        Returns:
+            List of smart recommendations
+        """
+        recommendations = []
+        
+        try:
+            # Analyze trends for recommendations
+            if trends.get("status") == "analyzed":
+                trend_direction = trends.get("trend_direction")
+                trend_severity = trends.get("trend_severity")
+                change_percent = trends.get("change_percent", 0)
+                
+                if trend_direction == "degrading" and trend_severity in ["significant", "moderate"]:
+                    recommendations.append({
+                        "priority": "high" if trend_severity == "significant" else "medium",
+                        "category": "trend",
+                        "action": f"Address degrading trend in {trends.get('metric_name')}",
+                        "details": f"Metric has degraded by {abs(change_percent):.1f}% over the period",
+                        "reasoning": f"Trend analysis shows {trend_severity} degradation",
+                        "source": "trend_analysis"
+                    })
+                elif trend_direction == "improving" and trend_severity == "significant":
+                    recommendations.append({
+                        "priority": "low",
+                        "category": "trend",
+                        "action": f"Maintain practices that improved {trends.get('metric_name')}",
+                        "details": f"Metric has improved by {change_percent:.1f}% over the period",
+                        "reasoning": f"Trend analysis shows significant improvement",
+                        "source": "trend_analysis"
+                    })
+            
+            # Analyze improvements/degradations
+            degradations = improvements_degradations.get("degradations", [])
+            for degradation in degradations:
+                metric = degradation.get("metric")
+                change_percent = abs(degradation.get("change_percent", 0))
+                
+                if metric == "success_rate":
+                    recommendations.append({
+                        "priority": "high",
+                        "category": "performance",
+                        "action": "Investigate and fix root causes of task failures",
+                        "details": f"Success rate decreased by {change_percent:.1f}%",
+                        "reasoning": "Task success rate degradation indicates systemic issues",
+                        "source": "period_comparison"
+                    })
+                elif metric == "execution_time":
+                    recommendations.append({
+                        "priority": "medium",
+                        "category": "performance",
+                        "action": "Optimize plan execution and reduce bottlenecks",
+                        "details": f"Execution time increased by {change_percent:.1f}%",
+                        "reasoning": "Slower execution times may indicate resource constraints or inefficient plans",
+                        "source": "period_comparison"
+                    })
+            
+            # Analyze audit findings for recommendations
+            for section, results in audit_results.items():
+                findings = results.get("findings", [])
+                for finding in findings:
+                    severity = finding.get("severity", "low")
+                    finding_type = finding.get("type")
+                    
+                    if severity == "high":
+                        if finding_type == "low_success_rate":
+                            recommendations.append({
+                                "priority": "high",
+                                "category": "quality",
+                                "action": "Conduct root cause analysis of task failures",
+                                "details": finding.get("message", ""),
+                                "reasoning": "High failure rate requires immediate attention",
+                                "source": "audit_findings"
+                            })
+                        elif finding_type == "task_failures":
+                            recommendations.append({
+                                "priority": "high",
+                                "category": "errors",
+                                "action": "Review error patterns and implement fixes",
+                                "details": finding.get("message", ""),
+                                "reasoning": "Multiple task failures indicate systemic issues",
+                                "source": "audit_findings"
+                            })
+            
+            # Remove duplicates (same action)
+            seen_actions = set()
+            unique_recommendations = []
+            for rec in recommendations:
+                action_key = rec.get("action", "")
+                if action_key not in seen_actions:
+                    seen_actions.add(action_key)
+                    unique_recommendations.append(rec)
+            
+            # Sort by priority
+            priority_order = {"high": 0, "medium": 1, "low": 2}
+            unique_recommendations.sort(key=lambda x: priority_order.get(x.get("priority", "low"), 2))
+            
+            return unique_recommendations
+            
+        except Exception as e:
+            logger.error(f"Error generating smart recommendations: {e}", exc_info=True)
+            return []
+    
+    async def analyze_trends_with_llm(
+        self,
+        trends_data: Dict[str, Any],
+        audit_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Deep analysis of trends using LLM (stub - requires internet)
+        
+        Args:
+            trends_data: Trend analysis results
+            audit_results: Audit results for context
+            
+        Returns:
+            Enhanced analysis with LLM insights (or fallback if LLM unavailable)
+        """
+        try:
+            from app.core.ollama_client import OllamaClient
+            
+            # Check if LLM is available (stub - will fail gracefully if not)
+            client = OllamaClient()
+            
+            prompt = f"""Analyze the following trend data and provide insights:
+
+Trend Analysis:
+{self._format_trends_for_llm(trends_data)}
+
+Audit Context:
+{self._format_metrics_for_llm(audit_results)}
+
+Provide:
+1. Key insights about the trends
+2. Potential root causes
+3. Actionable recommendations
+4. Risk assessment
+
+Return JSON with: insights, root_causes, recommendations, risk_level"""
+            
+            response = await client.generate(
+                prompt=prompt,
+                task_type="reasoning"
+            )
+            
+            # Try to parse JSON response
+            import json
+            try:
+                llm_analysis = json.loads(response.response)
+                return {
+                    "llm_available": True,
+                    "analysis": llm_analysis,
+                    "raw_response": response.response
+                }
+            except json.JSONDecodeError:
+                return {
+                    "llm_available": True,
+                    "analysis": {"insights": response.response},
+                    "raw_response": response.response
+                }
+        except Exception as e:
+            logger.warning(f"LLM trend analysis unavailable: {e}. Using fallback analysis.")
+            return {
+                "llm_available": False,
+                "fallback_analysis": {
+                    "insights": self._generate_fallback_insights(trends_data),
+                    "message": "LLM analysis unavailable, using rule-based analysis"
+                },
+                "error": str(e)
+            }
+    
+    def _format_trends_for_llm(self, trends_data: Dict[str, Any]) -> str:
+        """Format trends data for LLM prompt"""
+        lines = []
+        if trends_data.get("status") == "analyzed":
+            lines.append(f"Metric: {trends_data.get('metric_name')}")
+            lines.append(f"Trend: {trends_data.get('trend_direction')} ({trends_data.get('trend_severity')})")
+            lines.append(f"Change: {trends_data.get('change_percent', 0):.1f}%")
+            lines.append(f"Recent Average: {trends_data.get('recent_average', 0):.2f}")
+            lines.append(f"Previous Average: {trends_data.get('previous_average', 0):.2f}")
+        else:
+            lines.append(f"Status: {trends_data.get('status', 'unknown')}")
+            lines.append(f"Message: {trends_data.get('message', 'No data')}")
+        return "\n".join(lines)
+    
+    def _generate_fallback_insights(self, trends_data: Dict[str, Any]) -> str:
+        """Generate fallback insights without LLM"""
+        if trends_data.get("status") != "analyzed":
+            return "Insufficient data for trend analysis."
+        
+        trend_direction = trends_data.get("trend_direction", "unknown")
+        change_percent = trends_data.get("change_percent", 0)
+        
+        if trend_direction == "improving":
+            return f"Metric shows improvement trend ({change_percent:.1f}% increase). Continue current practices."
+        elif trend_direction == "degrading":
+            return f"Metric shows degradation trend ({abs(change_percent):.1f}% decrease). Investigation recommended."
+        else:
+            return f"Metric is stable ({abs(change_percent):.1f}% change). No significant trend detected."
+    
+    async def generate_enhanced_report(
+        self,
+        audit_type: AuditType,
+        period_start: datetime,
+        period_end: datetime,
+        use_llm: bool = False
+    ) -> AuditReport:
+        """
+        Generate enhanced audit report with trend analysis and smart recommendations
+        
+        Args:
+            audit_type: Type of audit
+            period_start: Start of audit period
+            period_end: End of audit period
+            use_llm: Whether to use LLM for deep analysis (stub if unavailable)
+            
+        Returns:
+            Enhanced AuditReport with trend analysis
+        """
+        # First generate base report
+        report = await self.generate_report(
+            audit_type=audit_type,
+            period_start=period_start,
+            period_end=period_end,
+            use_llm=False  # Don't use LLM for base report
+        )
+        
+        try:
+            # Analyze trends
+            trends_analysis = self.analyze_trends(
+                metric_name="task_success_rate",
+                days=int((period_end - period_start).total_seconds() / 86400),
+                period_days=7
+            )
+            
+            # Detect improvements/degradations
+            improvements_degradations = self.detect_improvements_degradations(
+                period_start=period_start,
+                period_end=period_end,
+                comparison_period_days=7
+            )
+            
+            # Generate smart recommendations
+            audit_results = report.findings.get("sections", {}) if report.findings else {}
+            smart_recommendations = self.generate_smart_recommendations(
+                audit_results=audit_results,
+                trends=trends_analysis,
+                improvements_degradations=improvements_degradations
+            )
+            
+            # Enhance with LLM analysis if requested and available
+            llm_analysis = None
+            if use_llm:
+                try:
+                    llm_analysis = await self.analyze_trends_with_llm(
+                        trends_data=trends_analysis,
+                        audit_results=audit_results
+                    )
+                except Exception as e:
+                    logger.warning(f"LLM analysis failed, using fallback: {e}")
+                    llm_analysis = {
+                        "llm_available": False,
+                        "fallback_analysis": self._generate_fallback_insights(trends_analysis),
+                        "error": str(e)
+                    }
+            
+            # Update report with enhanced data
+            if report.trends is None:
+                report.trends = {}
+            
+            report.trends.update({
+                "trend_analysis": trends_analysis,
+                "improvements_degradations": improvements_degradations,
+                "llm_analysis": llm_analysis
+            })
+            
+            # Merge smart recommendations with existing ones
+            existing_recommendations = report.recommendations.get("all_recommendations", []) if report.recommendations else []
+            all_recommendations = existing_recommendations + smart_recommendations
+            
+            # Remove duplicates
+            seen = set()
+            unique_recommendations = []
+            for rec in all_recommendations:
+                action = rec.get("action", "")
+                if action not in seen:
+                    seen.add(action)
+                    unique_recommendations.append(rec)
+            
+            report.recommendations = {
+                "all_recommendations": unique_recommendations,
+                "smart_recommendations": smart_recommendations,
+                "count": len(unique_recommendations)
+            }
+            
+            # Update summary with trend information
+            if trends_analysis.get("status") == "analyzed":
+                trend_info = f"\n\nTrend Analysis: {trends_analysis.get('trend_direction', 'unknown')} trend detected ({trends_analysis.get('change_percent', 0):.1f}% change)."
+                report.summary = (report.summary or "") + trend_info
+            
+            self.db.commit()
+            self.db.refresh(report)
+            
+            logger.info(f"Enhanced audit report {report.id} generated with trend analysis")
+            
+            return report
+            
+        except Exception as e:
+            logger.error(f"Error generating enhanced report: {e}", exc_info=True)
+            # Return base report even if enhancement fails
+            return report
 

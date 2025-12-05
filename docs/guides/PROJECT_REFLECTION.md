@@ -525,8 +525,88 @@ async def lifespan(app: FastAPI):
 - `schedule_type`: тип расписания (daily, weekly, monthly)
 - `scheduled_at`: время запуска по расписанию
 
+## Этап 3.2.3: Анализ трендов и рекомендации
+
+### Анализ трендов
+
+Реализован анализ трендов производительности на основе метрик проекта.
+
+#### Методы анализа
+
+**analyze_trends()** - Анализ трендов метрики
+- Определение направления тренда (improving, degrading, stable)
+- Оценка серьезности (significant, moderate, minor, none)
+- Расчет изменения в процентах
+- Линейная регрессия для определения наклона
+
+**detect_improvements_degradations()** - Сравнение периодов
+- Сравнение текущего периода с предыдущим
+- Выявление улучшений и деградаций
+- Пороговые значения для определения значимых изменений
+
+**generate_smart_recommendations()** - Умные рекомендации
+- Генерация рекомендаций на основе трендов
+- Приоритизация (high, medium, low)
+- Категоризация (performance, quality, errors, trend)
+- Удаление дубликатов
+
+#### LLM-анализ (заглушка)
+
+**analyze_trends_with_llm()** - Глубокий анализ через LLM
+- Использует LLM для глубокого анализа трендов
+- Генерация инсайтов и рекомендаций
+- Определение корневых причин
+- Оценка рисков
+
+**Заглушка**: Если LLM недоступен (нет интернета), используется fallback-анализ на основе правил.
+
+#### Улучшенные отчеты
+
+**generate_enhanced_report()** - Расширенный отчет
+- Базовый аудит + анализ трендов
+- Умные рекомендации
+- Сравнение периодов
+- Опциональный LLM-анализ
+
+### Пример использования
+
+```python
+from app.services.self_audit_service import SelfAuditService
+from app.models.audit_report import AuditType
+from datetime import datetime, timedelta
+
+service = SelfAuditService(db)
+
+# Анализ трендов
+trends = service.analyze_trends(
+    metric_name="task_success_rate",
+    days=30,
+    period_days=7
+)
+
+# Определение улучшений/деградаций
+improvements = service.detect_improvements_degradations(
+    period_start=datetime.utcnow() - timedelta(days=7),
+    period_end=datetime.utcnow(),
+    comparison_period_days=7
+)
+
+# Генерация расширенного отчета
+report = await service.generate_enhanced_report(
+    audit_type=AuditType.FULL,
+    period_start=datetime.utcnow() - timedelta(days=7),
+    period_end=datetime.utcnow(),
+    use_llm=False  # Использовать LLM если доступен
+)
+```
+
+### Интеграция с планировщиком
+
+Планировщик автоматически использует анализ трендов при генерации отчетов:
+- Ежедневные аудиты: базовый анализ трендов
+- Еженедельные/месячные: полный анализ с LLM (если доступен)
+
 ## Дальнейшее развитие
 
-- **Этап 3.2.3**: Анализ трендов и рекомендации
 - **Этап 3.3**: Dashboard для визуализации метрик
 
