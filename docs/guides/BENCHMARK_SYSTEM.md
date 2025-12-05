@@ -91,12 +91,19 @@ task = BenchmarkTask(
 Сервис для управления benchmark задачами.
 
 **Основные методы:**
+
+**Управление задачами:**
 - `load_tasks_from_file(file_path)` - загрузка задач из JSON файла
 - `import_task(task_data)` - импорт одной задачи в БД
 - `import_tasks_from_directory(directory)` - импорт всех задач из директории
 - `get_task_by_name(name)` - получение задачи по имени
 - `list_tasks(task_type, category, difficulty, limit)` - список задач с фильтрами
 - `get_task_count_by_type()` - количество задач по типам
+
+**Выполнение тестов:**
+- `run_benchmark(task_id, model_id, model_name, server_id, server_url, timeout)` - выполнение одной benchmark задачи
+- `run_suite(task_type, model_id, model_name, server_id, server_url, limit, timeout)` - запуск полного suite для модели
+- `compare_models(model_ids, task_type, limit)` - сравнение результатов разных моделей
 
 ## Начальный набор задач
 
