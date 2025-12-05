@@ -31,15 +31,22 @@ async def test_complete_dialog_cycle(db):
     agent1 = agent_service.create_agent(
         name=f"Dialog Agent 1 {uuid4()}",
         description="First agent in dialog",
-        capabilities=["planning", "reasoning"],
-        status=AgentStatus.ACTIVE.value
+        capabilities=["planning", "reasoning"]
     )
+    # Активировать агента
+    agent1.status = AgentStatus.ACTIVE.value
+    db.commit()
+    db.refresh(agent1)
+    
     agent2 = agent_service.create_agent(
         name=f"Dialog Agent 2 {uuid4()}",
         description="Second agent in dialog",
-        capabilities=["code_generation"],
-        status=AgentStatus.ACTIVE.value
+        capabilities=["code_generation"]
     )
+    # Активировать агента
+    agent2.status = AgentStatus.ACTIVE.value
+    db.commit()
+    db.refresh(agent2)
     
     # Создать сервис диалогов
     dialog_service = AgentDialogService(db)
@@ -158,14 +165,15 @@ async def test_dialog_with_task(db):
     
     # Создать агентов
     agent_service = AgentService(db)
-    agent1 = agent_service.create_agent(
-        name=f"Task Agent 1 {uuid4()}",
-        status=AgentStatus.ACTIVE.value
-    )
-    agent2 = agent_service.create_agent(
-        name=f"Task Agent 2 {uuid4()}",
-        status=AgentStatus.ACTIVE.value
-    )
+    agent1 = agent_service.create_agent(name=f"Task Agent 1 {uuid4()}")
+    agent1.status = AgentStatus.ACTIVE.value
+    db.commit()
+    db.refresh(agent1)
+    
+    agent2 = agent_service.create_agent(name=f"Task Agent 2 {uuid4()}")
+    agent2.status = AgentStatus.ACTIVE.value
+    db.commit()
+    db.refresh(agent2)
     
     # Создать диалог для задачи
     dialog_service = AgentDialogService(db)
@@ -187,14 +195,15 @@ async def test_dialog_with_task(db):
 async def test_dialog_pause_and_resume(db):
     """Тест паузы и возобновления диалога"""
     agent_service = AgentService(db)
-    agent1 = agent_service.create_agent(
-        name=f"Pause Agent 1 {uuid4()}",
-        status=AgentStatus.ACTIVE.value
-    )
-    agent2 = agent_service.create_agent(
-        name=f"Pause Agent 2 {uuid4()}",
-        status=AgentStatus.ACTIVE.value
-    )
+    agent1 = agent_service.create_agent(name=f"Pause Agent 1 {uuid4()}")
+    agent1.status = AgentStatus.ACTIVE.value
+    db.commit()
+    db.refresh(agent1)
+    
+    agent2 = agent_service.create_agent(name=f"Pause Agent 2 {uuid4()}")
+    agent2.status = AgentStatus.ACTIVE.value
+    db.commit()
+    db.refresh(agent2)
     
     dialog_service = AgentDialogService(db)
     conversation = dialog_service.create_conversation(
@@ -224,14 +233,15 @@ async def test_dialog_pause_and_resume(db):
 async def test_dialog_max_messages_completion(db):
     """Тест завершения диалога по достижению максимума сообщений"""
     agent_service = AgentService(db)
-    agent1 = agent_service.create_agent(
-        name=f"Max Agent 1 {uuid4()}",
-        status=AgentStatus.ACTIVE.value
-    )
-    agent2 = agent_service.create_agent(
-        name=f"Max Agent 2 {uuid4()}",
-        status=AgentStatus.ACTIVE.value
-    )
+    agent1 = agent_service.create_agent(name=f"Max Agent 1 {uuid4()}")
+    agent1.status = AgentStatus.ACTIVE.value
+    db.commit()
+    db.refresh(agent1)
+    
+    agent2 = agent_service.create_agent(name=f"Max Agent 2 {uuid4()}")
+    agent2.status = AgentStatus.ACTIVE.value
+    db.commit()
+    db.refresh(agent2)
     
     dialog_service = AgentDialogService(db)
     conversation = dialog_service.create_conversation(
@@ -263,10 +273,10 @@ async def test_dialog_multiple_agents(db):
     agent_service = AgentService(db)
     agents = []
     for i in range(3):
-        agent = agent_service.create_agent(
-            name=f"Multi Agent {i+1} {uuid4()}",
-            status=AgentStatus.ACTIVE.value
-        )
+        agent = agent_service.create_agent(name=f"Multi Agent {i+1} {uuid4()}")
+        agent.status = AgentStatus.ACTIVE.value
+        db.commit()
+        db.refresh(agent)
         agents.append(agent)
     
     dialog_service = AgentDialogService(db)
