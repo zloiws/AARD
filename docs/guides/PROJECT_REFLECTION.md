@@ -364,8 +364,89 @@ curl "http://localhost:8000/api/metrics/project/comparison?period1_start=2025-11
 curl "http://localhost:8000/api/metrics/project/metrics?metric_type=performance&limit=50"
 ```
 
+## Этап 3.2: Регулярный самоаудит
+
+### SelfAuditService
+
+Сервис для автоматического самоанализа проекта на всех уровнях.
+
+#### Методы аудита
+
+**audit_performance()** - Анализ производительности системы
+- Анализ успешности выполнения задач
+- Анализ времени выполнения планов
+- Выявление проблем производительности
+- Рекомендации по оптимизации
+
+**audit_quality()** - Анализ качества планов
+- Анализ успешности выполнения планов
+- Анализ сложности планов (количество шагов)
+- Анализ точности оценки длительности
+- Рекомендации по улучшению качества планирования
+
+**audit_prompts()** - Анализ эффективности промптов
+- Анализ использования промптов
+- Анализ успешности промптов
+- Выявление неэффективных промптов
+- Рекомендации по улучшению промптов
+
+**audit_errors()** - Анализ ошибок и паттернов
+- Классификация ошибок
+- Выявление паттернов ошибок
+- Анализ причин провалов планов
+- Рекомендации по исправлению
+
+**generate_report()** - Генерация полного отчета
+- Выполнение всех типов аудита
+- Анализ трендов
+- Генерация сводки (текстовой или через LLM)
+- Сохранение отчета в БД
+
+### Модель AuditReport
+
+Модель для хранения отчетов аудита:
+
+- `audit_type`: Тип аудита (PERFORMANCE, QUALITY, PROMPTS, ERRORS, FULL)
+- `status`: Статус аудита (PENDING, IN_PROGRESS, COMPLETED, FAILED)
+- `period_start/period_end`: Период аудита
+- `summary`: Текстовая сводка
+- `findings`: Детальные находки
+- `recommendations`: Рекомендации по улучшению
+- `metrics`: Проанализированные метрики
+- `trends`: Анализ трендов
+
+### Примеры использования
+
+```python
+from app.services.self_audit_service import SelfAuditService
+from app.models.audit_report import AuditType
+from datetime import datetime, timedelta
+
+service = SelfAuditService(db)
+
+# Выполнить аудит производительности
+period_start = datetime.utcnow() - timedelta(days=7)
+period_end = datetime.utcnow()
+
+performance_result = await service.audit_performance(period_start, period_end)
+print(f"Success rate: {performance_result['metrics']['success_rate']}")
+
+# Сгенерировать полный отчет
+report = await service.generate_report(
+    audit_type=AuditType.FULL,
+    period_start=period_start,
+    period_end=period_end,
+    use_llm=True  # Использовать LLM для генерации сводки
+)
+
+print(f"Report ID: {report.id}")
+print(f"Summary: {report.summary}")
+print(f"Findings: {len(report.findings.get('all_findings', []))}")
+```
+
 ## Дальнейшее развитие
 
-- **Этап 3.2**: Регулярный самоаудит с автоматическими рекомендациями
+- **Этап 3.2.2**: Планировщик регулярных аудитов
+- **Этап 3.2.3**: Анализ трендов и рекомендации
 - **Этап 3.3**: Dashboard для визуализации метрик
 
