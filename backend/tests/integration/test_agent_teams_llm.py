@@ -26,7 +26,6 @@ def test_ollama_server(db):
     server = OllamaServer(
         name="Test Server",
         url="http://10.39.0.101:11434",
-        api_url="http://10.39.0.101:11434/v1",
         status="active"
     )
     db.add(server)
