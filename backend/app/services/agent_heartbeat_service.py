@@ -3,7 +3,7 @@ Agent Heartbeat Service
 Manages periodic health checks and heartbeat for agents
 """
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 
@@ -60,7 +60,7 @@ class AgentHeartbeatService:
                     return False
                 
                 # Update heartbeat timestamp
-                agent.last_heartbeat = datetime.utcnow()
+                agent.last_heartbeat = datetime.now(timezone.utc)
                 
                 # Update endpoint if provided (first registration)
                 if endpoint:
@@ -69,7 +69,7 @@ class AgentHeartbeatService:
                 # Update response time if provided
                 if response_time_ms is not None:
                     agent.response_time_ms = response_time_ms
-                    agent.last_health_check = datetime.utcnow()
+                    agent.last_health_check = datetime.now(timezone.utc)
                 
                 # Update health status based on response time
                 if response_time_ms is not None:
@@ -149,7 +149,7 @@ class AgentHeartbeatService:
                 }
             
             # Calculate time since last heartbeat
-            time_since_heartbeat = datetime.utcnow() - agent.last_heartbeat
+            time_since_heartbeat = datetime.now(timezone.utc) - agent.last_heartbeat
             
             # Determine health status
             if time_since_heartbeat.total_seconds() > self.removal_threshold * 60:
@@ -253,7 +253,7 @@ class AgentHeartbeatService:
         Returns:
             List of agents without recent heartbeat
         """
-        threshold = datetime.utcnow() - timedelta(minutes=minutes)
+        threshold = datetime.now(timezone.utc) - timedelta(minutes=minutes)
         
         return self.db.query(Agent).filter(
             and_(

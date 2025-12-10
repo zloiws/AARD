@@ -2,7 +2,7 @@
 Project Metric model for storing project-level metrics
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, Any, Optional
 
@@ -59,8 +59,8 @@ class ProjectMetric(Base):
     metric_metadata = Column(JSONB, nullable=True)  # Additional metric data (breakdowns, distributions, etc.)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Indexes for common queries
     __table_args__ = (

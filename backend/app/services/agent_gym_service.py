@@ -3,7 +3,7 @@ Agent Gym Service - Automated testing and benchmarking for agents
 """
 from typing import Dict, Any, Optional, List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 import traceback as tb
 import asyncio
@@ -222,7 +222,7 @@ class AgentGymService:
             test_run.duration_ms = duration_ms
         
         finally:
-            test_run.completed_at = datetime.utcnow()
+            test_run.completed_at = datetime.now(timezone.utc)
             self.db.commit()
             self.db.refresh(test_run)
             
@@ -472,7 +472,7 @@ class AgentGymService:
         finally:
             duration_ms = int((time.time() - start_time) * 1000)
             benchmark_run.duration_ms = duration_ms
-            benchmark_run.completed_at = datetime.utcnow()
+            benchmark_run.completed_at = datetime.now(timezone.utc)
             self.db.commit()
             self.db.refresh(benchmark_run)
         

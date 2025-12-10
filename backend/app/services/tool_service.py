@@ -3,7 +3,7 @@ Tool Service for managing tools lifecycle
 """
 from typing import Dict, Any, Optional, List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc
 
@@ -164,7 +164,7 @@ class ToolService:
             if field in allowed_fields:
                 setattr(tool, field, value)
         
-        tool.updated_at = datetime.utcnow()
+        tool.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(tool)
         
@@ -196,7 +196,7 @@ class ToolService:
             raise ValueError(f"Tool must be in 'waiting_approval' status to activate (current: {tool.status})")
         
         tool.status = ToolStatus.ACTIVE.value
-        tool.activated_at = datetime.utcnow()
+        tool.activated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(tool)
         
@@ -271,7 +271,7 @@ class ToolService:
             rate = tool.successful_executions / tool.total_executions
             tool.success_rate = f"{rate:.2%}"
         
-        tool.last_used_at = datetime.utcnow()
+        tool.last_used_at = datetime.now(timezone.utc)
         self.db.commit()
     
     def get_tool_metrics(self, tool_id: UUID) -> Dict[str, Any]:

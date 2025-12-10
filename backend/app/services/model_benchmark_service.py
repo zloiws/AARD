@@ -6,7 +6,7 @@ import asyncio
 import time
 from typing import Dict, List, Optional, Any
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.core.ollama_client import OllamaClient, TaskType
@@ -253,12 +253,12 @@ class ModelBenchmarkService:
             if "benchmarks" not in model.details:
                 model.details["benchmarks"] = {}
             
-            benchmark_key = f"{task_type.value}_{datetime.utcnow().strftime('%Y%m%d')}"
+            benchmark_key = f"{task_type.value}_{datetime.now(timezone.utc).strftime('%Y%m%d')}"
             model.details["benchmarks"][benchmark_key] = {
                 "success": result["success"],
                 "response_time": result["response_time"],
                 "quality_score": result["quality_score"],
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             
             # Обновить средние показатели

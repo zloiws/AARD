@@ -3,7 +3,7 @@ Workflow tracker for real-time execution monitoring
 Tracks current request execution process from user input to result
 """
 from typing import Dict, List, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import threading
 from collections import deque
@@ -35,7 +35,7 @@ class WorkflowEvent:
         self.stage = stage
         self.message = message
         self.details = details or {}
-        self.timestamp = timestamp or datetime.utcnow()
+        self.timestamp = timestamp or datetime.now(timezone.utc)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
@@ -116,7 +116,7 @@ class WorkflowTracker:
             wf_id = workflow_id or self._current_workflow_id
             if not wf_id:
                 # No active workflow, create a temporary one
-                wf_id = f"temp_{datetime.utcnow().timestamp()}"
+                wf_id = f"temp_{datetime.now(timezone.utc).timestamp()}"
                 self._current_workflow_id = wf_id
                 if wf_id not in self._workflows:
                     self._workflows[wf_id] = []

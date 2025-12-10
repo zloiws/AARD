@@ -4,7 +4,7 @@ Provides automated auditing of performance, quality, prompts, and errors
 """
 from typing import Dict, Any, List, Optional
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func, desc
 
@@ -617,7 +617,7 @@ class SelfAuditService:
                 "trend_analysis": trends_analysis,
                 "improvements_degradations": improvements_degradations
             }
-            report.completed_at = datetime.utcnow()
+            report.completed_at = datetime.now(timezone.utc)
             
             self.db.commit()
             self.db.refresh(report)

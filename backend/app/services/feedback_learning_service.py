@@ -4,7 +4,7 @@ Extracts patterns from approval/rejection feedback and applies them to future de
 """
 from typing import Dict, Any, List, Optional
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
@@ -373,7 +373,7 @@ class FeedbackLearningService:
             Dictionary with feedback statistics
         """
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=time_range_days)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
             
             query = self.db.query(ApprovalRequest).filter(
                 ApprovalRequest.created_at >= cutoff_date

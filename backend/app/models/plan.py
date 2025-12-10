@@ -1,7 +1,7 @@
 """
 Plan model for task planning
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 from uuid import uuid4, UUID
@@ -45,7 +45,7 @@ class Plan(Base):
     estimated_duration = Column(Integer, nullable=True)  # seconds
     actual_duration = Column(Integer, nullable=True)  # seconds
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     approved_at = Column(DateTime, nullable=True)
     
     # Relationships

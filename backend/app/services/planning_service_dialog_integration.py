@@ -4,7 +4,7 @@
 """
 from typing import Dict, Any, Optional, List, Tuple
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 
 from sqlalchemy.orm import Session
@@ -295,7 +295,7 @@ async def conduct_agent_dialog(
             updates={
                 "discussion_summary": " | ".join(discussion_summary),
                 "agreed_approach": "Агенты обсудили подход к решению",
-                "completed_at": datetime.utcnow().isoformat()
+                "completed_at": datetime.now(timezone.utc).isoformat()
             }
         )
         

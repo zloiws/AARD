@@ -1,7 +1,7 @@
 """
 Agent test and benchmark models
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, Dict, Any
 from uuid import uuid4, UUID
@@ -58,8 +58,8 @@ class AgentTest(Base):
     
     # Metadata
     created_by = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     tags = Column(JSONB, nullable=True)  # Tags for categorization
     
     # Relationships
@@ -81,7 +81,7 @@ class AgentTestRun(Base):
     
     # Execution status
     status = Column(String(50), nullable=False)  # TestStatus enum
-    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     completed_at = Column(DateTime, nullable=True)
     duration_ms = Column(Integer, nullable=True)  # Execution duration in milliseconds
     
@@ -142,8 +142,8 @@ class AgentBenchmark(Base):
     
     # Metadata
     created_by = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     tags = Column(JSONB, nullable=True)
     
     # Relationships
@@ -162,7 +162,7 @@ class AgentBenchmarkRun(Base):
     
     # Execution status
     status = Column(String(50), nullable=False)  # TestStatus enum
-    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     completed_at = Column(DateTime, nullable=True)
     duration_ms = Column(Integer, nullable=True)
     

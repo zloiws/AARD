@@ -1,7 +1,7 @@
 """
 Agent model for AARD platform
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, Dict, List, Any
 from uuid import uuid4, UUID
@@ -61,8 +61,8 @@ class Agent(Base):
     # Status and lifecycle
     status = Column(String(50), nullable=False, default=AgentStatus.DRAFT.value)
     created_by = Column(String(255), nullable=True)  # User who created the agent
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     activated_at = Column(DateTime, nullable=True)  # When agent was activated
     last_used_at = Column(DateTime, nullable=True)  # Last time agent was used
     

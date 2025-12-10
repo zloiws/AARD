@@ -27,7 +27,7 @@ from app.api.routes import (
     artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages, tools_pages,
     experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages, model_logs, current_work, workflow,
     websocket_events, benchmarks, project_metrics, project_metrics_pages, audit_reports, audit_reports_pages,
-    plan_templates, agent_dialogs
+    plan_templates, agent_dialogs, settings, workflow_events
 )
 
 # Configure logging first
@@ -84,20 +84,30 @@ app = FastAPI(
 
 # OpenTelemetry tracing is configured in lifespan startup
 
-# Add logging context middleware (before CORS to capture all requests)
+# Configure CORS FIRST (before other middleware to handle preflight requests)
+# Ensure localhost:3000 is always included for frontend
+allowed_origins = _settings.allowed_origins_list.copy()
+if "http://localhost:3000" not in allowed_origins:
+    allowed_origins.append("http://localhost:3000")
+if "http://127.0.0.1:3000" not in allowed_origins:
+    allowed_origins.append("http://127.0.0.1:3000")
+
+logger.info(f"CORS allowed origins: {allowed_origins}")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
+# Add logging context middleware (after CORS)
 app.add_middleware(LoggingContextMiddleware)
 # Add metrics middleware
 from app.core.middleware_metrics import MetricsMiddleware
 app.add_middleware(MetricsMiddleware)
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_settings.allowed_origins_list,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Add exception handler for better error logging (only for unhandled exceptions)
 from fastapi.exceptions import HTTPException as FastAPIHTTPException
@@ -144,6 +154,7 @@ app.include_router(queues.router)
 app.include_router(checkpoints.router)
 app.include_router(metrics.router)
 app.include_router(health.router)
+app.include_router(settings.router)
 app.include_router(agents.router)
 app.include_router(tools.router)
 app.include_router(agent_dialogs.router)
@@ -171,6 +182,7 @@ app.include_router(benchmarks_pages.router)
 app.include_router(current_work.router)
 app.include_router(workflow.router)
 app.include_router(websocket_events.router)
+app.include_router(workflow_events.router)
 
 # Evolution system web pages
 app.include_router(approvals_pages.router)

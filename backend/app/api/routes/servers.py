@@ -5,7 +5,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
@@ -230,7 +230,7 @@ async def update_server(
     for key, value in update_data.items():
         setattr(server, key, value)
     
-    server.updated_at = datetime.utcnow()
+    server.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(server)
     
@@ -289,7 +289,7 @@ async def discover_server_models(server_id: str, db: Session = Depends(get_db)):
             
             # Update server availability
             server.is_available = True
-            server.last_checked_at = datetime.utcnow()
+            server.last_checked_at = datetime.now(timezone.utc)
             
             # Get existing models for this server
             existing_models = {
@@ -298,6 +298,7 @@ async def discover_server_models(server_id: str, db: Session = Depends(get_db)):
             }
             
             seen_model_names = set()
+            models_added_count = 0
             
             # Sync models
             for model_data in data.get("models", []):
@@ -314,7 +315,7 @@ async def discover_server_models(server_id: str, db: Session = Depends(get_db)):
                     model.digest = model_data.get("digest", "")
                     model.modified_at = datetime.fromisoformat(model_data.get("modified_at", "").replace("Z", "+00:00")) if model_data.get("modified_at") else None
                     model.details = model_data
-                    model.last_seen_at = datetime.utcnow()
+                    model.last_seen_at = datetime.now(timezone.utc)
                     model.is_active = True
                 else:
                     # Create new model
@@ -326,27 +327,40 @@ async def discover_server_models(server_id: str, db: Session = Depends(get_db)):
                         digest=model_data.get("digest", ""),
                         modified_at=datetime.fromisoformat(model_data.get("modified_at", "").replace("Z", "+00:00")) if model_data.get("modified_at") else None,
                         details=model_data,
-                        last_seen_at=datetime.utcnow(),
+                        last_seen_at=datetime.now(timezone.utc),
                         is_active=True
                     )
                     db.add(model)
+                    models_added_count += 1
             
             # Deactivate models that are no longer on server
+            models_deactivated_count = 0
             for model_name, model in existing_models.items():
                 if model_name not in seen_model_names:
+                    if model.is_active:  # Only count if it was active
+                        models_deactivated_count += 1
                     model.is_active = False
             
             db.commit()
             
+            # Get total active models count after sync
+            total_active = db.query(OllamaModel).filter(
+                OllamaModel.server_id == server.id,
+                OllamaModel.is_active == True
+            ).count()
+            
             return {
                 "message": "Models discovered successfully",
                 "models_found": len(seen_model_names),
-                "models_added": len(seen_model_names) - len(existing_models)
+                "models_added": models_added_count,
+                "models_updated": len(seen_model_names) - models_added_count,
+                "models_deactivated": models_deactivated_count,
+                "total_in_db": total_active
             }
     
     except Exception as e:
         server.is_available = False
-        server.last_checked_at = datetime.utcnow()
+        server.last_checked_at = datetime.now(timezone.utc)
         db.commit()
         raise HTTPException(status_code=500, detail=f"Error discovering models: {str(e)}")
 

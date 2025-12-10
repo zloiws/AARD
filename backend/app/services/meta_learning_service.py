@@ -2,13 +2,14 @@
 Meta-Learning Service for self-improvement
 Analyzes execution patterns and improves planning strategies, prompts, and tool selection
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
 from app.core.database import SessionLocal
+from app.core.execution_context import ExecutionContext
 from app.core.logging_config import LoggingConfig
 from app.models.learning_pattern import LearningPattern, PatternType
 from app.models.plan import Plan
@@ -28,22 +29,38 @@ class MetaLearningService:
     - Optimizes tool selection
     """
     
-    def __init__(self, db: Session = None):
+    def __init__(self, db_or_context: Union[Session, ExecutionContext] = None):
         """
         Initialize Meta Learning Service
         
         Args:
-            db: Database session (optional)
+            db_or_context: Either a Session (for backward compatibility) or ExecutionContext
         """
-        self.db = db or SessionLocal()
+        # Support both ExecutionContext and Session for backward compatibility
+        if isinstance(db_or_context, ExecutionContext):
+            self.context = db_or_context
+            self.db = db_or_context.db
+            self.workflow_id = db_or_context.workflow_id
+        elif db_or_context is not None:
+            # Backward compatibility: create minimal context from Session
+            self.db = db_or_context
+            self.context = ExecutionContext.from_db_session(db_or_context)
+            self.workflow_id = self.context.workflow_id
+        else:
+            # Create new session and context if nothing provided
+            self.db = SessionLocal()
+            self.context = ExecutionContext.from_db_session(self.db)
+            self.workflow_id = self.context.workflow_id
     
-    def analyze_execution_patterns(
+    async def analyze_execution_patterns(
         self,
         agent_id: Optional[UUID] = None,
         time_range_days: int = 30
     ) -> Dict[str, Any]:
         """
-        Analyze execution patterns for an agent or system-wide
+        Analyze execution patterns for an agent or system-wide (async)
+        
+        This method is now async to allow background processing without blocking.
         
         Args:
             agent_id: Optional agent ID for agent-specific analysis
@@ -53,7 +70,87 @@ class MetaLearningService:
             Dictionary with pattern analysis results
         """
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=time_range_days)
+            # Run database queries in background thread to avoid blocking
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
+            
+            def _analyze_sync():
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
+                
+                # Query execution traces
+                query = self.db.query(ExecutionTrace).filter(
+                    ExecutionTrace.start_time >= cutoff_date
+                )
+                
+                if agent_id:
+                    query = query.filter(ExecutionTrace.agent_id == agent_id)
+                
+                traces = query.all()
+                
+                # Analyze patterns
+                total_executions = len(traces)
+                successful = sum(1 for t in traces if t.status == "success")
+                failed = sum(1 for t in traces if t.status == "error")
+                
+                # Group by operation
+                operations = {}
+                for trace in traces:
+                    op_name = trace.operation_name
+                    if op_name not in operations:
+                        operations[op_name] = {"total": 0, "success": 0, "failed": 0}
+                    operations[op_name]["total"] += 1
+                    if trace.status == "success":
+                        operations[op_name]["success"] += 1
+                    elif trace.status == "error":
+                        operations[op_name]["failed"] += 1
+                
+                # Calculate success rates
+                for op_name, stats in operations.items():
+                    stats["success_rate"] = stats["success"] / stats["total"] if stats["total"] > 0 else 0.0
+                
+                return {
+                    "total_executions": total_executions,
+                    "successful": successful,
+                    "failed": failed,
+                    "overall_success_rate": successful / total_executions if total_executions > 0 else 0.0,
+                    "operations": operations,
+                    "time_range_days": time_range_days
+                }
+            
+            # Run in thread pool to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            with ThreadPoolExecutor() as executor:
+                result = await loop.run_in_executor(executor, _analyze_sync)
+                return result
+            
+        except Exception as e:
+            logger.error(f"Error analyzing execution patterns: {e}", exc_info=True)
+            return {
+                "total_executions": 0,
+                "successful": 0,
+                "failed": 0,
+                "overall_success_rate": 0.0,
+                "operations": {},
+                "time_range_days": time_range_days
+            }
+    
+    def analyze_execution_patterns_sync(
+        self,
+        agent_id: Optional[UUID] = None,
+        time_range_days: int = 30
+    ) -> Dict[str, Any]:
+        """
+        Synchronous version of analyze_execution_patterns (for backward compatibility)
+        
+        Args:
+            agent_id: Optional agent ID for agent-specific analysis
+            time_range_days: Number of days to analyze
+            
+        Returns:
+            Dictionary with pattern analysis results
+        """
+        try:
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
             
             # Query execution traces
             query = self.db.query(ExecutionTrace).filter(
@@ -106,13 +203,96 @@ class MetaLearningService:
                 "time_range_days": time_range_days
             }
     
-    def extract_successful_patterns(
+    async def extract_successful_patterns(
         self,
         execution_results: List[Dict[str, Any]],
         pattern_type: PatternType = PatternType.STRATEGY
     ) -> List[LearningPattern]:
         """
-        Extract successful patterns from execution results
+        Extract successful patterns from execution results (async)
+        
+        This method is now async to allow background processing without blocking.
+        
+        Args:
+            execution_results: List of execution result dictionaries
+            pattern_type: Type of pattern to extract
+            
+        Returns:
+            List of extracted LearningPattern instances
+        """
+        try:
+            # Run pattern extraction in background thread to avoid blocking
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
+            
+            def _extract_sync():
+                patterns = []
+                
+                # Group successful executions
+                successful = [r for r in execution_results if r.get("status") == "success"]
+                
+                if not successful:
+                    logger.warning("No successful executions to extract patterns from")
+                    return []
+                
+                # Extract common patterns based on type
+                if pattern_type == PatternType.STRATEGY:
+                    patterns = self._extract_strategy_patterns(successful)
+                elif pattern_type == PatternType.PROMPT:
+                    patterns = self._extract_prompt_patterns(successful)
+                elif pattern_type == PatternType.TOOL_SELECTION:
+                    patterns = self._extract_tool_selection_patterns(successful)
+                elif pattern_type == PatternType.CODE_PATTERN:
+                    patterns = self._extract_code_patterns(successful)
+                
+                # Save patterns to database
+                saved_patterns = []
+                for pattern_data in patterns:
+                    pattern = LearningPattern(
+                        pattern_type=pattern_type.value,
+                        name=pattern_data.get("name", f"{pattern_type.value}_pattern"),
+                        description=pattern_data.get("description"),
+                        pattern_data=pattern_data.get("data", {}),
+                        success_rate=pattern_data.get("success_rate", 0.0),
+                        usage_count=pattern_data.get("usage_count", 0),
+                        total_executions=pattern_data.get("total_executions", 0),
+                        successful_executions=pattern_data.get("successful_executions", 0),
+                        agent_id=pattern_data.get("agent_id"),
+                        task_category=pattern_data.get("task_category")
+                    )
+                    self.db.add(pattern)
+                    saved_patterns.append(pattern)
+                
+                self.db.commit()
+                
+                logger.info(
+                    f"Extracted {len(saved_patterns)} {pattern_type.value} patterns",
+                    extra={"pattern_type": pattern_type.value, "count": len(saved_patterns)}
+                )
+                
+                return saved_patterns
+            
+            # Run in thread pool to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            with ThreadPoolExecutor() as executor:
+                result = await loop.run_in_executor(executor, _extract_sync)
+                return result
+            
+        except Exception as e:
+            logger.error(f"Error extracting successful patterns: {e}", exc_info=True)
+            try:
+                self.db.rollback()
+            except:
+                pass
+            return []
+    
+    def extract_successful_patterns_sync(
+        self,
+        execution_results: List[Dict[str, Any]],
+        pattern_type: PatternType = PatternType.STRATEGY
+    ) -> List[LearningPattern]:
+        """
+        Synchronous version of extract_successful_patterns (for backward compatibility)
         
         Args:
             execution_results: List of execution result dictionaries

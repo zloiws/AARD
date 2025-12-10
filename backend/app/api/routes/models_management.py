@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 import httpx
 
 from app.core.database import get_db
@@ -79,7 +79,7 @@ async def update_model(
     if update.is_active is not None:
         model.is_active = update.is_active
     
-    model.updated_at = datetime.utcnow()
+    model.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(model)
     
@@ -124,7 +124,7 @@ async def check_model_availability(model_id: UUID, db: Session = Depends(get_db)
             is_available = model.model_name in models
             
             # Update model availability in database
-            model.last_seen_at = datetime.utcnow()
+            model.last_seen_at = datetime.now(timezone.utc)
             db.commit()
             
             return {

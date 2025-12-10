@@ -2,7 +2,7 @@
 Audit Report model for storing self-audit results
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, Any, Optional
 
@@ -52,7 +52,7 @@ class AuditReport(Base):
     
     # Metadata
     audit_metadata = Column(JSONB, nullable=True)  # Additional metadata
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     completed_at = Column(DateTime, nullable=True)
     
     def to_dict(self) -> Dict[str, Any]:

@@ -1,7 +1,7 @@
 """
 Prompt model for evolution system
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 from uuid import uuid4, UUID
@@ -49,7 +49,7 @@ class Prompt(Base):
     usage_count = Column(Integer, nullable=False, default=0)
     
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     created_by = Column(String(255), nullable=True)
     last_improved_at = Column(DateTime, nullable=True)
     improvement_history = Column(JSON, nullable=True)

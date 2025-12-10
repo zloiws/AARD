@@ -2,7 +2,7 @@
 Background scheduler for regular audit reports
 """
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any
 from enum import Enum
 
@@ -82,7 +82,7 @@ class AuditScheduler:
     
     async def _check_and_run_scheduled_audits(self):
         """Check if any scheduled audits should run"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Check daily audit
         if self.schedules[AuditSchedule.DAILY]["enabled"]:
@@ -196,7 +196,7 @@ class AuditScheduler:
             if report.audit_metadata is None:
                 report.audit_metadata = {}
             report.audit_metadata["schedule_type"] = schedule_type.value
-            report.audit_metadata["scheduled_at"] = datetime.utcnow().isoformat()
+            report.audit_metadata["scheduled_at"] = datetime.now(timezone.utc).isoformat()
             
             db.commit()
             db.close()
@@ -259,7 +259,7 @@ class AuditScheduler:
         period_days = schedule["period_days"]
         audit_type = schedule["audit_type"]
         
-        period_end = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        period_end = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         period_start = period_end - timedelta(days=period_days)
         
         await self._run_audit(schedule_type, period_start, period_end)

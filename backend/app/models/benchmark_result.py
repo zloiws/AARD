@@ -1,7 +1,7 @@
 """
 Benchmark Result model for storing execution results
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from typing import Optional, Dict, Any
 
@@ -35,7 +35,7 @@ class BenchmarkResult(Base):
     execution_metadata = Column(JSONB, nullable=True)  # Additional execution metadata
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     
     # Relationships
     task = relationship("BenchmarkTask", back_populates="results")

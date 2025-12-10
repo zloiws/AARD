@@ -4,7 +4,7 @@ Provides metrics and statistics for plan generation and execution
 """
 from typing import Dict, Any, List, Optional
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
@@ -186,7 +186,7 @@ class PlanningMetricsService:
             Dictionary with planning statistics
         """
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=time_range_days)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
             
             # Query plans
             query = self.db.query(Plan).filter(Plan.created_at >= cutoff_date)

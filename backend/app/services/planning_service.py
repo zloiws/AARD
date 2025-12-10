@@ -3,15 +3,17 @@ Planning service for generating and managing task plans
 """
 from typing import Dict, Any, Optional, List
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import re
 
 from sqlalchemy.orm import Session
+from typing import Union
 
 from app.models.plan import Plan, PlanStatus
 from app.models.task import Task, TaskStatus
 from app.core.ollama_client import OllamaClient, TaskType
+from app.core.execution_context import ExecutionContext
 from app.services.ollama_service import OllamaService
 from app.services.approval_service import ApprovalService
 from app.services.prompt_service import PromptService
@@ -34,22 +36,90 @@ from app.services.request_logger import RequestLogger
 class PlanningService:
     """Service for generating and managing task plans"""
     
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self, db_or_context: Union[Session, ExecutionContext]):
+        """
+        Initialize PlanningService
+        
+        Args:
+            db_or_context: Either a Session (for backward compatibility) or ExecutionContext
+        """
+        # Support both ExecutionContext and Session for backward compatibility
+        if isinstance(db_or_context, ExecutionContext):
+            self.context = db_or_context
+            self.db = db_or_context.db
+            self.workflow_id = db_or_context.workflow_id
+        else:
+            # Backward compatibility: create minimal context from Session
+            self.db = db_or_context
+            self.context = ExecutionContext.from_db_session(db_or_context)
+            self.workflow_id = self.context.workflow_id
+        
         self.tracer = get_tracer(__name__)
         self.model_logs = []  # Collect model interaction logs for this planning session
         self.current_task_id = None  # Track current task_id for real-time log saving
-        self.workflow_id = None  # Track workflow ID for real-time display
-        self.workflow_tracker = None  # WorkflowTracker instance for real-time events
-        self.prompt_service = PromptService(db)  # Prompt management service
-        self.metrics_service = ProjectMetricsService(db)  # Project metrics service
-        self.plan_template_service = PlanTemplateService(db)  # Plan template service
-        self.plan_evaluation_service = PlanEvaluationService(db)  # Plan evaluation service for A/B testing
-        self.agent_team_service = AgentTeamService(db)  # Agent team service
-        self.agent_team_coordination = AgentTeamCoordination(db)  # Agent team coordination service
-        self.agent_dialog_service = AgentDialogService(db)  # Agent dialog service for complex tasks
+        # Use WorkflowEngine from context instead of direct WorkflowTracker
+        # self.workflow_engine is accessed via self.context.workflow_engine
+        self.prompt_service = PromptService(self.db)  # Prompt management service
+        self.metrics_service = ProjectMetricsService(self.db)  # Project metrics service
+        self.plan_template_service = PlanTemplateService(self.db)  # Plan template service
+        self.plan_evaluation_service = PlanEvaluationService(self.db)  # Plan evaluation service for A/B testing
+        self.agent_team_service = AgentTeamService(self.db)  # Agent team service
+        self.agent_team_coordination = AgentTeamCoordination(self.db)  # Agent team coordination service
+        self.agent_dialog_service = AgentDialogService(self.db)  # Agent dialog service for complex tasks
+        from app.services.agent_service import AgentService
+        self.agent_service = AgentService(self.db)  # Agent service for PlannerAgent
+        
+        # DecisionRouter for automatic selection of tools and agents for plan steps
+        from app.services.decision_router import DecisionRouter
+        self.decision_router = DecisionRouter(self.db)
+        
+        # Task lifecycle manager for workflow transitions
+        from app.services.task_lifecycle_manager import TaskLifecycleManager, TaskRole
+        self.task_lifecycle_manager = TaskLifecycleManager(self.db)
         # OllamaClient will be created dynamically when needed
         # to use database-backed server/model selection
+        
+        # Lazy initialization of PlannerAgent
+        self._planner_agent = None
+    
+    def _get_planner_agent(self):
+        """
+        Get or create PlannerAgent instance
+        
+        Returns:
+            PlannerAgent instance
+        """
+        if self._planner_agent is None:
+            from app.agents.planner_agent import PlannerAgent
+            from uuid import uuid4
+            
+            # Try to find existing PlannerAgent in database
+            planner_agent_db = self.agent_service.get_agent_by_name("PlannerAgent")
+            
+            if not planner_agent_db:
+                # Create PlannerAgent if not exists
+                planner_agent_db = self.agent_service.create_agent(
+                    name="PlannerAgent",
+                    description="Planner Agent for task analysis and decomposition",
+                    capabilities=["planning", "reasoning", "task_analysis"],
+                    model_preference=None,  # Will use planning model from ModelSelector
+                    created_by="system"
+                )
+            
+            # Activate the agent if not already active (для тестов - в реальной системе нужно пройти через waiting_approval)
+            if planner_agent_db.status != "active":
+                planner_agent_db.status = "active"
+                self.db.commit()
+                self.db.refresh(planner_agent_db)
+            
+            # Create PlannerAgent instance
+            self._planner_agent = PlannerAgent(
+                agent_id=planner_agent_db.id,
+                agent_service=self.agent_service,
+                db_session=self.db
+            )
+        
+        return self._planner_agent
     
     async def generate_alternative_plans(
         self,
@@ -267,14 +337,14 @@ class PlanningService:
         - 'execution': Выполнение действий
         - 'completion': Завершение операции
         """
-        from datetime import datetime
+        from datetime import datetime, timezone
         
         log_entry = {
             "type": log_type,
             "model": model,
             "content": content,
             "metadata": metadata or {},
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         if stage:
@@ -447,23 +517,57 @@ Return a JSON array of steps."""
         plan_id: Optional[UUID] = None
     ):
         """
-        Add event to WorkflowTracker and save to DB simultaneously
+        Add event to WorkflowEngine and save to DB simultaneously
         
         Args:
-            stage: WorkflowStage from WorkflowTracker
+            stage: WorkflowStage from WorkflowTracker (for compatibility)
             message: Event message
             details: Event details
             duration_ms: Duration in milliseconds
             plan_id: Plan ID if available
         """
-        # Add to in-memory tracker (for real-time display)
-        if self.workflow_tracker and self.workflow_id:
-            self.workflow_tracker.add_event(
-                stage=stage,
-                message=message,
-                details=details,
-                workflow_id=self.workflow_id
-            )
+        # Add to WorkflowEngine (for real-time display and state management)
+        workflow_engine = self.context.workflow_engine if self.context else None
+        if workflow_engine:
+            # WorkflowEngine uses WorkflowState, not WorkflowStage
+            # Map WorkflowStage to WorkflowState if needed
+            from app.core.workflow_engine import WorkflowState
+            from app.core.workflow_tracker import WorkflowStage
+            
+            # Map WorkflowStage to WorkflowState
+            stage_mapping = {
+                WorkflowStage.USER_REQUEST: WorkflowState.INITIALIZED,
+                WorkflowStage.REQUEST_PARSING: WorkflowState.PARSING,
+                WorkflowStage.ACTION_DETERMINATION: WorkflowState.PLANNING,
+                WorkflowStage.EXECUTION: WorkflowState.EXECUTING,
+                WorkflowStage.RESULT: WorkflowState.COMPLETED,
+                WorkflowStage.ERROR: WorkflowState.FAILED
+            }
+            
+            workflow_state = stage_mapping.get(stage, None)
+            # Only transition if state mapping exists and state is different
+            if workflow_state and workflow_engine.get_current_state() != workflow_state:
+                # Check if transition is allowed
+                if workflow_engine.can_transition_to(workflow_state):
+                    workflow_engine.transition_to(
+                        workflow_state,
+                        message,
+                        metadata=details or {}
+                    )
+                else:
+                    # If transition not allowed, just add event to tracker
+                    workflow_engine.tracker.add_event(
+                        stage=stage,
+                        message=message,
+                        details=details or {}
+                    )
+            else:
+                # Just add event to tracker without state change
+                workflow_engine.tracker.add_event(
+                    stage=stage,
+                    message=message,
+                    details=details or {}
+                )
         
         # Save to DB (for persistence)
         self._save_workflow_event_to_db(
@@ -710,10 +814,16 @@ Return a JSON array of steps."""
                 digital_twin_context = task.get_context()
         else:
             # Create task first for real-time logging if not provided
+            # Get autonomy level from context or use default
+            autonomy_level = context.get("autonomy_level", 2) if context else 2
+            if autonomy_level not in [0, 1, 2, 3, 4]:
+                autonomy_level = 2
+            
             task = Task(
                 description=task_description[:500],  # Truncate if too long
                 status=TaskStatus.PENDING,
-                created_by_role="planner"
+                created_by_role="planner",
+                autonomy_level=autonomy_level
             )
             self.db.add(task)
             self.db.commit()
@@ -723,11 +833,28 @@ Return a JSON array of steps."""
         # Set current_task_id for real-time log saving
         self.current_task_id = task_id
         
-        # Initialize WorkflowTracker for real-time monitoring
+        # Use WorkflowEngine from context for real-time monitoring and state management
         # Use task_id as workflow_id for consistency (so events can be found by task_id)
-        from app.core.workflow_tracker import get_workflow_tracker, WorkflowStage
-        self.workflow_tracker = get_workflow_tracker()
-        self.workflow_id = str(task_id)  # Use task_id as workflow_id
+        from app.core.workflow_engine import WorkflowState
+        from app.core.workflow_tracker import WorkflowStage
+        
+        # Ensure workflow_id matches task_id
+        if self.context.workflow_id != str(task_id):
+            # Update context workflow_id to match task_id
+            self.context.workflow_id = str(task_id)
+            # Recreate WorkflowEngine with new workflow_id
+            from app.core.workflow_engine import WorkflowEngine
+            self.context.set_workflow_engine(WorkflowEngine(self.context))
+        
+        # Initialize WorkflowEngine if not already initialized
+        workflow_engine = self.context.workflow_engine
+        if workflow_engine:
+            # Start workflow in INITIALIZED state
+            workflow_engine.transition_to(
+                WorkflowState.INITIALIZED,
+                f"Начало планирования задачи: {task_description[:100]}...",
+                metadata={"task_id": str(task_id), "task_description": task_description}
+            )
         
         # Check if task is complex and needs agent dialog
         conversation_id = None
@@ -753,7 +880,7 @@ Return a JSON array of steps."""
                 digital_twin_context["agent_dialog"] = {
                     "conversation_id": str(conversation_id),
                     "context": dialog_context,
-                    "initiated_at": datetime.utcnow().isoformat()
+                    "initiated_at": datetime.now(timezone.utc).isoformat()
                 }
                 task.update_context(digital_twin_context, merge=False)
                 self.db.commit()
@@ -767,13 +894,15 @@ Return a JSON array of steps."""
         else:
             enhanced_task_description = task_description
         
-        # Start workflow tracking
-        self.workflow_tracker.start_workflow(
-            self.workflow_id,
-            task_description,
-            username="system",
-            interaction_type="planning"
-        )
+        # Transition to PARSING state
+        workflow_engine = self.context.workflow_engine
+        if workflow_engine:
+            workflow_engine.transition_to(
+                WorkflowState.PARSING,
+                f"Анализ требований задачи: {task_description[:100]}...",
+                metadata={"task_id": str(task_id), "task_description": task_description}
+            )
+        
         # Save initial workflow start event to DB
         self._add_and_save_workflow_event(
             WorkflowStage.USER_REQUEST,
@@ -783,15 +912,17 @@ Return a JSON array of steps."""
         
         self._add_and_save_workflow_event(
             WorkflowStage.REQUEST_PARSING,
-            f"Начало планирования задачи: {task_description[:100]}...",
+            f"Анализ требований задачи: {task_description[:100]}...",
             details={"task_description": task_description}
         )
         
-        self.workflow_tracker.add_event(
-            WorkflowStage.ACTION_DETERMINATION,
-            f"Задача создана (ID: {str(task_id)[:8]}...), анализ требований...",
-            details={"task_id": str(task_id)}
-        )
+        # Transition to PLANNING state
+        if workflow_engine:
+            workflow_engine.transition_to(
+                WorkflowState.PLANNING,
+                f"Задача создана (ID: {str(task_id)[:8]}...), анализ требований...",
+                metadata={"task_id": str(task_id)}
+            )
         
         # Search for matching plan templates
         matching_template = None
@@ -847,30 +978,26 @@ Return a JSON array of steps."""
             # Update template usage count
             self.plan_template_service.update_template_usage(matching_template.id)
         
-        # 1. Analyze task and create strategy (with Digital Twin context and template)
+        # 1. Analyze task and decompose in one optimized request (with Digital Twin context and template)
         self._add_and_save_workflow_event(
             WorkflowStage.EXECUTION,
-            "Анализ задачи и создание стратегии...",
-            details={"stage": "strategy_analysis"}
+            "Анализ задачи и декомпозиция (оптимизированный запрос)...",
+            details={"stage": "optimized_analysis_and_decomposition"}
         )
         # Use enhanced task description if dialog was conducted
-        task_description_for_analysis = enhanced_task_description if 'enhanced_task_description' in locals() else task_description
-        strategy = await self._analyze_task(task_description_for_analysis, enhanced_context, task_id)
+        task_description_for_planning = enhanced_task_description if 'enhanced_task_description' in locals() else task_description
+        
+        # Optimized: combine analysis and decomposition in one LLM call
+        strategy, steps = await self._analyze_and_decompose_task_optimized(
+            task_description_for_planning, 
+            enhanced_context, 
+            task_id
+        )
         
         self._add_and_save_workflow_event(
             WorkflowStage.EXECUTION,
-            f"Стратегия создана, декомпозиция задачи на шаги...",
-            details={"stage": "task_decomposition", "strategy_created": True}
-        )
-        
-        # 2. Decompose task into steps (use procedural pattern if available)
-        # Use enhanced task description if dialog was conducted
-        task_description_for_decomposition = enhanced_task_description if 'enhanced_task_description' in locals() else task_description
-        steps = await self._decompose_task(
-            task_description_for_decomposition,
-            strategy,
-            enhanced_context,
-            task_id=task_id
+            f"Стратегия и шаги созданы (оптимизированный запрос)",
+            details={"stage": "optimized_planning_complete", "strategy_created": True, "steps_count": len(steps) if steps else 0}
         )
         
         # Assign selected agent or team to steps if available
@@ -1019,7 +1146,7 @@ Return a JSON array of steps."""
                 },
                 
                 "metadata": {
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                     "task_id": str(task_id),
                     "plan_id": str(plan.id)
                 }
@@ -1063,9 +1190,10 @@ Return a JSON array of steps."""
         )
         
         # Complete workflow tracking
-        if self.workflow_tracker and self.workflow_id:
+        workflow_engine = self.context.workflow_engine if self.context else None
+        if workflow_engine:
             from app.core.workflow_tracker import WorkflowStage
-            self.workflow_tracker.add_event(
+            workflow_engine.tracker.add_event(
                 WorkflowStage.EXECUTION,
                 f"План создан: {len(steps)} шаг(ов), версия {plan.version}",
                 details={
@@ -1076,7 +1204,10 @@ Return a JSON array of steps."""
                 workflow_id=self.workflow_id
             )
             result_message = f"План успешно создан: {len(steps)} шаг(ов), план ID: {str(plan.id)[:8]}..."
-            self.workflow_tracker.finish_workflow(result=result_message)
+            # Mark workflow as completed
+            workflow_engine = self.context.workflow_engine if self.context else None
+            if workflow_engine:
+                workflow_engine.mark_completed(result=result_message)
             # Save final event to DB
             from app.models.workflow_event import EventType as DBEventType
             self._save_workflow_event_to_db(
@@ -1490,6 +1621,11 @@ Return a JSON array of steps."""
         context: Optional[Dict[str, Any]],
         task_id: Optional[UUID] = None
     ) -> Dict[str, Any]:
+        """
+        Analyze task and create strategy
+        
+        Records prompt metrics through PromptManager if available in ExecutionContext
+        """
         """Analyze task and create strategy using Digital Twin context"""
         with self.tracer.start_as_current_span("planning.analyze_task") as span:
             add_span_attributes(
@@ -1538,7 +1674,7 @@ Return a JSON array of steps."""
                             "prompt_id": str(prompt_used.id),
                             "prompt_name": prompt_used.name,
                             "stage": "analysis",
-                            "timestamp": datetime.utcnow().isoformat()
+                            "timestamp": datetime.now(timezone.utc).isoformat()
                         })
                         task_context["prompt_usage"] = prompt_usage
                         task.update_context(task_context, merge=False)
@@ -1549,33 +1685,28 @@ Return a JSON array of steps."""
                         logger.warning(f"Failed to save prompt usage to context: {e}", exc_info=True)
         
         try:
-            # Use ModelSelector for dual-model architecture
-            from app.core.model_selector import ModelSelector
+            # Use PlannerAgent for dual-model architecture
+            planner_agent = self._get_planner_agent()
             
+            # Get model info for logging
+            from app.core.model_selector import ModelSelector
             model_selector = ModelSelector(self.db)
             planning_model = model_selector.get_planning_model()
+            server = model_selector.get_server_for_model(planning_model) if planning_model else None
             
-            if not planning_model:
-                raise ValueError("No suitable model found for planning")
-            
-            # Get server for the model
-            server = model_selector.get_server_for_model(planning_model)
-            if not server:
-                raise ValueError("No server found for planning model")
-            
-            # Log request to model
+            # Log request to PlannerAgent
             self._add_model_log(
                 log_type="request",
-                model=planning_model.model_name,
+                model=planning_model.model_name if planning_model else "PlannerAgent",
                 content={
-                    "prompt": user_prompt[:500] + "..." if len(user_prompt) > 500 else user_prompt,
-                    "system_prompt": system_prompt[:200] + "..." if len(system_prompt) > 200 else system_prompt,
-                    "task": "analyze_task"
+                    "prompt": task_description[:500] + "..." if len(task_description) > 500 else task_description,
+                    "task": "analyze_task",
+                    "agent": "PlannerAgent"
                 },
                 metadata={
-                    "server": server.name,
-                    "server_url": server.get_api_url(),
-                    "model_id": str(planning_model.id) if hasattr(planning_model, 'id') else None
+                    "server": server.name if server else None,
+                    "server_url": server.get_api_url() if server else None,
+                    "agent_id": str(planner_agent.agent_id)
                 }
             )
             
@@ -1585,40 +1716,35 @@ Return a JSON array of steps."""
             
             self._save_workflow_event_to_db(
                 stage=WorkflowStage.EXECUTION,
-                message=f"Отправка запроса к модели {planning_model.model_name} для анализа задачи",
+                message=f"Отправка запроса к PlannerAgent для анализа задачи",
                 details={
-                    "model": planning_model.model_name,
-                    "server": server.name,
-                    "server_url": server.get_api_url()
+                    "agent": "PlannerAgent",
+                    "agent_id": str(planner_agent.agent_id),
+                    "model": planning_model.model_name if planning_model else None,
+                    "server": server.name if server else None
                 },
                 event_type=DBEventType.MODEL_REQUEST,
                 event_source=DBEventSource.PLANNER_AGENT,
                 event_data={
-                    "system_prompt": system_prompt,
-                    "user_prompt": user_prompt,
-                    "full_prompt": f"{system_prompt}\n\n{user_prompt}",
+                    "task_description": task_description,
                     "task_type": "analyze_task",
                     "context_used": bool(context),
-                    "model": planning_model.model_name,
-                    "server": server.name,
-                    "server_url": server.get_api_url()
+                    "agent_id": str(planner_agent.agent_id),
+                    "model": planning_model.model_name if planning_model else None
                 }
             )
             
             # Add workflow event to tracker
-            if self.workflow_tracker and self.workflow_id:
-                self.workflow_tracker.add_event(
+            workflow_engine = self.context.workflow_engine if self.context else None
+            if workflow_engine:
+                workflow_engine.tracker.add_event(
                     WorkflowStage.EXECUTION,
-                    f"Отправка запроса к модели {planning_model.model_name} для анализа задачи...",
-                    details={"model": planning_model.model_name, "server": server.name},
+                    f"Отправка запроса к PlannerAgent для анализа задачи...",
+                    details={"agent": "PlannerAgent", "agent_id": str(planner_agent.agent_id)},
                     workflow_id=self.workflow_id
                 )
             
-            # Create OllamaClient
-            ollama_client = OllamaClient()
-            
             # IMPORTANT: Add timeout to prevent infinite loops
-            # Использовать глобальные ограничения из конфигурации (стопоры)
             from app.core.config import get_settings
             settings = get_settings()
             
@@ -1626,17 +1752,23 @@ Return a JSON array of steps."""
             import time
             start_time = time.time()
             try:
-                response = await asyncio.wait_for(
-                    ollama_client.generate(
-                        prompt=user_prompt,
-                        system_prompt=system_prompt,
-                        task_type=TaskType.PLANNING,
-                        model=planning_model.model_name,
-                        server_url=server.get_api_url()
+                # Use PlannerAgent to analyze task
+                analysis_result = await asyncio.wait_for(
+                    planner_agent.analyze_task(
+                        task_description=task_description,
+                        context=context
                     ),
-                    timeout=float(settings.planning_timeout_seconds)  # Использовать глобальное ограничение
+                    timeout=float(settings.planning_timeout_seconds)
                 )
                 duration_ms = int((time.time() - start_time) * 1000)
+                
+                # Convert PlannerAgent result to expected format
+                response_text = json.dumps(analysis_result, ensure_ascii=False, indent=2)
+                # Create mock response object for compatibility
+                class MockResponse:
+                    def __init__(self, text):
+                        self.response = text
+                response = MockResponse(response_text)
                 
                 # Record prompt usage metrics
                 if prompt_used:
@@ -1650,57 +1782,93 @@ Return a JSON array of steps."""
                         if logger:
                             logger.warning(f"Failed to record prompt usage metrics: {e}", exc_info=True)
                 
-                # Log response from model
+                # Log response from PlannerAgent
+                response_text = json.dumps(analysis_result, ensure_ascii=False)
                 self._add_model_log(
                     log_type="response",
-                    model=planning_model.model_name,
+                    model=planning_model.model_name if planning_model else "PlannerAgent",
                     content={
-                        "response": response.response[:2000] + "..." if len(response.response) > 2000 else response.response,
-                        "full_length": len(response.response)
+                        "response": response_text[:2000] + "..." if len(response_text) > 2000 else response_text,
+                        "full_length": len(response_text),
+                        "analysis": analysis_result
                     },
                     metadata={
                         "duration_ms": duration_ms,
-                        "task": "analyze_task"
+                        "task": "analyze_task",
+                        "agent": "PlannerAgent"
                     }
                 )
                 
                 # Save workflow event with full response
                 self._save_workflow_event_to_db(
                     stage=WorkflowStage.EXECUTION,
-                    message=f"Получен ответ от модели {planning_model.model_name}",
+                    message=f"Получен ответ от PlannerAgent",
                     details={
-                        "model": planning_model.model_name,
+                        "agent": "PlannerAgent",
+                        "agent_id": str(planner_agent.agent_id),
                         "duration_ms": duration_ms,
-                        "response_length": len(response.response),
-                        "server": server.name
+                        "response_length": len(response_text),
+                        "model": planning_model.model_name if planning_model else None
                     },
                     event_type=DBEventType.MODEL_RESPONSE,
                     event_source=DBEventSource.PLANNER_AGENT,
                     duration_ms=duration_ms,
                     event_data={
-                        "full_response": response.response,  # Полный ответ, не обрезанный
-                        "response_length": len(response.response),
+                        "full_response": response_text,
+                        "analysis_result": analysis_result,
+                        "response_length": len(response_text),
                         "task_type": "analyze_task",
-                        "model": planning_model.model_name,
-                        "duration_ms": duration_ms,
-                        "server": server.name
+                        "agent_id": str(planner_agent.agent_id),
+                        "model": planning_model.model_name if planning_model else None,
+                        "duration_ms": duration_ms
                     }
                 )
                 
                 # Add workflow event for model response
-                if self.workflow_tracker and self.workflow_id:
-                    self.workflow_tracker.add_event(
+                workflow_engine = self.context.workflow_engine if self.context else None
+                if workflow_engine:
+                    workflow_engine.tracker.add_event(
                         WorkflowStage.EXECUTION,
-                        f"Получен ответ от модели {planning_model.model_name} ({duration_ms}ms), обработка стратегии...",
+                        f"Получен ответ от PlannerAgent ({duration_ms}ms), обработка стратегии...",
                         details={
-                            "model": planning_model.model_name,
+                            "agent": "PlannerAgent",
+                            "agent_id": str(planner_agent.agent_id),
                             "duration_ms": duration_ms,
-                            "response_length": len(response.response)
+                            "response_length": len(response_text)
                         },
                         workflow_id=self.workflow_id
                     )
             except asyncio.TimeoutError:
                 duration_ms = int((asyncio.get_event_loop().time() - start_time) * 1000)
+                analysis_success = False
+                
+                # Record prompt failure through PromptManager if available
+                if prompt_used and hasattr(self, 'context') and self.context.prompt_manager:
+                    try:
+                        await self.context.prompt_manager.record_prompt_usage(
+                            prompt_id=prompt_used.id,
+                            success=False,
+                            execution_time_ms=duration_ms,
+                            stage="planning_analysis"
+                        )
+                    except Exception as e:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to record prompt failure through PromptManager: {e}", exc_info=True)
+                
+                # Also record through PromptService for backward compatibility
+                if prompt_used:
+                    try:
+                        self.prompt_service.record_usage(
+                            prompt_id=prompt_used.id,
+                            execution_time_ms=duration_ms
+                        )
+                        self.prompt_service.record_failure(prompt_used.id)
+                    except Exception as e:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to record prompt failure metrics: {e}", exc_info=True)
+                
                 self._add_model_log(
                     log_type="error",
                     model=planning_model.model_name,
@@ -1712,21 +1880,50 @@ Return a JSON array of steps."""
                     }
                 )
                 raise ValueError("Strategy analysis timed out after 5 minutes. Task may be too complex or model is stuck.")
+            except Exception as e:
+                duration_ms = int((time.time() - start_time) * 1000) if 'start_time' in locals() else 0
+                analysis_success = False
+                
+                # Record prompt failure through PromptManager if available
+                if prompt_used and hasattr(self, 'context') and self.context.prompt_manager:
+                    try:
+                        await self.context.prompt_manager.record_prompt_usage(
+                            prompt_id=prompt_used.id,
+                            success=False,
+                            execution_time_ms=duration_ms,
+                            stage="planning_analysis"
+                        )
+                    except Exception:
+                        pass  # Already logged above
+                
+                # Also record through PromptService for backward compatibility
+                if prompt_used:
+                    try:
+                        self.prompt_service.record_usage(
+                            prompt_id=prompt_used.id,
+                            execution_time_ms=duration_ms
+                        )
+                        self.prompt_service.record_failure(prompt_used.id)
+                    except Exception:
+                        pass  # Already logged above
+                
+                raise
             
-            # Stage 2: Log request analysis (HITL observation)
-            # Skip duplicate log - already logged in WorkflowTracker
-            # self._add_model_log(...) - commented to avoid duplication
+            # Stage 2: Convert PlannerAgent result to strategy format
+            # PlannerAgent returns: {goal, requirements, constraints, success_criteria, complexity, estimated_steps}
+            # We need: {approach, assumptions, constraints, success_criteria}
             
-            # Parse JSON from response with validation
-            strategy = self._parse_and_validate_json(
-                response.response,
-                expected_keys=["approach", "assumptions", "constraints", "success_criteria"]
-            )
+            # Convert analysis_result to strategy format
+            strategy = {
+                "approach": analysis_result.get("goal", "Standard approach"),
+                "assumptions": analysis_result.get("requirements", []),
+                "constraints": analysis_result.get("constraints", []),
+                "success_criteria": analysis_result.get("success_criteria", []),
+                "complexity": analysis_result.get("complexity", "medium"),
+                "estimated_steps": analysis_result.get("estimated_steps", 3)
+            }
             
             # Ensure required fields
-            if not isinstance(strategy, dict):
-                strategy = {}
-            
             strategy.setdefault("approach", "Standard approach")
             strategy.setdefault("assumptions", [])
             strategy.setdefault("constraints", [])
@@ -1737,7 +1934,7 @@ Return a JSON array of steps."""
                 from datetime import timedelta
                 from app.models.project_metric import MetricType, MetricPeriod
                 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 # Round to hour for consistent period boundaries
                 period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
                 period_end = now.replace(minute=0, second=0, microsecond=0)
@@ -1762,14 +1959,16 @@ Return a JSON array of steps."""
             # Log parsed strategy
             self._add_model_log(
                 log_type="action_progress",
-                model=planning_model.model_name,
+                model=planning_model.model_name if planning_model else "PlannerAgent",
                 content={
                     "action": "strategy_parsed",
-                    "strategy": strategy
+                    "strategy": strategy,
+                    "analysis_result": analysis_result
                 },
                 metadata={
                     "stage": "analysis",
-                    "operation": "analyze_task"
+                    "operation": "analyze_task",
+                    "agent": "PlannerAgent"
                 },
                 stage="analysis"
             )
@@ -1791,7 +1990,8 @@ Return a JSON array of steps."""
                                 execution_metadata={
                                     "duration_ms": duration_ms,
                                     "stage": "analysis",
-                                    "response_length": len(response.response) if 'response' in locals() else 0
+                                    "response_length": len(response_text) if 'response_text' in locals() else 0,
+                                    "agent": "PlannerAgent"
                                 }
                             )
                         )
@@ -1891,7 +2091,7 @@ Return a JSON array of steps."""
                             "prompt_id": str(prompt_used.id),
                             "prompt_name": prompt_used.name,
                             "stage": "decomposition",
-                            "timestamp": datetime.utcnow().isoformat()
+                            "timestamp": datetime.now(timezone.utc).isoformat()
                         })
                         digital_twin_context["prompt_usage"] = prompt_usage
                         task.update_context(digital_twin_context, merge=False)
@@ -1928,34 +2128,29 @@ Return a JSON array of steps."""
 Break down this task into executable steps. Return only a valid JSON array."""
         
         try:
-            # Use ModelSelector for dual-model architecture
-            from app.core.model_selector import ModelSelector
+            # Use PlannerAgent for dual-model architecture
+            planner_agent = self._get_planner_agent()
             
+            # Get model info for logging
+            from app.core.model_selector import ModelSelector
             model_selector = ModelSelector(self.db)
             planning_model = model_selector.get_planning_model()
+            server = model_selector.get_server_for_model(planning_model) if planning_model else None
             
-            if not planning_model:
-                raise ValueError("No suitable model found for planning")
-            
-            # Get server for the model
-            server = model_selector.get_server_for_model(planning_model)
-            if not server:
-                raise ValueError("No server found for planning model")
-            
-            # Log request to model
+            # Log request to PlannerAgent
             self._add_model_log(
                 log_type="request",
-                model=planning_model.model_name,
+                model=planning_model.model_name if planning_model else "PlannerAgent",
                 content={
-                    "prompt": user_prompt[:500] + "..." if len(user_prompt) > 500 else user_prompt,
-                    "system_prompt": system_prompt[:200] + "..." if len(system_prompt) > 200 else system_prompt,
+                    "prompt": task_description[:500] + "..." if len(task_description) > 500 else task_description,
                     "task": "decompose_task",
-                    "strategy": strategy
+                    "strategy": strategy,
+                    "agent": "PlannerAgent"
                 },
                 metadata={
-                    "server": server.name,
-                    "server_url": server.get_api_url(),
-                    "model_id": str(planning_model.id) if hasattr(planning_model, 'id') else None
+                    "server": server.name if server else None,
+                    "server_url": server.get_api_url() if server else None,
+                    "agent_id": str(planner_agent.agent_id)
                 }
             )
             
@@ -1965,83 +2160,101 @@ Break down this task into executable steps. Return only a valid JSON array."""
             
             self._save_workflow_event_to_db(
                 stage=WorkflowStage.EXECUTION,
-                message=f"Декомпозиция задачи на шаги, отправка запроса к модели {planning_model.model_name}",
+                message=f"Декомпозиция задачи на шаги через PlannerAgent",
                 details={
-                    "model": planning_model.model_name,
-                    "server": server.name,
-                    "server_url": server.get_api_url()
+                    "agent": "PlannerAgent",
+                    "agent_id": str(planner_agent.agent_id),
+                    "model": planning_model.model_name if planning_model else None,
+                    "server": server.name if server else None
                 },
                 event_type=DBEventType.MODEL_REQUEST,
                 event_source=DBEventSource.PLANNER_AGENT,
                 event_data={
-                    "system_prompt": system_prompt,
-                    "user_prompt": user_prompt,
-                    "full_prompt": f"{system_prompt}\n\n{user_prompt}",
+                    "task_description": task_description,
                     "task_type": "decompose_task",
                     "strategy": strategy if isinstance(strategy, dict) else {"strategy": str(strategy)},
-                    "context_used": bool(context)
+                    "context_used": bool(context),
+                    "agent_id": str(planner_agent.agent_id)
                 }
             )
             
             # Add workflow event for decomposition request
-            if self.workflow_tracker and self.workflow_id:
-                self.workflow_tracker.add_event(
+            workflow_engine = self.context.workflow_engine if self.context else None
+            if workflow_engine:
+                workflow_engine.tracker.add_event(
                     WorkflowStage.EXECUTION,
-                    f"Декомпозиция задачи на шаги, отправка запроса к модели {planning_model.model_name}...",
-                    details={"model": planning_model.model_name, "server": server.name},
+                    f"Декомпозиция задачи на шаги через PlannerAgent...",
+                    details={"agent": "PlannerAgent", "agent_id": str(planner_agent.agent_id)},
                     workflow_id=self.workflow_id
                 )
             
-            # Create OllamaClient
-            ollama_client = OllamaClient()
-            
             # IMPORTANT: Add timeout to prevent infinite loops
+            from app.core.config import get_settings
+            settings = get_settings()
+            
             import asyncio
             import time
             start_time = time.time()
             try:
-                response = await asyncio.wait_for(
-                    ollama_client.generate(
-                        prompt=user_prompt,
-                        system_prompt=system_prompt,
-                        task_type=TaskType.PLANNING,
-                        model=planning_model.model_name,
-                        server_url=server.get_api_url()
+                # Use PlannerAgent to decompose task
+                steps_result = await asyncio.wait_for(
+                    planner_agent.decompose_task(
+                        task_description=task_description,
+                        analysis=strategy,
+                        context=context
                     ),
-                    timeout=float(settings.planning_timeout_seconds)  # Использовать глобальное ограничение
+                    timeout=float(settings.planning_timeout_seconds)
                 )
                 duration_ms = int((time.time() - start_time) * 1000)
+                decomposition_success = True
                 
-                # Record prompt usage metrics
+                # steps_result is already a list of steps from PlannerAgent
+                steps = steps_result
+                
+                # Record prompt usage metrics through PromptManager if available
+                if prompt_used and hasattr(self, 'context') and self.context.prompt_manager:
+                    try:
+                        await self.context.prompt_manager.record_prompt_usage(
+                            prompt_id=prompt_used.id,
+                            success=True,
+                            execution_time_ms=duration_ms,
+                            stage="planning_decomposition"
+                        )
+                    except Exception as e:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to record prompt usage through PromptManager: {e}", exc_info=True)
+                
+                # Also record through PromptService for backward compatibility
                 if prompt_used:
                     try:
                         self.prompt_service.record_usage(
                             prompt_id=prompt_used.id,
                             execution_time_ms=duration_ms
                         )
+                        self.prompt_service.record_success(prompt_used.id)
                     except Exception as e:
                         logger = self._get_logger()
                         if logger:
                             logger.warning(f"Failed to record prompt usage metrics: {e}", exc_info=True)
                 
-                # Log response from model
-                try:
-                    parsed_response = json.loads(response.response)
-                    steps_count = len(parsed_response) if isinstance(parsed_response, list) else 0
-                except:
-                    steps_count = 0
+                # Log response from PlannerAgent
+                steps_count = len(steps) if isinstance(steps, list) else 0
+                steps_json = json.dumps(steps, ensure_ascii=False, indent=2)
                 
                 self._add_model_log(
                     log_type="response",
-                    model=planning_model.model_name,
+                    model=planning_model.model_name if planning_model else "PlannerAgent",
                     content={
-                        "response": response.response[:2000] + "..." if len(response.response) > 2000 else response.response,
-                        "full_length": len(response.response),
-                        "steps_count": steps_count
+                        "response": steps_json[:2000] + "..." if len(steps_json) > 2000 else steps_json,
+                        "full_length": len(steps_json),
+                        "steps_count": steps_count,
+                        "steps": steps[:3] if steps_count > 0 else []  # First 3 steps as sample
                     },
                     metadata={
                         "duration_ms": duration_ms,
-                        "task": "decompose_task"
+                        "task": "decompose_task",
+                        "agent": "PlannerAgent"
                     }
                 )
                 
@@ -2051,22 +2264,24 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 
                 self._save_workflow_event_to_db(
                     stage=WorkflowStage.EXECUTION,
-                    message=f"Получен ответ от модели, декомпозировано на {steps_count} шаг(ов)",
+                    message=f"Получен ответ от PlannerAgent, декомпозировано на {steps_count} шаг(ов)",
                     details={
-                        "model": planning_model.model_name,
+                        "agent": "PlannerAgent",
+                        "agent_id": str(planner_agent.agent_id),
                         "duration_ms": duration_ms,
                         "steps_count": steps_count,
-                        "server": server.name
+                        "model": planning_model.model_name if planning_model else None
                     },
                     event_type=DBEventType.MODEL_RESPONSE,
                     event_source=DBEventSource.PLANNER_AGENT,
                     duration_ms=duration_ms,
                     event_data={
-                        "full_response": response.response,  # Полный ответ, не обрезанный
-                        "response_length": len(response.response),
+                        "full_response": steps_json,
+                        "steps": steps,
+                        "response_length": len(steps_json),
                         "task_type": "decompose_task",
                         "steps_count": steps_count,
-                        "parsed_steps": parsed_response if steps_count > 0 else None
+                        "agent_id": str(planner_agent.agent_id)
                     }
                 )
                 
@@ -2075,7 +2290,7 @@ Break down this task into executable steps. Return only a valid JSON array."""
                     from datetime import timedelta
                     from app.models.project_metric import MetricType, MetricPeriod
                     
-                    now = datetime.utcnow()
+                    now = datetime.now(timezone.utc)
                     # Round to hour for consistent period boundaries
                     period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
                     period_end = now.replace(minute=0, second=0, microsecond=0)
@@ -2099,24 +2314,196 @@ Break down this task into executable steps. Return only a valid JSON array."""
                         logger.warning(f"Failed to record task decomposition metrics: {e}", exc_info=True)
                 
                 # Add workflow event for decomposition response
-                if self.workflow_tracker and self.workflow_id:
-                    self.workflow_tracker.add_event(
+                workflow_engine = self.context.workflow_engine if self.context else None
+                if workflow_engine:
+                    workflow_engine.tracker.add_event(
                         WorkflowStage.EXECUTION,
-                        f"Получен ответ от модели, декомпозировано на {steps_count} шаг(ов) ({duration_ms}ms)...",
+                        f"Получен ответ от PlannerAgent, декомпозировано на {steps_count} шаг(ов) ({duration_ms}ms)...",
                         details={
-                            "model": planning_model.model_name,
+                            "agent": "PlannerAgent",
+                            "agent_id": str(planner_agent.agent_id),
                             "duration_ms": duration_ms,
                             "steps_count": steps_count
                         },
                         workflow_id=self.workflow_id
                     )
+                
+                # Ensure it's a list
+                if not isinstance(steps, list):
+                    steps = []
+                
+                # Validate and fix steps, and create FunctionCall for each step
+                validated_steps = []
+                planner_agent = self._get_planner_agent()
+                
+                for i, step in enumerate(steps):
+                    if not isinstance(step, dict):
+                        continue
+                    
+                    # Ensure required fields
+                    step.setdefault("step_id", f"step_{i+1}")
+                    step.setdefault("description", f"Step {i+1}")
+                    step.setdefault("type", "action")
+                    step.setdefault("inputs", {})
+                    step.setdefault("expected_outputs", {})
+                    step.setdefault("timeout", 300)
+                    step.setdefault("retry_policy", {"max_attempts": 3, "delay": 10})
+                    step.setdefault("dependencies", [])
+                    step.setdefault("approval_required", False)
+                    step.setdefault("risk_level", "low")
+                    step.setdefault("agent", None)
+                    step.setdefault("tool", None)
+                    
+                    # Use DecisionRouter to automatically select tools and agents for steps if not specified
+                    if not step.get("tool") and not step.get("agent") and step.get("type") == "action":
+                        try:
+                            routing_decision = await self.decision_router.route_task(
+                                task_description=step.get("description", ""),
+                                task_type=step.get("type", "action"),
+                                requirements=step.get("requirements", {}),
+                                context={
+                                    "step_id": step.get("step_id"),
+                                    "plan_context": context or {},
+                                    "strategy": strategy
+                                }
+                            )
+                            
+                            # Assign selected tool or agent to step
+                            if routing_decision.get("tool"):
+                                step["tool"] = routing_decision["tool"].get("id") or routing_decision["tool"].get("name")
+                                logger = self._get_logger()
+                                if logger:
+                                    logger.info(
+                                        f"DecisionRouter selected tool {step['tool']} for step {step.get('step_id')}",
+                                        extra={
+                                            "step_id": step.get("step_id"),
+                                            "tool": step["tool"],
+                                            "reasoning": routing_decision.get("reasoning", "")
+                                        }
+                                    )
+                            
+                            if routing_decision.get("agent"):
+                                step["agent"] = routing_decision["agent"].get("id") or routing_decision["agent"].get("name")
+                                logger = self._get_logger()
+                                if logger:
+                                    logger.info(
+                                        f"DecisionRouter selected agent {step['agent']} for step {step.get('step_id')}",
+                                        extra={
+                                            "step_id": step.get("step_id"),
+                                            "agent": step["agent"],
+                                            "reasoning": routing_decision.get("reasoning", "")
+                                        }
+                                    )
+                        except Exception as e:
+                            logger = self._get_logger()
+                            if logger:
+                                logger.warning(
+                                    f"Failed to use DecisionRouter for step {step.get('step_id')}: {e}",
+                                    exc_info=True
+                                )
+                            # Continue without tool/agent selection if DecisionRouter fails
+                    
+                    # Create FunctionCall for steps that require code execution
+                    # Use PlannerAgent to create code prompt for CoderAgent
+                    if step.get("type") == "action" and not step.get("tool") and not step.get("agent"):
+                        try:
+                            function_call = await planner_agent.create_code_prompt(
+                                step=step,
+                                plan_context={
+                                    "task_description": task_description,
+                                    "strategy": strategy,
+                                    "context": context
+                                }
+                            )
+                            # Add function_call to step
+                            step["function_call"] = function_call.to_dict()
+                        except Exception as e:
+                            logger = self._get_logger()
+                            if logger:
+                                logger.warning(
+                                    f"Failed to create function call for step {step.get('step_id')}: {e}",
+                                    exc_info=True
+                                )
+                    
+                    validated_steps.append(step)
+                
+                # If no steps generated, create a default one
+                if not validated_steps:
+                    validated_steps = [{
+                        "step_id": "step_1",
+                        "description": task_description,
+                        "type": "action",
+                        "inputs": {},
+                        "expected_outputs": {},
+                        "timeout": 300,
+                        "retry_policy": {"max_attempts": 3, "delay": 10},
+                        "dependencies": [],
+                        "approval_required": False,
+                        "risk_level": "medium",
+                        "agent": None,
+                        "tool": None
+                    }]
+                
+                # Record success for prompt usage (if steps were successfully generated)
+                if prompt_used and len(validated_steps) > 0:
+                    try:
+                        self.prompt_service.record_success(prompt_used.id)
+                        
+                        # Analyze prompt performance asynchronously (don't block)
+                        try:
+                            import asyncio
+                            asyncio.create_task(
+                                self.prompt_service.analyze_prompt_performance(
+                                    prompt_id=prompt_used.id,
+                                    task_description=task_description[:500],
+                                    result={"steps_count": len(validated_steps), "steps": validated_steps[:3]},  # First 3 steps as sample
+                                    success=True,
+                                    execution_metadata={
+                                        "duration_ms": duration_ms,
+                                        "stage": "decomposition",
+                                        "steps_count": len(validated_steps),
+                                        "response_length": len(steps_json) if 'steps_json' in locals() else 0,
+                                        "agent": "PlannerAgent"
+                                    }
+                                )
+                            )
+                        except Exception as e3:
+                            logger = self._get_logger()
+                            if logger:
+                                logger.warning(f"Failed to analyze prompt performance: {e3}", exc_info=True)
+                    except Exception as e2:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to record prompt success: {e2}", exc_info=True)
+                
+                return validated_steps
+                
             except asyncio.TimeoutError:
                 import time
                 duration_ms = int((time.time() - start_time) * 1000)
+                decomposition_success = False
+                
+                # Record prompt failure through PromptManager if available
+                if prompt_used and hasattr(self, 'context') and self.context.prompt_manager:
+                    try:
+                        await self.context.prompt_manager.record_prompt_usage(
+                            prompt_id=prompt_used.id,
+                            success=False,
+                            execution_time_ms=duration_ms,
+                            stage="planning_decomposition"
+                        )
+                    except Exception as e:
+                        logger = self._get_logger()
+                        if logger:
+                            logger.warning(f"Failed to record prompt failure through PromptManager: {e}", exc_info=True)
                 
                 # Record failure for prompt usage
                 if prompt_used:
                     try:
+                        self.prompt_service.record_usage(
+                            prompt_id=prompt_used.id,
+                            execution_time_ms=duration_ms
+                        )
                         self.prompt_service.record_failure(prompt_used.id)
                         
                         # Analyze prompt performance asynchronously (don't block)
@@ -2155,85 +2542,6 @@ Break down this task into executable steps. Return only a valid JSON array."""
                     }
                 )
                 raise ValueError("Task decomposition timed out after 5 minutes. Task may be too complex or model is stuck.")
-            
-            # Parse JSON from response with validation
-            steps = self._parse_and_validate_json(response.response, expected_structure="list")
-            
-            # Ensure it's a list
-            if not isinstance(steps, list):
-                steps = []
-            
-            # Validate and fix steps
-            validated_steps = []
-            for i, step in enumerate(steps):
-                if not isinstance(step, dict):
-                    continue
-                
-                # Ensure required fields
-                step.setdefault("step_id", f"step_{i+1}")
-                step.setdefault("description", f"Step {i+1}")
-                step.setdefault("type", "action")
-                step.setdefault("inputs", {})
-                step.setdefault("expected_outputs", {})
-                step.setdefault("timeout", 300)
-                step.setdefault("retry_policy", {"max_attempts": 3, "delay": 10})
-                step.setdefault("dependencies", [])
-                step.setdefault("approval_required", False)
-                step.setdefault("risk_level", "low")
-                step.setdefault("agent", None)
-                step.setdefault("tool", None)
-                
-                validated_steps.append(step)
-            
-            # If no steps generated, create a default one
-            if not validated_steps:
-                validated_steps = [{
-                    "step_id": "step_1",
-                    "description": task_description,
-                    "type": "action",
-                    "inputs": {},
-                    "expected_outputs": {},
-                    "timeout": 300,
-                    "retry_policy": {"max_attempts": 3, "delay": 10},
-                    "dependencies": [],
-                    "approval_required": False,
-                    "risk_level": "medium",
-                    "agent": None,
-                    "tool": None
-                }]
-            
-            # Record success for prompt usage (if steps were successfully generated)
-            if prompt_used and len(validated_steps) > 0:
-                try:
-                    self.prompt_service.record_success(prompt_used.id)
-                    
-                    # Analyze prompt performance asynchronously (don't block)
-                    try:
-                        import asyncio
-                        asyncio.create_task(
-                            self.prompt_service.analyze_prompt_performance(
-                                prompt_id=prompt_used.id,
-                                task_description=task_description[:500],
-                                result={"steps_count": len(validated_steps), "steps": validated_steps[:3]},  # First 3 steps as sample
-                                success=True,
-                                execution_metadata={
-                                    "duration_ms": duration_ms,
-                                    "stage": "decomposition",
-                                    "steps_count": len(validated_steps),
-                                    "response_length": len(response.response) if 'response' in locals() else 0
-                                }
-                            )
-                        )
-                    except Exception as e3:
-                        logger = self._get_logger()
-                        if logger:
-                            logger.warning(f"Failed to analyze prompt performance: {e3}", exc_info=True)
-                except Exception as e2:
-                    logger = self._get_logger()
-                    if logger:
-                        logger.warning(f"Failed to record prompt success: {e2}", exc_info=True)
-            
-            return validated_steps
             
         except Exception as e:
             # Record failure for prompt usage
@@ -2485,11 +2793,19 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 except (ValueError, TypeError):
                     pass
         
+        # Get task autonomy level if task exists
+        task_autonomy_level = None
+        if task_id:
+            task = self.db.query(Task).filter(Task.id == task_id).first()
+            if task:
+                task_autonomy_level = task.autonomy_level
+        
         # Use adaptive approval service to determine if approval is needed
         requires_approval, decision_metadata = adaptive_approval.should_require_approval(
             plan=plan,
             agent_id=agent_id,
-            task_risk_level=risks.get("overall_risk")
+            task_risk_level=risks.get("overall_risk"),
+            task_autonomy_level=task_autonomy_level
         )
         
         # If critical steps detected, mandatory approval is required
@@ -2511,7 +2827,15 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
         # Update task status to PENDING_APPROVAL if approval is required
         if requires_approval and task:
             if task.status == TaskStatus.DRAFT:
-                task.status = TaskStatus.PENDING_APPROVAL
+                # Use TaskLifecycleManager for status transition
+                from app.services.task_lifecycle_manager import TaskRole
+                self.task_lifecycle_manager.transition(
+                    task=task,
+                    new_status=TaskStatus.PENDING_APPROVAL,
+                    role=TaskRole.PLANNER,
+                    reason="Plan created, requires approval",
+                    metadata={"plan_id": str(plan.id)}
+                )
                 self.db.commit()
                 self.db.refresh(task)
                 logger = self._get_logger()
@@ -2539,10 +2863,18 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 )
             # Mark plan as auto-approved
             plan.status = "approved"
-            plan.approved_at = datetime.utcnow()
+            plan.approved_at = datetime.now(timezone.utc)
             # Also update task status if it's in DRAFT
             if task and task.status == TaskStatus.DRAFT:
-                task.status = TaskStatus.APPROVED
+                # Use TaskLifecycleManager for status transition
+                from app.services.task_lifecycle_manager import TaskRole
+                self.task_lifecycle_manager.transition(
+                    task=task,
+                    new_status=TaskStatus.APPROVED,
+                    role=TaskRole.SYSTEM,
+                    reason="Auto-approved: low risk, high trust",
+                    metadata={"plan_id": str(plan.id), "auto_approved": True}
+                )
                 self.db.commit()
                 self.db.refresh(task)
             self.db.commit()
@@ -2620,7 +2952,7 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             raise ValueError(f"Plan {plan_id} not found")
         
         plan.status = "approved"  # Use lowercase string to match DB constraint
-        plan.approved_at = datetime.utcnow()
+        plan.approved_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(plan)
         
@@ -2658,18 +2990,59 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
         if not task:
             raise ValueError(f"Task {original_plan.task_id} not found")
         
-        # Create new plan version
+        # Search for similar situations in memory to learn from past replanning
+        similar_replanning = None
+        if context and context.get("error"):
+            try:
+                from app.services.memory_service import MemoryService
+                memory_service = MemoryService(self.db)
+                
+                # Search for similar error situations
+                error_message = context.get("error", {}).get("message", "")
+                if error_message:
+                    similar_memories = memory_service.search_memories(
+                        query=f"error: {error_message[:100]} replanning",
+                        memory_types=["episodic"],
+                        limit=3
+                    )
+                    
+                    if similar_memories:
+                        similar_replanning = {
+                            "count": len(similar_memories),
+                            "examples": [
+                                {
+                                    "plan_id": m.get("metadata", {}).get("plan_id"),
+                                    "solution": m.get("content", {}).get("solution"),
+                                    "success": m.get("content", {}).get("status") == "completed"
+                                }
+                                for m in similar_memories[:2]
+                            ]
+                        }
+            except Exception as e:
+                logger = self._get_logger()
+                if logger:
+                    logger.debug(f"Could not search for similar replanning situations: {e}")
+        
+        # Prepare enhanced context with memory insights
+        enhanced_context = {
+            **(context or {}),
+            "previous_plan": {
+                "version": original_plan.version,
+                "steps": original_plan.steps,
+                "goal": original_plan.goal,
+                "strategy": original_plan.strategy,
+                "reason_for_replan": reason
+            }
+        }
+        
+        if similar_replanning:
+            enhanced_context["similar_replanning"] = similar_replanning
+        
+        # Create new plan version using PlannerAgent (via generate_plan)
         new_plan = await self.generate_plan(
             task_description=task.description,
             task_id=task.id,
-            context={
-                **(context or {}),
-                "previous_plan": {
-                    "version": original_plan.version,
-                    "steps": original_plan.steps,
-                    "reason_for_replan": reason
-                }
-            }
+            context=enhanced_context
         )
         
         # Increment version
@@ -2677,6 +3050,52 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
         
         self.db.commit()
         self.db.refresh(new_plan)
+        
+        # Transition task to PENDING_APPROVAL for the new plan (as per plan requirements)
+        # The new plan needs approval before execution
+        try:
+            task = self.db.query(Task).filter(Task.id == original_plan.task_id).first()
+            if task:
+                # Use TaskLifecycleManager to transition task status
+                # New plan requires approval, so task should be in PENDING_APPROVAL
+                if task.status != TaskStatus.PENDING_APPROVAL:
+                    # Only transition if not already in PENDING_APPROVAL
+                    # Check if transition is allowed
+                    if self.task_lifecycle_manager.can_transition(
+                        task=task,
+                        new_status=TaskStatus.PENDING_APPROVAL,
+                        role=TaskRole.PLANNER
+                    ):
+                        self.task_lifecycle_manager.transition(
+                            task=task,
+                            new_status=TaskStatus.PENDING_APPROVAL,
+                            role=TaskRole.PLANNER,
+                            reason=f"New plan created after replanning (version {new_plan.version})",
+                            metadata={
+                                "original_plan_id": str(original_plan.id),
+                                "new_plan_id": str(new_plan.id),
+                                "replan_reason": reason
+                            }
+                        )
+                        logger = self._get_logger()
+                        if logger:
+                            logger.info(
+                                f"Task {task.id} transitioned to PENDING_APPROVAL after replanning",
+                                extra={
+                                    "task_id": str(task.id),
+                                    "original_plan_id": str(original_plan.id),
+                                    "new_plan_id": str(new_plan.id),
+                                    "new_version": new_plan.version
+                                }
+                            )
+        except Exception as e:
+            logger = self._get_logger()
+            if logger:
+                logger.warning(
+                    f"Failed to transition task to PENDING_APPROVAL after replanning: {e}",
+                    exc_info=True
+                )
+            # Continue even if transition fails
         
         # Save replan to episodic memory
         await self._save_plan_to_episodic_memory(
@@ -2707,7 +3126,7 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 "from_version": original_plan.version,
                 "to_version": new_plan.version,
                 "reason": reason,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "original_plan_id": str(original_plan.id),
                 "new_plan_id": str(new_plan.id),
                 "changes": {
@@ -2904,7 +3323,7 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                     "todo_list": todo_list,
                     "total_steps": len(todo_list),
                     "completed_steps": 0,
-                    "updated_at": datetime.utcnow().isoformat()
+                    "updated_at": datetime.now(timezone.utc).isoformat()
                 },
                 session_id=str(task_id),
                 ttl_seconds=86400 * 7  # 7 days
@@ -2985,7 +3404,7 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 "plan_steps": plan.steps if isinstance(plan.steps, list) else [],
                 "plan_status": plan.status,
                 "strategy": plan.strategy,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 **(context or {})
             }
             
@@ -3058,12 +3477,27 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 limit=5
             )
             
-            # Also get patterns from MetaLearningService
-            learning_patterns = meta_learning.get_learning_patterns(
-                agent_id=agent_id,
-                pattern_type="strategy",
-                limit=5
-            )
+            # Also get patterns from MetaLearningService (if method exists)
+            learning_patterns = []
+            try:
+                # Try different method names that might exist
+                if hasattr(meta_learning, 'get_learning_patterns'):
+                    learning_patterns = meta_learning.get_learning_patterns(
+                        agent_id=agent_id,
+                        pattern_type="strategy",
+                        limit=5
+                    )
+                elif hasattr(meta_learning, 'get_patterns_for_task'):
+                    # Use get_patterns_for_task if available
+                    from app.models.learning_pattern import PatternType
+                    patterns = meta_learning.get_patterns_for_task(
+                        task_category=task_description[:50],  # Use first 50 chars as category
+                        pattern_type=PatternType.STRATEGY
+                    )
+                    learning_patterns = [p.to_dict() if hasattr(p, 'to_dict') else p for p in patterns[:5]]
+            except (AttributeError, Exception) as e:
+                logger.debug(f"Could not get learning patterns from MetaLearningService: {e}")
+                learning_patterns = []
             
             # Combine and rank patterns
             all_patterns = []

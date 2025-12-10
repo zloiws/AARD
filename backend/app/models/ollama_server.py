@@ -2,7 +2,7 @@
 Database model for Ollama server configuration
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -32,8 +32,8 @@ class OllamaServer(Base):
     priority = Column(Integer, default=0)  # Higher priority = preferred
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     last_checked_at = Column(DateTime, nullable=True)  # Last health check
     is_available = Column(Boolean, default=False)  # Last known availability status
     

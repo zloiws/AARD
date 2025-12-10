@@ -1,7 +1,7 @@
 """
 Evolution history and feedback models
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 from uuid import uuid4, UUID
@@ -65,7 +65,7 @@ class EvolutionHistory(Base):
     improvement_metrics = Column(JSON, nullable=True)
     success = Column(Boolean, nullable=True)
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     def __repr__(self):
         return f"<EvolutionHistory(id={self.id}, entity={self.entity_type}:{self.entity_id}, change={self.change_type})>"
@@ -98,7 +98,7 @@ class Feedback(Base):
     processed = Column(Boolean, nullable=False, default=False)
     insights_extracted = Column(JSON, nullable=True)
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     task = relationship("Task", backref="feedback")

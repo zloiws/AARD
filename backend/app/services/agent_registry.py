@@ -2,7 +2,7 @@
 Agent Registry Service
 Service discovery and lifecycle management for agents
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 
@@ -69,10 +69,10 @@ class AgentRegistry:
                 # Set status to active if not already
                 if agent.status != AgentStatus.ACTIVE.value:
                     agent.status = AgentStatus.ACTIVE.value
-                    agent.activated_at = datetime.utcnow()
+                    agent.activated_at = datetime.now(timezone.utc)
                 
                 # Update heartbeat
-                agent.last_heartbeat = datetime.utcnow()
+                agent.last_heartbeat = datetime.now(timezone.utc)
                 agent.health_status = AgentHealthStatus.HEALTHY.value
                 
                 self.db.commit()
@@ -234,7 +234,7 @@ class AgentRegistry:
             Number of agents cleaned up
         """
         with self.tracer.start_as_current_span("agent_registry.cleanup") as span:
-            threshold = datetime.utcnow() - timedelta(minutes=self.removal_threshold)
+            threshold = datetime.now(timezone.utc) - timedelta(minutes=self.removal_threshold)
             
             unhealthy_agents = self.db.query(Agent).filter(
                 and_(

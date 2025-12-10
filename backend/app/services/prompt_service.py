@@ -3,7 +3,7 @@ Prompt Service for managing prompts with versioning and metrics
 """
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
@@ -393,7 +393,7 @@ class PromptService:
                 from datetime import timedelta
                 from app.models.project_metric import MetricType, MetricPeriod
                 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 # Round to hour for consistent period boundaries
                 period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
                 period_end = now.replace(minute=0, second=0, microsecond=0)
@@ -473,7 +473,7 @@ class PromptService:
             
             # Add new result
             history.append({
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "success": success,
                 "type": "usage_result"
             })
@@ -519,7 +519,7 @@ class PromptService:
                 from datetime import timedelta
                 from app.models.project_metric import MetricType, MetricPeriod
                 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 # Round to hour for consistent period boundaries
                 period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
                 period_end = now.replace(minute=0, second=0, microsecond=0)
@@ -577,7 +577,7 @@ class PromptService:
         try:
             from app.services.reflection_service import ReflectionService
             
-            reflection_service = ReflectionService(db=self.db)
+            reflection_service = ReflectionService(self.db)
             
             # Analyze based on success/failure
             if success:
@@ -612,7 +612,7 @@ class PromptService:
             import copy
             history = copy.deepcopy(prompt.improvement_history) if prompt.improvement_history else []
             history.append({
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "type": "performance_analysis",
                 "success": success,
                 "task_description": task_description[:500],  # Truncate long descriptions
@@ -628,7 +628,7 @@ class PromptService:
                 history = other_entries + analyses[-50:]
             
             prompt.improvement_history = history
-            prompt.last_improved_at = datetime.utcnow()
+            prompt.last_improved_at = datetime.now(timezone.utc)
             
             self.db.commit()
             self.db.refresh(prompt)
@@ -714,13 +714,13 @@ class PromptService:
                     "metrics": metrics_analysis,
                     "history": history_analysis
                 },
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             
             # Save suggestions to improvement_history
             history = prompt.improvement_history or []
             history.append({
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "type": "improvement_suggestions",
                 "suggestions": result
             })
@@ -1014,7 +1014,7 @@ Provide 3-5 specific, actionable suggestions for improving this prompt. Return a
                 # Save improvement metadata
                 history = new_version.improvement_history or []
                 history.append({
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "type": "version_creation",
                     "parent_version": prompt.version,
                     "suggestions_used": suggestions,

@@ -1,16 +1,18 @@
 """
 Memory Service for managing agent short-term and long-term memory
 """
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
+import hashlib
 
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, desc
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.database import SessionLocal
+from app.core.execution_context import ExecutionContext
 from app.core.logging_config import LoggingConfig
 from app.models.agent_memory import (
     AgentMemory, MemoryEntry, MemoryAssociation,
@@ -23,18 +25,50 @@ from sqlalchemy import text
 logger = LoggingConfig.get_logger(__name__)
 
 
+class MemoryCacheEntry:
+    """Cache entry for memory search results"""
+    def __init__(self, results: List[AgentMemory], timestamp: datetime):
+        self.results = results
+        self.timestamp = timestamp
+    
+    def is_expired(self, ttl: timedelta) -> bool:
+        """Check if cache entry is expired"""
+        return datetime.now(timezone.utc) - self.timestamp > ttl
+
+
 class MemoryService:
     """Service for managing agent memory"""
     
-    def __init__(self, db: Session = None):
+    def __init__(self, db_or_context: Union[Session, ExecutionContext] = None):
         """
         Initialize Memory Service
         
         Args:
-            db: Database session (optional, will create if not provided)
+            db_or_context: Either a Session (for backward compatibility) or ExecutionContext
         """
-        self.db = db or SessionLocal()
+        # Support both ExecutionContext and Session for backward compatibility
+        if isinstance(db_or_context, ExecutionContext):
+            self.context = db_or_context
+            self.db = db_or_context.db
+            self.workflow_id = db_or_context.workflow_id
+        elif db_or_context is not None:
+            # Backward compatibility: create minimal context from Session
+            self.db = db_or_context
+            self.context = ExecutionContext.from_db_session(db_or_context)
+            self.workflow_id = self.context.workflow_id
+        else:
+            # Create new session and context if nothing provided
+            self.db = SessionLocal()
+            self.context = ExecutionContext.from_db_session(self.db)
+            self.workflow_id = self.context.workflow_id
+        
         self.embedding_service = EmbeddingService(self.db)
+        
+        # In-memory cache for search results
+        self._cache: Dict[str, MemoryCacheEntry] = {}
+        self._cache_ttl = timedelta(minutes=5)  # Cache TTL: 5 minutes
+        self._max_cache_size = 1000  # Maximum cache entries
+        self._cache_enabled = True  # Can be disabled via config
     
     # Long-term memory methods
     
@@ -91,6 +125,10 @@ class MemoryService:
         self.db.add(memory)
         self.db.commit()
         self.db.refresh(memory)
+        
+        # Invalidate cache for this agent (new memory may affect search results)
+        if self._cache_enabled:
+            self.clear_cache(agent_id=agent_id)
         
         # Generate embedding in background if requested
         if generate_embedding:
@@ -265,6 +303,65 @@ class MemoryService:
         finally:
             separate_db.close()
     
+    def _get_cache_key(self, method: str, **kwargs) -> str:
+        """Generate cache key for memory search"""
+        # Create deterministic key from method and parameters
+        key_data = f"{method}:{json.dumps(kwargs, sort_keys=True)}"
+        return hashlib.sha256(key_data.encode()).hexdigest()
+    
+    def _get_from_cache(self, cache_key: str) -> Optional[List[AgentMemory]]:
+        """Get results from cache if available and not expired"""
+        if not self._cache_enabled or cache_key not in self._cache:
+            return None
+        
+        entry = self._cache[cache_key]
+        if entry.is_expired(self._cache_ttl):
+            del self._cache[cache_key]
+            return None
+        
+        return entry.results
+    
+    def _save_to_cache(self, cache_key: str, results: List[AgentMemory]):
+        """Save search results to cache"""
+        if not self._cache_enabled:
+            return
+        
+        # Limit cache size (LRU eviction)
+        if len(self._cache) >= self._max_cache_size:
+            # Remove oldest entries (simple FIFO)
+            oldest_key = min(
+                self._cache.keys(),
+                key=lambda k: self._cache[k].timestamp
+            )
+            del self._cache[oldest_key]
+        
+        self._cache[cache_key] = MemoryCacheEntry(
+            results=results,
+            timestamp=datetime.now(timezone.utc)
+        )
+    
+    def clear_cache(self, agent_id: Optional[UUID] = None):
+        """
+        Clear memory cache
+        
+        Args:
+            agent_id: Optional agent ID to clear only that agent's cache
+        """
+        if agent_id:
+            # Clear only entries for this agent
+            keys_to_remove = [
+                key for key in self._cache.keys()
+                if f'agent_id":"{agent_id}"' in key or f'"agent_id":"{str(agent_id)}"' in key
+            ]
+            for key in keys_to_remove:
+                del self._cache[key]
+            logger.info(f"Cleared cache for agent {agent_id}", extra={"entries_removed": len(keys_to_remove)})
+        else:
+            # Clear all cache
+            count = len(self._cache)
+            self._cache.clear()
+            logger.info(f"Cleared all memory cache", extra={"entries_removed": count})
+    
     def get_memory(self, memory_id: UUID) -> Optional[AgentMemory]:
         """
         Get a memory by ID
@@ -280,7 +377,7 @@ class MemoryService:
         if memory:
             # Update access tracking
             memory.access_count += 1
-            memory.last_accessed_at = datetime.utcnow()
+            memory.last_accessed_at = datetime.now(timezone.utc)
             self.db.commit()
         
         return memory
@@ -310,7 +407,7 @@ class MemoryService:
             AgentMemory.agent_id == agent_id,
             or_(
                 AgentMemory.expires_at.is_(None),
-                AgentMemory.expires_at > datetime.utcnow()
+                AgentMemory.expires_at > datetime.now(timezone.utc)
             )
         )
         
@@ -336,7 +433,7 @@ class MemoryService:
         limit: int = 20
     ) -> List[AgentMemory]:
         """
-        Search memories by text or content
+        Search memories by text or content (with caching)
         
         Args:
             agent_id: Agent ID
@@ -348,11 +445,32 @@ class MemoryService:
         Returns:
             List of matching AgentMemory
         """
+        # Generate cache key
+        cache_key = self._get_cache_key(
+            method="search_memories",
+            agent_id=str(agent_id),
+            query_text=query_text,
+            content_query=content_query,
+            memory_type=memory_type,
+            limit=limit
+        )
+        
+        # Check cache
+        if self._cache_enabled:
+            cached = self._get_from_cache(cache_key)
+            if cached is not None:
+                logger.debug(
+                    f"Memory search cache hit for agent {agent_id}",
+                    extra={"cache_key": cache_key[:16], "results_count": len(cached)}
+                )
+                return cached
+        
+        # Execute search
         query = self.db.query(AgentMemory).filter(
             AgentMemory.agent_id == agent_id,
             or_(
                 AgentMemory.expires_at.is_(None),
-                AgentMemory.expires_at > datetime.utcnow()
+                AgentMemory.expires_at > datetime.now(timezone.utc)
             )
         )
         
@@ -371,7 +489,13 @@ class MemoryService:
                     func.jsonb_extract_path_text(AgentMemory.content, key) == str(value)
                 )
         
-        return query.order_by(desc(AgentMemory.importance), desc(AgentMemory.last_accessed_at)).limit(limit).all()
+        results = query.order_by(desc(AgentMemory.importance), desc(AgentMemory.last_accessed_at)).limit(limit).all()
+        
+        # Save to cache
+        if self._cache_enabled:
+            self._save_to_cache(cache_key, results)
+        
+        return results
     
     async def search_memories_vector(
         self,
@@ -383,7 +507,7 @@ class MemoryService:
         combine_with_text_search: bool = True
     ) -> List[AgentMemory]:
         """
-        Search memories using vector similarity (semantic search).
+        Search memories using vector similarity (semantic search) with caching.
         
         Args:
             agent_id: Agent ID
@@ -396,6 +520,27 @@ class MemoryService:
         Returns:
             List of AgentMemory sorted by similarity
         """
+        # Generate cache key
+        cache_key = self._get_cache_key(
+            method="search_memories_vector",
+            agent_id=str(agent_id),
+            query_text=query_text,
+            limit=limit,
+            similarity_threshold=similarity_threshold,
+            memory_type=memory_type,
+            combine_with_text_search=combine_with_text_search
+        )
+        
+        # Check cache
+        if self._cache_enabled:
+            cached = self._get_from_cache(cache_key)
+            if cached is not None:
+                logger.debug(
+                    f"Vector memory search cache hit for agent {agent_id}",
+                    extra={"cache_key": cache_key[:16], "results_count": len(cached)}
+                )
+                return cached
+        
         try:
             # Generate embedding for query text
             query_embedding = await self.embedding_service.generate_embedding(query_text)
@@ -480,6 +625,10 @@ class MemoryService:
                 for text_mem in text_results:
                     if text_mem.id not in vector_ids:
                         filtered_results.append(text_mem)
+            
+            # Save to cache
+            if self._cache_enabled:
+                self._save_to_cache(cache_key, filtered_results[:limit])
             
             return filtered_results[:limit]
             
@@ -569,7 +718,7 @@ class MemoryService:
         """
         query = self.db.query(AgentMemory).filter(
             AgentMemory.expires_at.isnot(None),
-            AgentMemory.expires_at <= datetime.utcnow()
+            AgentMemory.expires_at <= datetime.now(timezone.utc)
         )
         
         if agent_id:
@@ -615,7 +764,7 @@ class MemoryService:
         # Calculate expiration
         expires_at = None
         if ttl_seconds:
-            expires_at = datetime.utcnow() + timedelta(seconds=ttl_seconds)
+            expires_at = datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)
         
         # Check if entry exists for this key and session
         existing = self.db.query(MemoryEntry).filter(
@@ -676,7 +825,7 @@ class MemoryService:
             MemoryEntry.context_key == context_key,
             or_(
                 MemoryEntry.expires_at.is_(None),
-                MemoryEntry.expires_at > datetime.utcnow()
+                MemoryEntry.expires_at > datetime.now(timezone.utc)
             )
         )
         
@@ -712,7 +861,7 @@ class MemoryService:
             MemoryEntry.agent_id == agent_id,
             or_(
                 MemoryEntry.expires_at.is_(None),
-                MemoryEntry.expires_at > datetime.utcnow()
+                MemoryEntry.expires_at > datetime.now(timezone.utc)
             )
         )
         
@@ -780,7 +929,7 @@ class MemoryService:
         """
         query = self.db.query(MemoryEntry).filter(
             MemoryEntry.expires_at.isnot(None),
-            MemoryEntry.expires_at <= datetime.utcnow()
+            MemoryEntry.expires_at <= datetime.now(timezone.utc)
         )
         
         if agent_id:
@@ -889,7 +1038,7 @@ class MemoryService:
             MemoryAssociation.memory_id == memory_id,
             or_(
                 AgentMemory.expires_at.is_(None),
-                AgentMemory.expires_at > datetime.utcnow()
+                AgentMemory.expires_at > datetime.now(timezone.utc)
             )
         )
         

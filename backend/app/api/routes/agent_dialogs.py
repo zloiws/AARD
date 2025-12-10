@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -187,7 +187,7 @@ async def add_message(
             agent_id=message.get("agent_id", str(message_data.agent_id)),
             role=message.get("role", role.value),
             content=message.get("content", message_data.content),
-            timestamp=message.get("timestamp", datetime.utcnow().isoformat()),
+            timestamp=message.get("timestamp", datetime.now(timezone.utc).isoformat()),
             metadata=message.get("metadata")
         )
         
@@ -227,7 +227,7 @@ async def send_message_to_participants(
             agent_id=message.get("agent_id", str(message_data.sender_agent_id)),
             role=message.get("role", MessageRole.AGENT.value),
             content=message.get("content", message_data.content),
-            timestamp=message.get("timestamp", datetime.utcnow().isoformat()),
+            timestamp=message.get("timestamp", datetime.now(timezone.utc).isoformat()),
             metadata=message.get("metadata")
         )
         

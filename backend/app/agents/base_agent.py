@@ -57,6 +57,10 @@ class BaseAgent(ABC):
         self.tool_service = ToolService(self.db_session)
         self.memory_service = MemoryService(self.db_session)
         
+        # Default model and server_url для использования в _call_llm
+        self._default_model: Optional[str] = None
+        self._default_server_url: Optional[str] = None
+        
         # Load agent data from database
         self._agent_data: Optional[Agent] = None
         self._load_agent_data()
@@ -163,11 +167,19 @@ class BaseAgent(ABC):
             }
         ) as span:
             try:
+                # Использовать default model и server_url если не переданы
+                actual_model = model or self._default_model
+                server_url = kwargs.get("server_url") or self._default_server_url
+                
+                # Передать server_url в kwargs если есть
+                if server_url:
+                    kwargs["server_url"] = server_url
+                
                 response = await self.ollama_client.generate(
                     prompt=prompt,
                     system_prompt=system_prompt,
                     task_type=task_type,
-                    model=model,
+                    model=actual_model,
                     temperature=temperature,
                     **kwargs
                 )

@@ -3,7 +3,7 @@ Plan Template Service for extracting and managing reusable plan templates
 """
 from typing import Dict, Any, Optional, List
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import re
 import asyncio
@@ -123,7 +123,7 @@ class PlanTemplateService:
                 check_sql = text("SELECT id FROM plan_templates WHERE name = :name LIMIT 1")
                 existing_check = self.db.execute(check_sql, {"name": final_name}).fetchone()
                 if existing_check:
-                    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+                    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
                     final_name = f"{versioned_name}_{timestamp}"
                 
                 template = PlanTemplate(
@@ -204,7 +204,7 @@ class PlanTemplateService:
         name = name[:40]  # Limit length
         
         # Add timestamp with microseconds to ensure uniqueness
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
         unique_id = str(uuid4())[:8]  # Add short UUID for extra uniqueness
         return f"{name}_{timestamp}_{unique_id}"
     
@@ -883,7 +883,7 @@ class PlanTemplateService:
         template = self.get_template(template_id)
         if template:
             template.usage_count += 1
-            template.last_used_at = datetime.utcnow()
+            template.last_used_at = datetime.now(timezone.utc)
             self.db.commit()
             logger.debug(f"Updated usage for template {template_id}")
 

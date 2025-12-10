@@ -1,7 +1,7 @@
 """
 User and Session models for authentication
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4, UUID
 
@@ -29,7 +29,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False, default=UserRole.USER.value)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     last_login = Column(DateTime, nullable=True)
     
     # Relationships
@@ -47,8 +47,8 @@ class Session(Base):
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     token = Column(String(255), unique=True, nullable=False, index=True)
     expires_at = Column(DateTime, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    last_activity = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    last_activity = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     user = relationship("User", back_populates="sessions")

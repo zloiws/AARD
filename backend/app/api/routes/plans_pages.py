@@ -98,8 +98,8 @@ async def plans_metrics(
         
         # Add status breakdown
         from app.models.plan import Plan
-        from datetime import datetime, timedelta
-        cutoff_date = datetime.utcnow() - timedelta(days=time_range_days)
+        from datetime import datetime, timezone, timedelta
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
         
         plans = db.query(Plan).filter(Plan.created_at >= cutoff_date).all()
         status_counts = {}

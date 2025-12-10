@@ -4,7 +4,7 @@ Provides metrics collection, aggregation, and analysis at the project level
 """
 from typing import Dict, Any, List, Optional
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func, desc
 
@@ -93,7 +93,7 @@ class ProjectMetricsService:
                     existing.sum_value = sum_value
                 if metric_metadata is not None:
                     existing.metric_metadata = metric_metadata
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(timezone.utc)
                 self.db.commit()
                 self.db.refresh(existing)
                 return existing
@@ -301,7 +301,7 @@ class ProjectMetricsService:
             Dictionary with overview metrics
         """
         try:
-            period_end = datetime.utcnow()
+            period_end = datetime.now(timezone.utc)
             period_start = period_end - timedelta(days=days)
             
             # Collect current metrics
@@ -369,7 +369,7 @@ class ProjectMetricsService:
             List of metric values over time
         """
         try:
-            period_end = datetime.utcnow()
+            period_end = datetime.now(timezone.utc)
             period_start = period_end - timedelta(days=days)
             
             query = self.db.query(ProjectMetric).filter(

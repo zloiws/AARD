@@ -1,7 +1,7 @@
 """
 Artifact model (agents and tools)
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 from uuid import uuid4, UUID
@@ -41,7 +41,7 @@ class Artifact(Base):
     status = Column(String(50), nullable=False, default="draft")  # Use String to match DB constraint (lowercase)
     test_results = Column(JSON, nullable=True)  # Test results as JSON
     security_rating = Column(Float, nullable=True)  # Security rating 0.0-1.0
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     created_by = Column(String(255), nullable=True)
     
     def __repr__(self):

@@ -8,7 +8,7 @@ import time
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from pydantic import BaseModel
@@ -44,6 +44,7 @@ class OllamaResponse(BaseModel):
     model: str
     response: str
     done: bool = False
+    reasoning: Optional[str] = None  # Reasoning/thinking text if model supports it
 
 
 class OllamaError(Exception):
@@ -141,7 +142,7 @@ class OllamaClient:
             return None
         
         entry = self.cache[cache_key]
-        if datetime.utcnow() - entry.timestamp > self.cache_ttl:
+        if datetime.now(timezone.utc) - entry.timestamp > self.cache_ttl:
             del self.cache[cache_key]
             return None
         
@@ -151,7 +152,7 @@ class OllamaClient:
         """Save response to cache"""
         self.cache[cache_key] = CacheEntry(
             response=response,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             model=model
         )
     
@@ -535,6 +536,68 @@ class OllamaClient:
                     # Extract response from chat format
                     response_text = data.get("message", {}).get("content", "")
                     
+                    # Parse reasoning/thinking from response if present
+                    # Models like deepseek-r1 use <think>...</think> tags
+                    reasoning_text = None
+                    final_response = response_text
+                    
+                    # Check for <think>...</think> tags
+                    import re
+                    think_pattern = r'<think>(.*?)</think>'
+                    think_matches = re.findall(think_pattern, response_text, re.DOTALL | re.IGNORECASE)
+                    if think_matches:
+                        reasoning_text = '\n\n'.join(think_matches)
+                        # Remove thinking tags from final response
+                        final_response = re.sub(think_pattern, '', response_text, flags=re.DOTALL | re.IGNORECASE).strip()
+                    
+                    # Check for [thinking]...</thinking> tags (alternative format)
+                    if not reasoning_text:
+                        thinking_pattern = r'\[thinking\](.*?)\[/thinking\]'
+                        thinking_matches = re.findall(thinking_pattern, response_text, re.DOTALL | re.IGNORECASE)
+                        if thinking_matches:
+                            reasoning_text = '\n\n'.join(thinking_matches)
+                            final_response = re.sub(thinking_pattern, '', response_text, flags=re.DOTALL | re.IGNORECASE).strip()
+                    
+                    # Check for reasoning: prefix (some models use this)
+                    if not reasoning_text:
+                        reasoning_pattern = r'(?:^|\n)reasoning:\s*(.*?)(?=\n\n|\n[^\s]|$)'
+                        reasoning_matches = re.findall(reasoning_pattern, response_text, re.DOTALL | re.IGNORECASE)
+                        if reasoning_matches:
+                            reasoning_text = '\n\n'.join(reasoning_matches)
+                            final_response = re.sub(reasoning_pattern, '', response_text, flags=re.DOTALL | re.IGNORECASE).strip()
+                    
+                    # Check for Reasoning: or Рассуждение: prefix (some models like gpt-oss use this)
+                    if not reasoning_text:
+                        reasoning_prefix_pattern = r'(?:^|\n)(?:Reasoning|Рассуждение|Размышление):\s*(.*?)(?=\n\n(?:Ответ|Answer|Final|Итог)|$)'
+                        reasoning_prefix_matches = re.findall(reasoning_prefix_pattern, response_text, re.DOTALL | re.IGNORECASE)
+                        if reasoning_prefix_matches:
+                            reasoning_text = '\n\n'.join(reasoning_prefix_matches)
+                            # Try to find where reasoning ends and answer begins
+                            answer_pattern = r'(?:Ответ|Answer|Final|Итог):\s*(.*)'
+                            answer_match = re.search(answer_pattern, response_text, re.DOTALL | re.IGNORECASE)
+                            if answer_match:
+                                final_response = answer_match.group(1).strip()
+                            else:
+                                # Remove reasoning prefix but keep rest
+                                final_response = re.sub(reasoning_prefix_pattern, '', response_text, flags=re.DOTALL | re.IGNORECASE).strip()
+                    
+                    # Check for models that put reasoning before the answer with separator
+                    if not reasoning_text:
+                        # Pattern: reasoning text followed by --- or === or \*\*\* separator, then answer
+                        # Escape asterisks properly in regex
+                        separator_pattern = r'(.*?)(?:^|\n)(?:---+|===+|\*{3,})(?:^|\n)(.*)'
+                        separator_match = re.match(separator_pattern, response_text, re.DOTALL)
+                        if separator_match:
+                            potential_reasoning = separator_match.group(1).strip()
+                            potential_answer = separator_match.group(2).strip()
+                            # If potential_reasoning is substantial and potential_answer is shorter, treat first as reasoning
+                            if len(potential_reasoning) > 100 and len(potential_answer) < len(potential_reasoning) * 2:
+                                reasoning_text = potential_reasoning
+                                final_response = potential_answer
+                    
+                    # Use parsed response
+                    response_text = final_response
+                    
                     # DEBUG: Check what model Ollama returned
                     ollama_returned_model = data.get("model")
                     if ollama_returned_model and ollama_returned_model != model_to_use:
@@ -543,6 +606,17 @@ class OllamaClient:
                             extra={
                                 "requested_model": model_to_use,
                                 "returned_model": ollama_returned_model,
+                            }
+                        )
+                    
+                    # Log reasoning if found
+                    if reasoning_text:
+                        logger.debug(
+                            "Reasoning found in response",
+                            extra={
+                                "reasoning_length": len(reasoning_text),
+                                "response_length": len(response_text),
+                                "model": model_to_use,
                             }
                         )
                     
@@ -600,7 +674,8 @@ class OllamaClient:
                     return OllamaResponse(
                         model=model_to_use,
                         response=response_text,
-                        done=data.get("done", False)
+                        done=data.get("done", False),
+                        reasoning=reasoning_text if 'reasoning_text' in locals() and reasoning_text else None
                     )
                     
                 except httpx.TimeoutException as e:

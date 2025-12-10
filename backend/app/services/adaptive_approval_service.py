@@ -4,7 +4,7 @@ Determines if approval is required based on risk level, agent trust score, and t
 """
 from typing import Dict, Any, Optional, List
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
@@ -34,21 +34,33 @@ class AdaptiveApprovalService:
     # Minimum number of executions for trust calculation
     MIN_EXECUTIONS_FOR_TRUST = 5
     
-    def __init__(self, db: Session = None):
+    def __init__(self, db_or_context = None):
         """
         Initialize Adaptive Approval Service
         
         Args:
-            db: Database session (optional)
+            db_or_context: Database session or ExecutionContext (optional)
         """
-        self.db = db or SessionLocal()
+        from app.core.execution_context import ExecutionContext
+        from typing import Union
+        
+        if isinstance(db_or_context, ExecutionContext):
+            self.context = db_or_context
+            self.db = db_or_context.db
+        elif db_or_context is not None:
+            self.db = db_or_context
+            self.context = None
+        else:
+            self.db = SessionLocal()
+            self.context = None
     
     def should_require_approval(
         self,
         plan: Plan,
         agent_id: Optional[UUID] = None,
         task_risk_level: Optional[float] = None,
-        override_risk: bool = False
+        override_risk: bool = False,
+        task_autonomy_level: Optional[int] = None
     ) -> tuple[bool, Dict[str, Any]]:
         """
         Determine if approval is required for a plan
@@ -58,6 +70,12 @@ class AdaptiveApprovalService:
             agent_id: Optional agent ID (if plan is executed by specific agent)
             task_risk_level: Optional pre-calculated risk level (0.0 to 1.0)
             override_risk: If True, always require approval regardless of calculations
+            task_autonomy_level: Optional task autonomy level (0-4)
+                - 0: Read-only (no execution)
+                - 1: Step-by-step approval (every step requires approval)
+                - 2: Plan approval (plan requires approval before execution)
+                - 3: Autonomous with notification (executes autonomously, notifies human)
+                - 4: Full autonomous (no approval needed)
             
         Returns:
             Tuple of (requires_approval, decision_metadata)
@@ -68,6 +86,49 @@ class AdaptiveApprovalService:
                     "reason": "override_risk",
                     "message": "Approval required due to override"
                 }
+            
+            # Check autonomy level first - it overrides risk-based decisions
+            if task_autonomy_level is not None:
+                if task_autonomy_level == 0:
+                    # Read-only: no execution allowed
+                    return True, {
+                        "reason": "autonomy_level_0",
+                        "message": "Task autonomy level is 0 (read-only), execution not allowed",
+                        "autonomy_level": task_autonomy_level
+                    }
+                elif task_autonomy_level == 1:
+                    # Step-by-step: every step requires approval
+                    return True, {
+                        "reason": "autonomy_level_1",
+                        "message": "Task autonomy level is 1 (step-by-step approval required)",
+                        "autonomy_level": task_autonomy_level
+                    }
+                elif task_autonomy_level == 2:
+                    # Plan approval: plan requires approval before execution
+                    return True, {
+                        "reason": "autonomy_level_2",
+                        "message": "Task autonomy level is 2 (plan approval required)",
+                        "autonomy_level": task_autonomy_level
+                    }
+                elif task_autonomy_level == 3:
+                    # Autonomous with notification: execute autonomously, notify human
+                    # Still check risk for critical operations
+                    pass  # Continue to risk-based evaluation
+                elif task_autonomy_level == 4:
+                    # Full autonomous: no approval needed (unless high risk)
+                    # Only require approval for very high-risk tasks
+                    if task_risk_level is None:
+                        task_risk_level = self.calculate_task_risk_level(
+                            plan.goal,
+                            plan.steps if isinstance(plan.steps, list) else []
+                        )
+                    if task_risk_level < 0.9:  # Only require approval for extremely high risk
+                        return False, {
+                            "reason": "autonomy_level_4",
+                            "message": "Task autonomy level is 4 (full autonomous), approval not required",
+                            "autonomy_level": task_autonomy_level,
+                            "task_risk_level": task_risk_level
+                        }
             
             # Calculate risk level if not provided
             if task_risk_level is None:
@@ -81,11 +142,11 @@ class AdaptiveApprovalService:
             if agent_id:
                 agent_trust_score = self.calculate_agent_trust_score(agent_id)
             
-            # Decision logic
+            # Decision logic (for autonomy level 3 or when autonomy_level is None)
             requires_approval = False
             reason = "low_risk_high_trust"
             
-            # Always require approval for high-risk tasks
+            # Always require approval for high-risk tasks (unless autonomy level 4)
             if task_risk_level >= self.HIGH_RISK_THRESHOLD:
                 requires_approval = True
                 reason = "high_risk"
@@ -113,6 +174,7 @@ class AdaptiveApprovalService:
                 "reason": reason,
                 "task_risk_level": task_risk_level,
                 "agent_trust_score": agent_trust_score,
+                "task_autonomy_level": task_autonomy_level,
                 "thresholds": {
                     "high_risk": self.HIGH_RISK_THRESHOLD,
                     "medium_risk": self.MEDIUM_RISK_THRESHOLD,
@@ -185,7 +247,7 @@ class AdaptiveApprovalService:
                 success_rate = 0.0
             
             # Calculate recent performance (last 30 days)
-            thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+            thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
             recent_traces = self.db.query(ExecutionTrace).filter(
                 and_(
                     ExecutionTrace.agent_id == agent_id,

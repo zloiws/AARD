@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional, List, Union
 from uuid import UUID, uuid4
 from enum import Enum
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.logging_config import LoggingConfig
 
@@ -74,20 +74,26 @@ class A2AMessage(BaseModel):
     encryption: A2AEncryptionType = A2AEncryptionType.NONE
     encryption_key_id: Optional[UUID] = None
     
-    @validator('recipient')
+    @field_validator('recipient')
+    @classmethod
     def validate_recipient(cls, v):
         """Validate recipient field"""
         if isinstance(v, str) and v not in ["broadcast", "multicast"]:
             raise ValueError("recipient must be UUID, 'broadcast', or 'multicast'")
         return v
     
-    @validator('type')
-    def validate_type(cls, v, values):
+    @field_validator('type')
+    @classmethod
+    def validate_type(cls, v):
         """Validate message type"""
-        if v == A2AMessageType.REQUEST and 'expected_response_timeout' not in values:
-            # Set default timeout for requests
-            values['expected_response_timeout'] = 60
         return v
+    
+    @model_validator(mode='after')
+    def set_default_timeout(self):
+        """Set default timeout for request messages"""
+        if self.type == A2AMessageType.REQUEST and self.expected_response_timeout is None:
+            self.expected_response_timeout = 60
+        return self
     
     def is_expired(self) -> bool:
         """Check if message has expired based on TTL"""

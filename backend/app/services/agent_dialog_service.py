@@ -3,7 +3,7 @@ Agent Dialog Service for managing conversations between agents
 """
 from typing import Dict, Any, Optional, List
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
@@ -391,7 +391,7 @@ class AgentDialogService:
         
         # Check timeout
         if "timeout_seconds" in check_conditions:
-            elapsed = (datetime.utcnow() - conversation.created_at).total_seconds()
+            elapsed = (datetime.now(timezone.utc) - conversation.created_at).total_seconds()
             if elapsed >= check_conditions["timeout_seconds"]:
                 logger.info(
                     f"Conversation {conversation_id} reached timeout",
@@ -433,7 +433,7 @@ class AgentDialogService:
         
         # Store result in context if provided
         if result:
-            conversation.update_context({"result": result, "completed_at": datetime.utcnow().isoformat()})
+            conversation.update_context({"result": result, "completed_at": datetime.now(timezone.utc).isoformat()})
         
         conversation.complete(success=success)
         self.db.commit()
@@ -465,7 +465,7 @@ class AgentDialogService:
             raise ValueError(f"Conversation {conversation_id} not found")
         
         conversation.status = ConversationStatus.PAUSED.value
-        conversation.updated_at = datetime.utcnow()
+        conversation.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(conversation)
         
@@ -489,7 +489,7 @@ class AgentDialogService:
             raise ValueError(f"Conversation {conversation_id} is not paused")
         
         conversation.status = ConversationStatus.ACTIVE.value
-        conversation.updated_at = datetime.utcnow()
+        conversation.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(conversation)
         

@@ -1,7 +1,7 @@
 """
 Benchmark Task model for storing test tasks
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4
 from typing import Optional, Dict, Any
@@ -44,8 +44,8 @@ class BenchmarkTask(Base):
     task_metadata = Column(JSONB, nullable=True)  # Additional metadata (renamed from metadata to avoid SQLAlchemy conflict)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     results = relationship("BenchmarkResult", back_populates="task", cascade="all, delete-orphan")

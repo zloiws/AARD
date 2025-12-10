@@ -3,7 +3,7 @@ Agent Experiment Service for A/B testing
 """
 import random
 import statistics
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 from sqlalchemy.orm import Session
@@ -122,7 +122,7 @@ class AgentExperimentService:
             raise ValueError(f"Experiment must be in DRAFT status to start, current: {experiment.status}")
         
         experiment.status = ExperimentStatus.RUNNING.value
-        experiment.start_date = datetime.utcnow()
+        experiment.start_date = datetime.now(timezone.utc)
         
         if experiment.max_duration_hours:
             experiment.end_date = experiment.start_date + timedelta(hours=experiment.max_duration_hours)
@@ -247,7 +247,7 @@ class AgentExperimentService:
     def _check_auto_complete(self, experiment: AgentExperiment):
         """Check if experiment should be auto-completed"""
         # Check duration
-        if experiment.end_date and datetime.utcnow() >= experiment.end_date:
+        if experiment.end_date and datetime.now(timezone.utc) >= experiment.end_date:
             self.complete_experiment(experiment.id)
             return
         
@@ -369,7 +369,7 @@ class AgentExperimentService:
         self._calculate_statistics(experiment)
         
         experiment.status = ExperimentStatus.COMPLETED.value
-        experiment.end_date = datetime.utcnow()
+        experiment.end_date = datetime.now(timezone.utc)
         
         self.db.commit()
         self.db.refresh(experiment)

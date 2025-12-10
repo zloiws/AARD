@@ -2,7 +2,7 @@
 Service for managing workflow events in the database
 """
 from typing import Dict, List, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -62,7 +62,7 @@ class WorkflowEventService:
                 trace_id=trace_id,
                 parent_event_id=parent_event_id,
                 duration_ms=duration_ms,
-                timestamp=timestamp or datetime.utcnow()
+                timestamp=timestamp or datetime.now(timezone.utc)
             )
             
             self.db.add(event)

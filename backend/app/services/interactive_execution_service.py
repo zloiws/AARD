@@ -4,7 +4,7 @@ Allows pausing execution for clarification and applying human corrections
 """
 from typing import Dict, Any, Optional, Callable, Awaitable
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from enum import Enum
 
@@ -68,7 +68,7 @@ class InteractiveExecutionService:
                 "step_id": step_id,
                 "plan_id": str(plan_id),
                 "state": ExecutionState.RUNNING.value,
-                "started_at": datetime.utcnow(),
+                "started_at": datetime.now(timezone.utc),
                 "paused_at": None,
                 "clarification_question": None,
                 "human_feedback": None,
@@ -87,7 +87,7 @@ class InteractiveExecutionService:
                 
                 execution_state["state"] = ExecutionState.WAITING_CLARIFICATION.value
                 execution_state["clarification_question"] = question
-                execution_state["paused_at"] = datetime.utcnow()
+                execution_state["paused_at"] = datetime.now(timezone.utc)
                 
                 if human_feedback_callback:
                     feedback = await human_feedback_callback(question, step)
@@ -147,12 +147,12 @@ class InteractiveExecutionService:
                     "step_id": step_id,
                     "plan_id": str(plan_id),
                     "state": ExecutionState.WAITING_CLARIFICATION.value,
-                    "paused_at": datetime.utcnow(),
+                    "paused_at": datetime.now(timezone.utc),
                     "clarification_question": question
                 }
             else:
                 self._execution_states[plan_id]["state"] = ExecutionState.WAITING_CLARIFICATION.value
-                self._execution_states[plan_id]["paused_at"] = datetime.utcnow()
+                self._execution_states[plan_id]["paused_at"] = datetime.now(timezone.utc)
                 self._execution_states[plan_id]["clarification_question"] = question
             
             logger.info(

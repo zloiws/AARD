@@ -1,7 +1,7 @@
 """
 Workflow Event model for persistent storage of workflow execution events
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, Dict, Any
 from uuid import uuid4, UUID
@@ -96,7 +96,7 @@ class WorkflowEvent(Base):
     parent_event_id = Column(PGUUID(as_uuid=True), ForeignKey("workflow_events.id", ondelete="SET NULL"), nullable=True, index=True)
     
     # Timing (millisecond precision)
-    timestamp = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     duration_ms = Column(Integer, nullable=True)  # Duration of the event if applicable
     
     # Relationships

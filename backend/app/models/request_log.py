@@ -4,7 +4,7 @@ SQLAlchemy models for request logging and ranking
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, CheckConstraint, Index, Float
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from app.core.database import Base
@@ -51,8 +51,8 @@ class RequestLog(Base):
     user_id = Column(String(255), nullable=True)
     session_id = Column(String(255), nullable=True, index=True)
     trace_id = Column(String(255), nullable=True, index=True)  # Link to OpenTelemetry trace
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     consequences = relationship("RequestConsequence", back_populates="request", cascade="all, delete-orphan")
@@ -90,7 +90,7 @@ class RequestConsequence(Base):
     impact_description = Column(Text, nullable=True)
     impact_score = Column(Float, default=0.0, nullable=False)  # -1.0 to 1.0
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     request = relationship("RequestLog", back_populates="consequences")

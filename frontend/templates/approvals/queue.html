@@ -320,14 +320,63 @@
         window.location.href = url.replace(/&$/, '');
     }
     
-    // Auto-refresh every 30 seconds (only if on pending view)
+    // Auto-refresh every 2 minutes (only if on pending view and page is visible)
     {% if current_filter_status == 'pending' or not current_filter_status %}
-    setInterval(function() {
-        htmx.ajax('GET', '/approvals', {
-            target: '#approvals-list',
-            swap: 'innerHTML'
-        });
-    }, 30000);
+    let refreshInterval = null;
+    let isPageVisible = true;
+    
+    // Check if page is visible (for iframe or tab visibility)
+    function checkPageVisibility() {
+        if (document.hidden || (window.parent !== window && !document.hasFocus())) {
+            isPageVisible = false;
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        } else {
+            isPageVisible = true;
+            if (!refreshInterval) {
+                startRefresh();
+            }
+        }
+    }
+    
+    function startRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+        refreshInterval = setInterval(function() {
+            // Only refresh if page is visible
+            if (isPageVisible && !document.hidden) {
+                htmx.ajax('GET', '/approvals?status=pending', {
+                    target: '#approvals-list',
+                    swap: 'innerHTML',
+                    headers: {'HX-Request': 'true'}
+                });
+            }
+        }, 120000); // 2 minutes instead of 30 seconds
+    }
+    
+    // Start refresh only if page is visible
+    if (!document.hidden) {
+        startRefresh();
+    }
+    
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', checkPageVisibility);
+    window.addEventListener('focus', function() {
+        isPageVisible = true;
+        if (!refreshInterval) {
+            startRefresh();
+        }
+    });
+    window.addEventListener('blur', function() {
+        isPageVisible = false;
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+        }
+    });
     {% endif %}
 </script>
 

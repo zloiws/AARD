@@ -6,9 +6,11 @@ from app.core.database import Base
 # Import all models here so Alembic can detect them
 from app.models.task import Task, TaskStatus  # noqa: F401
 from app.models.artifact import Artifact, ArtifactDependency, ArtifactType, ArtifactStatus  # noqa: F401
+from app.models.artifact_version import ArtifactVersion  # noqa: F401
 from app.models.ollama_server import OllamaServer  # noqa: F401
 from app.models.ollama_model import OllamaModel  # noqa: F401
-from app.models.prompt import Prompt, PromptType, PromptStatus
+from app.models.prompt import Prompt, PromptType, PromptStatus  # noqa: F401
+from app.models.system_setting import SystemSetting, SettingValueType, SettingCategory
 from app.models.tool import Tool, ToolStatus, ToolCategory  # noqa: F401  # noqa: F401
 from app.models.approval import ApprovalRequest, ApprovalRequestType, ApprovalRequestStatus  # noqa: F401
 from app.models.evolution import EvolutionHistory, Feedback, EntityType, ChangeType, TriggerType, FeedbackType  # noqa: F401
@@ -40,6 +42,8 @@ from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType  # noqa: 
 from app.models.benchmark_result import BenchmarkResult  # noqa: F401
 from app.models.project_metric import ProjectMetric, MetricType, MetricPeriod  # noqa: F401
 from app.models.audit_report import AuditReport, AuditType, AuditStatus  # noqa: F401
+from app.models.uncertainty_parameters import UncertaintyParameter, ParameterType  # noqa: F401
+from app.models.uncertainty_types import UncertaintyLevel, UncertaintyType  # noqa: F401
 
 __all__ = [
     "Base",
@@ -51,6 +55,7 @@ __all__ = [
     "ArtifactDependency",
     "ArtifactType",
     "ArtifactStatus",
+    "ArtifactVersion",
     # Ollama
     "OllamaServer",
     "OllamaModel",
@@ -143,5 +148,11 @@ __all__ = [
     "AuditReport",
     "AuditType",
     "AuditStatus",
+    # Uncertainty Parameters
+    "UncertaintyParameter",
+    "ParameterType",
+    # Uncertainty Types
+    "UncertaintyLevel",
+    "UncertaintyType",
 ]
 

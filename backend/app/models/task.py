@@ -1,7 +1,7 @@
 """
 Task model
 """
-from datetime import datetime
+from datetime import datetime, timezone, timezone
 from enum import Enum
 from typing import Optional
 from uuid import uuid4, UUID
@@ -56,8 +56,8 @@ class Task(Base):
     # Graduated autonomy level (0-4)
     autonomy_level = Column(Integer, default=2, nullable=False)  # 0=read-only, 1=step-by-step, 2=plan approval, 3=autonomous with notification, 4=full autonomous
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     parent_task_id = Column(PGUUID(as_uuid=True), ForeignKey("tasks.id"), nullable=True)
     plan_id = Column(PGUUID(as_uuid=True), nullable=True)  # Will reference plans table when created
     current_checkpoint_id = Column(PGUUID(as_uuid=True), nullable=True)
@@ -100,7 +100,7 @@ class Task(Base):
         
         history_entry = {
             "type": history_type,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": data
         }
         context["interaction_history"].append(history_entry)

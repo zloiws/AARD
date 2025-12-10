@@ -3,7 +3,7 @@ Agent Service for managing agents lifecycle
 """
 from typing import Dict, Any, Optional, List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc
 
@@ -242,7 +242,7 @@ class AgentService:
             if field in allowed_fields:
                 setattr(agent, field, value)
         
-        agent.updated_at = datetime.utcnow()
+        agent.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(agent)
         
@@ -274,7 +274,7 @@ class AgentService:
             raise ValueError(f"Agent must be in 'waiting_approval' status to activate (current: {agent.status})")
         
         agent.status = AgentStatus.ACTIVE.value
-        agent.activated_at = datetime.utcnow()
+        agent.activated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(agent)
         
@@ -552,7 +552,7 @@ class AgentService:
             rate = agent.successful_tasks / agent.total_tasks_executed
             agent.success_rate = f"{rate:.2%}"
         
-        agent.last_used_at = datetime.utcnow()
+        agent.last_used_at = datetime.now(timezone.utc)
         self.db.commit()
     
     def find_agent_for_task(

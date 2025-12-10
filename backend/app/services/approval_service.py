@@ -1,7 +1,7 @@
 """
 Approval service for managing approval requests
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 from uuid import UUID
 
@@ -48,7 +48,7 @@ class ApprovalService:
             risk_assessment=risk_assessment,
             recommendation=recommendation,
             status="pending",  # Use lowercase to match DB constraint
-            decision_timeout=datetime.utcnow() + timedelta(hours=timeout_hours)
+            decision_timeout=datetime.now(timezone.utc) + timedelta(hours=timeout_hours)
         )
         
         self.db.add(approval)
@@ -81,7 +81,7 @@ class ApprovalService:
         
         approval.status = "approved"  # Use lowercase to match DB constraint
         approval.approved_by = approved_by
-        approval.approved_at = datetime.utcnow()
+        approval.approved_at = datetime.now(timezone.utc)
         if feedback:
             approval.human_feedback = feedback
         
@@ -126,7 +126,7 @@ class ApprovalService:
         
         approval.status = "rejected"  # Use lowercase to match DB constraint
         approval.rejected_by = rejected_by
-        approval.rejected_at = datetime.utcnow()
+        approval.rejected_at = datetime.now(timezone.utc)
         approval.human_feedback = feedback
         
         # Learn from feedback using FeedbackLearningService
@@ -161,7 +161,7 @@ class ApprovalService:
         approval.status = "modified"  # Use lowercase to match DB constraint
         approval.request_data = {**approval.request_data, **modified_data}
         approval.approved_by = modified_by
-        approval.approved_at = datetime.utcnow()
+        approval.approved_at = datetime.now(timezone.utc)
         if feedback:
             approval.human_feedback = feedback
         
@@ -223,7 +223,7 @@ class ApprovalService:
             type_counts[req_type.value] = count
         
         # Count urgent (expiring soon)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         urgent = self.db.query(func.count(ApprovalRequest.id)).filter(
             and_(
                 ApprovalRequest.status == "pending",
@@ -296,7 +296,7 @@ class ApprovalService:
                 prompt.name = request_data["name"]
             prompt.version += 1
             prompt.status = PromptStatus.ACTIVE
-            prompt.last_improved_at = datetime.utcnow()
+            prompt.last_improved_at = datetime.now(timezone.utc)
             self.db.commit()
     
     def _approve_plan(self, plan_id: Optional[UUID], request_data: Dict[str, Any]):
@@ -310,6 +310,6 @@ class ApprovalService:
         plan = self.db.query(Plan).filter(Plan.id == plan_id).first()
         if plan:
             plan.status = "approved"  # Use lowercase string to match DB constraint
-            plan.approved_at = datetime.utcnow()
+            plan.approved_at = datetime.now(timezone.utc)
             self.db.commit()
 

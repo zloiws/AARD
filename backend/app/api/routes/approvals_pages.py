@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
 from app.core.templates import templates
 from app.core.database import get_db
@@ -54,7 +55,7 @@ async def approvals_queue(
             limit=100
         )
     
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     return templates.TemplateResponse(
         "approvals/queue.html",
@@ -64,7 +65,7 @@ async def approvals_queue(
             "statistics": stats,
             "current_filter_type": request_type,
             "current_filter_status": status or "pending",
-            "now": datetime.utcnow()
+            "now": datetime.now(timezone.utc)
         }
     )
 
