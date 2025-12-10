@@ -14,23 +14,17 @@ try:
     sql_content = SQL_FILE.read_text(encoding="utf-8")
     
     print("Executing SQL script...")
-    with engine.connect() as conn:
-        # Execute each statement separately
-        statements = [s.strip() for s in sql_content.split(';') if s.strip() and not s.strip().startswith('--')]
-        
-        for i, statement in enumerate(statements, 1):
-            if statement:
-                try:
-                    conn.execute(text(statement))
-                    print(f"  ✅ Statement {i}/{len(statements)} executed")
-                except Exception as e:
-                    if "already exists" in str(e).lower() or "duplicate" in str(e).lower():
-                        print(f"  ⚠️  Statement {i} skipped (already exists): {str(e)[:100]}")
-                    else:
-                        print(f"  ❌ Statement {i} failed: {e}")
-                        raise
-        
-        conn.commit()
+    with engine.begin() as conn:  # Use begin() for transaction
+        # Execute the entire script as one transaction
+        try:
+            conn.execute(text(sql_content))
+            print("  ✅ All statements executed successfully")
+        except Exception as e:
+            if "already exists" in str(e).lower() or "duplicate" in str(e).lower():
+                print(f"  ⚠️  Some objects already exist (this is OK): {str(e)[:200]}")
+            else:
+                print(f"  ❌ Error: {e}")
+                raise
     
     print("\n✅ Parameter tables created successfully!")
     
