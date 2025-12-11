@@ -75,11 +75,11 @@ def upgrade():
     )
     
     # Create indexes
-    op.create_index('ix_agents_name', 'agents', ['name'], unique=True)
-    op.create_index('ix_agents_status', 'agents', ['status'])
-    op.create_index('ix_agents_created_at', 'agents', ['created_at'])
-    op.create_index('ix_agents_capabilities', 'agents', ['capabilities'], postgresql_using='gin')
-    op.create_index('ix_agents_tags', 'agents', ['tags'], postgresql_using='gin')
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_agents_name ON agents (name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_status ON agents (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_created_at ON agents (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_capabilities ON agents (capabilities);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_tags ON agents (tags);")
 
 
 def downgrade():

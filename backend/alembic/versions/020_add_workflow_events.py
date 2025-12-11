@@ -53,17 +53,17 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('idx_workflow_events_workflow_id', 'workflow_events', ['workflow_id'])
-    op.create_index('idx_workflow_events_timestamp', 'workflow_events', ['timestamp'])
-    op.create_index('idx_workflow_events_type_source', 'workflow_events', ['event_type', 'event_source'])
-    op.create_index('idx_workflow_events_stage_status', 'workflow_events', ['stage', 'status'])
-    op.create_index('idx_workflow_events_task_id', 'workflow_events', ['task_id'])
-    op.create_index('idx_workflow_events_trace_id', 'workflow_events', ['trace_id'])
-    op.create_index('idx_workflow_events_session_id', 'workflow_events', ['session_id'])
-    op.create_index('ix_workflow_events_event_type', 'workflow_events', ['event_type'])
-    op.create_index('ix_workflow_events_event_source', 'workflow_events', ['event_source'])
-    op.create_index('ix_workflow_events_stage', 'workflow_events', ['stage'])
-    op.create_index('ix_workflow_events_status', 'workflow_events', ['status'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_workflow_events_workflow_id ON workflow_events (workflow_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_workflow_events_timestamp ON workflow_events (timestamp);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_workflow_events_type_source ON workflow_events (event_type, event_source);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_workflow_events_stage_status ON workflow_events (stage, status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_workflow_events_task_id ON workflow_events (task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_workflow_events_trace_id ON workflow_events (trace_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_workflow_events_session_id ON workflow_events (session_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_workflow_events_event_type ON workflow_events (event_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_workflow_events_event_source ON workflow_events (event_source);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_workflow_events_stage ON workflow_events (stage);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_workflow_events_status ON workflow_events (status);")
 
 
 def downgrade() -> None:

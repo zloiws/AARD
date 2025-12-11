@@ -38,10 +38,10 @@ def upgrade() -> None:
     )
     
     # Create indexes for tasks
-    op.create_index('idx_tasks_status', 'tasks', ['status'])
-    op.create_index('idx_tasks_priority', 'tasks', ['priority'])
-    op.create_index('idx_tasks_created_at', 'tasks', ['created_at'])
-    op.create_index('idx_tasks_parent', 'tasks', ['parent_task_id'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks (priority);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks (parent_task_id);")
     
     # Create artifacts table
     conn = op.get_bind()
@@ -65,8 +65,8 @@ def upgrade() -> None:
     )
     
     # Create indexes for artifacts
-    op.create_index('idx_artifacts_type_status', 'artifacts', ['type', 'status'])
-    op.create_index('idx_artifacts_version', 'artifacts', ['version'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_artifacts_type_status ON artifacts (type, status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_artifacts_version ON artifacts (version);")
     
     # Create artifact_dependencies table
     conn = op.get_bind()

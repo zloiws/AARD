@@ -37,10 +37,10 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('idx_system_settings_key', 'system_settings', ['key'])
-    op.create_index('idx_system_settings_category', 'system_settings', ['category'])
-    op.create_index('idx_system_settings_module', 'system_settings', ['module'])
-    op.create_index('idx_settings_category_active', 'system_settings', ['category', 'is_active'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_system_settings_key ON system_settings (key);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_system_settings_category ON system_settings (category);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_system_settings_module ON system_settings (module);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_settings_category_active ON system_settings (category, is_active);")
 
 
 def downgrade() -> None:

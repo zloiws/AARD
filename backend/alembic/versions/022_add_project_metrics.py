@@ -43,11 +43,11 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('ix_project_metrics_metric_type', 'project_metrics', ['metric_type'])
-    op.create_index('ix_project_metrics_metric_name', 'project_metrics', ['metric_name'])
-    op.create_index('ix_project_metrics_period', 'project_metrics', ['period'])
-    op.create_index('ix_project_metrics_period_start', 'project_metrics', ['period_start'])
-    op.create_index('idx_project_metrics_type_name_period', 'project_metrics', ['metric_type', 'metric_name', 'period'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_metrics_metric_type ON project_metrics (metric_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_metrics_metric_name ON project_metrics (metric_name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_metrics_period ON project_metrics (period);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_metrics_period_start ON project_metrics (period_start);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_project_metrics_type_name_period ON project_metrics (metric_type, metric_name, period);")
 
 
 def downgrade() -> None:

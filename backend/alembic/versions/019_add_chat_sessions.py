@@ -48,8 +48,8 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('ix_chat_messages_session_id', 'chat_messages', ['session_id'])
-    op.create_index('ix_chat_messages_created_at', 'chat_messages', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_chat_messages_session_id ON chat_messages (session_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_chat_messages_created_at ON chat_messages (created_at);")
 
 
 def downgrade() -> None:

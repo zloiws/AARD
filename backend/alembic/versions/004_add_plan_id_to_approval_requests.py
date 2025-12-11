@@ -36,11 +36,7 @@ def upgrade() -> None:
     )
     
     # Create index for plan_id
-    op.create_index(
-        'idx_approval_requests_plan',
-        'approval_requests',
-        ['plan_id']
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_plan ON approval_requests (plan_id);")
 
 
 def downgrade() -> None:

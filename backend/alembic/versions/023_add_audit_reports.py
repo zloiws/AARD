@@ -42,10 +42,10 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('ix_audit_reports_audit_type', 'audit_reports', ['audit_type'])
-    op.create_index('ix_audit_reports_status', 'audit_reports', ['status'])
-    op.create_index('ix_audit_reports_period_start', 'audit_reports', ['period_start'])
-    op.create_index('ix_audit_reports_created_at', 'audit_reports', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_audit_reports_audit_type ON audit_reports (audit_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_audit_reports_status ON audit_reports (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_audit_reports_period_start ON audit_reports (period_start);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_audit_reports_created_at ON audit_reports (created_at);")
 
 
 def downgrade() -> None:

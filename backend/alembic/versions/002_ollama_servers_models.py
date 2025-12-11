@@ -45,10 +45,10 @@ def upgrade() -> None:
     )
     
     # Create indexes for ollama_servers
-    op.create_index('idx_ollama_servers_active', 'ollama_servers', ['is_active'])
-    op.create_index('idx_ollama_servers_default', 'ollama_servers', ['is_default'])
-    op.create_index('idx_ollama_servers_priority', 'ollama_servers', ['priority'])
-    op.create_index('idx_ollama_servers_available', 'ollama_servers', ['is_available'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_servers_active ON ollama_servers (is_active);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_servers_default ON ollama_servers (is_default);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_servers_priority ON ollama_servers (priority);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_servers_available ON ollama_servers (is_available);")
     
     # Create ollama_models table
     conn = op.get_bind()
@@ -73,10 +73,10 @@ def upgrade() -> None:
     )
     
     # Create indexes for ollama_models
-    op.create_index('idx_ollama_models_server', 'ollama_models', ['server_id'])
-    op.create_index('idx_ollama_models_active', 'ollama_models', ['is_active'])
-    op.create_index('idx_ollama_models_name', 'ollama_models', ['model_name'])
-    op.create_index('idx_ollama_models_server_name', 'ollama_models', ['server_id', 'model_name'], unique=True)
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_models_server ON ollama_models (server_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_models_active ON ollama_models (is_active);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_models_name ON ollama_models (model_name);")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ollama_models_server_name ON ollama_models (server_id, model_name);")
 
 
 def downgrade() -> None:

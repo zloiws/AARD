@@ -25,8 +25,8 @@ def upgrade():
     op.add_column('agents', sa.Column('response_time_ms', sa.Integer(), nullable=True))
     
     # Create index for health status
-    op.create_index('ix_agents_health_status', 'agents', ['health_status'])
-    op.create_index('ix_agents_last_heartbeat', 'agents', ['last_heartbeat'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_health_status ON agents (health_status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_last_heartbeat ON agents (last_heartbeat);")
 
 
 def downgrade():

@@ -36,7 +36,7 @@ def upgrade():
         sa.Column('improvement_count', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('description', sa.Text(), nullable=True),
     )
-    op.create_index('ix_uncertainty_parameters_parameter_name', 'uncertainty_parameters', ['parameter_name'], unique=True)
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_uncertainty_parameters_parameter_name ON uncertainty_parameters (parameter_name);")
     
     # Create system_parameters table
     conn = op.get_bind()
@@ -59,8 +59,8 @@ def upgrade():
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('extra_metadata', postgresql.JSONB(), nullable=True),
     )
-    op.create_index('ix_system_parameters_parameter_name', 'system_parameters', ['parameter_name'], unique=True)
-    op.create_index('ix_system_parameters_category', 'system_parameters', ['category'])
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_system_parameters_parameter_name ON system_parameters (parameter_name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_system_parameters_category ON system_parameters (category);")
 
 
 def downgrade():

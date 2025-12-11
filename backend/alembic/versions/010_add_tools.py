@@ -85,11 +85,11 @@ def upgrade():
     )
     
     # Create indexes
-    op.create_index('ix_tools_name', 'tools', ['name'], unique=True)
-    op.create_index('ix_tools_status', 'tools', ['status'])
-    op.create_index('ix_tools_category', 'tools', ['category'])
-    op.create_index('ix_tools_created_at', 'tools', ['created_at'])
-    op.create_index('ix_tools_tags', 'tools', ['tags'], postgresql_using='gin')
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_tools_name ON tools (name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_tools_status ON tools (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_tools_category ON tools (category);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_tools_created_at ON tools (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_tools_tags ON tools (tags);")
 
 
 def downgrade():

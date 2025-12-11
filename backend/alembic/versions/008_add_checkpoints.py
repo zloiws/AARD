@@ -35,10 +35,10 @@ def upgrade():
     )
     
     # Create indexes
-    op.create_index('idx_checkpoints_entity', 'checkpoints', ['entity_type', 'entity_id'])
-    op.create_index('idx_checkpoints_created', 'checkpoints', ['created_at'])
-    op.create_index('idx_checkpoints_hash', 'checkpoints', ['state_hash'])
-    op.create_index('idx_checkpoints_trace', 'checkpoints', ['trace_id'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_entity ON checkpoints (entity_type, entity_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_created ON checkpoints (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_hash ON checkpoints (state_hash);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_trace ON checkpoints (trace_id);")
 
 
 def downgrade():

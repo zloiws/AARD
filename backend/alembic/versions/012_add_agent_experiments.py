@@ -84,14 +84,14 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('ix_experiments_status', 'agent_experiments', ['status'])
-    op.create_index('ix_experiments_agent_a', 'agent_experiments', ['agent_a_id'])
-    op.create_index('ix_experiments_agent_b', 'agent_experiments', ['agent_b_id'])
-    op.create_index('ix_experiments_created_at', 'agent_experiments', ['created_at'])
-    op.create_index('ix_results_experiment', 'experiment_results', ['experiment_id'])
-    op.create_index('ix_results_agent', 'experiment_results', ['agent_id'])
-    op.create_index('ix_results_variant', 'experiment_results', ['variant'])
-    op.create_index('ix_results_created_at', 'experiment_results', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_experiments_status ON agent_experiments (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_experiments_agent_a ON agent_experiments (agent_a_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_experiments_agent_b ON agent_experiments (agent_b_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_experiments_created_at ON agent_experiments (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_results_experiment ON experiment_results (experiment_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_results_agent ON experiment_results (agent_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_results_variant ON experiment_results (variant);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_results_created_at ON experiment_results (created_at);")
 
 
 def downgrade() -> None:

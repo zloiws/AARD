@@ -37,13 +37,7 @@ def upgrade() -> None:
     )
     
     # Create GIN index on context JSONB field for efficient queries
-    op.create_index(
-        'idx_tasks_context',
-        'tasks',
-        ['context'],
-        postgresql_using='gin',
-        unique=False
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS idx_tasks_context ON tasks (context);")
 
 
 def downgrade() -> None:

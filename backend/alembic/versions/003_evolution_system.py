@@ -46,11 +46,11 @@ def upgrade() -> None:
     )
     
     # Create indexes for prompts
-    op.create_index('idx_prompts_type', 'prompts', ['prompt_type'])
-    op.create_index('idx_prompts_status', 'prompts', ['status'])
-    op.create_index('idx_prompts_level', 'prompts', ['level'])
-    op.create_index('idx_prompts_parent', 'prompts', ['parent_prompt_id'])
-    op.create_index('idx_prompts_name', 'prompts', ['name'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_type ON prompts (prompt_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_status ON prompts (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_level ON prompts (level);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_parent ON prompts (parent_prompt_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_name ON prompts (name);")
     
     # Create approval_requests table
     conn = op.get_bind()
@@ -79,12 +79,12 @@ def upgrade() -> None:
     )
     
     # Create indexes for approval_requests
-    op.create_index('idx_approval_requests_status', 'approval_requests', ['status'])
-    op.create_index('idx_approval_requests_type', 'approval_requests', ['request_type'])
-    op.create_index('idx_approval_requests_artifact', 'approval_requests', ['artifact_id'])
-    op.create_index('idx_approval_requests_prompt', 'approval_requests', ['prompt_id'])
-    op.create_index('idx_approval_requests_task', 'approval_requests', ['task_id'])
-    op.create_index('idx_approval_requests_created', 'approval_requests', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_status ON approval_requests (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_type ON approval_requests (request_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_artifact ON approval_requests (artifact_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_prompt ON approval_requests (prompt_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_task ON approval_requests (task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_created ON approval_requests (created_at);")
     
     # Create evolution_history table
     conn = op.get_bind()
@@ -107,11 +107,11 @@ def upgrade() -> None:
     )
     
     # Create indexes for evolution_history
-    op.create_index('idx_evolution_entity', 'evolution_history', ['entity_type', 'entity_id'])
-    op.create_index('idx_evolution_change_type', 'evolution_history', ['change_type'])
-    op.create_index('idx_evolution_trigger', 'evolution_history', ['trigger_type'])
-    op.create_index('idx_evolution_created', 'evolution_history', ['created_at'])
-    op.create_index('idx_evolution_success', 'evolution_history', ['success'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_entity ON evolution_history (entity_type, entity_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_change_type ON evolution_history (change_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_trigger ON evolution_history (trigger_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_created ON evolution_history (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_success ON evolution_history (success);")
     
     # Create feedback table
     conn = op.get_bind()
@@ -135,11 +135,11 @@ def upgrade() -> None:
     )
     
     # Create indexes for feedback
-    op.create_index('idx_feedback_entity', 'feedback', ['entity_type', 'entity_id'])
-    op.create_index('idx_feedback_type', 'feedback', ['feedback_type'])
-    op.create_index('idx_feedback_processed', 'feedback', ['processed'])
-    op.create_index('idx_feedback_task', 'feedback', ['task_id'])
-    op.create_index('idx_feedback_created', 'feedback', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_entity ON feedback (entity_type, entity_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback (feedback_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_processed ON feedback (processed);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_task ON feedback (task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback (created_at);")
     
     # Create plans table
     conn = op.get_bind()
@@ -163,9 +163,9 @@ def upgrade() -> None:
     )
     
     # Create indexes for plans
-    op.create_index('idx_plans_task', 'plans', ['task_id'])
-    op.create_index('idx_plans_status', 'plans', ['status'])
-    op.create_index('idx_plans_version', 'plans', ['task_id', 'version'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_plans_task ON plans (task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_plans_status ON plans (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_plans_version ON plans (task_id, version);")
     
     # Update tasks table to reference plans (add foreign key if not exists)
     # Note: plan_id column already exists from migration 001

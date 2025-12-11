@@ -39,10 +39,10 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('idx_learning_patterns_type', 'learning_patterns', ['pattern_type'])
-    op.create_index('idx_learning_patterns_agent_id', 'learning_patterns', ['agent_id'])
-    op.create_index('idx_learning_patterns_success_rate', 'learning_patterns', ['success_rate'])
-    op.create_index('idx_learning_patterns_task_category', 'learning_patterns', ['task_category'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_learning_patterns_type ON learning_patterns (pattern_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_learning_patterns_agent_id ON learning_patterns (agent_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_learning_patterns_success_rate ON learning_patterns (success_rate);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_learning_patterns_task_category ON learning_patterns (task_category);")
 
 
 def downgrade() -> None:

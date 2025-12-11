@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
     )
-    op.create_index("idx_execution_graphs_session", "execution_graphs", ["session_id"])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_execution_graphs_session ON execution_graphs (session_id);")
 
     # Create execution_nodes
     conn = op.get_bind()
@@ -47,8 +47,8 @@ def upgrade() -> None:
         sa.Column("workflow_event_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.ForeignKeyConstraint(["graph_id"], ["execution_graphs.id"], ondelete="CASCADE"),
     )
-    op.create_index("idx_execution_nodes_graph", "execution_nodes", ["graph_id"])
-    op.create_index("idx_execution_nodes_chat_message", "execution_nodes", ["chat_message_id"])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_execution_nodes_graph ON execution_nodes (graph_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_execution_nodes_chat_message ON execution_nodes (chat_message_id);")
 
     # Create execution_edges
     conn = op.get_bind()
@@ -62,7 +62,7 @@ def upgrade() -> None:
         sa.Column("data", postgresql.JSON(astext_type=sa.Text()), nullable=True),
         sa.ForeignKeyConstraint(["graph_id"], ["execution_graphs.id"], ondelete="CASCADE"),
     )
-    op.create_index("idx_execution_edges_graph", "execution_edges", ["graph_id"])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_execution_edges_graph ON execution_edges (graph_id);")
 
 
 def downgrade() -> None:

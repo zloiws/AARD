@@ -42,9 +42,9 @@ def upgrade() -> None:
     )
     
     # Create indexes for benchmark_tasks
-    op.create_index('idx_benchmark_tasks_task_type', 'benchmark_tasks', ['task_type'])
-    op.create_index('idx_benchmark_tasks_category', 'benchmark_tasks', ['category'])
-    op.create_index('idx_benchmark_tasks_name', 'benchmark_tasks', ['name'], unique=True)
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_tasks_task_type ON benchmark_tasks (task_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_tasks_category ON benchmark_tasks (category);")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_benchmark_tasks_name ON benchmark_tasks (name);")
     
     # Create benchmark_results table
     # First create table without foreign keys to ollama tables (they may not exist)
@@ -89,10 +89,10 @@ def upgrade() -> None:
         )
     
     # Create indexes for benchmark_results
-    op.create_index('idx_benchmark_results_task_id', 'benchmark_results', ['benchmark_task_id'])
-    op.create_index('idx_benchmark_results_model_id', 'benchmark_results', ['model_id'])
-    op.create_index('idx_benchmark_results_server_id', 'benchmark_results', ['server_id'])
-    op.create_index('idx_benchmark_results_created_at', 'benchmark_results', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_results_task_id ON benchmark_results (benchmark_task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_results_model_id ON benchmark_results (model_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_results_server_id ON benchmark_results (server_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_results_created_at ON benchmark_results (created_at);")
 
 
 def downgrade() -> None:
