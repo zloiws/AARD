@@ -77,6 +77,14 @@ class EmbeddingService:
             
             # Normalize embedding
             normalized = self._normalize_vector(embedding)
+            # Ensure embedding dimension matches expected DEFAULT_EMBEDDING_DIM
+            if len(normalized) != self.DEFAULT_EMBEDDING_DIM:
+                if len(normalized) < self.DEFAULT_EMBEDDING_DIM:
+                    # pad with zeros
+                    normalized = normalized + [0.0] * (self.DEFAULT_EMBEDDING_DIM - len(normalized))
+                else:
+                    # truncate
+                    normalized = normalized[: self.DEFAULT_EMBEDDING_DIM]
             
             # Cache the result
             if use_cache:
@@ -229,8 +237,8 @@ class EmbeddingService:
         norm = sum(x * x for x in vector) ** 0.5
         
         if norm == 0:
-            # Zero vector - return as is
-            return vector
+            # Zero vector - return zero vector of default dimension
+            return [0.0] * self.DEFAULT_EMBEDDING_DIM
         
         # Normalize
         normalized = [x / norm for x in vector]
