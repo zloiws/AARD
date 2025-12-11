@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create execution_traces table
-    op.create_table(
-        'execution_traces',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.execution_traces')")).scalar():
+        op.create_table('execution_traces',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('trace_id', sa.String(255), nullable=False, unique=True),
         sa.Column('task_id', postgresql.UUID(as_uuid=True), nullable=True),

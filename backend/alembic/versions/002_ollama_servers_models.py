@@ -20,8 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create ollama_servers table
-    op.create_table(
-        'ollama_servers',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.ollama_servers')")).scalar():
+        op.create_table('ollama_servers',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('url', sa.String(500), nullable=False),
@@ -50,8 +51,9 @@ def upgrade() -> None:
     op.create_index('idx_ollama_servers_available', 'ollama_servers', ['is_available'])
     
     # Create ollama_models table
-    op.create_table(
-        'ollama_models',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.ollama_models')")).scalar():
+        op.create_table('ollama_models',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('server_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('name', sa.String(255), nullable=False),

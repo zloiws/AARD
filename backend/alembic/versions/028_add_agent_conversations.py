@@ -17,32 +17,35 @@ depends_on = None
 
 
 def upgrade():
-    # Create agent_conversations table
-    op.create_table(
-        'agent_conversations',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('title', sa.String(255), nullable=True),
-        sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('participants', postgresql.JSONB(), nullable=False),
-        sa.Column('messages', postgresql.JSONB(), nullable=False, server_default='[]'),
-        sa.Column('context', postgresql.JSONB(), nullable=True),
-        sa.Column('goal', sa.Text(), nullable=True),
-        sa.Column('status', sa.String(50), nullable=False, server_default='initiated'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column('completed_at', sa.DateTime(), nullable=True),
-        sa.Column('task_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('tasks.id'), nullable=True),
-        sa.Column('conversation_metadata', postgresql.JSONB(), nullable=True),
-    )
-    
-    # Create index on task_id for faster lookups
-    op.create_index('ix_agent_conversations_task_id', 'agent_conversations', ['task_id'])
-    
-    # Create index on status for filtering
-    op.create_index('ix_agent_conversations_status', 'agent_conversations', ['status'])
-    
-    # Create index on created_at for sorting
-    op.create_index('ix_agent_conversations_created_at', 'agent_conversations', ['created_at'])
+    # Create agent_conversations table if not exists
+    op.execute("""
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_conversations') THEN
+            CREATE TABLE agent_conversations (
+                id UUID PRIMARY KEY,
+                title VARCHAR(255),
+                description TEXT,
+                participants JSONB NOT NULL,
+                messages JSONB NOT NULL DEFAULT '[]'::jsonb,
+                context JSONB,
+                goal TEXT,
+                status VARCHAR(50) NOT NULL DEFAULT 'initiated',
+                created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+                updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+                completed_at TIMESTAMP WITHOUT TIME ZONE,
+                task_id UUID REFERENCES tasks(id),
+                conversation_metadata JSONB
+            );
+        END IF;
+    END
+    $$;
+    """)
+
+    # Create indexes if not exists
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_conversations_task_id ON agent_conversations (task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_conversations_status ON agent_conversations (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_conversations_created_at ON agent_conversations (created_at);")
 
 
 def downgrade():

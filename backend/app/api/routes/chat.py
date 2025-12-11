@@ -176,14 +176,30 @@ async def chat(
                 )
                 session_id = session.id
         
-        # Add user message to session
-        session_manager.add_message(
+        # Add user message to session (capture returned message with id)
+        user_message = session_manager.add_message(
             db,
             session_id,
             "user",
             chat_message.message,
             metadata={"task_type": chat_message.task_type}
         )
+
+        # Create or get execution graph and add a user node
+        try:
+            from app.services.execution_graph_service import ExecutionGraphService
+            eg_service = ExecutionGraphService(db)
+            graph = eg_service.create_or_get_graph(session_id)
+            user_node = eg_service.add_node(
+                graph_id=graph.id,
+                node_type="user_input",
+                name="user_input",
+                data={"content": chat_message.message},
+                status="pending",
+                chat_message_id=user_message.id if user_message else None
+            )
+        except Exception as e:
+            logger.debug(f"Failed to create execution graph node for user message: {e}", exc_info=True)
         
         # Get system prompt - try database first, then use provided or session default
         system_prompt = chat_message.system_prompt
@@ -254,11 +270,9 @@ async def chat(
         
         # Создать ExecutionContext
         context = ExecutionContext.from_request(
-            request,
             db=db,
-            workflow_id=workflow_id,
+            request=request,
             session_id=session_id,
-            trace_id=trace_id
         )
         
         # Использовать RequestOrchestrator для обработки запроса
@@ -272,14 +286,37 @@ async def chat(
             temperature=chat_message.temperature
         )
         
-        # Добавить ответ в сессию
-        session_manager.add_message(
+        # Добавить ответ в сессию (capture assistant message)
+        assistant_message = session_manager.add_message(
             db,
             session_id,
             "assistant",
             result.response,
             metadata=result.metadata
         )
+
+        # Add assistant node and link to user node if graph exists
+        try:
+            from app.services.execution_graph_service import ExecutionGraphService
+            eg_service = ExecutionGraphService(db)
+            graph = eg_service.create_or_get_graph(session_id)
+            assistant_node = eg_service.add_node(
+                graph_id=graph.id,
+                node_type="response",
+                name="assistant_response",
+                data={"content": result.response},
+                status="success",
+                chat_message_id=assistant_message.id if assistant_message else None
+            )
+            # Link user_node -> assistant_node if user_node created
+            try:
+                if 'user_node' in locals() and user_node:
+                    eg_service.add_edge(graph.id, user_node.id, assistant_node.id, label="reply")
+            except Exception:
+                # Non-fatal
+                pass
+        except Exception as e:
+            logger.debug(f"Failed to add assistant node to execution graph: {e}", exc_info=True)
         
         return ChatResponse(
             response=result.response,

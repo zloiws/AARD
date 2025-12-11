@@ -20,8 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create tasks table
-    op.create_table(
-        'tasks',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.tasks')")).scalar():
+        op.create_table('tasks',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('description', sa.Text(), nullable=False),
         sa.Column('status', sa.String(20), nullable=False, server_default='pending'),
@@ -43,8 +44,9 @@ def upgrade() -> None:
     op.create_index('idx_tasks_parent', 'tasks', ['parent_task_id'])
     
     # Create artifacts table
-    op.create_table(
-        'artifacts',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.artifacts')")).scalar():
+        op.create_table('artifacts',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('type', sa.String(10), nullable=False),
         sa.Column('name', sa.String(255), nullable=False),
@@ -67,8 +69,9 @@ def upgrade() -> None:
     op.create_index('idx_artifacts_version', 'artifacts', ['version'])
     
     # Create artifact_dependencies table
-    op.create_table(
-        'artifact_dependencies',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.artifact_dependencies')")).scalar():
+        op.create_table('artifact_dependencies',
         sa.Column('artifact_id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('depends_on_artifact_id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.ForeignKeyConstraint(['artifact_id'], ['artifacts.id'], ),

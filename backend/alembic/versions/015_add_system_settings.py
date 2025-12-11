@@ -20,8 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create system_settings table
-    op.create_table(
-        'system_settings',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.system_settings')")).scalar():
+        op.create_table('system_settings',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('key', sa.String(255), unique=True, nullable=False),
         sa.Column('value', sa.Text(), nullable=True),

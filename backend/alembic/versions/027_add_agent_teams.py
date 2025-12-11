@@ -17,42 +17,51 @@ depends_on = None
 
 
 def upgrade():
-    # Create agent_teams table
-    op.create_table(
-        'agent_teams',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('name', sa.String(255), nullable=False, unique=True),
-        sa.Column('description', sa.Text(), nullable=True),
-        
-        # Team configuration
-        sa.Column('roles', postgresql.JSONB(), nullable=True),
-        sa.Column('coordination_strategy', sa.String(50), nullable=False, server_default='collaborative'),
-        
-        # Status and lifecycle
-        sa.Column('status', sa.String(50), nullable=False, server_default='draft'),
-        sa.Column('created_by', sa.String(255), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        
-        # Metadata
-        sa.Column('team_metadata', postgresql.JSONB(), nullable=True),
-    )
-    
-    # Create agent_team_associations table (many-to-many relationship)
-    op.create_table(
-        'agent_team_associations',
-        sa.Column('team_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('agent_teams.id', ondelete='CASCADE'), primary_key=True),
-        sa.Column('agent_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('agents.id', ondelete='CASCADE'), primary_key=True),
-        sa.Column('role', sa.String(100), nullable=True),
-        sa.Column('assigned_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column('is_lead', sa.Boolean(), nullable=False, server_default='false'),
-    )
-    
-    # Create indexes
-    op.create_index('ix_agent_teams_name', 'agent_teams', ['name'], unique=True)
-    op.create_index('ix_agent_teams_status', 'agent_teams', ['status'])
-    op.create_index('ix_agent_team_associations_team_id', 'agent_team_associations', ['team_id'])
-    op.create_index('ix_agent_team_associations_agent_id', 'agent_team_associations', ['agent_id'])
+    # Create agent_teams table if not exists (idempotent)
+    op.execute("""
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_teams') THEN
+            CREATE TABLE agent_teams (
+                id UUID PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                description TEXT,
+                roles JSONB,
+                coordination_strategy VARCHAR(50) NOT NULL DEFAULT 'collaborative',
+                status VARCHAR(50) NOT NULL DEFAULT 'draft',
+                created_by VARCHAR(255),
+                created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+                updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+                team_metadata JSONB
+            );
+        END IF;
+    END
+    $$;
+    """)
+
+    # Create agent_team_associations table if not exists
+    op.execute("""
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_team_associations') THEN
+            CREATE TABLE agent_team_associations (
+                team_id UUID NOT NULL REFERENCES agent_teams(id) ON DELETE CASCADE,
+                agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+                role VARCHAR(100),
+                assigned_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+                is_lead BOOLEAN NOT NULL DEFAULT false,
+                PRIMARY KEY (team_id, agent_id)
+            );
+        END IF;
+    END
+    $$;
+    """)
+
+    # Create indexes if not exists
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_teams_name ON agent_teams (name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_teams_status ON agent_teams (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_team_associations_team_id ON agent_team_associations (team_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_team_associations_agent_id ON agent_team_associations (agent_id);")
 
 
 def downgrade():

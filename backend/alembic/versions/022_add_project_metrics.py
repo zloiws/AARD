@@ -22,8 +22,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create project_metrics table
-    op.create_table(
-        'project_metrics',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.project_metrics')")).scalar():
+        op.create_table('project_metrics',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4),
         sa.Column('metric_type', sa.Enum('PERFORMANCE', 'TASK_SUCCESS', 'EXECUTION_TIME', 'TASK_DISTRIBUTION', 'TREND', 'AGGREGATE', name='metrictype'), nullable=False),
         sa.Column('metric_name', sa.String(length=255), nullable=False),

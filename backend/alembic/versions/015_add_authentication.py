@@ -18,7 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create users table
-    op.create_table('users',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.users')")).scalar():
+        op.create_table('users',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('username', sa.String(length=255), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
@@ -33,7 +35,9 @@ def upgrade():
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     
     # Create sessions table
-    op.create_table('sessions',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.sessions')")).scalar():
+        op.create_table('sessions',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('token', sa.String(length=255), nullable=False),

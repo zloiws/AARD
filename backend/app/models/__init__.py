@@ -14,6 +14,7 @@ from app.models.system_setting import SystemSetting, SettingValueType, SettingCa
 from app.models.tool import Tool, ToolStatus, ToolCategory  # noqa: F401  # noqa: F401
 from app.models.approval import ApprovalRequest, ApprovalRequestType, ApprovalRequestStatus  # noqa: F401
 from app.models.evolution import EvolutionHistory, Feedback, EntityType, ChangeType, TriggerType, FeedbackType  # noqa: F401
+from app.models.execution_graph import ExecutionGraph, ExecutionNode, ExecutionEdge  # noqa: F401
 from app.models.plan import Plan, PlanStatus  # noqa: F401
 from app.models.plan_template import PlanTemplate, TemplateStatus  # noqa: F401
 from app.models.trace import ExecutionTrace  # noqa: F401
@@ -75,6 +76,10 @@ __all__ = [
     "ChangeType",
     "TriggerType",
     "FeedbackType",
+    # Execution graph
+    "ExecutionGraph",
+    "ExecutionNode",
+    "ExecutionEdge",
     # Plans
     "Plan",
     "PlanStatus",

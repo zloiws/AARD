@@ -22,8 +22,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create audit_reports table
-    op.create_table(
-        'audit_reports',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.audit_reports')")).scalar():
+        op.create_table('audit_reports',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4),
         sa.Column('audit_type', sa.Enum('PERFORMANCE', 'QUALITY', 'PROMPTS', 'ERRORS', 'FULL', name='audittype'), nullable=False),
         sa.Column('status', sa.Enum('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', name='auditstatus'), nullable=False, server_default='PENDING'),

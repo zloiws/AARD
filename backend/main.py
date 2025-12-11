@@ -29,6 +29,7 @@ from app.api.routes import (
     websocket_events, benchmarks, project_metrics, project_metrics_pages, audit_reports, audit_reports_pages,
     plan_templates, agent_dialogs, settings, workflow_events
 )
+from app.api.routes import execution, meta
 
 # Configure logging first
 LoggingConfig.configure()
@@ -204,6 +205,8 @@ app.include_router(agent_gym_pages.router)
 app.include_router(agent_memory.router)
 app.include_router(auth.router)
 app.include_router(auth_pages.router)
+app.include_router(execution.router)
+app.include_router(meta.router)
 
 
 @app.get("/api")
@@ -228,6 +231,6 @@ if __name__ == "__main__":
         "main:app",
         host=settings.api_host,
         port=settings.api_port,
-        reload=settings.app_env == "development",
+        reload=False,  # Temporarily disable reload to prevent multiprocessing issues
     )
 

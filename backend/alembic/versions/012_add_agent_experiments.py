@@ -20,8 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create agent_experiments table
-    op.create_table(
-        'agent_experiments',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_experiments')")).scalar():
+        op.create_table('agent_experiments',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
@@ -58,8 +59,9 @@ def upgrade() -> None:
     )
     
     # Create experiment_results table
-    op.create_table(
-        'experiment_results',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.experiment_results')")).scalar():
+        op.create_table('experiment_results',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('experiment_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('agent_id', postgresql.UUID(as_uuid=True), nullable=False),

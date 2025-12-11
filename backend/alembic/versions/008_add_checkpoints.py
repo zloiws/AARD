@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create checkpoints table
-    op.create_table(
-        'checkpoints',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.checkpoints')")).scalar():
+        op.create_table('checkpoints',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('entity_type', sa.String(50), nullable=False),
         sa.Column('entity_id', postgresql.UUID(as_uuid=True), nullable=False),

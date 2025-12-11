@@ -20,8 +20,9 @@ depends_on = None
 
 def upgrade() -> None:
     # Create workflow_events table
-    op.create_table(
-        'workflow_events',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.workflow_events')")).scalar():
+        op.create_table('workflow_events',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('workflow_id', sa.String(length=255), nullable=False),
         sa.Column('event_type', sa.String(length=50), nullable=False),

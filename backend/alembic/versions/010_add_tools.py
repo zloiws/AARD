@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create tools table
-    op.create_table(
-        'tools',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.tools')")).scalar():
+        op.create_table('tools',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False, unique=True),
         sa.Column('description', sa.Text(), nullable=True),

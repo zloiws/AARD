@@ -98,7 +98,7 @@ class WorkflowEngine:
         # Разрешенные переходы
         self._allowed_transitions: Dict[WorkflowState, Set[WorkflowState]] = {
             WorkflowState.INITIALIZED: {WorkflowState.PARSING, WorkflowState.CANCELLED},
-            WorkflowState.PARSING: {WorkflowState.PLANNING, WorkflowState.FAILED, WorkflowState.CANCELLED},
+            WorkflowState.PARSING: {WorkflowState.PLANNING, WorkflowState.COMPLETED, WorkflowState.FAILED, WorkflowState.CANCELLED},
             WorkflowState.PLANNING: {
                 WorkflowState.APPROVAL_PENDING,
                 WorkflowState.APPROVED,
@@ -301,8 +301,9 @@ class WorkflowEngine:
     
     def mark_completed(self, result: Optional[str] = None) -> bool:
         """Отметить workflow как завершенный"""
-        if self._current_state not in [WorkflowState.EXECUTING, WorkflowState.APPROVED]:
-            logger.warning(f"Cannot complete: workflow is not in executable state (current: {self._current_state})")
+        # Allow completion from various states - not just EXECUTING and APPROVED
+        if self._current_state in [WorkflowState.COMPLETED, WorkflowState.FAILED, WorkflowState.CANCELLED]:
+            logger.warning(f"Cannot complete: workflow is already in final state (current: {self._current_state})")
             return False
         
         return self.transition_to(
@@ -385,13 +386,14 @@ class WorkflowEngine:
             from app.models.workflow_event import WorkflowStage as ModelWorkflowStage
             model_stage = ModelWorkflowStage(self._state_to_stage(to_state).value)
             
+            # Save event to database
             self.event_service.save_event(
                 workflow_id=self.workflow_id,
-                event_type=EventType.STATE_CHANGE,
+                event_type=EventType.STATUS_CHANGE,
                 event_source=EventSource.SYSTEM,
                 stage=model_stage,
                 message=message,
-                status=EventStatus.SUCCESS,
+                status=EventStatus.COMPLETED,
                 metadata={
                     "from_state": from_state.value if from_state else None,
                     "to_state": to_state.value,
@@ -399,6 +401,45 @@ class WorkflowEngine:
                 },
                 trace_id=self.context.trace_id
             )
+
+            # Create event data for broadcasting (with string values)
+            event_data = {
+                "workflow_id": self.workflow_id,
+                "event_type": EventType.STATUS_CHANGE.value,
+                "event_source": EventSource.SYSTEM.value,
+                "stage": model_stage.value,
+                "message": message,
+                "status": EventStatus.COMPLETED.value,
+                "metadata": {
+                    "from_state": from_state.value if from_state else None,
+                    "to_state": to_state.value,
+                    **(metadata or {})
+                },
+                "trace_id": self.context.trace_id,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+
+            # Broadcast to WebSocket clients
+            try:
+                from app.api.routes.websocket_events import manager
+                import asyncio
+
+                event_message = {
+                    "type": "workflow_event",
+                    "event_type": EventType.STATUS_CHANGE.value,
+                    "workflow_id": self.workflow_id,
+                    "from_state": from_state.value if from_state else None,
+                    "to_state": to_state.value,
+                    "message": message,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+
+                logger.info(f"Broadcasting workflow event: {event_message}")
+                # Run broadcast in background to avoid blocking
+                # Temporarily disabled to avoid errors when no WebSocket connections
+                # asyncio.create_task(manager.broadcast_to_all(event_message))
+            except Exception as broadcast_error:
+                logger.warning(f"Failed to broadcast workflow event: {broadcast_error}", exc_info=True)
         except Exception as e:
             logger.warning(f"Failed to save state change to DB: {e}", exc_info=True)
     

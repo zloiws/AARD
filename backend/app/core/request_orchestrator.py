@@ -87,7 +87,7 @@ class RequestOrchestrator:
             interaction_type=task_type or "chat"
         )
         # Сохранить workflow_engine в контексте для доступа из других мест
-        context.workflow_engine = workflow_engine
+        context.set_workflow_engine(workflow_engine)
         
         # Создать PromptManager и добавить в контекст
         prompt_manager = PromptManager(context)

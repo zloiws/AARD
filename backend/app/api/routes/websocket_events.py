@@ -29,6 +29,7 @@ class ConnectionManager:
     
     async def connect(self, websocket: WebSocket, workflow_id: Optional[str] = None):
         """Accept WebSocket connection"""
+        # Accept WebSocket connection (CORS handled by FastAPI middleware)
         await websocket.accept()
         self.all_connections.add(websocket)
         
@@ -60,7 +61,15 @@ class ConnectionManager:
             if websocket.client_state.name in ('DISCONNECTED', 'CLOSED'):
                 self.disconnect(websocket)
                 return
-            
+
+            # Additional check for connection validity
+            try:
+                _ = websocket.client
+            except (AttributeError, RuntimeError):
+                logger.debug("WebSocket connection invalid, disconnecting")
+                self.disconnect(websocket)
+                return
+
             await websocket.send_json(message)
         except (WebSocketDisconnect, ConnectionError, RuntimeError) as e:
             # Connection already closed or disconnected
@@ -164,6 +173,13 @@ async def poll_and_send_events(
             if websocket.client_state.name in ('DISCONNECTED', 'CLOSED'):
                 logger.debug("WebSocket disconnected, stopping event polling")
                 break
+
+            # Additional check - try to access websocket properties to detect closure
+            try:
+                _ = websocket.client
+            except (AttributeError, RuntimeError):
+                logger.debug("WebSocket connection invalid, stopping event polling")
+                break
             
             # Create a new session for each poll to avoid holding connections
             db = SessionLocal()
@@ -253,12 +269,15 @@ async def poll_and_send_events(
 async def websocket_events(websocket: WebSocket, workflow_id: Optional[str] = None):
     """
     WebSocket endpoint for real-time workflow events
-    
+
     Query parameters:
     - workflow_id: Optional workflow ID to subscribe to specific workflow events
     """
+    logger.info(f"WebSocket connection attempt from {websocket.client.host}:{websocket.client.port}, workflow_id: {workflow_id}")
+
     await manager.connect(websocket, workflow_id)
-    
+    logger.info(f"WebSocket connection established for workflow_id: {workflow_id}")
+
     try:
         # Send initial connection confirmation
         await manager.send_personal_message({
@@ -268,7 +287,15 @@ async def websocket_events(websocket: WebSocket, workflow_id: Optional[str] = No
         }, websocket)
         
         # Start polling for new events (creates its own sessions)
-        await poll_and_send_events(websocket, workflow_id)
+        polling_task = asyncio.create_task(poll_and_send_events(websocket, workflow_id))
+        try:
+            await polling_task
+        except asyncio.CancelledError:
+            polling_task.cancel()
+            try:
+                await polling_task
+            except asyncio.CancelledError:
+                pass
             
     except asyncio.CancelledError:
         # Normal cancellation during shutdown
@@ -311,4 +338,97 @@ async def broadcast_new_event(event: WorkflowEvent):
         logger.debug(f"Broadcasted event {event.id} to WebSocket clients")
     except Exception as e:
         logger.warning(f"Failed to broadcast event: {e}", exc_info=True)
+
+#
+# Additional WebSocket endpoints for chat/execution/meta channels
+#
+
+
+@router.websocket("/ws/chat/{session_id}")
+async def websocket_chat_endpoint(websocket: WebSocket, session_id: str):
+    """
+    WebSocket endpoint for chat events for a specific session.
+    Clients should connect to receive chat-related updates.
+    """
+    workflow_key = f"chat:{session_id}"
+    logger.info(f"WebSocket chat connect: session_id={session_id}, from={websocket.client.host}:{websocket.client.port}")
+    await manager.connect(websocket, workflow_key)
+    try:
+        # Keep connection open; client may send pings or commands
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info(f"WebSocket chat disconnected: session_id={session_id}")
+    except Exception as e:
+        logger.error(f"WebSocket chat error: {e}", exc_info=True)
+        manager.disconnect(websocket)
+
+
+@router.websocket("/ws/execution/{session_id}")
+async def websocket_execution_endpoint(websocket: WebSocket, session_id: str):
+    """
+    WebSocket endpoint for execution graph events for a specific session.
+    """
+    workflow_key = f"execution:{session_id}"
+    logger.info(f"WebSocket execution connect: session_id={session_id}, from={websocket.client.host}:{websocket.client.port}")
+    await manager.connect(websocket, workflow_key)
+    try:
+        while True:
+            await websocket.receive_text()  # client only listens
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info(f"WebSocket execution disconnected: session_id={session_id}")
+    except Exception as e:
+        logger.error(f"WebSocket execution error: {e}", exc_info=True)
+        manager.disconnect(websocket)
+
+
+@router.websocket("/ws/meta")
+async def websocket_meta_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for meta-events (system evolution).
+    """
+    workflow_key = "meta:global"
+    logger.info(f"WebSocket meta connect from {websocket.client.host}:{websocket.client.port}")
+    await manager.connect(websocket, workflow_key)
+    try:
+        while True:
+            await websocket.receive_text()  # client only listens
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info("WebSocket meta disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket meta error: {e}", exc_info=True)
+        manager.disconnect(websocket)
+
+
+# Helper broadcasters for external services
+async def broadcast_chat_event(session_id: str, event: Dict):
+    """Broadcast chat event to chat subscribers for a session."""
+    try:
+        message = {"type": "chat_event", "session_id": session_id, "data": event}
+        await manager.broadcast_to_workflow(message, f"chat:{session_id}")
+    except Exception:
+        logger.debug("Failed to broadcast chat event", exc_info=True)
+
+
+async def broadcast_execution_event(session_id: str, event: Dict):
+    """Broadcast execution event to execution subscribers for a session."""
+    try:
+        message = {"type": "execution_event", "session_id": session_id, "data": event}
+        await manager.broadcast_to_workflow(message, f"execution:{session_id}")
+    except Exception:
+        logger.debug("Failed to broadcast execution event", exc_info=True)
+
+
+async def broadcast_meta_event(event: Dict):
+    """Broadcast meta event to meta subscribers (and all as fallback)."""
+    try:
+        message = {"type": "meta_event", "data": event}
+        await manager.broadcast_to_workflow(message, "meta:global")
+        # Also broadcast to all connected clients
+        await manager.broadcast_to_all(message)
+    except Exception:
+        logger.debug("Failed to broadcast meta event", exc_info=True)
 

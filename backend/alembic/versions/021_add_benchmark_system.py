@@ -20,8 +20,9 @@ depends_on = None
 
 def upgrade() -> None:
     # Create benchmark_tasks table
-    op.create_table(
-        'benchmark_tasks',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.benchmark_tasks')")).scalar():
+        op.create_table('benchmark_tasks',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('task_type', sa.String(length=50), nullable=False),
         sa.Column('category', sa.String(length=100), nullable=True),
@@ -47,8 +48,9 @@ def upgrade() -> None:
     
     # Create benchmark_results table
     # First create table without foreign keys to ollama tables (they may not exist)
-    op.create_table(
-        'benchmark_results',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.benchmark_results')")).scalar():
+        op.create_table('benchmark_results',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('benchmark_task_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('model_id', postgresql.UUID(as_uuid=True), nullable=True),

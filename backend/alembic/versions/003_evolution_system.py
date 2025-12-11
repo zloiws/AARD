@@ -20,8 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create prompts table
-    op.create_table(
-        'prompts',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.prompts')")).scalar():
+        op.create_table('prompts',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('prompt_text', sa.Text(), nullable=False),
@@ -52,8 +53,9 @@ def upgrade() -> None:
     op.create_index('idx_prompts_name', 'prompts', ['name'])
     
     # Create approval_requests table
-    op.create_table(
-        'approval_requests',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.approval_requests')")).scalar():
+        op.create_table('approval_requests',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('request_type', sa.String(50), nullable=False),
         sa.Column('artifact_id', postgresql.UUID(as_uuid=True), nullable=True),
@@ -85,8 +87,9 @@ def upgrade() -> None:
     op.create_index('idx_approval_requests_created', 'approval_requests', ['created_at'])
     
     # Create evolution_history table
-    op.create_table(
-        'evolution_history',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.evolution_history')")).scalar():
+        op.create_table('evolution_history',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('entity_type', sa.String(50), nullable=False),
         sa.Column('entity_id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -111,8 +114,9 @@ def upgrade() -> None:
     op.create_index('idx_evolution_success', 'evolution_history', ['success'])
     
     # Create feedback table
-    op.create_table(
-        'feedback',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.feedback')")).scalar():
+        op.create_table('feedback',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('entity_type', sa.String(50), nullable=False),
         sa.Column('entity_id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -138,8 +142,9 @@ def upgrade() -> None:
     op.create_index('idx_feedback_created', 'feedback', ['created_at'])
     
     # Create plans table
-    op.create_table(
-        'plans',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.plans')")).scalar():
+        op.create_table('plans',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('task_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('version', sa.Integer(), nullable=False, server_default='1'),

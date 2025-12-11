@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create agent_tests table
-    op.create_table(
-        'agent_tests',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_tests')")).scalar():
+        op.create_table('agent_tests',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
@@ -41,8 +42,9 @@ def upgrade():
     op.create_index('ix_agent_tests_test_type', 'agent_tests', ['test_type'])
     
     # Create agent_test_runs table
-    op.create_table(
-        'agent_test_runs',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_test_runs')")).scalar():
+        op.create_table('agent_test_runs',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('test_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('agent_id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -74,8 +76,9 @@ def upgrade():
     op.create_index('ix_agent_test_runs_started_at', 'agent_test_runs', ['started_at'])
     
     # Create agent_benchmarks table
-    op.create_table(
-        'agent_benchmarks',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_benchmarks')")).scalar():
+        op.create_table('agent_benchmarks',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
@@ -94,8 +97,9 @@ def upgrade():
     op.create_index('ix_agent_benchmarks_benchmark_type', 'agent_benchmarks', ['benchmark_type'])
     
     # Create agent_benchmark_runs table
-    op.create_table(
-        'agent_benchmark_runs',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_benchmark_runs')")).scalar():
+        op.create_table('agent_benchmark_runs',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('benchmark_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('status', sa.String(50), nullable=False),

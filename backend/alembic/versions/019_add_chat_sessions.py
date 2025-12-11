@@ -20,8 +20,9 @@ depends_on = None
 
 def upgrade() -> None:
     # Create chat_sessions table
-    op.create_table(
-        'chat_sessions',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.chat_sessions')")).scalar():
+        op.create_table('chat_sessions',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
@@ -32,8 +33,9 @@ def upgrade() -> None:
     )
     
     # Create chat_messages table
-    op.create_table(
-        'chat_messages',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.chat_messages')")).scalar():
+        op.create_table('chat_messages',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('session_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('role', sa.String(length=50), nullable=False),

@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create uncertainty_parameters table
-    op.create_table(
-        'uncertainty_parameters',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.uncertainty_parameters')")).scalar():
+        op.create_table('uncertainty_parameters',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('parameter_name', sa.String(255), nullable=False, unique=True),
         sa.Column('parameter_type', sa.Enum('weight', 'threshold', 'keyword_list', 'count_threshold', 'similarity_threshold', name='parametertype'), nullable=False),
@@ -38,8 +39,9 @@ def upgrade():
     op.create_index('ix_uncertainty_parameters_parameter_name', 'uncertainty_parameters', ['parameter_name'], unique=True)
     
     # Create system_parameters table
-    op.create_table(
-        'system_parameters',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.system_parameters')")).scalar():
+        op.create_table('system_parameters',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('parameter_name', sa.String(255), nullable=False),
         sa.Column('category', sa.Enum('uncertainty', 'approval', 'critic', 'conflict_resolution', 'quota', 'planning', 'memory', 'execution', 'meta_learning', name='parametercategory'), nullable=False),

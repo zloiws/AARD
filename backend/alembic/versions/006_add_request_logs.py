@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create request_logs table
-    op.create_table(
-        'request_logs',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.request_logs')")).scalar():
+        op.create_table('request_logs',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('request_type', sa.String(50), nullable=False),
         sa.Column('request_data', postgresql.JSONB, nullable=False),
@@ -55,8 +56,9 @@ def upgrade():
     op.create_index('idx_request_logs_session_id', 'request_logs', ['session_id'])
     
     # Create request_consequences table
-    op.create_table(
-        'request_consequences',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.request_consequences')")).scalar():
+        op.create_table('request_consequences',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('request_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('consequence_type', sa.String(50), nullable=False),

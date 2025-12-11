@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade() -> None:
     # Create learning_patterns table
-    op.create_table(
-        'learning_patterns',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.learning_patterns')")).scalar():
+        op.create_table('learning_patterns',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('pattern_type', sa.String(50), nullable=False),
         sa.Column('name', sa.String(255), nullable=False),
