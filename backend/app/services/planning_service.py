@@ -391,6 +391,70 @@ class PlanningService:
         except:
             return None
 
+    def _auto_generate_artifacts_from_steps(self, steps: List[Dict[str, Any]], task_description: str, existing_artifacts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Analyze plan steps and auto-generate artifacts based on step content.
+        Returns list of new artifacts to add to context.
+        """
+        generated_artifacts = []
+        from uuid import uuid4
+
+        # Keywords that indicate artifact creation
+        tool_keywords = ["create a tool", "implement a tool", "build a tool", "develop a tool", "write a function", "implement function", "tool"]
+        agent_keywords = ["create an agent", "implement an agent", "build an agent", "develop an agent", "design agent", "agent"]
+        api_keywords = ["create api", "implement api", "build api", "develop api", "rest api", "endpoint", "api"]
+        code_keywords = ["write code", "implement code", "generate code", "create code", "code implementation", "implement", "create"]
+
+        # Analyze each step
+        for i, step in enumerate(steps):
+            if not isinstance(step, dict):
+                continue
+
+            step_desc = step.get("description", "").lower()
+            step_type = step.get("type", "").lower()
+
+            # Check for tool creation
+            if any(keyword in step_desc for keyword in tool_keywords) or step_type == "tool_creation":
+                artifact_name = f"tool_step_{i+1}"
+                if not any(art.get("name") == artifact_name for art in existing_artifacts):
+                    generated_artifacts.append({
+                        "artifact_id": str(uuid4()),
+                        "type": "tool",
+                        "name": artifact_name,
+                        "description": f"Tool created for step: {step.get('description', '')[:100]}",
+                        "version": 1,
+                        "status": "planned"
+                    })
+
+            # Check for agent creation
+            elif any(keyword in step_desc for keyword in agent_keywords) or step_type == "agent_creation":
+                artifact_name = f"agent_step_{i+1}"
+                if not any(art.get("name") == artifact_name for art in existing_artifacts):
+                    generated_artifacts.append({
+                        "artifact_id": str(uuid4()),
+                        "type": "agent",
+                        "name": artifact_name,
+                        "description": f"Agent created for step: {step.get('description', '')[:100]}",
+                        "version": 1,
+                        "status": "planned"
+                    })
+
+            # Check for API/code creation
+            elif (any(keyword in step_desc for keyword in (api_keywords + code_keywords)) or
+                  step_type in ["api_creation", "code_implementation", "implementation"]):
+                artifact_name = f"code_step_{i+1}"
+                if not any(art.get("name") == artifact_name for art in existing_artifacts):
+                    generated_artifacts.append({
+                        "artifact_id": str(uuid4()),
+                        "type": "code",
+                        "name": artifact_name,
+                        "description": f"Code/API created for step: {step.get('description', '')[:100]}",
+                        "version": 1,
+                        "status": "planned"
+                    })
+
+        return generated_artifacts
+
     def _atomic_update_task_context(self, task_id: UUID, updates: Dict[str, Any]) -> None:
         """
         Atomically merge `updates` into the `tasks.context` JSONB column for `task_id`.
@@ -1603,12 +1667,23 @@ Return a JSON array of steps."""
                     }
                     for i, step in enumerate(plan.steps if plan.steps else [])
                 ]
-                # artifacts - try to preserve existing
+                # artifacts - try to preserve existing and auto-generate based on plan steps
                 existing_ctx = task.get_context() or {}
                 # Prefer artifacts from provided context or digital twin context, fallback to existing ctx
                 provided_artifacts = (context or {}).get("artifacts") if isinstance((context or {}).get("artifacts"), list) else None
                 dt_artifacts = digital_twin_context.get("artifacts") if isinstance(digital_twin_context.get("artifacts") if isinstance(digital_twin_context, dict) else None, list) else None
-                final_ctx["artifacts"] = provided_artifacts or dt_artifacts or (existing_ctx.get("artifacts", []) if isinstance(existing_ctx.get("artifacts", []), list) else [])
+                existing_artifacts = provided_artifacts or dt_artifacts or (existing_ctx.get("artifacts", []) if isinstance(existing_ctx.get("artifacts", []), list) else [])
+
+                # Auto-generate artifacts based on plan steps analysis
+                try:
+                    generated_artifacts = self._auto_generate_artifacts_from_steps(plan.steps or [], task_description, existing_artifacts)
+                    # Merge generated artifacts with existing ones (avoid duplicates by name)
+                    existing_names = {art.get("name", "").lower() for art in existing_artifacts if isinstance(art, dict)}
+                    new_artifacts = [art for art in generated_artifacts if art.get("name", "").lower() not in existing_names]
+                    final_ctx["artifacts"] = existing_artifacts + new_artifacts
+                except Exception:
+                    # If auto-generation fails, use existing artifacts
+                    final_ctx["artifacts"] = existing_artifacts
                 # execution_logs, interaction_history, model_logs, prompt_usage
                 final_ctx["execution_logs"] = existing_ctx.get("execution_logs", [])
                 final_ctx["interaction_history"] = existing_ctx.get("interaction_history", [])
