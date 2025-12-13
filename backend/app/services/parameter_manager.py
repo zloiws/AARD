@@ -91,7 +91,7 @@ class ParameterManager:
         except Exception as e:
             # If the system_parameters table doesn't exist (migration missing) or any DB error occurs,
             # log a warning and continue using defaults. This prevents tests from failing due to schema gaps.
-            logger.warning(f\"Could not load system parameters from DB: {e}\")
+            logger.warning(f"Could not load system parameters from DB: {e}")
         finally:
             self._cache_loaded = True
     
