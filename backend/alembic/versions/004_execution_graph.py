@@ -1,9 +1,9 @@
-\"\"\"stub 004_execution_graph to satisfy migration graph
+﻿"""stub 004_execution_graph to satisfy migration graph
 
 Revision ID: 004_execution_graph
 Revises: 003
 Create Date: 2025-12-13 18:25:00.000000
-\"\"\"
+"""
 from typing import Sequence, Union
 
 from alembic import op
@@ -23,5 +23,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     pass
-\n*** End Patch
-

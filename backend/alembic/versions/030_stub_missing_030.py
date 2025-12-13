@@ -1,9 +1,9 @@
-\"\"\"stub 030 to satisfy migration graph
+﻿"""stub 030 to satisfy migration graph
 
 Revision ID: 030
 Revises: 028
 Create Date: 2025-12-13 18:26:00.000000
-\"\"\"
+"""
 from typing import Sequence, Union
 
 from alembic import op
@@ -23,5 +23,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     pass
-\n*** End Patch
-
