@@ -378,7 +378,11 @@
 <body{% if body_class %} class="{{ body_class }}"{% endif %}>
     {% block content %}{% endblock %}
     
-    {% block extra_js %}{% endblock %}
+    {% block extra_js %}
+    <script src="/static/dual_flow_canvas.js"></script>
+    <script src="/static/live_node.js"></script>
+    <script src="/static/evolution_dashboard.js"></script>
+    {% endblock %}
 </body>
 </html>
 
