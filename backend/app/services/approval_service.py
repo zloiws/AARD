@@ -35,7 +35,7 @@ class ApprovalService:
         risk_assessment: Optional[Dict[str, Any]] = None,
         recommendation: Optional[str] = None,
         timeout_hours: int = 24
-    ) -> ApprovalRequest:
+    ) -> Optional[ApprovalRequest]:
         """Create a new approval request"""
         
         approval = ApprovalRequest(
@@ -51,11 +51,21 @@ class ApprovalService:
             decision_timeout=datetime.now(timezone.utc) + timedelta(hours=timeout_hours)
         )
         
-        self.db.add(approval)
-        self.db.commit()
-        self.db.refresh(approval)
-        
-        return approval
+        try:
+            self.db.add(approval)
+            self.db.commit()
+            self.db.refresh(approval)
+            return approval
+        except Exception as e:
+            # If DB state is bad (missing tables/migrations), rollback and return None as a safe fallback.
+            try:
+                self.db.rollback()
+            except Exception:
+                pass
+            from app.core.logging_config import LoggingConfig
+            logger = LoggingConfig.get_logger(__name__)
+            logger.warning(f\"Could not create approval request in DB: {e}\")
+            return None
     
     def get_approval_request(self, request_id: UUID) -> Optional[ApprovalRequest]:
         """Get approval request by ID"""
