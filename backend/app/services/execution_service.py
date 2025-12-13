@@ -83,6 +83,27 @@ class StepExecutor:
             "duration": None
         }
         
+        # Emit workflow event: step started
+        try:
+            from app.services.workflow_event_service import WorkflowEventService
+            from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
+
+            wf_service = WorkflowEventService(self.db)
+            wf_service.save_event(
+                workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
+                event_type=EventType.EXECUTION_STEP,
+                event_source=EventSource.SYSTEM,
+                stage=WorkflowStage.EXECUTION,
+                message=f\"Step started: {step_id} - {description}\",
+                event_data={\"step\": step},
+                plan_id=plan.id if plan else None,
+                task_id=plan.task_id if plan else None,
+                status=EventStatus.IN_PROGRESS
+            )
+        except Exception:
+            # Non-fatal: don't break execution if event logging fails
+            logger.debug(\"Failed to emit workflow event for step start\", exc_info=True)
+        
         try:
             logger.info(
                 "Executing plan step",
@@ -201,6 +222,24 @@ class StepExecutor:
             plan_step_duration_seconds.labels(
                 step_type=step_type
             ).observe(step_duration)
+            # Emit workflow event: step failed
+            try:
+                from app.services.workflow_event_service import WorkflowEventService
+                from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
+                wf_service = WorkflowEventService(self.db)
+                wf_service.save_event(
+                    workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
+                    event_type=EventType.ERROR,
+                    event_source=EventSource.SYSTEM,
+                    stage=WorkflowStage.ERROR,
+                    message=f\"Step failed: {step_id} - {str(e)[:200]}\",
+                    event_data={\"step\": step, \"error\": str(e)},
+                    plan_id=plan.id if plan else None,
+                    task_id=plan.task_id if plan else None,
+                    status=EventStatus.FAILED
+                )
+            except Exception:
+                logger.debug(\"Failed to emit workflow event for step failure\", exc_info=True)
         
         return result
     
