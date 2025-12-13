@@ -37,6 +37,10 @@ from app.core.execution_error_types import (
 )
 from app.core.config import get_settings
 import time
+from uuid import uuid4
+import json as _json
+from sqlalchemy import text as sa_text
+from app.core.database import engine as _engine
 
 logger = LoggingConfig.get_logger(__name__)
 settings = get_settings()
@@ -104,6 +108,40 @@ class StepExecutor:
             # Non-fatal: don't break execution if event logging fails
             logger.debug(\"Failed to emit workflow event for step start\", exc_info=True)
         
+        # Create execution graph/node records for visualization (best-effort)
+        try:
+            session_id = str(plan.task_id) if plan and plan.task_id else str(plan.id)
+
+            with _engine.connect() as conn:
+                # Find or create graph
+                res = conn.execute(sa_text(\"SELECT id FROM execution_graphs WHERE session_id = :sid\"), {\"sid\": session_id})
+                row = res.fetchone()
+                if row:
+                    graph_id = str(row[0])
+                else:
+                    graph_id = str(uuid4())
+                    conn.execute(sa_text(
+                        \"INSERT INTO execution_graphs (id, session_id, metadata, created_at) VALUES (:id, :sid, :meta, now())\"
+                    ), {\"id\": graph_id, \"sid\": session_id, \"meta\": _json.dumps({\"created_by\": \"execution_service\"})})
+
+                # Insert node for this step
+                node_id = str(uuid4())
+                conn.execute(sa_text(
+                    \"INSERT INTO execution_nodes (id, graph_id, node_type, payload, status, created_at) VALUES (:id, :gid, :ntype, :payload, :status, now())\"
+                ), {\"id\": node_id, \"gid\": graph_id, \"ntype\": \"step\", \"payload\": _json.dumps({\"step_id\": step_id, \"description\": description}), \"status\": \"pending\"})
+
+                # Link to previous node if exists
+                prev_res = conn.execute(sa_text(
+                    \"SELECT id FROM execution_nodes WHERE graph_id = :gid ORDER BY created_at DESC LIMIT 2\"
+                ), {\"gid\": graph_id})
+                rows = prev_res.fetchall()
+                if len(rows) >= 2:
+                    prev_node_id = str(rows[1][0])
+                    conn.execute(sa_text(
+                        \"INSERT INTO execution_edges (id, graph_id, from_node, to_node, metadata, created_at) VALUES (:id, :gid, :from_n, :to_n, :meta, now())\"
+                    ), {\"id\": str(uuid4()), \"gid\": graph_id, \"from_n\": prev_node_id, \"to_n\": node_id, \"meta\": _json.dumps({\"relation\": \"sequential_step\"})})
+        except Exception:
+            logger.debug(\"Failed to create execution graph/node records\", exc_info=True)
         try:
             logger.info(
                 "Executing plan step",
@@ -214,6 +252,26 @@ class StepExecutor:
                 )
             except Exception:
                 logger.debug("Failed to emit workflow event for step completion", exc_info=True)
+            
+            # Update execution node record to completed (best-effort)
+            try:
+                session_id = str(plan.task_id) if plan and plan.task_id else str(plan.id)
+                with _engine.connect() as conn:
+                    gid_res = conn.execute(sa_text("SELECT id FROM execution_graphs WHERE session_id = :sid"), {"sid": session_id}).fetchone()
+                    if gid_res:
+                        graph_id = str(gid_res[0])
+                        # Try to find node by step_id in payload
+                        node_res = conn.execute(sa_text(
+                            \"SELECT id FROM execution_nodes WHERE graph_id = :gid AND (payload->>'step_id') = :step_id ORDER BY created_at DESC LIMIT 1\"),
+                            {"gid": graph_id, "step_id": step_id}
+                        ).fetchone()
+                        if node_res:
+                            node_id = str(node_res[0])
+                            conn.execute(sa_text(
+                                "UPDATE execution_nodes SET status = :status, payload = :payload WHERE id = :nid"
+                            ), {"status": "completed", "payload": _json.dumps({"step_id": step_id, "description": description, "result": result}), "nid": node_id})
+            except Exception:
+                logger.debug("Failed to update execution node status", exc_info=True)
             
         except Exception as e:
             logger.error(
