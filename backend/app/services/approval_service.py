@@ -1,7 +1,7 @@
 """
 Approval service for managing approval requests
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List
 from uuid import UUID
 
@@ -48,7 +48,7 @@ class ApprovalService:
             risk_assessment=risk_assessment,
             recommendation=recommendation,
             status="pending",  # Use lowercase to match DB constraint
-            decision_timeout=datetime.utcnow() + timedelta(hours=timeout_hours)
+            decision_timeout=datetime.now(timezone.utc) + timedelta(hours=timeout_hours)
         )
         
         self.db.add(approval)
@@ -223,7 +223,7 @@ class ApprovalService:
             type_counts[req_type.value] = count
         
         # Count urgent (expiring soon)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         urgent = self.db.query(func.count(ApprovalRequest.id)).filter(
             and_(
                 ApprovalRequest.status == "pending",
