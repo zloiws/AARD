@@ -1,7 +1,7 @@
 """
 Approval request model
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 from uuid import uuid4, UUID
@@ -54,9 +54,9 @@ class ApprovalRequest(Base):
     human_feedback = Column(Text, nullable=True)
     approved_by = Column(String(255), nullable=True)
     approved_at = Column(DateTime, nullable=True)
-    decision_timeout = Column(DateTime, nullable=True)
+    decision_timeout = Column(DateTime(timezone=True), nullable=True)
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     artifact = relationship("Artifact", backref="approval_requests")
