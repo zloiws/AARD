@@ -58,7 +58,8 @@ Thumbs.db
 .coverage
 htmlcov/
 .tox/
-
+ui_old/
+frontend/
 # Docker
 .dockerignore
 
