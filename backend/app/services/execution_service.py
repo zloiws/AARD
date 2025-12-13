@@ -195,6 +195,26 @@ class StepExecutor:
             except Exception as e:
                 logger.warning(f"Failed to record step execution metrics: {e}", exc_info=True)
             
+            # Emit workflow event: step completed
+            try:
+                from app.services.workflow_event_service import WorkflowEventService
+                from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
+
+                wf_service = WorkflowEventService(self.db)
+                wf_service.save_event(
+                    workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
+                    event_type=EventType.EXECUTION_STEP,
+                    event_source=EventSource.SYSTEM,
+                    stage=WorkflowStage.EXECUTION,
+                    message=f"Step completed: {step_id} - {description}",
+                    event_data={"step": step, "result": result},
+                    plan_id=plan.id if plan else None,
+                    task_id=plan.task_id if plan else None,
+                    status=EventStatus.COMPLETED
+                )
+            except Exception:
+                logger.debug("Failed to emit workflow event for step completion", exc_info=True)
+            
         except Exception as e:
             logger.error(
                 "Exception in step execution",
