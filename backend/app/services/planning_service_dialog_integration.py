@@ -232,17 +232,15 @@ async def conduct_agent_dialog(
 
 Начни обсуждение задачи. Предложи подход к решению. Ответ должен быть кратким (2-3 предложения)."""
         
-        response1 = await asyncio.wait_for(
-            ollama_client.generate(
-                prompt=agent1_prompt,
-                task_type=TaskType.PLANNING,
-                model=planning_model.model_name,
-                server_url=server_url,
-                num_predict=200,
-                use_cache=False  # Отключить кэш для реальных вызовов
-            ),
-            timeout=30
+        _coro1 = ollama_client.generate(
+            prompt=agent1_prompt,
+            task_type=TaskType.PLANNING,
+            model=planning_model.model_name,
+            server_url=server_url,
+            num_predict=200,
+            use_cache=False  # Отключить кэш для реальных вызовов
         )
+        response1 = await asyncio.wait_for(_coro1, timeout=30)
         
         message1_content = response1.response.strip() if hasattr(response1, 'response') else str(response1).strip()
         dialog_service.add_message(
@@ -268,17 +266,15 @@ async def conduct_agent_dialog(
 
 Ответь на предложение первого агента. Предложи свой подход или дополнения. Ответ должен быть кратким (2-3 предложения)."""
             
-            response2 = await asyncio.wait_for(
-                ollama_client.generate(
-                    prompt=agent2_prompt,
-                    task_type=TaskType.PLANNING,
-                    model=planning_model.model_name,
-                    server_url=server_url,
-                    num_predict=200,
-                    use_cache=False  # Отключить кэш для реальных вызовов
-                ),
-                timeout=30
+            _coro2 = ollama_client.generate(
+                prompt=agent2_prompt,
+                task_type=TaskType.PLANNING,
+                model=planning_model.model_name,
+                server_url=server_url,
+                num_predict=200,
+                use_cache=False  # Отключить кэш для реальных вызовов
             )
+            response2 = await asyncio.wait_for(_coro2, timeout=30)
             
             message2_content = response2.response.strip() if hasattr(response2, 'response') else str(response2).strip()
             dialog_service.add_message(

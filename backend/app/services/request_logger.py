@@ -3,7 +3,7 @@ Service for logging requests and calculating rankings
 """
 from typing import Dict, Any, Optional, List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.request_log import RequestLog, RequestConsequence
@@ -281,7 +281,11 @@ class RequestLogger:
         recency_weight = 0.1
         
         # Calculate recency score (0.0-1.0)
-        days_old = (datetime.utcnow() - request_log.created_at).days
+        # ensure both datetimes are timezone-aware for subtraction
+        created_at = request_log.created_at
+        if getattr(created_at, "tzinfo", None) is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        days_old = (datetime.now(timezone.utc) - created_at).days
         recency_score = max(0.0, 1.0 - (days_old / 365.0))  # Loses relevance over a year
         
         # Calculate overall rank

@@ -1,0 +1,7 @@
+-- Auto-generated patch 2025-12-11T18:27:57.292462
+BEGIN;
+
+ALTER TABLE plans
+  ADD COLUMN IF NOT EXISTS task_id UUID,
+  ADD COLUMN IF NOT EXISTS task_id UUID;
+COMMIT;

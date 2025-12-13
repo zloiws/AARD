@@ -399,16 +399,14 @@ Execute the given step and return the result in JSON format:
         # Использовать таймаут из шага, если указан, иначе из конфигурации
         timeout = step.get("timeout", settings.execution_timeout_seconds)
         try:
-            response = await asyncio.wait_for(
-                ollama_client.generate(
-                    prompt=user_prompt,
-                    server_url=server.get_api_url(),
-                    model=execution_model.model_name or execution_model.name,
-                    system_prompt=system_prompt,
-                    task_type="code_generation"
-                ),
-                timeout=float(timeout)
+            _coro = ollama_client.generate(
+                prompt=user_prompt,
+                server_url=server.get_api_url(),
+                model=execution_model.model_name or execution_model.name,
+                system_prompt=system_prompt,
+                task_type="code_generation"
             )
+            response = await asyncio.wait_for(_coro, timeout=float(timeout))
             
             # Parse response - OllamaResponse has .response attribute
             response_text = response.response if hasattr(response, "response") else str(response)

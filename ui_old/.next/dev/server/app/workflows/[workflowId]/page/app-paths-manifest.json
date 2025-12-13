@@ -1,0 +1,3 @@
+{
+  "/workflows/[workflowId]/page": "app/workflows/[workflowId]/page.js"
+}

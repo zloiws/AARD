@@ -1,0 +1,7 @@
+-- Auto-generated patch 2025-12-11T18:28:45.258416
+BEGIN;
+
+ALTER TABLE plans
+  ADD COLUMN IF NOT EXISTS version TEXT,
+  ADD COLUMN IF NOT EXISTS version TEXT;
+COMMIT;

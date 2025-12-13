@@ -1,0 +1,13 @@
+{
+  "/agents/[id]/page": "app/agents/[id]/page.js",
+  "/agents/page": "app/agents/page.js",
+  "/approvals/page": "app/approvals/page.js",
+  "/chat/[taskId]/page": "app/chat/[taskId]/page.js",
+  "/chat/page": "app/chat/page.js",
+  "/page": "app/page.js",
+  "/plans/[id]/page": "app/plans/[id]/page.js",
+  "/plans/page": "app/plans/page.js",
+  "/servers/page": "app/servers/page.js",
+  "/tasks/[id]/page": "app/tasks/[id]/page.js",
+  "/tasks/page": "app/tasks/page.js"
+}
