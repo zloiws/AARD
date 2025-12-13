@@ -64,7 +64,7 @@ class ApprovalService:
                 pass
             from app.core.logging_config import LoggingConfig
             logger = LoggingConfig.get_logger(__name__)
-            logger.warning(f\"Could not create approval request in DB: {e}\")
+            logger.warning(f"Could not create approval request in DB: {e}")
             return None
     
     def get_approval_request(self, request_id: UUID) -> Optional[ApprovalRequest]:
