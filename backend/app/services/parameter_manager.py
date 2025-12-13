@@ -52,11 +52,15 @@ class ParameterManager:
             if value is not None:
                 return value
         
-        # Try to load from database
-        param = self.db.query(SystemParameter).filter(
-            SystemParameter.parameter_name == parameter_name,
-            SystemParameter.category == category
-        ).first()
+        # Try to load from database (best-effort; tolerate missing table)
+        try:
+            param = self.db.query(SystemParameter).filter(
+                SystemParameter.parameter_name == parameter_name,
+                SystemParameter.category == category
+            ).first()
+        except Exception as e:
+            logger.warning(f"Could not read parameter '{parameter_name}' from DB: {e}")
+            param = None
         
         if param:
             self._cache[cache_key] = param
@@ -64,19 +68,23 @@ class ParameterManager:
             if value is not None:
                 return value
         
-        # If parameter doesn't exist, create it with default value
+        # If parameter doesn't exist, create it with default value (best-effort)
         if default is not None:
-            param = SystemParameter(
-                parameter_name=parameter_name,
-                category=category,
-                parameter_type=parameter_type,
-                description=f"Auto-created parameter: {parameter_name}"
-            )
-            param.set_value(default)
-            self.db.add(param)
-            self.db.commit()
-            self.db.refresh(param)
-            self._cache[cache_key] = param
+            try:
+                param = SystemParameter(
+                    parameter_name=parameter_name,
+                    category=category,
+                    parameter_type=parameter_type,
+                    description=f"Auto-created parameter: {parameter_name}"
+                )
+                param.set_value(default)
+                self.db.add(param)
+                self.db.commit()
+                self.db.refresh(param)
+                self._cache[cache_key] = param
+            except Exception as e:
+                # If creation fails (e.g. missing table), log and return default without persisting
+                logger.warning(f\"Could not persist parameter '{parameter_name}' to DB: {e}\")
             return default
         
         return None
