@@ -1,7 +1,7 @@
 """
 Approval service for managing approval requests
 """
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List
 from uuid import UUID
 
@@ -81,7 +81,7 @@ class ApprovalService:
         
         approval.status = "approved"  # Use lowercase to match DB constraint
         approval.approved_by = approved_by
-        approval.approved_at = datetime.now(timezone.utc)
+        approval.approved_at = datetime.utcnow()
         if feedback:
             approval.human_feedback = feedback
         
@@ -126,7 +126,7 @@ class ApprovalService:
         
         approval.status = "rejected"  # Use lowercase to match DB constraint
         approval.rejected_by = rejected_by
-        approval.rejected_at = datetime.now(timezone.utc)
+        approval.rejected_at = datetime.utcnow()
         approval.human_feedback = feedback
         
         # Learn from feedback using FeedbackLearningService
@@ -161,7 +161,7 @@ class ApprovalService:
         approval.status = "modified"  # Use lowercase to match DB constraint
         approval.request_data = {**approval.request_data, **modified_data}
         approval.approved_by = modified_by
-        approval.approved_at = datetime.now(timezone.utc)
+        approval.approved_at = datetime.utcnow()
         if feedback:
             approval.human_feedback = feedback
         
@@ -296,7 +296,7 @@ class ApprovalService:
                 prompt.name = request_data["name"]
             prompt.version += 1
             prompt.status = PromptStatus.ACTIVE
-            prompt.last_improved_at = datetime.now(timezone.utc)
+            prompt.last_improved_at = datetime.utcnow()
             self.db.commit()
     
     def _approve_plan(self, plan_id: Optional[UUID], request_data: Dict[str, Any]):
@@ -310,6 +310,6 @@ class ApprovalService:
         plan = self.db.query(Plan).filter(Plan.id == plan_id).first()
         if plan:
             plan.status = "approved"  # Use lowercase string to match DB constraint
-            plan.approved_at = datetime.now(timezone.utc)
+            plan.approved_at = datetime.utcnow()
             self.db.commit()
 

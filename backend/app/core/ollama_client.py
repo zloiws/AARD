@@ -344,15 +344,26 @@ class OllamaClient:
             )
         
         # PRIORITY 3: Auto-select based on task type
-        # This should not happen in new logic - server_url and model should always be provided
-        # But keep for backward compatibility
+        # If neither server_url nor model provided, try to select an instance
+        # from configured instances based on task_type, or fall back to the first.
         else:
-            logger.warning("No server_url and no model specified")
-            raise OllamaError(
-                "Server URL and model must be provided. "
-                "Please ensure server_id and model are provided in the request, "
-                "or use auto-selection which should be handled in chat.py."
-            )
+            try:
+                selected = self.task_type_mapping.get(task_type)
+            except Exception:
+                selected = None
+            if selected:
+                instance = selected
+            else:
+                # Fallback to first configured instance (if any)
+                instance = self.instances[0] if self.instances else None
+
+            if not instance:
+                logger.warning("No server_url and no model specified")
+                raise OllamaError(
+                    "Server URL and model must be provided. "
+                    "Please ensure server_id and model are provided in the request, "
+                    "or configure default Ollama instances in the environment."
+                )
         
         # Ensure we have an instance
         if not instance:

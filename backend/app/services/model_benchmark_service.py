@@ -81,16 +81,14 @@ class ModelBenchmarkService:
         
         try:
             # Выполнить запрос с таймаутом
-            response = await asyncio.wait_for(
-                self.ollama_client.generate(
-                    prompt=prompt,
-                    task_type=task_type,
-                    model=model.model_name,
-                    server_url=server_url,
-                    num_predict=200  # Ограничение для быстрого теста
-                ),
-                timeout=timeout
+            _coro = self.ollama_client.generate(
+                prompt=prompt,
+                task_type=task_type,
+                model=model.model_name,
+                server_url=server_url,
+                num_predict=200  # Ограничение для быстрого теста
             )
+            response = await asyncio.wait_for(_coro, timeout=timeout)
             
             response_time = time.time() - start_time
             response_text = response.response if hasattr(response, 'response') else str(response)

@@ -281,8 +281,9 @@ class RequestLogger:
         recency_weight = 0.1
         
         # Calculate recency score (0.0-1.0)
+        # ensure both datetimes are timezone-aware for subtraction
         created_at = request_log.created_at
-        if created_at.tzinfo is None:
+        if getattr(created_at, "tzinfo", None) is None:
             created_at = created_at.replace(tzinfo=timezone.utc)
         days_old = (datetime.now(timezone.utc) - created_at).days
         recency_score = max(0.0, 1.0 - (days_old / 365.0))  # Loses relevance over a year
@@ -312,7 +313,7 @@ class RequestLogger:
             # Recalculate overall rank
             request_log.overall_rank = self._calculate_overall_rank(request_log)
             
-            request_log.updated_at = datetime.now(timezone.utc)
+            request_log.updated_at = datetime.utcnow()
             self.db.commit()
             self.db.refresh(request_log)
 

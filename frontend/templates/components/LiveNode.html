@@ -1,0 +1,19 @@
+<!-- Live Node skeleton -->
+<div class="live-node" id="live-node-{{ node_id if node_id else '' }}">
+    <div class="live-node-header">
+        <strong>Live Node</strong>
+        <span class="live-node-status" id="live-node-status-{{ node_id if node_id else '' }}">unknown</span>
+    </div>
+    <div class="live-node-body" id="live-node-body-{{ node_id if node_id else '' }}">
+        <ul class="metrics-list">
+            <li>CPU: <span class="metric-cpu">—</span></li>
+            <li>Memory: <span class="metric-mem">—</span></li>
+            <li>Latency: <span class="metric-lat">—</span></li>
+        </ul>
+        <div class="live-node-controls">
+            <button class="btn btn-sm" data-action="open-versions">Versions</button>
+        </div>
+    </div>
+</div>
+
+

@@ -39,6 +39,10 @@ from app.core.execution_error_types import (
 )
 from app.core.config import get_settings
 import time
+from uuid import uuid4
+import json as _json
+from sqlalchemy import text as sa_text
+from app.core.database import engine as _engine
 
 logger = LoggingConfig.get_logger(__name__)
 settings = get_settings()
@@ -87,6 +91,61 @@ class StepExecutor:
             "duration": None
         }
         
+        # Emit workflow event: step started
+        try:
+            from app.services.workflow_event_service import WorkflowEventService
+            from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
+
+            wf_service = WorkflowEventService(self.db)
+            wf_service.save_event(
+                workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
+                event_type=EventType.EXECUTION_STEP,
+                event_source=EventSource.SYSTEM,
+                stage=WorkflowStage.EXECUTION,
+                message=f\"Step started: {step_id} - {description}\",
+                event_data={\"step\": step},
+                plan_id=plan.id if plan else None,
+                task_id=plan.task_id if plan else None,
+                status=EventStatus.IN_PROGRESS
+            )
+        except Exception:
+            # Non-fatal: don't break execution if event logging fails
+            logger.debug(\"Failed to emit workflow event for step start\", exc_info=True)
+        
+        # Create execution graph/node records for visualization (best-effort)
+        try:
+            session_id = str(plan.task_id) if plan and plan.task_id else str(plan.id)
+
+            with _engine.connect() as conn:
+                # Find or create graph
+                res = conn.execute(sa_text(\"SELECT id FROM execution_graphs WHERE session_id = :sid\"), {\"sid\": session_id})
+                row = res.fetchone()
+                if row:
+                    graph_id = str(row[0])
+                else:
+                    graph_id = str(uuid4())
+                    conn.execute(sa_text(
+                        \"INSERT INTO execution_graphs (id, session_id, metadata, created_at) VALUES (:id, :sid, :meta, now())\"
+                    ), {\"id\": graph_id, \"sid\": session_id, \"meta\": _json.dumps({\"created_by\": \"execution_service\"})})
+
+                # Insert node for this step
+                node_id = str(uuid4())
+                conn.execute(sa_text(
+                    \"INSERT INTO execution_nodes (id, graph_id, node_type, payload, status, created_at) VALUES (:id, :gid, :ntype, :payload, :status, now())\"
+                ), {\"id\": node_id, \"gid\": graph_id, \"ntype\": \"step\", \"payload\": _json.dumps({\"step_id\": step_id, \"description\": description}), \"status\": \"pending\"})
+
+                # Link to previous node if exists
+                prev_res = conn.execute(sa_text(
+                    \"SELECT id FROM execution_nodes WHERE graph_id = :gid ORDER BY created_at DESC LIMIT 2\"
+                ), {\"gid\": graph_id})
+                rows = prev_res.fetchall()
+                if len(rows) >= 2:
+                    prev_node_id = str(rows[1][0])
+                    conn.execute(sa_text(
+                        \"INSERT INTO execution_edges (id, graph_id, from_node, to_node, metadata, created_at) VALUES (:id, :gid, :from_n, :to_n, :meta, now())\"
+                    ), {\"id\": str(uuid4()), \"gid\": graph_id, \"from_n\": prev_node_id, \"to_n\": node_id, \"meta\": _json.dumps({\"relation\": \"sequential_step\"})})
+        except Exception:
+            logger.debug(\"Failed to create execution graph/node records\", exc_info=True)
         try:
             logger.info(
                 "Executing plan step",
@@ -211,6 +270,46 @@ class StepExecutor:
             except Exception as e:
                 logger.warning(f"Failed to record step execution metrics: {e}", exc_info=True)
             
+            # Emit workflow event: step completed
+            try:
+                from app.services.workflow_event_service import WorkflowEventService
+                from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
+
+                wf_service = WorkflowEventService(self.db)
+                wf_service.save_event(
+                    workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
+                    event_type=EventType.EXECUTION_STEP,
+                    event_source=EventSource.SYSTEM,
+                    stage=WorkflowStage.EXECUTION,
+                    message=f"Step completed: {step_id} - {description}",
+                    event_data={"step": step, "result": result},
+                    plan_id=plan.id if plan else None,
+                    task_id=plan.task_id if plan else None,
+                    status=EventStatus.COMPLETED
+                )
+            except Exception:
+                logger.debug("Failed to emit workflow event for step completion", exc_info=True)
+            
+            # Update execution node record to completed (best-effort)
+            try:
+                session_id = str(plan.task_id) if plan and plan.task_id else str(plan.id)
+                with _engine.connect() as conn:
+                    gid_res = conn.execute(sa_text("SELECT id FROM execution_graphs WHERE session_id = :sid"), {"sid": session_id}).fetchone()
+                    if gid_res:
+                        graph_id = str(gid_res[0])
+                        # Try to find node by step_id in payload
+                        node_res = conn.execute(sa_text(
+                            \"SELECT id FROM execution_nodes WHERE graph_id = :gid AND (payload->>'step_id') = :step_id ORDER BY created_at DESC LIMIT 1\"),
+                            {"gid": graph_id, "step_id": step_id}
+                        ).fetchone()
+                        if node_res:
+                            node_id = str(node_res[0])
+                            conn.execute(sa_text(
+                                "UPDATE execution_nodes SET status = :status, payload = :payload WHERE id = :nid"
+                            ), {"status": "completed", "payload": _json.dumps({"step_id": step_id, "description": description, "result": result}), "nid": node_id})
+            except Exception:
+                logger.debug("Failed to update execution node status", exc_info=True)
+            
         except Exception as e:
             logger.error(
                 "Exception in step execution",
@@ -238,6 +337,24 @@ class StepExecutor:
             plan_step_duration_seconds.labels(
                 step_type=step_type
             ).observe(step_duration)
+            # Emit workflow event: step failed
+            try:
+                from app.services.workflow_event_service import WorkflowEventService
+                from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
+                wf_service = WorkflowEventService(self.db)
+                wf_service.save_event(
+                    workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
+                    event_type=EventType.ERROR,
+                    event_source=EventSource.SYSTEM,
+                    stage=WorkflowStage.ERROR,
+                    message=f\"Step failed: {step_id} - {str(e)[:200]}\",
+                    event_data={\"step\": step, \"error\": str(e)},
+                    plan_id=plan.id if plan else None,
+                    task_id=plan.task_id if plan else None,
+                    status=EventStatus.FAILED
+                )
+            except Exception:
+                logger.debug(\"Failed to emit workflow event for step failure\", exc_info=True)
         
         return result
     
@@ -471,16 +588,14 @@ Execute the given step and return the result in JSON format:
         # Использовать таймаут из шага, если указан, иначе из конфигурации
         timeout = step.get("timeout", settings.execution_timeout_seconds)
         try:
-            response = await asyncio.wait_for(
-                ollama_client.generate(
-                    prompt=user_prompt,
-                    server_url=server.get_api_url(),
-                    model=execution_model.model_name or execution_model.name,
-                    system_prompt=system_prompt,
-                    task_type="code_generation"
-                ),
-                timeout=float(timeout)
+            _coro = ollama_client.generate(
+                prompt=user_prompt,
+                server_url=server.get_api_url(),
+                model=execution_model.model_name or execution_model.name,
+                system_prompt=system_prompt,
+                task_type="code_generation"
             )
+            response = await asyncio.wait_for(_coro, timeout=float(timeout))
             
             # Parse response - OllamaResponse has .response attribute
             response_text = response.response if hasattr(response, "response") else str(response)

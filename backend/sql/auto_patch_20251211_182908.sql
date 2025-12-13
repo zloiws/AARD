@@ -1,0 +1,7 @@
+-- Auto-generated patch 2025-12-11T18:29:08.058465
+BEGIN;
+
+ALTER TABLE plans
+  ADD COLUMN IF NOT EXISTS strategy TEXT,
+  ADD COLUMN IF NOT EXISTS strategy TEXT;
+COMMIT;

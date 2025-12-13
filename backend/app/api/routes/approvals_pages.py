@@ -6,7 +6,6 @@ from uuid import UUID
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
 
 from app.core.templates import templates
 from app.core.database import get_db
@@ -56,7 +55,7 @@ async def approvals_queue(
         )
     
     from datetime import datetime, timezone
-    
+
     return templates.TemplateResponse(
         "approvals/queue.html",
         {

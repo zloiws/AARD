@@ -1,0 +1,7 @@
+-- Auto-generated patch 2025-12-11T18:29:31.860278
+BEGIN;
+
+ALTER TABLE plans
+  ADD COLUMN IF NOT EXISTS current_step TEXT,
+  ADD COLUMN IF NOT EXISTS current_step TEXT;
+COMMIT;

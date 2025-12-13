@@ -239,18 +239,16 @@ class BenchmarkService:
             # Use task description as user prompt, add system prompt if available
             user_prompt = task.task_description
             
-            response = await asyncio.wait_for(
-                client.generate(
-                    prompt=user_prompt,
-                    task_type=ollama_task_type,
-                    model=model_name,
-                    server_url=server_url,
-                    system_prompt=system_prompt,
-                    temperature=0.7,  # Explicit temperature
-                    top_p=0.9  # Explicit top_p
-                ),
-                timeout=timeout
+            _coro = client.generate(
+                prompt=user_prompt,
+                task_type=ollama_task_type,
+                model=model_name,
+                server_url=server_url,
+                system_prompt=system_prompt,
+                temperature=0.7,  # Explicit temperature
+                top_p=0.9  # Explicit top_p
             )
+            response = await asyncio.wait_for(_coro, timeout=timeout)
             
             execution_time = time.time() - start_time
             output = response.response

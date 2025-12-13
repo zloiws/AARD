@@ -276,14 +276,7 @@
                 
                 <div class="approval-meta">
                     <span>ID: {{ approval.id }}</span>
-                    {% if approval.decision_timeout and now %}
-                        {% set time_left = (approval.decision_timeout - now) %}
-                        {% if time_left.total_seconds() < 7200 and approval.status == 'pending' %}
-                            <span style="color: #f44336; font-weight: bold;">⚠️ Срочно! Таймаут: {{ approval.decision_timeout.strftime('%d.%m.%Y %H:%M') }}</span>
-                        {% else %}
-                            <span>Таймаут: {{ approval.decision_timeout.strftime('%d.%m.%Y %H:%M') }}</span>
-                        {% endif %}
-                    {% elif approval.decision_timeout %}
+                    {% if approval.decision_timeout %}
                         <span>Таймаут: {{ approval.decision_timeout.strftime('%d.%m.%Y %H:%M') }}</span>
                     {% endif %}
                     {% if approval.status == 'approved' and approval.approved_by %}
