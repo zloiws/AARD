@@ -1,3 +1,4 @@
+from enum import Enum
 from sqlalchemy import Column, String, Text, JSON, TIMESTAMP, ForeignKey, Index, Float
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.sql import func
