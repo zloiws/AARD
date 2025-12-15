@@ -12,8 +12,8 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-LOG_REGEX_COL = re.compile(r'column \"(?P<col>[^\"]+)\" of relation \"(?P<table>[^\"]+)\" does not exist', re.IGNORECASE)
-LOG_REGEX_TAB = re.compile(r'relation \"(?P<table>[^\"]+)\" does not exist', re.IGNORECASE)
+LOG_REGEX_COL = re.compile(r'column "(?P<col>[^"]+)" of relation "(?P<table>[^"]+)" does not exist', re.IGNORECASE)
+LOG_REGEX_TAB = re.compile(r'relation "(?P<table>[^"]+)" does not exist', re.IGNORECASE)
 
 SQL_OUT_DIR = Path(__file__).resolve().parents[1] / "sql"
 SQL_OUT_DIR.mkdir(parents=True, exist_ok=True)

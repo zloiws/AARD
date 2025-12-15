@@ -1,3 +1,56 @@
 #!/usr/bin/env python3
-\"\"\"Restore missing backend files from a specific commit.\n\nUsage:\n  Set WORK_DIR to repo root or run from repo root.\n  python backend/scripts/restore_from_commit.py <commit>\n\"\"\"\n+from __future__ import annotations\n+import sys\n+import subprocess\n+import os\n+\n+\n+def run(cmd):\n+    return subprocess.check_output(cmd, shell=False)\n+\n+\n+def main():\n+    if len(sys.argv) < 2:\n+        print(\"Usage: restore_from_commit.py <commit>\")\n+        return 2\n+    commit = sys.argv[1]\n+    out = run([\"git\", \"show\", \"--name-only\", \"--pretty=format:\", commit]).decode(\"utf-8\", errors=\"ignore\")\n+    files = [l.strip() for l in out.splitlines() if l.strip()]\n+    # filter to backend app, scripts, alembic/versions and top-level backend files\n+    want = []\n+    for f in files:\n+        if f.startswith(\"backend/app/\") or f.startswith(\"backend/scripts/\") or f.startswith(\"backend/alembic/versions/\") or f in (\"backend/main.py\", \"backend/init_servers.py\"):\n+            want.append(f)\n+\n+    restored = []\n+    skipped = []\n+    for f in want:\n+        if os.path.exists(f):\n+            skipped.append(f)\n+            continue\n+        parent = os.path.dirname(f)\n+        if parent and not os.path.exists(parent):\n+            os.makedirs(parent, exist_ok=True)\n+        try:\n+            content = run([\"git\", \"show\", f\"{commit}:{f}\"])\n+        except subprocess.CalledProcessError:\n+            print(f\"Failed to retrieve {f} from commit {commit}\")\n+            continue\n+        with open(f, \"wb\") as fh:\n+            fh.write(content)\n+        restored.append(f)\n+        print(\"Restored:\", f)\n+\n+    print(\"\\nSummary:\\nRestored %d files, skipped %d existing files.\" % (len(restored), len(skipped)))\n+    return 0\n+\n+\n+if __name__ == \"__main__\":\n+    raise SystemExit(main())\n+\n*** End Patch
+"""
+Restore missing backend files from a specific commit.
 
+Usage:
+  Set WORK_DIR to repo root or run from repo root.
+  python backend/scripts/restore_from_commit.py <commit>
+"""
+from __future__ import annotations
+import sys
+import subprocess
+import os
+
+
+def run(cmd):
+    return subprocess.check_output(cmd, shell=False)
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: restore_from_commit.py <commit>")
+        return 2
+    commit = sys.argv[1]
+    out = run(["git", "show", "--name-only", "--pretty=format:", commit]).decode("utf-8", errors="ignore")
+    files = [l.strip() for l in out.splitlines() if l.strip()]
+    # filter to backend app, scripts, alembic/versions and top-level backend files
+    want = []
+    for f in files:
+        if f.startswith("backend/app/") or f.startswith("backend/scripts/") or f.startswith("backend/alembic/versions/") or f in ("backend/main.py", "backend/init_servers.py"):
+            want.append(f)
+
+    restored = []
+    skipped = []
+    for f in want:
+        if os.path.exists(f):
+            skipped.append(f)
+            continue
+        parent = os.path.dirname(f)
+        if parent and not os.path.exists(parent):
+            os.makedirs(parent, exist_ok=True)
+        try:
+            content = run(["git", "show", f"{commit}:{f}"])
+        except subprocess.CalledProcessError:
+            print(f"Failed to retrieve {f} from commit {commit}")
+            continue
+        with open(f, "wb") as fh:
+            fh.write(content)
+        restored.append(f)
+        print("Restored:", f)
+
+    print(f"\nSummary:\nRestored {len(restored)} files, skipped {len(skipped)} existing files.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

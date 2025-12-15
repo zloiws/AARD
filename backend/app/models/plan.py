@@ -52,6 +52,8 @@ class Plan(Base):
     task = relationship("Task", backref="plans")
     approval_request = relationship("ApprovalRequest", back_populates="plan", uselist=False, overlaps="approval_requests")
     traces = relationship("ExecutionTrace", back_populates="plan", foreign_keys="ExecutionTrace.plan_id")
+    # Optional agent metadata (agent id, preferences) stored as JSON
+    agent_metadata = Column(JSON, nullable=True)
     
     def __repr__(self):
         return f"<Plan(id={self.id}, task_id={self.task_id}, version={self.version}, status={self.status})>"

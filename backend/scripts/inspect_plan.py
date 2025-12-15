@@ -5,7 +5,7 @@ def main():
     eng = get_engine()
     with eng.connect() as conn:
         try:
-            cols = conn.execute(text(\"\"\"select column_name, data_type from information_schema.columns where table_name='plan_templates';\"\"\")).fetchall()
+            cols = conn.execute(text("select column_name, data_type from information_schema.columns where table_name='plan_templates';")).fetchall()
             print('columns:')
             for c in cols:
                 print(' -', c[0], c[1])

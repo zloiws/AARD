@@ -17,7 +17,7 @@ class ExecutionTrace(Base):
     __tablename__ = "execution_traces"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    trace_id = Column(String(255), unique=True, nullable=False, index=True)  # OpenTelemetry trace ID
+    trace_id = Column(String(255), nullable=False, index=True)  # OpenTelemetry trace ID
     task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
     plan_id = Column(UUID(as_uuid=True), ForeignKey("plans.id", ondelete="SET NULL"), nullable=True, index=True)
     span_id = Column(String(255), nullable=True, index=True)

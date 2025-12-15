@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 import pytest
 from sqlalchemy.orm import Session
+import os
 
 # Add backend directory to path for imports
 backend_dir = Path(__file__).parent.parent
@@ -17,7 +18,15 @@ from app.core.database import SessionLocal, Base, engine
 @pytest.fixture(scope="function")
 def db() -> Session:
     """Create a database session for testing"""
-    # Create all tables
+    # Disable tracing during tests to avoid background exporters touching DB before schema is created
+    os.environ.setdefault("ENABLE_TRACING", "false")
+    # Ensure a clean database schema for each test
+    # Import all models so they are registered with Base.metadata
+    try:
+        import app.models  # noqa: F401
+    except Exception:
+        pass
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     
     # Create session

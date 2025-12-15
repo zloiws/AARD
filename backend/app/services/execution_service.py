@@ -102,15 +102,15 @@ class StepExecutor:
                 event_type=EventType.EXECUTION_STEP,
                 event_source=EventSource.SYSTEM,
                 stage=WorkflowStage.EXECUTION,
-                message=f\"Step started: {step_id} - {description}\",
-                event_data={\"step\": step},
+                message=f"Step started: {step_id} - {description}",
+                event_data={"step": step},
                 plan_id=plan.id if plan else None,
                 task_id=plan.task_id if plan else None,
                 status=EventStatus.IN_PROGRESS
             )
         except Exception:
             # Non-fatal: don't break execution if event logging fails
-            logger.debug(\"Failed to emit workflow event for step start\", exc_info=True)
+            logger.debug("Failed to emit workflow event for step start", exc_info=True)
         
         # Create execution graph/node records for visualization (best-effort)
         try:
@@ -118,34 +118,34 @@ class StepExecutor:
 
             with _engine.connect() as conn:
                 # Find or create graph
-                res = conn.execute(sa_text(\"SELECT id FROM execution_graphs WHERE session_id = :sid\"), {\"sid\": session_id})
+                res = conn.execute(sa_text("SELECT id FROM execution_graphs WHERE session_id = :sid"), {"sid": session_id})
                 row = res.fetchone()
                 if row:
                     graph_id = str(row[0])
                 else:
                     graph_id = str(uuid4())
                     conn.execute(sa_text(
-                        \"INSERT INTO execution_graphs (id, session_id, metadata, created_at) VALUES (:id, :sid, :meta, now())\"
-                    ), {\"id\": graph_id, \"sid\": session_id, \"meta\": _json.dumps({\"created_by\": \"execution_service\"})})
+                        "INSERT INTO execution_graphs (id, session_id, metadata, created_at) VALUES (:id, :sid, :meta, now())"
+                    ), {"id": graph_id, "sid": session_id, "meta": _json.dumps({"created_by": "execution_service"})})
 
                 # Insert node for this step
                 node_id = str(uuid4())
                 conn.execute(sa_text(
-                    \"INSERT INTO execution_nodes (id, graph_id, node_type, payload, status, created_at) VALUES (:id, :gid, :ntype, :payload, :status, now())\"
-                ), {\"id\": node_id, \"gid\": graph_id, \"ntype\": \"step\", \"payload\": _json.dumps({\"step_id\": step_id, \"description\": description}), \"status\": \"pending\"})
+                    "INSERT INTO execution_nodes (id, graph_id, node_type, payload, status, created_at) VALUES (:id, :gid, :ntype, :payload, :status, now())"
+                ), {"id": node_id, "gid": graph_id, "ntype": "step", "payload": _json.dumps({"step_id": step_id, "description": description}), "status": "pending"})
 
                 # Link to previous node if exists
                 prev_res = conn.execute(sa_text(
-                    \"SELECT id FROM execution_nodes WHERE graph_id = :gid ORDER BY created_at DESC LIMIT 2\"
-                ), {\"gid\": graph_id})
+                    "SELECT id FROM execution_nodes WHERE graph_id = :gid ORDER BY created_at DESC LIMIT 2"
+                ), {"gid": graph_id})
                 rows = prev_res.fetchall()
                 if len(rows) >= 2:
                     prev_node_id = str(rows[1][0])
                     conn.execute(sa_text(
-                        \"INSERT INTO execution_edges (id, graph_id, from_node, to_node, metadata, created_at) VALUES (:id, :gid, :from_n, :to_n, :meta, now())\"
-                    ), {\"id\": str(uuid4()), \"gid\": graph_id, \"from_n\": prev_node_id, \"to_n\": node_id, \"meta\": _json.dumps({\"relation\": \"sequential_step\"})})
+                        "INSERT INTO execution_edges (id, graph_id, from_node, to_node, metadata, created_at) VALUES (:id, :gid, :from_n, :to_n, :meta, now())"
+                    ), {"id": str(uuid4()), "gid": graph_id, "from_n": prev_node_id, "to_n": node_id, "meta": _json.dumps({"relation": "sequential_step"})})
         except Exception:
-            logger.debug(\"Failed to create execution graph/node records\", exc_info=True)
+            logger.debug("Failed to create execution graph/node records", exc_info=True)
         try:
             logger.info(
                 "Executing plan step",
@@ -299,7 +299,7 @@ class StepExecutor:
                         graph_id = str(gid_res[0])
                         # Try to find node by step_id in payload
                         node_res = conn.execute(sa_text(
-                            \"SELECT id FROM execution_nodes WHERE graph_id = :gid AND (payload->>'step_id') = :step_id ORDER BY created_at DESC LIMIT 1\"),
+                            "SELECT id FROM execution_nodes WHERE graph_id = :gid AND (payload->>'step_id') = :step_id ORDER BY created_at DESC LIMIT 1"),
                             {"gid": graph_id, "step_id": step_id}
                         ).fetchone()
                         if node_res:
@@ -347,14 +347,14 @@ class StepExecutor:
                     event_type=EventType.ERROR,
                     event_source=EventSource.SYSTEM,
                     stage=WorkflowStage.ERROR,
-                    message=f\"Step failed: {step_id} - {str(e)[:200]}\",
-                    event_data={\"step\": step, \"error\": str(e)},
+                    message=f"Step failed: {step_id} - {str(e)[:200]}",
+                    event_data={"step": step, "error": str(e)},
                     plan_id=plan.id if plan else None,
                     task_id=plan.task_id if plan else None,
                     status=EventStatus.FAILED
                 )
             except Exception:
-                logger.debug(\"Failed to emit workflow event for step failure\", exc_info=True)
+                logger.debug("Failed to emit workflow event for step failure", exc_info=True)
         
         return result
     

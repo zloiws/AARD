@@ -535,14 +535,39 @@ class OllamaClient:
                             }
                         )
                     
-                    response = await request_client.post(
-                        "/api/chat",
-                        json=payload,
-                        timeout=timeout_value
-                    )
-                    response.raise_for_status()
+                    # Try multiple possible chat endpoints for different Ollama versions
+                    chat_endpoints = ["/api/chat", "/api/generate", "/api/chat/completions", "/api/completions"]
+                    response = None
+                    last_exc = None
+                    for ep in chat_endpoints:
+                        try:
+                            response = await request_client.post(ep, json=payload, timeout=timeout_value)
+                            response.raise_for_status()
+                            break
+                        except httpx.HTTPStatusError as http_e:
+                            # if 404 or 400, try next endpoint; otherwise surface error
+                            if http_e.response.status_code in (404, 400):
+                                logger.debug(f"Endpoint {ep} returned {http_e.response.status_code}, trying next endpoint")
+                                last_exc = http_e
+                                continue
+                            else:
+                                raise
+                        except Exception as exc:
+                            last_exc = exc
+                            continue
+                    if response is None:
+                        # No endpoint succeeded; raise last exception if available
+                        if isinstance(last_exc, httpx.HTTPStatusError):
+                            raise last_exc
+                        raise OllamaError(f"No chat endpoint succeeded for {request_base_url}")
                     
-                    data = response.json()
+                    try:
+                        data = response.json()
+                    except Exception as json_exc:
+                        # Non-JSON response (some Ollama variants return raw text) - fall back to using raw text as response
+                        logger.debug(f"Non-JSON response from {request_base_url}: {response.text[:400]}")
+                        # Construct a synthetic data object with raw content
+                        data = {"message": {"content": response.text}, "done": True, "model": model_to_use}
                     
                     # Extract response from chat format
                     response_text = data.get("message", {}).get("content", "")
@@ -733,6 +758,46 @@ class OllamaClient:
                         server_url=instance.url,
                         task_type=task_type_str
                     ).observe(duration)
+                    # If model endpoint returned 404 or 400, try fallback to a server-registered model and retry
+                    try:
+                        status_code = e.response.status_code
+                        if status_code in (404, 400):
+                            # Try to find models in DB for this server and retry with first available
+                            try:
+                                from app.core.database import get_session_local
+                                from app.services.ollama_service import OllamaService
+                                SessionLocal = get_session_local()
+                                db = SessionLocal()
+                                try:
+                                    # Normalize URL without /v1
+                                    server_url_norm = instance.url
+                                    if server_url_norm.endswith("/v1"):
+                                        server_url_norm = server_url_norm[:-3]
+                                    elif server_url_norm.endswith("/v1/"):
+                                        server_url_norm = server_url_norm[:-4]
+                                    server = OllamaService.get_server_by_url(db, server_url_norm)
+                                    if server:
+                                        models = OllamaService.get_models_for_server(db, str(server.id))
+                                        if models:
+                                            # pick first active model
+                                            new_model = models[0].model_name
+                                            logger.warning(f"Falling back to server-registered model {new_model} on {server.url}")
+                                            model_to_use = new_model
+                                            # update payload model and retry
+                                            payload["model"] = model_to_use
+                                            # reset request_start_time for metrics
+                                            request_start_time = time.time()
+                                            db.close()
+                                            continue
+                                except Exception:
+                                    try:
+                                        db.close()
+                                    except Exception:
+                                        pass
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
                     raise OllamaError(f"HTTP error from {instance.url}: {e.response.status_code} - {e.response.text}")
                 except Exception as e:
                     error_type = type(e).__name__

@@ -9,7 +9,7 @@ def fix_file(path: Path):
         return False
 
     # Find patterns where earlier we inserted conn.execute(sa.text("select to_regclass('public.table')"))
-    pattern_conn = re.compile(r"conn\.execute\(sa\.text\(\s*\"select to_regclass\('public\.([a-z0-9_]+)'\)\"\s*\)\)\.scalar\(\s*\)")
+    pattern_conn = re.compile(r'conn\.execute\(sa\.text\(\s*"select to_regclass\(\'public\.([a-z0-9_]+)\'\)"\s*\)\)\.scalar\(\s*\)')
     # For each op.create_table(, we need to find nearest preceding conn.execute occurrence
     parts = s.split("op.create_table(,")
     new_parts = [parts[0]]

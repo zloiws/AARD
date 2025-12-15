@@ -23,6 +23,8 @@ from app.services.request_logger import RequestLogger
 from app.services.prompt_service import PromptService
 from app.models.prompt import PromptType
 from sqlalchemy.orm import Session
+from app.api.routes.websocket_events import broadcast_execution_event
+from app.api.routes.websocket_events import broadcast_chat_event
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 logger = LoggingConfig.get_logger(__name__)
@@ -164,6 +166,10 @@ async def chat(
                 title=chat_message.message[:100] if chat_message.message else None
             )
             session_id = session.id
+            try:
+                await broadcast_chat_event(session_id, {"type": "session_created", "session_id": session_id, "title": session.title})
+            except Exception:
+                logger.debug("Failed to broadcast session_created", exc_info=True)
         else:
             # Get existing session
             session = session_manager.get_session(db, session_id)
@@ -198,6 +204,11 @@ async def chat(
                 status="pending",
                 chat_message_id=user_message.id if user_message else None
             )
+            logger.debug(f"ExecutionGraph: created user_node id={user_node.id} for session={session_id}")
+            try:
+                await broadcast_execution_event(session_id, {"type": "node_added", "node": {"id": str(user_node.id), "node_type": user_node.node_type, "data": user_node.data}})
+            except Exception:
+                logger.debug("Failed to broadcast user_node addition", exc_info=True)
         except Exception as e:
             logger.debug(f"Failed to create execution graph node for user message: {e}", exc_info=True)
         
@@ -286,6 +297,26 @@ async def chat(
             temperature=chat_message.temperature
         )
         
+        # Before saving assistant message, record model/server selection as an execution graph node
+        model_selection_node = None
+        try:
+            from app.services.execution_graph_service import ExecutionGraphService
+            eg_service_tmp = ExecutionGraphService(db)
+            graph_tmp = eg_service_tmp.create_or_get_graph(session_id)
+            # result.model may be set by orchestrator; result.metadata may contain server_id
+            selected_model_name = result.model or (result.metadata or {}).get("model")
+            selected_server_id = (result.metadata or {}).get("server_id")
+            if selected_model_name or selected_server_id:
+                model_selection_node = eg_service_tmp.add_node(
+                    graph_id=graph_tmp.id,
+                    node_type="model_selection",
+                    name="model_selection",
+                    data={"model": selected_model_name, "server_id": selected_server_id},
+                    status="selected"
+                )
+        except Exception as e:
+            logger.debug(f"Failed to create model_selection node: {e}", exc_info=True)
+
         # Добавить ответ в сессию (capture assistant message)
         assistant_message = session_manager.add_message(
             db,
@@ -308,10 +339,32 @@ async def chat(
                 status="success",
                 chat_message_id=assistant_message.id if assistant_message else None
             )
+            logger.debug(f"ExecutionGraph: created assistant_node id={assistant_node.id} for session={session_id}")
             # Link user_node -> assistant_node if user_node created
             try:
-                if 'user_node' in locals() and user_node:
-                    eg_service.add_edge(graph.id, user_node.id, assistant_node.id, label="reply")
+                # If we created a model_selection node earlier, create edges: user -> model_selection -> assistant
+                if model_selection_node:
+                    if 'user_node' in locals() and user_node:
+                        edge = eg_service.add_edge(graph.id, user_node.id, model_selection_node.id, label="selected")
+                        logger.debug(f"ExecutionGraph: added edge user_node={user_node.id} -> model_selection={model_selection_node.id}")
+                        try:
+                            await broadcast_execution_event(session_id, {"type": "edge_added", "edge": {"id": str(edge.id), "source": str(edge.source_node_id), "target": str(edge.target_node_id), "label": edge.label}})
+                        except Exception:
+                            logger.debug("Failed to broadcast edge_added (user->model_selection)", exc_info=True)
+                    eg_service.add_edge(graph.id, model_selection_node.id, assistant_node.id, label="produced")
+                    edge2 = eg_service.add_edge(graph.id, model_selection_node.id, assistant_node.id, label="produced")
+                    try:
+                        await broadcast_execution_event(session_id, {"type": "edge_added", "edge": {"id": str(edge2.id), "source": str(edge2.source_node_id), "target": str(edge2.target_node_id), "label": edge2.label}})
+                    except Exception:
+                        logger.debug("Failed to broadcast edge_added (model_selection->assistant)", exc_info=True)
+                else:
+                    if 'user_node' in locals() and user_node:
+                        edge3 = eg_service.add_edge(graph.id, user_node.id, assistant_node.id, label="reply")
+                        logger.debug(f"ExecutionGraph: added edge user_node={user_node.id} -> assistant_node={assistant_node.id}")
+                        try:
+                            await broadcast_execution_event(session_id, {"type": "edge_added", "edge": {"id": str(edge3.id), "source": str(edge3.source_node_id), "target": str(edge3.target_node_id), "label": edge3.label}})
+                        except Exception:
+                            logger.debug("Failed to broadcast edge_added (user->assistant)", exc_info=True)
             except Exception:
                 # Non-fatal
                 pass
@@ -419,6 +472,10 @@ async def create_chat_session(
             system_prompt=system_prompt,
             title=title
         )
+        try:
+            await broadcast_chat_event(str(session.id), {"type": "session_created", "session_id": str(session.id), "title": session.title})
+        except Exception:
+            logger.debug("Failed to broadcast session_created", exc_info=True)
         
         return {
             "session_id": session.id,
@@ -440,6 +497,10 @@ async def delete_chat_session(
     """Delete a chat session and all its messages"""
     try:
         session_manager.delete_session(db, session_id)
+        try:
+            await broadcast_chat_event(session_id, {"type": "session_deleted", "session_id": session_id})
+        except Exception:
+            logger.debug("Failed to broadcast session_deleted", exc_info=True)
         return {"status": "success", "message": f"Session {session_id} deleted"}
     except Exception as e:
         logger.error(f"Error deleting session {session_id}: {e}", exc_info=True)

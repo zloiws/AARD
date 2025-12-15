@@ -542,6 +542,20 @@ class MemoryService:
                 return cached
         
         try:
+            # Check if embedding column exists; if not, fallback to text search
+            col_check = self.db.execute(text(
+                "SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_memories' AND column_name = 'embedding' LIMIT 1"
+            )).fetchone()
+            if not col_check:
+                logger.warning("Embedding column not present in agent_memories, falling back to text search")
+                if combine_with_text_search:
+                    return self.search_memories(
+                        agent_id=agent_id,
+                        query_text=query_text,
+                        limit=limit,
+                        memory_type=memory_type
+                    )
+                return []
             # Generate embedding for query text
             query_embedding = await self.embedding_service.generate_embedding(query_text)
             

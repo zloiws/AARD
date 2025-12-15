@@ -77,7 +77,7 @@ if __name__ == "__main__":
                 content = f.read()
                 # Find create_table calls
                 import re
-                create_tables = re.findall(r"op\.create_table\(['\"]([^'\"]+)['\"]", content)
+                create_tables = re.findall(r"op\.create_table\([\'\"]([^\'\"]+)[\'\"]\)", content)
                 if create_tables:
                     tables_in_migrations[mig_file.name] = create_tables
         

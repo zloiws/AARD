@@ -84,7 +84,7 @@ class ParameterManager:
                 self._cache[cache_key] = param
             except Exception as e:
                 # If creation fails (e.g. missing table), log and return default without persisting
-                logger.warning(f\"Could not persist parameter '{parameter_name}' to DB: {e}\")
+                logger.warning(f"Could not persist parameter '{parameter_name}' to DB: {e}")
             return default
         
         return None

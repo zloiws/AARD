@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-\"\"\"Parse test log for missing columns/tables and generate/apply idempotent SQL patches.
+"""Parse test log for missing columns/tables and generate/apply idempotent SQL patches.
 
 Usage:
   Set env var DATABASE_URL and run:
     python backend/scripts/generate_apply_patches_from_log.py --log backend/logs/latest_test_run.txt
-\"\"\"
+"""
 from __future__ import annotations
 import re
 import os
@@ -12,8 +12,8 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-LOG_REGEX_COL = re.compile(r'column \"(?P<col>[^\"]+)\" of relation \"(?P<table>[^\"]+)\" does not exist', re.IGNORECASE)
-LOG_REGEX_TAB = re.compile(r'relation \"(?P<table>[^\"]+)\" does not exist', re.IGNORECASE)
+LOG_REGEX_COL = re.compile(r'column "(?P<col>[^"]+)" of relation "(?P<table>[^"]+)" does not exist', re.IGNORECASE)
+LOG_REGEX_TAB = re.compile(r'relation "(?P<table>[^"]+)" does not exist', re.IGNORECASE)
 
 SQL_OUT_DIR = Path(__file__).resolve().parents[1] / "sql"
 SQL_OUT_DIR.mkdir(parents=True, exist_ok=True)

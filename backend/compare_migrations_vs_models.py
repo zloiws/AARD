@@ -44,7 +44,7 @@ if __name__ == "__main__":
             # Pattern 1: op.create_table('table_name',
             # Pattern 2: op.create_table("table_name",
             # Pattern 3: op.create_table('table_name', ...)
-            create_tables = re.findall(r"op\.create_table\(\s*['\"]([^'\"]+)['\"]", content, re.MULTILINE)
+            create_tables = re.findall(r'op\.create_table\(\s*[\'"]([^\'"]+)[\'"]', content, re.MULTILINE)
             for table in create_tables:
                 tables_in_migrations[table].append(mig_file.name)
     

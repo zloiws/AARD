@@ -409,6 +409,8 @@ async def broadcast_chat_event(session_id: str, event: Dict):
     try:
         message = {"type": "chat_event", "session_id": session_id, "data": event}
         await manager.broadcast_to_workflow(message, f"chat:{session_id}")
+        # Also broadcast to all connected clients so global monitors receive chat events
+        await manager.broadcast_to_all(message)
     except Exception:
         logger.debug("Failed to broadcast chat event", exc_info=True)
 
@@ -418,6 +420,8 @@ async def broadcast_execution_event(session_id: str, event: Dict):
     try:
         message = {"type": "execution_event", "session_id": session_id, "data": event}
         await manager.broadcast_to_workflow(message, f"execution:{session_id}")
+        # Also broadcast to all connected clients so global monitors receive execution events
+        await manager.broadcast_to_all(message)
     except Exception:
         logger.debug("Failed to broadcast execution event", exc_info=True)
 

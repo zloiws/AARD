@@ -95,7 +95,7 @@ class WorkflowTracker:
             
             event = WorkflowEvent(
                 stage=WorkflowStage.USER_REQUEST,
-                message=f"{type_label}, запрос пользователя @{username}: \"{user_request}\"",
+                message=f'{type_label}, запрос пользователя @{username}: \"{user_request}\"',
                 details={"user_request": user_request, "username": username, "interaction_type": interaction_type}
             )
             self._events.append(event)

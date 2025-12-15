@@ -31,7 +31,7 @@ if __name__ == "__main__":
             with open(last_migration, 'r') as f:
                 for line in f:
                     if 'revision' in line and '=' in line:
-                        revision = line.split('=')[1].strip().strip("'\"")
+                        revision = line.split('=')[1].strip().strip("'")
                         break
             
             # Update alembic_version

@@ -4,13 +4,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1] / "alembic" / "versions"
 
 pattern = re.compile(
-    r"op\.create_index\(\s*['\"](?P<idx>[^'\"]+)['\"]\s*,\s*['\"](?P<table>[^'\"]+)['\"]\s*,\s*\[(?P<cols>[^\]]+)\](?P<rest>[^)]*)\)",
+    r'op\.create_index\(\s*[\'"](?P<idx>[^\'"]+)[\'"]\s*,\s*[\'"](?P<table>[^\'"]+)[\'"]\s*,\s*\[(?P<cols>[^\]]+)\](?P<rest>[^)]*)\)',
     re.MULTILINE,
 )
 
 def cols_to_sql(cols_text: str) -> str:
     # cols_text like " 'col1', 'col2' " or " 'col' "
-    cols = [c.strip().strip('\'\" ') for c in cols_text.split(",") if c.strip()]
+    cols = [c.strip().strip('\'" ') for c in cols_text.split(",") if c.strip()]
     return ", ".join(cols)
 
 def patch_file(path: Path):
@@ -25,7 +25,7 @@ def patch_file(path: Path):
         rest = m.group("rest") or ""
         unique = "unique=True" in rest or "unique = True" in rest
         stmt = "CREATE UNIQUE INDEX IF NOT EXISTS" if unique else "CREATE INDEX IF NOT EXISTS"
-        return f"op.execute(\"{stmt} {idx} ON {table} ({cols});\")"
+        return f'op.execute("{stmt} {idx} ON {table} ({cols});")'
 
     new_s, count = pattern.subn(repl, s)
     if count > 0:

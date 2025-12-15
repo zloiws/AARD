@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     log_uvicorn_access: bool = Field(default=False, description="Enable Uvicorn access logging")
     log_module_levels: Optional[str] = Field(
         default=None,
-        description="Module-specific log levels (JSON string, e.g., '{\"app.api\": \"DEBUG\"}')"
+        description='Module-specific log levels (JSON string, e.g., {"app.api": "DEBUG"})'
     )
     log_format: str = Field(
         default="json",

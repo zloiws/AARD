@@ -144,6 +144,26 @@ async def get_dashboard_tasks(
                 }
             )
         
+        # Prepare simple statistics for dashboard (counts per status)
+        # Build flat statistics expected by tests (keys: pending_approval, in_progress, on_hold, failed, etc.)
+        stats = {"total_tasks": len(tasks_data)}
+        # Initialize common statuses to 0 to match test expectations
+        common_statuses = [
+            "pending_approval",
+            "in_progress",
+            "on_hold",
+            "failed",
+            "completed",
+            "draft",
+        ]
+        for s in common_statuses:
+            stats[s] = 0
+        for t in tasks_data:
+            st = t.get("status")
+            if st:
+                stats.setdefault(st, 0)
+                stats[st] += 1
+
         # Return JSON for API clients
         return JSONResponse({
             "tasks": [
@@ -153,7 +173,8 @@ async def get_dashboard_tasks(
                     "updated_at": task_dict["updated_at"].isoformat() if task_dict["updated_at"] else None,
                 }
                 for task_dict in tasks_data
-            ]
+            ],
+            "statistics": stats
         })
         
     except Exception as e:

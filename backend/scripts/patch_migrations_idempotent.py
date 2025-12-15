@@ -13,10 +13,11 @@ def patch_file(path: Path):
 
     def repl(match):
         table = match.group("table")
+        select_stmt = f"select to_regclass('public.{table}')"
         guard = (
-            f"conn = op.get_bind()\n"
-            f"    if not conn.execute(sa.text(\"select to_regclass('public.{table}')\")).scalar():\n"
-            f"        op.create_table("
+            "conn = op.get_bind()\n"
+            f"    if not conn.execute(sa.text({select_stmt!r})).scalar():\n"
+            "        op.create_table("
         )
         return guard
 

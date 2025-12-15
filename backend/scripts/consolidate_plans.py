@@ -385,7 +385,7 @@ class PlanConsolidator:
             try:
                 content = migration_file.read_text(encoding="utf-8")
                 # Искать revision ID в файле
-                revision_match = re.search(r"revision\s*:\s*str\s*=\s*['\"](\d+)['\"]", content)
+                revision_match = re.search(r'revision\s*:\s*str\s*=\s*[\'\"](\d+)[\'\"]', content)
                 if revision_match:
                     revision_id = revision_match.group(1)
                     if revision_id in migration_name or migration_name in revision_id:
@@ -423,7 +423,7 @@ class PlanConsolidator:
             return False
         
         # Нормализовать путь
-        template_path = template_path.replace("\\", "/")
+        template_path = template_path.replace("\\\\", "/")
         if template_path.startswith("frontend/templates/"):
             template_path = template_path.replace("frontend/templates/", "")
         

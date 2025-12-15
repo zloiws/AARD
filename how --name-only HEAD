@@ -1,0 +1,30 @@
+[33mcommit 5555dfda0db9147a761e97d7ce0e960d15fcf3f6[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: zloiws <zloiws@gmail.com>
+Date:   Sat Dec 13 19:25:08 2025 +0200
+
+    chore(docs): redact sensitive hosts/credentials, replace with placeholders
+
+docs/api/endpoints/models.md
+docs/archive/CREATE_ENV.md
+docs/archive/DB_MIGRATION_GUIDE.md
+docs/archive/DB_OLLAMA_ARCHITECTURE.md
+docs/archive/FIX_HEALTH_CHECK.md
+docs/archive/GPU_MODELS_NOTE.md
+docs/archive/IMPLEMENTATION_STATUS.md
+docs/archive/IMPLEMENTATION_SUMMARY.md
+docs/archive/LOGGING_SYSTEM_TEST_RESULTS.md
+docs/archive/MIGRATION_COMPLETE.md
+docs/archive/MODEL_SELECTION_FIX.md
+docs/archive/OPENTELEMETRY_TRACING_COMPLETE.md
+docs/archive/QUICK_TEST.md
+docs/archive/TEST_RESULTS.md
+docs/archive/WEB_BACKEND_DB_CHANGES.md
+docs/guides/CONFIGURATION.md
+docs/guides/LOGGING.md
+docs/guides/OLLAMA_INTEGRATION.md
+docs/guides/PROMETHEUS_METRICS.md
+docs/guides/REAL_LLM_TESTS_SUMMARY.md
+docs/guides/SETUP.md
+docs/reports/PROMPT_LLM_TESTING_REPORT.md
+docs/reports/TEST_RESULTS_LOGS.md
+"docs/\320\242\320\227 AARD.md"

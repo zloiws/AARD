@@ -4,7 +4,14 @@
 
 ## Описание
 
-AARD начинает как "голый мозг" (LLM через Ollama) с веб-интерфейсом и развивается под руководством человека, создавая себе "тело и нервную систему" (агентов, инструменты, оркестрацию).
+AARD is a personal environment for human–AI interaction.
+It is grounded in examples, not abstractions.
+
+The system exists to interpret human intent into actions.
+The human is the foundation of the system.
+
+AARD is not an AGI system and does not implement learning.
+
 
 Система поддерживает:
 - **Планирование задач** через LLM с автоматическим разбиением на подзадачи
