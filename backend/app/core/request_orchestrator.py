@@ -3,6 +3,7 @@ Request Orchestrator - центральный оркестратор для об
 """
 from typing import Dict, Any, Optional, Tuple
 import time
+from uuid import uuid4
 
 from app.core.execution_context import ExecutionContext
 from app.core.request_router import determine_request_type, RequestType
@@ -15,7 +16,10 @@ from app.core.prompt_manager import PromptManager
 from app.services.ollama_service import OllamaService
 from app.core.model_selector import ModelSelector
 from app.models.task import Task, TaskStatus
+from app.models.interpretation import DecisionTimeline
 from sqlalchemy.orm import Session
+from app.services.interpretation_service import InterpretationService
+from app.services.planning_hypothesis_service import PlanningHypothesisService
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -92,6 +96,60 @@ class RequestOrchestrator:
         # Создать PromptManager и добавить в контекст
         prompt_manager = PromptManager(context)
         context.set_prompt_manager(prompt_manager)
+        
+        # Interpretation step: run explicit interpretation layer before routing/planning
+        try:
+            interpretation_service = InterpretationService(context.db)
+            interpretation = await interpretation_service.interpret(message, context)
+            # Ensure metadata exists
+            if not getattr(context, "metadata", None):
+                context.metadata = context.metadata or {}
+            context.metadata["interpretation"] = interpretation
+
+            # If interpretation requires clarification, ask user immediately
+            if interpretation.get("requires_clarification"):
+                questions = interpretation.get("clarification_questions", [])
+                clarification_text = "Требуется уточнение:\n" + ("\n".join(f"- {q}" for q in questions) if questions else "Пожалуйста, уточните запрос.")
+                return OrchestrationResult(
+                    response=clarification_text,
+                    model="none",
+                    task_type="clarification",
+                    metadata={"clarification_required": True, "questions": questions}
+                )
+
+            # Planning step: generate plan hypotheses for complex requests
+            try:
+                # Find the timeline created by interpretation service
+                session_id = str(context.workflow_id) if hasattr(context, "workflow_id") and context.workflow_id else str(uuid4())
+                timeline = context.db.query(DecisionTimeline).filter(DecisionTimeline.session_id == session_id).first()
+
+                if timeline:
+                    planning_service = PlanningHypothesisService(context.db)
+                    hypotheses = await planning_service.generate_plan_hypotheses(
+                        timeline.id,
+                        interpretation
+                    )
+
+                    # Store hypotheses in context for later use
+                    context.metadata["plan_hypotheses"] = [
+                        {
+                            "id": str(h.id),
+                            "name": h.name,
+                            "confidence": h.confidence,
+                            "lifecycle": h.lifecycle.value
+                        }
+                        for h in hypotheses
+                    ]
+
+                    logger.info(f"Generated {len(hypotheses)} plan hypotheses for timeline {timeline.id}")
+
+            except Exception as e:
+                # Non-fatal: log and continue (fallback to existing flow)
+                logger.warning(f"Planning hypothesis generation failed: {e}", exc_info=True)
+
+        except Exception as e:
+            # Non-fatal: log and continue (fallback to existing flow)
+            logger.warning(f"Interpretation step failed: {e}", exc_info=True)
         
         # Определить тип запроса
         request_type, request_metadata = determine_request_type(message, task_type)
