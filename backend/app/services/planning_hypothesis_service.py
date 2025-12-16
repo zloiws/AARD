@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 
 from app.models.planning import PlanHypothesis, PlanLifecycle, PlanHypothesisNode
 from app.models.interpretation import DecisionTimeline, DecisionNode, DecisionEdge
-from backend.app.core.ollama_client import OllamaClient
-from backend.app.services.ollama_service import OllamaService
-from backend.app.core.config import get_settings
-from backend.app.core.tracing import get_tracer
+from app.core.ollama_client import OllamaClient
+from app.services.ollama_service import OllamaService
+from app.core.config import get_settings
+from app.core.tracing import get_tracer
 
 
 class PlanningHypothesisService:
@@ -186,10 +186,11 @@ Generate hypotheses in the following JSON format:
 
             # Link to hypothesis
             hypothesis_node = PlanHypothesisNode(
-                hypothesis_id=hypothesis.id,
-                node_id=node.id,
-                node_type="assumption",
-                node_metadata={"text": assumption}
+                    hypothesis_id=hypothesis.id,
+                    node_id=node.id,
+                    timeline_id=hypothesis.timeline_id,
+                    node_type="assumption",
+                    node_metadata={"text": assumption}
             )
             self.db.add(hypothesis_node)
 
@@ -205,10 +206,11 @@ Generate hypotheses in the following JSON format:
             self.db.flush()
 
             hypothesis_node = PlanHypothesisNode(
-                hypothesis_id=hypothesis.id,
-                node_id=node.id,
-                node_type="risk",
-                node_metadata=risk
+                    hypothesis_id=hypothesis.id,
+                    node_id=node.id,
+                    timeline_id=hypothesis.timeline_id,
+                    node_type="risk",
+                    node_metadata=risk
             )
             self.db.add(hypothesis_node)
 
@@ -226,6 +228,7 @@ Generate hypotheses in the following JSON format:
             hypothesis_node = PlanHypothesisNode(
                 hypothesis_id=hypothesis.id,
                 node_id=node.id,
+                timeline_id=hypothesis.timeline_id,
                 node_type="step",
                 node_metadata=step
             )

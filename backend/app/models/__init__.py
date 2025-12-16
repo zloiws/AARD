@@ -46,6 +46,7 @@ from app.models.audit_report import AuditReport, AuditType, AuditStatus  # noqa:
 from app.models.uncertainty_parameters import UncertaintyParameter, ParameterType  # noqa: F401
 from app.models.uncertainty_types import UncertaintyLevel, UncertaintyType  # noqa: F401
 from app.models.system_parameter import SystemParameter, ParameterCategory, SystemParameterType  # noqa: F401
+from app.models.test_table import TestTable  # noqa: F401
 
 __all__ = [
     "Base",
@@ -164,5 +165,7 @@ __all__ = [
     "SystemParameter",
     "ParameterCategory",
     "SystemParameterType",
+    # Test tables
+    "TestTable",
 ]
 

@@ -53,6 +53,8 @@ class PlanHypothesisNode(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     hypothesis_id = Column(UUID(as_uuid=True), ForeignKey("plan_hypotheses.id"), nullable=False, index=True)
     node_id = Column(UUID(as_uuid=True), ForeignKey("decision_nodes.id"), nullable=False, index=True)
+    timeline_id = Column(UUID(as_uuid=True), ForeignKey("decision_timelines.id"), nullable=False, index=True)
+    timeline_id = Column(UUID(as_uuid=True), ForeignKey("decision_timelines.id"), nullable=False, index=True)
 
     # Node role in plan
     node_type = Column(String(50), nullable=False)  # 'assumption', 'step', 'risk', 'outcome'
@@ -63,13 +65,15 @@ class PlanHypothesisNode(Base):
     # Relationships
     hypothesis = relationship("PlanHypothesis", back_populates="nodes")
     node = relationship("DecisionNode", back_populates="plan_nodes")
+    timeline = relationship("DecisionTimeline", back_populates="plan_nodes")
+    timeline = relationship("DecisionTimeline", back_populates="plan_nodes")
 
     __table_args__ = (
         Index('ix_plan_hypothesis_nodes_hypothesis_node', 'hypothesis_id', 'node_id'),
     )
 
 # Add relationships to DecisionTimeline
-from backend.app.models.interpretation import DecisionTimeline, DecisionNode
+from app.models.interpretation import DecisionTimeline, DecisionNode
 
 DecisionTimeline.hypotheses = relationship("PlanHypothesis", back_populates="timeline", cascade="all, delete-orphan")
 DecisionTimeline.plan_nodes = relationship("PlanHypothesisNode", back_populates="timeline", cascade="all, delete-orphan")
