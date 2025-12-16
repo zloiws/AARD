@@ -59,6 +59,25 @@ class PromptVersionRequest(BaseModel):
     prompt_text: str = Field(..., description="New prompt text for the version")
 
 
+class AssignmentRequest(BaseModel):
+    model_id: Optional[UUID] = None
+    server_id: Optional[UUID] = None
+    task_type: Optional[str] = None
+
+
+class AssignmentResponse(BaseModel):
+    id: UUID
+    prompt_id: UUID
+    model_id: Optional[UUID] = None
+    server_id: Optional[UUID] = None
+    task_type: Optional[str] = None
+    created_at: datetime
+    created_by: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 @router.get("/", response_model=List[PromptResponse])
 async def list_prompts(
     prompt_type: Optional[PromptType] = None,
@@ -355,3 +374,46 @@ async def delete_prompt(
     
     return {"status": "deleted", "prompt_id": str(prompt_id)}
 
+
+@router.post("/{prompt_id}/assign", response_model=AssignmentResponse)
+async def assign_prompt(
+    prompt_id: UUID,
+    request: AssignmentRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional["User"] = Depends(get_current_user_optional),
+):
+    """Assign prompt to model/server/task_type"""
+    svc = PromptService(db)
+    created_by = current_user.username if current_user else "system"
+    try:
+        assignment = svc.assign_prompt_to_model_or_server(
+            prompt_id=prompt_id,
+            model_id=request.model_id,
+            server_id=request.server_id,
+            task_type=request.task_type,
+            created_by=created_by,
+        )
+        return assignment
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{prompt_id}/assignments", response_model=List[AssignmentResponse])
+async def list_prompt_assignments(
+    prompt_id: UUID,
+    db: Session = Depends(get_db)
+):
+    svc = PromptService(db)
+    assignments = svc.list_assignments(prompt_id=prompt_id)
+    return assignments
+
+
+@router.get("/assignments")
+async def list_assignments(
+    model_id: Optional[UUID] = None,
+    server_id: Optional[UUID] = None,
+    db: Session = Depends(get_db)
+):
+    svc = PromptService(db)
+    assignments = svc.list_assignments(model_id=model_id, server_id=server_id)
+    return [a.to_dict() for a in assignments]

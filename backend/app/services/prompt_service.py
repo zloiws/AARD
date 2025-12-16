@@ -321,6 +321,49 @@ class PromptService:
         ).order_by(Prompt.version.asc()).all()
         
         return versions
+
+    # --- Assignments ---
+    def assign_prompt_to_model_or_server(
+        self,
+        prompt_id: UUID,
+        model_id: Optional[UUID] = None,
+        server_id: Optional[UUID] = None,
+        task_type: Optional[str] = None,
+        created_by: Optional[str] = None,
+    ):
+        """Assign a prompt to a model/server/task_type"""
+        from app.models.prompt_assignment import PromptAssignment
+
+        # Create assignment
+        assignment = PromptAssignment(
+            prompt_id=prompt_id,
+            model_id=model_id,
+            server_id=server_id,
+            task_type=task_type,
+            created_by=created_by or "system",
+        )
+        try:
+            self.db.add(assignment)
+            self.db.commit()
+            self.db.refresh(assignment)
+            logger.info(f"Created prompt assignment: {assignment.to_dict()}")
+            return assignment
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error creating prompt assignment: {e}", exc_info=True)
+            raise
+
+    def list_assignments(self, prompt_id: Optional[UUID] = None, model_id: Optional[UUID] = None, server_id: Optional[UUID] = None):
+        from app.models.prompt_assignment import PromptAssignment
+        q = self.db.query(PromptAssignment)
+        if prompt_id:
+            q = q.filter(PromptAssignment.prompt_id == prompt_id)
+        if model_id:
+            q = q.filter(PromptAssignment.model_id == model_id)
+        if server_id:
+            q = q.filter(PromptAssignment.server_id == server_id)
+        return q.order_by(PromptAssignment.created_at.desc()).all()
+
     
     def get_latest_version(self, name: str, prompt_type: Optional[PromptType] = None) -> Optional[Prompt]:
         """Get the latest version of a prompt by name

@@ -112,6 +112,7 @@ class Settings(BaseSettings):
     enable_agent_ops: bool = Field(default=False, description="Enable Agent Ops features")
     enable_a2a: bool = Field(default=False, description="Enable A2A communication")
     enable_planning: bool = Field(default=False, description="Enable planning system")
+    interpretation_use_llm: bool = Field(default=True, description="Enable LLM-assisted interpretation (platform default)")
     enable_tracing: bool = Field(default=True, description="Enable OpenTelemetry tracing")
     tracing_service_name: str = Field(default="aard", description="Service name for tracing")
     tracing_exporter: str = Field(

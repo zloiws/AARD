@@ -250,10 +250,19 @@ async def execute_plan(
 ):
     """Start plan execution"""
     from app.services.execution_service import ExecutionService
+    from app.planning.lifecycle import validate_transition
     
     execution_service = ExecutionService(db)
     
     try:
+        # Preflight lifecycle validation (observable failure reason)
+        plan = db.query(Plan).filter(Plan.id == plan_id).first()
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+        tr = validate_transition(plan.status, "executing")
+        if not tr.allowed:
+            raise ValueError(f"Plan must be approved before execution (current: {plan.status})")
+
         # Execute plan asynchronously
         plan = await execution_service.execute_plan(plan_id)
         

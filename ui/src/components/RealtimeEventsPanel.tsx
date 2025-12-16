@@ -12,6 +12,7 @@ type EventItem = {
 export default function RealtimeEventsPanel(): JSX.Element {
   const [events, setEvents] = useState<EventItem[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
+  const [collapsed, setCollapsed] = useState<boolean>(true);
   const { sessionId } = (() => {
     try {
       // lazy load to avoid circular HMR issues
@@ -58,22 +59,50 @@ export default function RealtimeEventsPanel(): JSX.Element {
     }
   }, []);
 
+  // Increase width by 20% (420 -> 504) and provide color-coded badges per event type
+  const expandedWidth = 504;
   return (
-    <div style={{ position: "fixed", right: 12, bottom: 12, width: 420, maxHeight: "45vh", overflow: "auto", background: "white", border: "1px solid #e6e9ef", borderRadius: 8, padding: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}>
+    <div style={{ position: "fixed", right: 12, bottom: 12, width: collapsed ? 160 : expandedWidth, maxHeight: "45vh", overflow: "auto", background: "white", border: "1px solid #e6e9ef", borderRadius: 8, padding: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <strong>Realtime Events</strong>
-        <small style={{ color: "#6b7280" }}>{events.length} recent</small>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <small style={{ color: "#6b7280" }}>{events.length} recent</small>
+          <button onClick={() => setCollapsed((s) => !s)} style={{ fontSize: 12 }}>
+            {collapsed ? "Expand" : "Collapse"}
+          </button>
+        </div>
       </div>
-      <div>
-        {events.map((e, i) => (
-          <div key={e.id ?? i} style={{ borderTop: i === 0 ? "none" : "1px solid #f1f5f9", paddingTop: 8, paddingBottom: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 600 }}>{e.type}</div>
-            <div style={{ fontSize: 12, color: "#374151", whiteSpace: "pre-wrap" }}>{e.message}</div>
-            <div style={{ fontSize: 11, color: "#9ca3af" }}>{e.timestamp}</div>
-          </div>
-        ))}
-        {events.length === 0 ? <div style={{ color: "#9ca3af" }}>No events yet</div> : null}
-      </div>
+      {!collapsed ? (
+        <div>
+          {events.map((e, i) => {
+            const type = (e.type || "").toLowerCase();
+            const colorMap: Record<string, string> = {
+              execution_event: "#2563eb",
+              execution: "#2563eb",
+              chat_event: "#059669",
+              chat: "#059669",
+              error: "#dc2626",
+              event: "#6b7280"
+            };
+            const badgeColor = colorMap[type] || "#6b7280";
+            return (
+              <div key={e.id ?? i} style={{ borderTop: i === 0 ? "none" : "1px solid #f1f5f9", paddingTop: 8, paddingBottom: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ width: 8, height: 32, borderRadius: 4, background: badgeColor, flex: "0 0 auto" }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: badgeColor }}>{e.type}</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af" }}>{e.timestamp}</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#374151", whiteSpace: "pre-wrap", marginTop: 6 }}>{e.message}</div>
+                </div>
+              </div>
+            );
+          })}
+          {events.length === 0 ? <div style={{ color: "#9ca3af" }}>No events yet</div> : null}
+        </div>
+      ) : (
+        <div style={{ fontSize: 12, color: "#6b7280" }}>Collapsed — expand to view events</div>
+      )}
     </div>
   );
 }

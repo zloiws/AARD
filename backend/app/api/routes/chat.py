@@ -1,7 +1,7 @@
 """
 Chat API routes with streaming and cancellation support
 """
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -126,6 +126,7 @@ class ChatResponse(BaseModel):
     trace_id: Optional[str] = None
     reasoning: Optional[str] = None  # Reasoning/thinking text if model supports it
     workflow_id: Optional[str] = None  # Workflow ID for tracking execution timeline
+    metadata: Optional[Dict[str, Any]] = None  # Extra structured info (e.g., clarification questions)
 
 
 class MultiModelChatRequest(BaseModel):
@@ -378,7 +379,8 @@ async def chat(
             duration_ms=result.duration_ms,
             session_id=session_id,
             trace_id=trace_id,
-            workflow_id=workflow_id
+            workflow_id=workflow_id,
+            metadata=result.metadata
         )
     
     except Exception as e:

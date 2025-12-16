@@ -3397,6 +3397,12 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
         plan = self.get_plan(plan_id)
         if not plan:
             raise ValueError(f"Plan {plan_id} not found")
+
+        # Enforce explicit lifecycle transitions
+        from app.planning.lifecycle import validate_transition
+        tr = validate_transition(plan.status, "approved")
+        if not tr.allowed:
+            raise ValueError(f"Cannot approve plan from status '{plan.status}'. Allowed: {tr.reason}")
         
         plan.status = "approved"  # Use lowercase string to match DB constraint
         plan.approved_at = datetime.utcnow()

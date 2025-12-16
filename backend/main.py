@@ -27,7 +27,7 @@ from app.api.routes import (
     artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages, tools_pages,
     experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages, model_logs, current_work, workflow,
     websocket_events, benchmarks, project_metrics, project_metrics_pages, audit_reports, audit_reports_pages,
-    plan_templates, agent_dialogs, execution, meta, execution_graph
+    plan_templates, agent_dialogs, execution, meta, execution_graph, registry
 )
 
 # Configure logging first
@@ -77,7 +77,7 @@ async def lifespan(app: FastAPI):
 _settings = get_settings()
 app = FastAPI(
     title=_settings.app_name,
-    description="Autonomous Agentic Recursive Development Platform",
+    description="Personal human-AI interaction environment (AARD)",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -161,6 +161,7 @@ app.include_router(plans.router)
 app.include_router(plan_templates.router)
 app.include_router(model_logs.router)
 app.include_router(project_metrics.router)
+app.include_router(registry.router)
 app.include_router(project_metrics_pages.router)
 app.include_router(audit_reports.router)
 app.include_router(audit_reports_pages.router)

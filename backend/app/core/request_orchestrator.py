@@ -18,7 +18,8 @@ from app.core.model_selector import ModelSelector
 from app.models.task import Task, TaskStatus
 from app.models.interpretation import DecisionTimeline
 from sqlalchemy.orm import Session
-from app.services.interpretation_service import InterpretationService
+from app.components.interpretation_service import InterpretationService
+from app.components.semantic_validator import SemanticValidator
 from app.services.planning_hypothesis_service import PlanningHypothesisService
 
 logger = LoggingConfig.get_logger(__name__)
@@ -100,21 +101,25 @@ class RequestOrchestrator:
         # Interpretation step: run explicit interpretation layer before routing/planning
         try:
             interpretation_service = InterpretationService(context.db)
-            interpretation = await interpretation_service.interpret(message, context)
+            structured_intent = await interpretation_service.interpret(message, context)
+            semantic_validator = SemanticValidator()
+            validation = await semantic_validator.validate_intent(structured_intent)
             # Ensure metadata exists
             if not getattr(context, "metadata", None):
                 context.metadata = context.metadata or {}
-            context.metadata["interpretation"] = interpretation
+            # Persist both typed contract and legacy payload (for compatibility with existing services)
+            context.metadata["structured_intent"] = structured_intent.model_dump()
+            context.metadata["interpretation"] = structured_intent.metadata.get("legacy") or structured_intent.model_dump()
 
             # If interpretation requires clarification, ask user immediately
-            if interpretation.get("requires_clarification"):
-                questions = interpretation.get("clarification_questions", [])
+            if validation.status == "clarification_required":
+                questions = validation.clarification_questions or structured_intent.clarification_questions or []
                 clarification_text = "Требуется уточнение:\n" + ("\n".join(f"- {q}" for q in questions) if questions else "Пожалуйста, уточните запрос.")
                 return OrchestrationResult(
                     response=clarification_text,
                     model="none",
                     task_type="clarification",
-                    metadata={"clarification_required": True, "questions": questions}
+                    metadata={"clarification_required": True, "questions": questions, "validation": validation.model_dump()}
                 )
 
             # Planning step: generate plan hypotheses for complex requests
@@ -127,7 +132,7 @@ class RequestOrchestrator:
                     planning_service = PlanningHypothesisService(context.db)
                     hypotheses = await planning_service.generate_plan_hypotheses(
                         timeline.id,
-                        interpretation
+                        context.metadata.get("interpretation") or {}
                     )
 
                     # Store hypotheses in context for later use
@@ -721,6 +726,12 @@ class RequestOrchestrator:
                     )
                     # Обновить статус плана в БД
                     plan.status = "approved"
+                    try:
+                        # Keep lifecycle metadata consistent
+                        from datetime import datetime as _dt
+                        plan.approved_at = _dt.utcnow()
+                    except Exception:
+                        pass
                     context.db.commit()
         except Exception as e:
             logger.error(f"Plan generation failed: {e}", exc_info=True)
