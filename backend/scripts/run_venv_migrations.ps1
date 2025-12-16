@@ -1,3 +1,39 @@
+Param(
+    [string]$Action = "upgrade",
+    [string]$Message = "autogen",
+    [string]$Revision = "head"
+)
+
+Write-Output "Running migrations via venv python"
+
+$backendRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
+Push-Location $backendRoot
+try {
+    $venvPython = Join-Path $backendRoot "venv\Scripts\python.exe"
+    if (-Not (Test-Path $venvPython)) {
+        Write-Error "venv python not found at $venvPython. Activate venv or create it first."
+        exit 1
+    }
+
+    switch ($Action) {
+        "revision" {
+            & $venvPython -m alembic revision --autogenerate -m $Message
+        }
+        "upgrade" {
+            & $venvPython -m alembic upgrade $Revision
+        }
+        "current" {
+            & $venvPython -m alembic current
+        }
+        default {
+            Write-Error "Unknown action: $Action"
+            exit 2
+        }
+    }
+} finally {
+    Pop-Location
+}
+
 <#
 Windows PowerShell helper to run Alembic migrations using the local Python virtual environment.
 Does not modify existing data beyond applying migrations.
