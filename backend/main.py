@@ -29,6 +29,7 @@ from app.api.routes import (
     websocket_events, benchmarks, project_metrics, project_metrics_pages, audit_reports, audit_reports_pages,
     plan_templates, agent_dialogs, execution, meta, execution_graph, registry
 )
+from app.api.routes import events
 
 # Configure logging first
 LoggingConfig.configure()
@@ -172,6 +173,7 @@ app.include_router(benchmarks_pages.router)
 app.include_router(current_work.router)
 app.include_router(workflow.router)
 app.include_router(websocket_events.router)
+app.include_router(events.router)
 
 # Evolution system web pages
 app.include_router(approvals_pages.router)
