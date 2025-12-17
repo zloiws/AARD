@@ -31,8 +31,9 @@ def upgrade():
     sa.Column('last_login', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
-    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+    # Create unique indexes if not exists
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_username ON users (username);")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email);")
     
     # Create sessions table
     conn = op.get_bind()
@@ -47,17 +48,18 @@ def upgrade():
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_sessions_user_id'), 'sessions', ['user_id'], unique=False)
-    op.create_index(op.f('ix_sessions_token'), 'sessions', ['token'], unique=True)
-    op.create_index(op.f('ix_sessions_expires_at'), 'sessions', ['expires_at'], unique=False)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_sessions_user_id ON sessions (user_id);")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_sessions_token ON sessions (token);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_sessions_expires_at ON sessions (expires_at);")
 
 
 def downgrade():
-    op.drop_index(op.f('ix_sessions_expires_at'), table_name='sessions')
-    op.drop_index(op.f('ix_sessions_token'), table_name='sessions')
-    op.drop_index(op.f('ix_sessions_user_id'), table_name='sessions')
-    op.drop_table('sessions')
-    op.drop_index(op.f('ix_users_email'), table_name='users')
-    op.drop_index(op.f('ix_users_username'), table_name='users')
-    op.drop_table('users')
+    # Drop indexes and tables if exist (idempotent)
+    op.execute("DROP INDEX IF EXISTS ix_sessions_expires_at;")
+    op.execute("DROP INDEX IF EXISTS ix_sessions_token;")
+    op.execute("DROP INDEX IF EXISTS ix_sessions_user_id;")
+    op.execute("DROP TABLE IF EXISTS sessions;")
+    op.execute("DROP INDEX IF EXISTS ix_users_email;")
+    op.execute("DROP INDEX IF EXISTS ix_users_username;")
+    op.execute("DROP TABLE IF EXISTS users;")
 

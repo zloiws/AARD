@@ -17,24 +17,25 @@ depends_on = None
 
 
 def upgrade():
-    # Add heartbeat and health fields to agents table
-    op.add_column('agents', sa.Column('endpoint', sa.String(255), nullable=True))
-    op.add_column('agents', sa.Column('last_heartbeat', sa.DateTime(), nullable=True))
-    op.add_column('agents', sa.Column('health_status', sa.String(50), nullable=True, server_default='unknown'))
-    op.add_column('agents', sa.Column('last_health_check', sa.DateTime(), nullable=True))
-    op.add_column('agents', sa.Column('response_time_ms', sa.Integer(), nullable=True))
-    
-    # Create index for health status
+    # Add heartbeat and health fields to agents table (idempotent)
+    op.execute("ALTER TABLE agents ADD COLUMN IF NOT EXISTS endpoint VARCHAR(255);")
+    op.execute("ALTER TABLE agents ADD COLUMN IF NOT EXISTS last_heartbeat TIMESTAMP;")
+    op.execute("ALTER TABLE agents ADD COLUMN IF NOT EXISTS health_status VARCHAR(50) DEFAULT 'unknown';")
+    op.execute("ALTER TABLE agents ADD COLUMN IF NOT EXISTS last_health_check TIMESTAMP;")
+    op.execute("ALTER TABLE agents ADD COLUMN IF NOT EXISTS response_time_ms INTEGER;")
+
+    # Create index for health status (idempotent)
     op.execute("CREATE INDEX IF NOT EXISTS ix_agents_health_status ON agents (health_status);")
     op.execute("CREATE INDEX IF NOT EXISTS ix_agents_last_heartbeat ON agents (last_heartbeat);")
 
 
 def downgrade():
-    op.drop_index('ix_agents_last_heartbeat', table_name='agents')
-    op.drop_index('ix_agents_health_status', table_name='agents')
-    op.drop_column('agents', 'response_time_ms')
-    op.drop_column('agents', 'last_health_check')
-    op.drop_column('agents', 'health_status')
-    op.drop_column('agents', 'last_heartbeat')
-    op.drop_column('agents', 'endpoint')
+    # Drop indexes and columns if they exist (idempotent)
+    op.execute("DROP INDEX IF EXISTS ix_agents_last_heartbeat;")
+    op.execute("DROP INDEX IF EXISTS ix_agents_health_status;")
+    op.execute("ALTER TABLE agents DROP COLUMN IF EXISTS response_time_ms;")
+    op.execute("ALTER TABLE agents DROP COLUMN IF EXISTS last_health_check;")
+    op.execute("ALTER TABLE agents DROP COLUMN IF EXISTS health_status;")
+    op.execute("ALTER TABLE agents DROP COLUMN IF EXISTS last_heartbeat;")
+    op.execute("ALTER TABLE agents DROP COLUMN IF EXISTS endpoint;")
 

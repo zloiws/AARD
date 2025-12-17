@@ -83,6 +83,11 @@ class WorkflowEvent(Base):
     # Detailed event data (JSONB for flexibility)
     event_data = Column(JSONB, nullable=True)  # Full prompt, response, tool call details, etc.
     event_metadata = Column("metadata", JSONB, nullable=True)  # Additional metadata (model, server, duration, etc.) - using Column name to avoid SQLAlchemy reserved word
+    # Canonical mapping fields for observability / audit
+    component_role = Column(String(100), nullable=True, index=True)  # e.g., interpretation, planning, routing
+    prompt_id = Column(PGUUID(as_uuid=True), ForeignKey("prompts.id", ondelete="SET NULL"), nullable=True, index=True)
+    prompt_version = Column(String(50), nullable=True)
+    decision_source = Column(String(50), nullable=True, index=True)  # one of: component | registry | human
     
     # Relationships to other entities
     task_id = Column(PGUUID(as_uuid=True), ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -133,6 +138,10 @@ class WorkflowEvent(Base):
             "message": self.message,
             "event_data": self.event_data or {},
             "metadata": self.event_metadata or {},
+            "component_role": self.component_role,
+            "prompt_id": str(self.prompt_id) if self.prompt_id else None,
+            "prompt_version": self.prompt_version,
+            "decision_source": self.decision_source,
             "task_id": str(self.task_id) if self.task_id else None,
             "plan_id": str(self.plan_id) if self.plan_id else None,
             "tool_id": str(self.tool_id) if self.tool_id else None,

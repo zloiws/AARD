@@ -237,8 +237,9 @@ class EmbeddingService:
         norm = sum(x * x for x in vector) ** 0.5
         
         if norm == 0:
-            # Zero vector - return zero vector of default dimension
-            return [0.0] * self.DEFAULT_EMBEDDING_DIM
+            # Zero vector - return the original vector (preserve dimension).
+            # Upstream callers (generate_embedding) will pad/truncate to DEFAULT_EMBEDDING_DIM as needed.
+            return vector
         
         # Normalize
         normalized = [x / norm for x in vector]

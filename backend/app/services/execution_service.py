@@ -91,12 +91,22 @@ class StepExecutor:
             "duration": None
         }
         
-        # Emit workflow event: step started
+        # Emit workflow event: step started (include component_role and decision_source when available)
         try:
             from app.services.workflow_event_service import WorkflowEventService
             from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
 
             wf_service = WorkflowEventService(self.db)
+            prompt_id_for_event = None
+            # Try to resolve execution prompt id from context.prompt_manager if available
+            try:
+                if self.context and getattr(self.context, "prompt_manager", None):
+                    prompt_obj = await self.context.prompt_manager.get_prompt_for_stage("execution")
+                    if prompt_obj:
+                        prompt_id_for_event = prompt_obj.id
+            except Exception:
+                prompt_id_for_event = None
+
             wf_service.save_event(
                 workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
                 event_type=EventType.EXECUTION_STEP,
@@ -104,6 +114,11 @@ class StepExecutor:
                 stage=WorkflowStage.EXECUTION,
                 message=f"Step started: {step_id} - {description}",
                 event_data={"step": step},
+                metadata=None,
+                component_role="execution",
+                prompt_id=prompt_id_for_event,
+                prompt_version=None,
+                decision_source="component",
                 plan_id=plan.id if plan else None,
                 task_id=plan.task_id if plan else None,
                 status=EventStatus.IN_PROGRESS
@@ -270,12 +285,21 @@ class StepExecutor:
             except Exception as e:
                 logger.warning(f"Failed to record step execution metrics: {e}", exc_info=True)
             
-            # Emit workflow event: step completed
+            # Emit workflow event: step completed (include component_role and decision_source when available)
             try:
                 from app.services.workflow_event_service import WorkflowEventService
                 from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
 
                 wf_service = WorkflowEventService(self.db)
+                prompt_id_for_event = None
+                try:
+                    if self.context and getattr(self.context, "prompt_manager", None):
+                        prompt_obj = await self.context.prompt_manager.get_prompt_for_stage("execution")
+                        if prompt_obj:
+                            prompt_id_for_event = prompt_obj.id
+                except Exception:
+                    prompt_id_for_event = None
+
                 wf_service.save_event(
                     workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
                     event_type=EventType.EXECUTION_STEP,
@@ -283,6 +307,11 @@ class StepExecutor:
                     stage=WorkflowStage.EXECUTION,
                     message=f"Step completed: {step_id} - {description}",
                     event_data={"step": step, "result": result},
+                    metadata=None,
+                    component_role="execution",
+                    prompt_id=prompt_id_for_event,
+                    prompt_version=None,
+                    decision_source="component",
                     plan_id=plan.id if plan else None,
                     task_id=plan.task_id if plan else None,
                     status=EventStatus.COMPLETED
@@ -337,11 +366,20 @@ class StepExecutor:
             plan_step_duration_seconds.labels(
                 step_type=step_type
             ).observe(step_duration)
-            # Emit workflow event: step failed
+            # Emit workflow event: step failed (include component_role and decision_source when available)
             try:
                 from app.services.workflow_event_service import WorkflowEventService
                 from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
                 wf_service = WorkflowEventService(self.db)
+                prompt_id_for_event = None
+                try:
+                    if self.context and getattr(self.context, "prompt_manager", None):
+                        prompt_obj = await self.context.prompt_manager.get_prompt_for_stage("execution")
+                        if prompt_obj:
+                            prompt_id_for_event = prompt_obj.id
+                except Exception:
+                    prompt_id_for_event = None
+
                 wf_service.save_event(
                     workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
                     event_type=EventType.ERROR,
@@ -349,6 +387,11 @@ class StepExecutor:
                     stage=WorkflowStage.ERROR,
                     message=f"Step failed: {step_id} - {str(e)[:200]}",
                     event_data={"step": step, "error": str(e)},
+                    metadata=None,
+                    component_role="execution",
+                    prompt_id=prompt_id_for_event,
+                    prompt_version=None,
+                    decision_source="component",
                     plan_id=plan.id if plan else None,
                     task_id=plan.task_id if plan else None,
                     status=EventStatus.FAILED

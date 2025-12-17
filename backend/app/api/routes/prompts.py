@@ -63,6 +63,11 @@ class AssignmentRequest(BaseModel):
     model_id: Optional[UUID] = None
     server_id: Optional[UUID] = None
     task_type: Optional[str] = None
+    component_role: Optional[str] = None
+    stage: Optional[str] = None
+    scope: Optional[str] = "global"
+    agent_id: Optional[UUID] = None
+    experiment_id: Optional[UUID] = None
 
 
 class AssignmentResponse(BaseModel):
@@ -71,6 +76,11 @@ class AssignmentResponse(BaseModel):
     model_id: Optional[UUID] = None
     server_id: Optional[UUID] = None
     task_type: Optional[str] = None
+    component_role: Optional[str] = None
+    stage: Optional[str] = None
+    scope: Optional[str] = None
+    agent_id: Optional[UUID] = None
+    experiment_id: Optional[UUID] = None
     created_at: datetime
     created_by: Optional[str] = None
 
@@ -391,6 +401,11 @@ async def assign_prompt(
             model_id=request.model_id,
             server_id=request.server_id,
             task_type=request.task_type,
+            component_role=request.component_role,
+            stage=request.stage,
+            scope=request.scope or "global",
+            agent_id=request.agent_id,
+            experiment_id=request.experiment_id,
             created_by=created_by,
         )
         return assignment

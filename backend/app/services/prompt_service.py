@@ -329,10 +329,18 @@ class PromptService:
         model_id: Optional[UUID] = None,
         server_id: Optional[UUID] = None,
         task_type: Optional[str] = None,
+        component_role: Optional[str] = None,
+        stage: Optional[str] = None,
+        scope: str = "global",
+        agent_id: Optional[UUID] = None,
+        experiment_id: Optional[UUID] = None,
         created_by: Optional[str] = None,
     ):
-        """Assign a prompt to a model/server/task_type"""
+        """Assign a prompt to a model/server/task_type/component_role/stage with scope"""
         from app.models.prompt_assignment import PromptAssignment
+
+        if not component_role or not stage:
+            raise ValueError("component_role and stage are required for prompt assignments")
 
         # Create assignment
         assignment = PromptAssignment(
@@ -340,6 +348,11 @@ class PromptService:
             model_id=model_id,
             server_id=server_id,
             task_type=task_type,
+            component_role=component_role,
+            stage=stage,
+            scope=scope,
+            agent_id=agent_id,
+            experiment_id=experiment_id,
             created_by=created_by or "system",
         )
         try:
@@ -353,7 +366,7 @@ class PromptService:
             logger.error(f"Error creating prompt assignment: {e}", exc_info=True)
             raise
 
-    def list_assignments(self, prompt_id: Optional[UUID] = None, model_id: Optional[UUID] = None, server_id: Optional[UUID] = None):
+    def list_assignments(self, prompt_id: Optional[UUID] = None, model_id: Optional[UUID] = None, server_id: Optional[UUID] = None, component_role: Optional[str] = None, stage: Optional[str] = None, scope: Optional[str] = None, agent_id: Optional[UUID] = None, experiment_id: Optional[UUID] = None):
         from app.models.prompt_assignment import PromptAssignment
         q = self.db.query(PromptAssignment)
         if prompt_id:
@@ -362,6 +375,16 @@ class PromptService:
             q = q.filter(PromptAssignment.model_id == model_id)
         if server_id:
             q = q.filter(PromptAssignment.server_id == server_id)
+        if component_role:
+            q = q.filter(PromptAssignment.component_role == component_role)
+        if stage:
+            q = q.filter(PromptAssignment.stage == stage)
+        if scope:
+            q = q.filter(PromptAssignment.scope == scope)
+        if agent_id:
+            q = q.filter(PromptAssignment.agent_id == agent_id)
+        if experiment_id:
+            q = q.filter(PromptAssignment.experiment_id == experiment_id)
         return q.order_by(PromptAssignment.created_at.desc()).all()
 
     
