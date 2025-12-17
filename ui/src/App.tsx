@@ -4,7 +4,6 @@ import ModelSettings from "./components/ModelSettings";
 import PromptsPanel from "./components/PromptsPanel";
 import { ModelProvider } from "./contexts/ModelContext";
 import { SessionProvider } from "./contexts/SessionContext";
-import RealtimeEventsPanel from "./components/RealtimeEventsPanel";
 import TopBar from "./components/TopBar";
 import Sidebar from "./components/Sidebar";
 import Workspace from "./components/Workspace";

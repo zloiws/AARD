@@ -20,8 +20,6 @@ export default function ChatPanel(): JSX.Element {
   const [streamMode, setStreamMode] = useState<boolean>(false);
   const [streamInProgress, setStreamInProgress] = useState<boolean>(false);
   const [clarificationQuestions, setClarificationQuestions] = useState<string[]>([]);
-  const [planId, setPlanId] = useState<string | null>(null);
-  const [planStatus, setPlanStatus] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const readerRef = React.useRef<any>(null);
   const controllerRef = React.useRef<AbortController | null>(null);
@@ -112,11 +110,7 @@ export default function ChatPanel(): JSX.Element {
         } else {
           setClarificationQuestions([]);
         }
-        // If server attached a plan_id, fetch plan status
-        if (data.metadata && data.metadata.plan_id) {
-          setPlanId(String(data.metadata.plan_id));
-          fetchPlanStatus(String(data.metadata.plan_id));
-        }
+        // Server may attach metadata; Chat UI intentionally does not display plan lifecycle UI.
       } else {
         setStreamInProgress(true);
         controllerRef.current = new AbortController();
@@ -219,31 +213,7 @@ export default function ChatPanel(): JSX.Element {
     }
   }
 
-  async function fetchPlanStatus(id: string) {
-    try {
-      const r = await fetch(`/api/plans/${id}`);
-      if (!r.ok) {
-        setPlanStatus(null);
-        return;
-      }
-      const p = await r.json();
-      setPlanStatus(p.status || null);
-    } catch (e) {
-      console.warn("Failed to fetch plan status", e);
-      setPlanStatus(null);
-    }
-  }
-
-  // Poll plan status every 5s while a plan is active
-  useEffect(() => {
-    if (!planId) return;
-    const t = setInterval(() => {
-      fetchPlanStatus(planId);
-    }, 5000);
-    // initial fetch
-    fetchPlanStatus(planId);
-    return () => clearInterval(t);
-  }, [planId]);
+  // Plan lifecycle and approval UI are intentionally not part of Chat per UI spec.
 
   // Fetch current user info to decide about showing Approve button
   useEffect(() => {
@@ -261,90 +231,8 @@ export default function ChatPanel(): JSX.Element {
     };
   }, []);
 
-  // WebSocket for execution / workflow events (subscribe per sessionId)
-  useEffect(() => {
-    if (!sessionId) return;
-    let ws: WebSocket | null = null;
-    let reconnectTimeout: number | null = null;
+  // Chat UI is a black box; execution observability is handled in Timeline/Graph per UI spec.
 
-    const connect = () => {
-      try {
-        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-        const host = window.location.hostname || "localhost";
-        const port = 8000; // backend API port
-        const wsUrl = `${protocol}://${host}:${port}/api/ws/ws/execution/${sessionId}`;
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-          console.debug("WS connected to", wsUrl);
-        };
-
-        ws.onmessage = (ev) => {
-          try {
-            const msg = JSON.parse(ev.data);
-            // Handle execution events
-            if (msg?.type === "execution_event" || msg?.type === "event") {
-              const data = msg.data || msg?.data || {};
-              // If event contains a plan_id/status, update plan status
-              const pId = data.plan_id || data.planId || data.get?.("plan_id");
-              const status = data.status || data.plan_status || data.state;
-              if (pId && planId && String(pId) === String(planId) && status) {
-                setPlanStatus(status);
-              } else {
-                // fallback: refresh plan status if any execution event touches this session
-                fetchPlanStatus(planId);
-              }
-            } else if (msg?.type === "connected") {
-              // ignore
-            } else if (msg?.type === "chat_event") {
-              // Optionally handle chat events
-            }
-          } catch (e) {
-            console.warn("WS message parse error", e);
-          }
-        };
-
-        ws.onclose = (ev) => {
-          console.debug("WS closed", ev.code, ev.reason);
-          // Attempt reconnect
-          if (reconnectTimeout) window.clearTimeout(reconnectTimeout);
-          reconnectTimeout = window.setTimeout(connect, 2000);
-        };
-
-        ws.onerror = (e) => {
-          console.warn("WS error", e);
-          try {
-            ws?.close();
-          } catch {}
-        };
-      } catch (e) {
-        console.warn("WS connect failed", e);
-        reconnectTimeout = window.setTimeout(connect, 2000);
-      }
-    };
-
-    connect();
-
-    return () => {
-      try {
-        if (ws && ws.readyState === WebSocket.OPEN) ws.close();
-      } catch {}
-      if (reconnectTimeout) window.clearTimeout(reconnectTimeout);
-    };
-  }, [sessionId, planId]);
-
-  async function approvePlan(id: string) {
-    try {
-      const r = await fetch(`/api/plans/${id}/approve`, { method: "POST" });
-      if (!r.ok) {
-        throw new Error(`Failed to approve: ${r.status}`);
-      }
-      const p = await r.json();
-      setPlanStatus(p.status || null);
-    } catch (e) {
-      console.warn("Approve failed", e);
-    }
-  }
 
   // auto-scroll to bottom when messages change or during streaming
   useEffect(() => {
@@ -370,33 +258,7 @@ export default function ChatPanel(): JSX.Element {
           <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <input type="checkbox" checked={streamMode} onChange={(e) => setStreamMode(e.target.checked)} /> Stream
           </label>
-          {/* Dev debug toggle to force admin role for testing Approve button */}
-          <label style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 8, fontSize: 12 }}>
-            <input
-              type="checkbox"
-              checked={Boolean(localStorage.getItem("aard_debug_admin"))}
-              onChange={(e) => {
-                try {
-                  if (e.target.checked) {
-                    localStorage.setItem("aard_debug_admin", "1");
-                    setUserRole("admin");
-                  } else {
-                    localStorage.removeItem("aard_debug_admin");
-                    // revert to server-provided role by refetching
-                    setUserRole(null);
-                    fetch("/api/auth/me")
-                      .then((r) => (r.ok ? r.json() : null))
-                      .then((u) => {
-                        if (u && u.role) setUserRole(u.role);
-                      })
-                      .catch(() => {});
-                  }
-                } catch {}
-              }}
-              title="Force admin role locally (debug)"
-            />{" "}
-            DebugAdmin
-          </label>
+          {/* debug controls removed per UI spec */}
         </div>
       </div>
 
@@ -404,7 +266,9 @@ export default function ChatPanel(): JSX.Element {
         {messages.length === 0 ? <div style={{ color: "#6b7280" }}>No messages yet</div> : null}
         {messages.map((m, idx) => (
           <div key={idx} style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>{m.role === "user" ? "You" : m.role === "assistant" ? "Assistant" : "System"}</div>
+            <div style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>
+              {m.role === "user" ? "User" : m.role === "system" ? "System" : "Result"}
+            </div>
             <div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{m.content}</div>
             {m.timestamp ? <div style={{ fontSize: 11, color: "#9ca3af" }}>{m.timestamp}</div> : null}
           </div>
@@ -434,52 +298,7 @@ export default function ChatPanel(): JSX.Element {
         </div>
       ) : null}
 
-      {/* Plan status panel */}
-      {planId ? (
-        <div style={{ paddingTop: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>Plan</div>
-          <div style={{ fontSize: 13 }}>ID: {planId}</div>
-          <div style={{ fontSize: 13 }}>Status: {planStatus ?? "loading..."}</div>
-          <div style={{ marginTop: 6 }}>
-            <button onClick={() => fetchPlanStatus(planId)}>Refresh</button>
-            {userRole === "admin" ? (
-              <button onClick={() => approvePlan(planId)} style={{ marginLeft: 8 }}>
-                Approve
-              </button>
-            ) : (
-              <button disabled style={{ marginLeft: 8 }} title="Requires admin">
-                Approve
-              </button>
-            )}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Debug admin: allow entering a plan id to approve when no planId exists */}
-      {!planId && Boolean(localStorage.getItem("aard_debug_admin")) ? (
-        <div style={{ paddingTop: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>Dev Approve (debug)</div>
-          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-            <input
-              placeholder="Paste plan id..."
-              style={{ flex: 1, padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }}
-              onChange={(e) => {
-                try {
-                  setPlanId(e.target.value || null);
-                } catch {}
-              }}
-            />
-            <button
-              onClick={async () => {
-                if (!planId) return;
-                await approvePlan(planId);
-              }}
-            >
-              Approve
-            </button>
-          </div>
-        </div>
-      ) : null}
+      {/* Plan lifecycle handled in Timeline/Plan UI per spec; Chat does not display plan controls */}
 
       <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
         <input
