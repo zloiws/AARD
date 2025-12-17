@@ -30,6 +30,7 @@ export default function RegistryView(): JSX.Element {
   return (
     <div style={{ padding: 12 }}>
       <h4>Registry</h4>
+      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>Read-only view — propose/deperecate actions require backend confirmation via Registry API.</div>
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <button onClick={() => setTab("Agents")} style={{ padding: "6px 10px", background: tab === "Agents" ? "#eef2ff" : "transparent" }}>Agents</button>
         <button onClick={() => setTab("Tools")} style={{ padding: "6px 10px", background: tab === "Tools" ? "#eef2ff" : "transparent" }}>Tools</button>

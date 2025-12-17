@@ -11,7 +11,7 @@ import StatusBar from "./components/StatusBar";
 
 export default function App() {
   const [paused, setPaused] = useState<boolean>(false);
-  const [mode, setMode] = useState<string>("Chat");
+  const [mode, setMode] = useState<string>("Timeline");
 
   return (
     <SessionProvider>
