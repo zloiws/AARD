@@ -133,6 +133,23 @@ async def get_current_user_with_role(
     return user
 
 
+async def get_current_user_required(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> "User":
+    """
+    Require authentication: return User or raise 401
+    """
+    user = await get_current_user(request=request, credentials=credentials)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
 async def get_current_user_optional(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)

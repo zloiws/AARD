@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
-from app.core.auth import get_current_user_optional
+from app.core.auth import get_current_user_optional, get_current_user_required
 from app.models.prompt import Prompt, PromptType, PromptStatus
 from app.services.prompt_service import PromptService
 
@@ -390,7 +390,7 @@ async def assign_prompt(
     prompt_id: UUID,
     request: AssignmentRequest,
     db: Session = Depends(get_db),
-    current_user: Optional["User"] = Depends(get_current_user_optional),
+    current_user: "User" = Depends(get_current_user_required),
 ):
     """Assign prompt to model/server/task_type"""
     svc = PromptService(db)
@@ -438,6 +438,7 @@ async def list_assignments(
 async def delete_assignment(
     assignment_id: UUID,
     db: Session = Depends(get_db),
+    current_user: "User" = Depends(get_current_user_required),
 ):
     """Delete a prompt assignment by id"""
     from app.models.prompt_assignment import PromptAssignment

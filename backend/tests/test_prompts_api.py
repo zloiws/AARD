@@ -2,6 +2,10 @@ import json
 from uuid import UUID
 
 def test_prompt_assign_and_unassign_api(client):
+    # Provide auth override so endpoints requiring auth accept requests in tests
+    from types import SimpleNamespace
+    from app.core.auth import get_current_user_required
+    client.app.dependency_overrides[get_current_user_required] = lambda: SimpleNamespace(username="test", role="admin")
     # Create a prompt
     payload = {
         "name": "api-test-prompt",
