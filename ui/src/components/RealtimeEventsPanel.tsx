@@ -94,6 +94,15 @@ export default function RealtimeEventsPanel(): JSX.Element {
                     <div style={{ fontSize: 11, color: "#9ca3af" }}>{e.timestamp}</div>
                   </div>
                   <div style={{ fontSize: 12, color: "#374151", whiteSpace: "pre-wrap", marginTop: 6 }}>{e.message}</div>
+                  {/* Additional canonical fields from event data */}
+                  {e.data ? (
+                    <div style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>
+                      {e.data.component_role ? <div><strong>component:</strong> {String(e.data.component_role)}</div> : null}
+                      {e.data.prompt_id ? <div><strong>prompt:</strong> {String(e.data.prompt_id)}{e.data.prompt_version ? `@${String(e.data.prompt_version)}` : ""}</div> : null}
+                      {e.data.decision_source ? <div><strong>decision_source:</strong> {String(e.data.decision_source)}</div> : null}
+                      {e.data.reason_code ? <div><strong>reason:</strong> {String(e.data.reason_code)}</div> : null}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );

@@ -1,91 +1,42 @@
 import React, { useState } from "react";
-import DualFlowCanvas from "./components/DualFlowCanvas";
 import ChatPanel from "./components/ChatPanel";
 import ModelSettings from "./components/ModelSettings";
 import PromptsPanel from "./components/PromptsPanel";
 import { ModelProvider } from "./contexts/ModelContext";
 import { SessionProvider } from "./contexts/SessionContext";
 import RealtimeEventsPanel from "./components/RealtimeEventsPanel";
+import TopBar from "./components/TopBar";
+import Sidebar from "./components/Sidebar";
+import Workspace from "./components/Workspace";
+import StatusBar from "./components/StatusBar";
 
 export default function App() {
-  const [showModelSettings, setShowModelSettings] = useState<boolean>(false);
+  const [paused, setPaused] = useState<boolean>(false);
+  const [mode, setMode] = useState<string>("Chat");
 
   return (
     <SessionProvider>
     <ModelProvider>
-    <div style={{ height: "100vh", display: "flex", gap: 12 }}>
-      <aside style={{ width: "300px", background: "#f5f7fb", padding: 12, display: "flex", flexDirection: "column" }}>
-        <ChatPanel />
-      </aside>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <TopBar
+        onOpenSettings={() => setMode("Settings")}
+        onOpenRegistry={() => setMode("Registry")}
+        onOpenPrompts={() => setMode("Prompts")}
+        onPauseToggle={() => setPaused((p) => !p)}
+        paused={paused}
+      />
 
-      <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <header style={{ padding: 12, borderBottom: "1px solid #e6e9ef" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ margin: 0 }}>Dual Flow Canvas</h2>
-            <div>
-              <button onClick={() => setShowModelSettings((s) => !s)} style={{ padding: "6px 10px" }}>
-                {showModelSettings ? "Hide Model Settings" : "Show Model Settings"}
-              </button>
-            </div>
+      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+        <Sidebar mode={mode} onChangeMode={(m) => setMode(m)} />
+
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+            <Workspace mode={mode} />
           </div>
-        </header>
-
-        <section style={{ flex: 1, display: "flex", padding: 12 }}>
-          <DualFlowCanvas />
-        </section>
-      </main>
-
-      {showModelSettings ? (
-        <>
-          <div
-            onClick={() => setShowModelSettings(false)}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.4)",
-              zIndex: 40,
-            }}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            style={{
-              position: "fixed",
-              left: "50%",
-              top: "50%",
-              transform: "translate(-50%, -50%)",
-              background: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 12px 48px rgba(0,0,0,0.2)",
-              width: Math.min(900, window.innerWidth - 80),
-              maxHeight: "80vh",
-              overflow: "auto",
-              padding: 16,
-              zIndex: 50,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <h3 style={{ margin: 0 }}>Settings</h3>
-              <div>
-                <button onClick={() => setShowModelSettings(false)} style={{ padding: "6px 10px" }}>
-                  Close
-                </button>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <ModelSettings />
-              </div>
-              <div style={{ width: 360, borderLeft: "1px solid #eef2f7", paddingLeft: 12 }}>
-                <React.Suspense fallback={<div>Loading prompts...</div>}>
-                  <PromptsPanel />
-                </React.Suspense>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : null}
-      <RealtimeEventsPanel />
+          <StatusBar currentStage={paused ? "paused" : "idle"} activeComponent={mode} />
+        </main>
+      </div>
+      {/* RealtimeEventsPanel intentionally not mounted by default per UI spec (use Timeline/StatusBar for observability) */}
     </div>
     </ModelProvider>
     </SessionProvider>

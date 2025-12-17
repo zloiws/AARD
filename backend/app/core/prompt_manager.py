@@ -99,6 +99,24 @@ class PromptManager:
             prompt_name = self.STAGE_NAME_MAPPING.get(stage, "system")
         
         # Получить промпт
+        # First try to resolve runtime assignments via PromptRuntimeSelector (experiment/agent/global)
+        try:
+            from app.services.prompt_runtime_selector import PromptRuntimeSelector
+            selector = PromptRuntimeSelector(self.context.db)
+            resolved = selector.resolve(component_role=stage, context_metadata=getattr(self.context, "metadata", None), task_type=stage)
+            if resolved and resolved.get("prompt_text"):
+                # Build a lightweight Prompt-like object for compatibility
+                class _P:
+                    def __init__(self, id, prompt_text, version):
+                        self.id = id
+                        self.prompt_text = prompt_text
+                        self.version = version
+                prompt = _P(resolved.get("prompt_id"), resolved.get("prompt_text"), resolved.get("prompt_version"))
+                return prompt
+        except Exception:
+            # Fallback to DB lookup if runtime selector fails
+            pass
+
         prompt = self.prompt_service.get_active_prompt(
             name=prompt_name,
             prompt_type=prompt_type,
