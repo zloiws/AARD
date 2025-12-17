@@ -432,3 +432,22 @@ async def list_assignments(
     svc = PromptService(db)
     assignments = svc.list_assignments(model_id=model_id, server_id=server_id)
     return [a.to_dict() for a in assignments]
+
+
+@router.delete("/assignments/{assignment_id}", status_code=204)
+async def delete_assignment(
+    assignment_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """Delete a prompt assignment by id"""
+    from app.models.prompt_assignment import PromptAssignment
+    assignment = db.query(PromptAssignment).filter(PromptAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
+    try:
+        db.delete(assignment)
+        db.commit()
+        return
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
