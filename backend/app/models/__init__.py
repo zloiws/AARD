@@ -10,6 +10,7 @@ from app.models.artifact_version import ArtifactVersion  # noqa: F401
 from app.models.ollama_server import OllamaServer  # noqa: F401
 from app.models.ollama_model import OllamaModel  # noqa: F401
 from app.models.prompt import Prompt, PromptType, PromptStatus  # noqa: F401
+from app.models.prompt_assignment import PromptAssignment  # noqa: F401
 from app.models.system_setting import SystemSetting, SettingValueType, SettingCategory
 from app.models.tool import Tool, ToolStatus, ToolCategory  # noqa: F401  # noqa: F401
 from app.models.approval import ApprovalRequest, ApprovalRequestType, ApprovalRequestStatus  # noqa: F401
@@ -66,6 +67,7 @@ __all__ = [
     "Prompt",
     "PromptType",
     "PromptStatus",
+    "PromptAssignment",
     # Approvals
     "ApprovalRequest",
     "ApprovalRequestType",
