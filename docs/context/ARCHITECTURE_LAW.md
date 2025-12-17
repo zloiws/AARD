@@ -299,8 +299,27 @@
   - Service_role (одно предложение)
   - Используемые prompts (prompt_id/prompt_version/component_role) или явное заявление, что LLM не используется.
 
-3) CI enforcement (рекомендуется):
-- Добавить CI‑hook, который блокирует merge если PR изменяет код сервиса без соответствующего `docs/services/<service>.md` обновления.
+## Development policy (LOCAL-FIRST)
+
+AARD is a personal, local-first, exploratory development project. While PRs and CI pipelines
+are useful for mature, multi-contributor projects, during the architecture stabilization phase
+the canonical project workflow is intentionally lightweight and local-first:
+
+- PRs and CI are disabled by default for routine development until architectural contracts are frozen.
+- Use Git as a journal of design and decisions (direct commits, small atomic commits, descriptive messages).
+- Example commit message styles:
+  - `architecture: add orchestration readiness checklist`
+  - `docs: freeze ARCHITECTURE_LAW`
++- PRs and CI are required only when:
+-  - architectural contracts are frozen,
+-  - external contributors exist,
+-  - plugins/third-party agents are integrated,
+-  - Registry/Capability APIs are stabilized.
+
+This policy prioritizes rapid exploration and correctness of contracts over early gatekeeping.
+
+3) CI enforcement (рекомендуется, но выключено по умолчанию):
+- Когда проект переходит в multi-contributor стадию, добавить CI‑hook, который блокирует merge если PR изменяет код сервиса без соответствующего `docs/services/<service>.md` обновления.
 
 ---
 
