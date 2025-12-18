@@ -114,7 +114,8 @@ def test_custom_settings(service: SystemSettingService):
     print(f"После удаления: {deleted_value}")
     assert deleted_value == 'DELETED', "Setting should be deleted"
     
-    print("✓ Custom settings работают корректно")
+    # Use ASCII output to avoid encoding issues on some consoles
+    print("OK Custom settings work correctly")
 
 
 def test_all_settings(service: SystemSettingService):
