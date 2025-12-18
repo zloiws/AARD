@@ -29,6 +29,13 @@ except ImportError:
     # AioHttpClientInstrumentor not imported here - imported lazily when needed
     OTLPSpanExporter = None
 
+# Respect explicit environment flag to disable tracing during tests or CI
+import os
+if os.getenv("ENABLE_TRACING", "true").strip().lower() in ("0", "false", "no"):
+    OPENTELEMETRY_AVAILABLE = False
+    # Ensure Database exporter is not used
+    DatabaseSpanExporter = None
+
 from app.core.config import get_settings
 from app.core.logging_config import LoggingConfig
 
