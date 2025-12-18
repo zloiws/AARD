@@ -26,8 +26,22 @@ def db() -> Session:
         import app.models  # noqa: F401
     except Exception:
         pass
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+    # Ensure clean schema for tests: drop and recreate public schema to avoid
+    # dependent-object ordering issues (CASCADE ensures foreign keys removed).
+    # This operation is safe in test environments where database is ephemeral.
+    try:
+        with engine.connect() as conn:
+            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+            # Use driver-level SQL execution for DDL strings
+            conn.exec_driver_sql("DROP SCHEMA public CASCADE;")
+            conn.exec_driver_sql("CREATE SCHEMA public;")
+    except Exception:
+        # Fallback to metadata-based drop/create if schema operations are not permitted
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+    else:
+        # After recreating schema, create tables
+        Base.metadata.create_all(bind=engine)
     
     # Create session
     session = SessionLocal()

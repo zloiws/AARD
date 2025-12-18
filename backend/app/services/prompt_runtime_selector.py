@@ -41,10 +41,16 @@ class PromptRuntimeSelector:
             q = q.filter(PromptAssignment.agent_id == agent_id)
         if experiment_id:
             q = q.filter(PromptAssignment.experiment_id == experiment_id)
-        if model_id:
+        # If a specific model_id/server_id is provided, match it.
+        # If not provided, prefer generic assignments (NULL model_id/server_id).
+        if model_id is not None:
             q = q.filter(PromptAssignment.model_id == model_id)
-        if server_id:
+        else:
+            q = q.filter(PromptAssignment.model_id.is_(None))
+        if server_id is not None:
             q = q.filter(PromptAssignment.server_id == server_id)
+        else:
+            q = q.filter(PromptAssignment.server_id.is_(None))
         if task_type:
             q = q.filter(PromptAssignment.task_type == task_type)
         return q.order_by(PromptAssignment.created_at.desc()).all()
