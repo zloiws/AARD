@@ -80,6 +80,8 @@ class SystemSettingService:
                 setting.set_typed_value(value, value_type)
                 setting.category = category
                 setting.module = module
+                # Reactivate setting if it was previously soft-deleted
+                setting.is_active = True
                 if description:
                     setting.description = description
                 setting.updated_by = updated_by
@@ -94,6 +96,8 @@ class SystemSettingService:
                     updated_by=updated_by
                 )
                 setting.set_typed_value(value, value_type)
+                # Ensure new setting is active
+                setting.is_active = True
                 self.db.add(setting)
                 logger.info(f"Created setting: {key} = {value}")
             
