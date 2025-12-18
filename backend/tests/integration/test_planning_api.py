@@ -1,10 +1,17 @@
 """
 Test script for Planning API endpoints
 """
+import os
 import requests
 import json
 from typing import Optional
 import time
+import pytest
+
+# These are manual API checks that require the backend server to be running at localhost:8000.
+# In automated test runs we skip them unless RUN_API_INTEGRATION_TESTS env var is set.
+if not os.getenv("RUN_API_INTEGRATION_TESTS"):
+    pytest.skip("Skipping planning API integration tests (require running server). Set RUN_API_INTEGRATION_TESTS=1 to enable.", allow_module_level=True)
 
 BASE_URL = "http://localhost:8000"
 API_BASE = f"{BASE_URL}/api/plans"

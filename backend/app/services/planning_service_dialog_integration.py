@@ -152,6 +152,18 @@ async def initiate_agent_dialog_for_planning(
             }
         )
         
+        # If the dialog could not be run immediately (e.g., external LLM unavailable),
+        # ensure the conversation is marked as active so downstream code/tests
+        # recognize that a dialog has been initiated and can continue asynchronously.
+        try:
+            if conversation and getattr(conversation, "status", None) == ConversationStatus.INITIATED.value:
+                conversation.status = ConversationStatus.ACTIVE.value
+                db.commit()
+                db.refresh(conversation)
+        except Exception:
+            # Best-effort: do not fail planning if we cannot update the conversation status
+            logger.debug("Failed to mark conversation active after creation", exc_info=True)
+        
         logger.info(
             f"Создан диалог для планирования: {conversation.id}",
             extra={

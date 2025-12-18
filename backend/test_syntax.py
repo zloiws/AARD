@@ -2,9 +2,12 @@
 """Test syntax of planning_service.py"""
 import ast
 import sys
+from pathlib import Path
 
 try:
-    with open('app/services/planning_service.py', 'r', encoding='utf-8') as f:
+    base = Path(__file__).parent
+    target = base / "app" / "services" / "planning_service.py"
+    with open(target, 'r', encoding='utf-8') as f:
         content = f.read()
     
     # Parse the file

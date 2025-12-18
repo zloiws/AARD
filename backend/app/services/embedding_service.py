@@ -59,8 +59,8 @@ class EmbeddingService:
         """
         if not text or not text.strip():
             logger.warning("Empty text provided for embedding generation")
-            # Return minimal embedding - actual dimension will be determined by model
-            return [0.0] * 768  # Common minimum dimension
+            # Return zero vector matching DEFAULT_EMBEDDING_DIM
+            return [0.0] * self.DEFAULT_EMBEDDING_DIM
         
         # Check cache first
         if use_cache and text in self._embedding_cache:
@@ -95,8 +95,8 @@ class EmbeddingService:
             
         except Exception as e:
             logger.error(f"Error generating embedding: {e}", exc_info=True)
-            # Return zero vector on error (minimal dimension)
-            return [0.0] * 768
+            # Return zero vector with default embedding dimension on error
+            return [0.0] * self.DEFAULT_EMBEDDING_DIM
     
     async def generate_embeddings_batch(
         self,

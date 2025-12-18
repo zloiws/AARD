@@ -46,7 +46,7 @@ class AgentMemory(Base):
     # Vector embedding for semantic search
     # Note: embedding is stored as vector type in DB, but SQLAlchemy can't read it directly
     # Use raw SQL to read/write embeddings (see MemoryService)
-    # embedding = Column(ARRAY(Float), nullable=True)  # Commented out - use raw SQL instead
+    embedding = Column(ARRAY(Float), nullable=True)  # Embedding column (array of floats) - use raw SQL for vector ops if available
     
     # Importance and access tracking
     importance = Column(Float, default=0.5, nullable=False)  # 0.0 to 1.0

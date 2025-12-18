@@ -459,11 +459,22 @@ class MemoryService:
         if self._cache_enabled:
             cached = self._get_from_cache(cache_key)
             if cached is not None:
-                logger.debug(
-                    f"Memory search cache hit for agent {agent_id}",
-                    extra={"cache_key": cache_key[:16], "results_count": len(cached)}
-                )
-                return cached
+                # Normalize cached payload to list if possible, else ignore cache
+                if not isinstance(cached, list):
+                    try:
+                        cached = list(cached)
+                    except Exception:
+                        cached = None
+                if cached is not None:
+                    try:
+                        results_count = len(cached)
+                    except Exception:
+                        results_count = None
+                    logger.debug(
+                        f"Memory search cache hit for agent {agent_id}",
+                        extra={"cache_key": cache_key[:16], "results_count": results_count}
+                    )
+                    return cached
         
         # Execute search
         query = self.db.query(AgentMemory).filter(
@@ -556,6 +567,21 @@ class MemoryService:
                         memory_type=memory_type
                     )
                 return []
+            # Check if pgvector extension is available; if not, fallback to text search
+            try:
+                ext_check = self.db.execute(text("SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'vector');")).scalar()
+            except Exception:
+                ext_check = False
+            if not ext_check:
+                logger.warning("pgvector extension not available, falling back to text search")
+                if combine_with_text_search:
+                    return self.search_memories(
+                        agent_id=agent_id,
+                        query_text=query_text,
+                        limit=limit,
+                        memory_type=memory_type
+                    )
+                return []
             # Generate embedding for query text
             query_embedding = await self.embedding_service.generate_embedding(query_text)
             
@@ -627,18 +653,31 @@ class MemoryService:
             
             # Optionally combine with text search
             if combine_with_text_search and len(filtered_results) < limit:
-                text_results = self.search_memories(
-                    agent_id=agent_id,
-                    query_text=query_text,
-                    limit=limit - len(filtered_results),
-                    memory_type=memory_type
-                )
-                
+                try:
+                    text_results = self.search_memories(
+                        agent_id=agent_id,
+                        query_text=query_text,
+                        limit=limit - len(filtered_results),
+                        memory_type=memory_type
+                    )
+                    # Normalize to list if possible
+                    if not isinstance(text_results, list):
+                        try:
+                            text_results = list(text_results)
+                        except Exception:
+                            text_results = []
+                except Exception:
+                    text_results = []
+
                 # Merge results, avoiding duplicates
                 vector_ids = {mem.id for mem in filtered_results}
                 for text_mem in text_results:
-                    if text_mem.id not in vector_ids:
-                        filtered_results.append(text_mem)
+                    try:
+                        if text_mem.id not in vector_ids:
+                            filtered_results.append(text_mem)
+                    except Exception:
+                        # Ignore malformed entries
+                        continue
             
             # Save to cache
             if self._cache_enabled:

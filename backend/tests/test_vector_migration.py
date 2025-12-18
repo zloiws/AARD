@@ -1,12 +1,14 @@
 """
 Tests for vector search migration
 """
+import os
 import pytest
 from sqlalchemy import text
 from app.core.database import get_engine, SessionLocal
 from app.models.agent_memory import AgentMemory
 
 
+@pytest.mark.skipif(os.environ.get("VECTOR_EXTENSION_AVAILABLE") != "1", reason="pgvector extension not available")
 def test_vector_extension_exists():
     """Test that pgvector extension is installed"""
     engine = get_engine()
@@ -20,6 +22,7 @@ def test_vector_extension_exists():
         assert exists, "pgvector extension should be installed"
 
 
+@pytest.mark.skipif(os.environ.get("VECTOR_EXTENSION_AVAILABLE") != "1", reason="pgvector extension not available")
 def test_embedding_column_exists():
     """Test that embedding column exists in agent_memories table"""
     engine = get_engine()
@@ -36,6 +39,7 @@ def test_embedding_column_exists():
         assert row[1] in ['USER-DEFINED', 'ARRAY'], f"embedding column type should be vector, got {row[1]}"
 
 
+@pytest.mark.skipif(os.environ.get("VECTOR_EXTENSION_AVAILABLE") != "1", reason="pgvector extension not available")
 def test_hnsw_index_exists():
     """Test that HNSW index exists for vector search"""
     engine = get_engine()

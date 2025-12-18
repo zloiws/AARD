@@ -147,6 +147,26 @@ class Task(Base):
                 }
         except Exception:
             pass
+        # Ensure agent_selection exists (default empty structure)
+        try:
+            if "agent_selection" not in current:
+                current["agent_selection"] = {
+                    "selected_agent_id": None,
+                    "selected_agents": [],
+                    "reasons": {}
+                }
+            else:
+                # Ensure keys exist
+                sel = current.get("agent_selection") or {}
+                if "selected_agent_id" not in sel:
+                    sel["selected_agent_id"] = None
+                if "selected_agents" not in sel:
+                    sel["selected_agents"] = []
+                if "reasons" not in sel:
+                    sel["reasons"] = {}
+                current["agent_selection"] = sel
+        except Exception:
+            pass
 
         # Try to populate plan_id/version from DB if possible (best-effort)
         try:

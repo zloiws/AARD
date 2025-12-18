@@ -18,6 +18,7 @@ from app.services.planning_service_dialog_integration import is_complex_task
 @pytest.mark.asyncio
 async def test_planning_simple_task_no_dialog(db):
     """Тест планирования простой задачи - диалог не должен создаваться"""
+    print("[TEST START] test_planning_simple_task_no_dialog")
     planning_service = PlanningService(db)
     
     # Простая задача
@@ -53,6 +54,7 @@ async def test_planning_simple_task_no_dialog(db):
 @pytest.mark.asyncio
 async def test_planning_complex_task_with_dialog(db):
     """Тест планирования сложной задачи - должен создаться диалог"""
+    print("[TEST START] test_planning_complex_task_with_dialog")
     # Создать агентов
     agent_service = AgentService(db)
     agent1 = agent_service.create_agent(
@@ -117,6 +119,7 @@ async def test_planning_complex_task_with_dialog(db):
 @pytest.mark.asyncio
 async def test_planning_with_explicit_dialog_requirement(db):
     """Тест планирования с явным требованием диалога в context"""
+    print("[TEST START] test_planning_with_explicit_dialog_requirement")
     # Создать агентов
     agent_service = AgentService(db)
     agent1 = agent_service.create_agent(
@@ -175,6 +178,7 @@ async def test_planning_with_explicit_dialog_requirement(db):
 @pytest.mark.asyncio
 async def test_dialog_context_in_plan(db):
     """Тест использования контекста диалога при генерации плана"""
+    print("[TEST START] test_dialog_context_in_plan")
     # Создать агентов
     agent_service = AgentService(db)
     agent1 = agent_service.create_agent(

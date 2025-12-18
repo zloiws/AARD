@@ -42,6 +42,28 @@ def db() -> Session:
     else:
         # After recreating schema, create tables
         Base.metadata.create_all(bind=engine)
+        # Try to enable vector extension if using PostgreSQL (required by vector tests)
+        try:
+            if getattr(engine.dialect, "name", "") == "postgresql":
+                try:
+                    with engine.connect() as conn:
+                        conn.exec_driver_sql("CREATE EXTENSION IF NOT EXISTS vector;")
+                except Exception:
+                    # ignore if extension cannot be created in CI/local environments
+                    pass
+        except Exception:
+            pass
+        # Check whether extension was created and expose via env var for tests
+        try:
+            with engine.connect() as conn:
+                res = conn.execute(text("SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'vector');"))
+                exists = bool(res.scalar())
+                if exists:
+                    os.environ["VECTOR_EXTENSION_AVAILABLE"] = "1"
+                else:
+                    os.environ["VECTOR_EXTENSION_AVAILABLE"] = "0"
+        except Exception:
+            os.environ["VECTOR_EXTENSION_AVAILABLE"] = "0"
     
     # Create session
     session = SessionLocal()
