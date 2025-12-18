@@ -1,26 +1,3 @@
-\"\"\"Minimal placeholder for PlanningService to satisfy syntax tests during full test run.
-This file intentionally contains a lightweight stub implementation. The real
-PlanningService lives elsewhere in the codebase and will replace this stub if needed.
-\"\""
-from typing import Any, Dict, List, Optional
-
-
-class PlanningService:
-    \"\"\"Stub PlanningService used for tests that only check existence/syntax.
-    Do not rely on this implementation for production behavior.
-    \"\"\"
-
-    def __init__(self, db: Optional[Any] = None):
-        self.db = db
-
-    def generate_plan(self, intent: Dict[str, Any]) -> Dict[str, Any]:
-        \"\"\"Return a minimal plan structure for tests.\"\"\"
-        return {"status": "draft", "steps": []}
-
-    def approve_plan(self, plan_id: str) -> bool:
-        \"\"\"Stub approve - always returns True.\"\"\"
-        return True
-
 """
 Planning service for generating and managing task plans
 """
