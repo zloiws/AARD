@@ -26,44 +26,41 @@ def db() -> Session:
         import app.models  # noqa: F401
     except Exception:
         pass
-    # Ensure clean schema for tests: drop and recreate public schema to avoid
-    # dependent-object ordering issues (CASCADE ensures foreign keys removed).
-    # This operation is safe in test environments where database is ephemeral.
+    # Ensure clean schema for tests: use SQLAlchemy metadata drop/create.
+    # Avoid using `DROP SCHEMA public` to prevent statement_timeout issues on some DBs.
+    try:
+        Base.metadata.drop_all(bind=engine)
+    except Exception:
+        # Ignore drop errors and try to create tables anyway
+        pass
+    # Create tables
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception:
+        # If creation fails, tests will surface the error
+        pass
+    # Try to enable vector extension if using PostgreSQL (best-effort)
+    try:
+        if getattr(engine.dialect, "name", "") == "postgresql":
+            try:
+                with engine.connect() as conn:
+                    conn.exec_driver_sql("CREATE EXTENSION IF NOT EXISTS vector;")
+            except Exception:
+                # ignore if extension cannot be created in CI/local environments
+                pass
+    except Exception:
+        pass
+    # Check whether extension was created and expose via env var for tests
     try:
         with engine.connect() as conn:
-            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
-            # Use driver-level SQL execution for DDL strings
-            conn.exec_driver_sql("DROP SCHEMA public CASCADE;")
-            conn.exec_driver_sql("CREATE SCHEMA public;")
+            res = conn.execute(text("SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'vector');"))
+            exists = bool(res.scalar())
+            if exists:
+                os.environ["VECTOR_EXTENSION_AVAILABLE"] = "1"
+            else:
+                os.environ["VECTOR_EXTENSION_AVAILABLE"] = "0"
     except Exception:
-        # Fallback to metadata-based drop/create if schema operations are not permitted
-        Base.metadata.drop_all(bind=engine)
-        Base.metadata.create_all(bind=engine)
-    else:
-        # After recreating schema, create tables
-        Base.metadata.create_all(bind=engine)
-        # Try to enable vector extension if using PostgreSQL (required by vector tests)
-        try:
-            if getattr(engine.dialect, "name", "") == "postgresql":
-                try:
-                    with engine.connect() as conn:
-                        conn.exec_driver_sql("CREATE EXTENSION IF NOT EXISTS vector;")
-                except Exception:
-                    # ignore if extension cannot be created in CI/local environments
-                    pass
-        except Exception:
-            pass
-        # Check whether extension was created and expose via env var for tests
-        try:
-            with engine.connect() as conn:
-                res = conn.execute(text("SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'vector');"))
-                exists = bool(res.scalar())
-                if exists:
-                    os.environ["VECTOR_EXTENSION_AVAILABLE"] = "1"
-                else:
-                    os.environ["VECTOR_EXTENSION_AVAILABLE"] = "0"
-        except Exception:
-            os.environ["VECTOR_EXTENSION_AVAILABLE"] = "0"
+        os.environ["VECTOR_EXTENSION_AVAILABLE"] = "0"
     
     # Create session
     session = SessionLocal()
