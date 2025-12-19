@@ -4132,25 +4132,34 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 try:
                     content = getattr(pattern, "content", {}) or {}
                     success_rate = content.get("success_rate", 0)
-                    task_pattern = content.get("task_pattern") or content.get("task_pattern", "")
+                    task_pattern = content.get("task_pattern") or ""
                     # Accept if success_rate high and pattern matches (substring) the task description
-                    if success_rate > 0.7:
-                        if task_pattern:
-                            if task_pattern in task_description or task_description in task_pattern:
-                                all_patterns.append({
-                                    "source": "memory",
-                                    "pattern": content,
-                                    "importance": pattern.importance if hasattr(pattern, "importance") else 0.7,
-                                    "success_rate": success_rate
-                                })
-                        else:
-                            # If no explicit task_pattern, include by success_rate alone
-                            all_patterns.append({
-                                "source": "memory",
-                                "pattern": content,
-                                "importance": pattern.importance if hasattr(pattern, "importance") else 0.7,
-                                "success_rate": success_rate
-                            })
+                    matched = False
+                    if task_pattern and (task_pattern in task_description or task_description in task_pattern):
+                        matched = True
+                    else:
+                        # Fallback: check any string field inside content for substring match
+                        def _any_string_matches(obj):
+                            if isinstance(obj, str):
+                                return obj.lower() in task_description.lower() or task_description.lower() in obj.lower()
+                            if isinstance(obj, dict):
+                                for v in obj.values():
+                                    if _any_string_matches(v):
+                                        return True
+                            if isinstance(obj, list):
+                                for item in obj:
+                                    if _any_string_matches(item):
+                                        return True
+                            return False
+                        if _any_string_matches(content):
+                            matched = True
+                    if success_rate > 0.7 and matched:
+                        all_patterns.append({
+                            "source": "memory",
+                            "pattern": content,
+                            "importance": getattr(pattern, "importance", 0.7),
+                            "success_rate": success_rate
+                        })
                 except Exception:
                     continue
             
