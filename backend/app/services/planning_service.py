@@ -4091,6 +4091,7 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 similar_patterns += memory_service.search_memories(
                     agent_id=agent_id,
                     query_text=task_description,
+                    content_query={"task_pattern": task_description},
                     memory_type=MemoryType.PROCEDURAL.value,
                     limit=5
                 )
