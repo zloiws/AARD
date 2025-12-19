@@ -4154,12 +4154,22 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                         if _any_string_matches(content):
                             matched = True
                     if success_rate > 0.7 and matched:
+                        # Diagnostic print for matching patterns
+                        try:
+                            print(f"DBG_MATCH: agent_id={agent_id} pattern_id={getattr(pattern, 'id', None)} task_pattern={task_pattern} success_rate={success_rate}")
+                        except Exception:
+                            pass
                         all_patterns.append({
                             "source": "memory",
                             "pattern": content,
                             "importance": getattr(pattern, "importance", 0.7),
                             "success_rate": success_rate
                         })
+                    else:
+                        try:
+                            print(f"DBG_SKIP: agent_id={agent_id} pattern_id={getattr(pattern, 'id', None)} task_pattern={task_pattern} success_rate={success_rate} matched={matched}")
+                        except Exception:
+                            pass
                 except Exception:
                     continue
             
