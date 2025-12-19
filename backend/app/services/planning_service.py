@@ -4123,6 +4123,13 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 pattern_type="strategy",
                 limit=5
             )
+            # Diagnostic: show similar_patterns length and element types
+            try:
+                print(f"DBG_SIMILAR_LEN: {len(similar_patterns)}")
+                for i, p in enumerate(similar_patterns[:5]):
+                    print(f"DBG_SIMILAR_TYPE[{i}]: type={type(p)} id={getattr(p,'id', None)} keys={list((getattr(p,'content',{}) or {}).keys())}")
+            except Exception:
+                pass
             
             # Combine and rank patterns
             all_patterns = []
