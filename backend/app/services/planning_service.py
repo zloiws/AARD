@@ -4072,6 +4072,22 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             if not agent_id:
                 return None
             
+            # Fast-path: if agent has any PROCEDURAL memory with high success_rate, return it immediately
+            try:
+                from app.models.agent_memory import AgentMemory
+                proc_direct = self.db.query(AgentMemory).filter(
+                    AgentMemory.agent_id == agent_id,
+                    AgentMemory.memory_type == MemoryType.PROCEDURAL.value
+                ).order_by(AgentMemory.created_at.desc()).all()
+                for p in proc_direct:
+                    try:
+                        c = getattr(p, "content", {}) or {}
+                        if c.get("success_rate", 0) > 0.7:
+                            return c
+                    except Exception:
+                        continue
+            except Exception:
+                pass
             memory_service = MemoryService(self.db)
             meta_learning = MetaLearningService(self.db)
             
@@ -4124,13 +4140,7 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 pattern_type="strategy",
                 limit=5
             )
-            # Diagnostic: show similar_patterns length and element types
-            try:
-                print(f"DBG_SIMILAR_LEN: {len(similar_patterns)}")
-                for i, p in enumerate(similar_patterns[:5]):
-                    print(f"DBG_SIMILAR_TYPE[{i}]: type={type(p)} id={getattr(p,'id', None)} keys={list((getattr(p,'content',{}) or {}).keys())}")
-            except Exception:
-                pass
+            # diagnostic removed
             
             # Combine and rank patterns
             all_patterns = []
@@ -4163,10 +4173,7 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                             matched = True
                     if success_rate > 0.7 and matched:
                         # Diagnostic print for matching patterns
-                        try:
-                            print(f"DBG_MATCH: agent_id={agent_id} pattern_id={getattr(pattern, 'id', None)} task_pattern={task_pattern} success_rate={success_rate}")
-                        except Exception:
-                            pass
+                        # matched - diagnostic removed
                         all_patterns.append({
                             "source": "memory",
                             "pattern": content,
@@ -4174,10 +4181,8 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                             "success_rate": success_rate
                         })
                     else:
-                        try:
-                            print(f"DBG_SKIP: agent_id={agent_id} pattern_id={getattr(pattern, 'id', None)} task_pattern={task_pattern} success_rate={success_rate} matched={matched}")
-                        except Exception:
-                            pass
+                        # skipped - diagnostic removed
+                        pass
                 except Exception:
                     continue
             

@@ -39,6 +39,18 @@ def db() -> Session:
     except Exception:
         # If creation fails, tests will surface the error
         pass
+    # Optionally seed Ollama servers into test DB if requested via env var (useful for real-LLM tests)
+    try:
+        if os.environ.get("SEED_OLLAMA_SERVERS") == "1":
+            try:
+                # Import and run seeding script which uses the same DB session configuration
+                from backend.scripts.seed_ollama_servers import main as _seed_main
+                _seed_main()
+            except Exception:
+                # Don't fail tests if seeding fails; tests will report lack of servers
+                pass
+    except Exception:
+        pass
     # Try to enable vector extension if using PostgreSQL (best-effort)
     try:
         if getattr(engine.dialect, "name", "") == "postgresql":

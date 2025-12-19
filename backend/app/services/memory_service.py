@@ -324,19 +324,31 @@ class MemoryService:
             
             if text_for_embedding:
                 embedding = await self.embedding_service.generate_embedding(text_for_embedding)
-                # Save embedding using raw SQL to handle pgvector type
-                # Format as PostgreSQL array string and escape properly
                 embedding_list = [float(x) for x in embedding]
-                # PostgreSQL vector format: [0.1,0.2,0.3]
-                embedding_array_str = "[" + ",".join(str(x) for x in embedding_list) + "]"
-                # Escape single quotes if any (shouldn't be any in numeric array)
-                embedding_array_str_escaped = embedding_array_str.replace("'", "''")
-                # Use parameter binding for UUID - PostgreSQL will handle the cast
-                # Note: We need to use CAST for UUID parameter binding
-                sql = text(f"UPDATE agent_memories SET embedding = '{embedding_array_str_escaped}'::vector WHERE id = CAST(:memory_id AS uuid)")
-                separate_db.execute(sql, {"memory_id": str(memory_id)})
-                separate_db.commit()
-                logger.debug(f"Generated embedding for memory {memory_id}")
+                # Decide whether DB column is pgvector 'vector' or an array (float8[])
+                try:
+                    col_type = separate_db.execute(text(
+                        "SELECT udt_name FROM information_schema.columns WHERE table_name = 'agent_memories' AND column_name = 'embedding' LIMIT 1"
+                    )).scalar()
+                except Exception:
+                    col_type = None
+
+                try:
+                    if col_type == "vector":
+                        # PostgreSQL vector format: [0.1,0.2,0.3]
+                        embedding_array_str = "[" + ",".join(str(x) for x in embedding_list) + "]"
+                        embedding_array_str_escaped = embedding_array_str.replace("'", "''")
+                        sql = text(f"UPDATE agent_memories SET embedding = '{embedding_array_str_escaped}'::vector WHERE id = CAST(:memory_id AS uuid)")
+                        separate_db.execute(sql, {"memory_id": str(memory_id)})
+                    else:
+                        # Use parameter binding to save as Postgres float8[] (ARRAY)
+                        sql = text("UPDATE agent_memories SET embedding = :embedding WHERE id = CAST(:memory_id AS uuid)")
+                        separate_db.execute(sql, {"memory_id": str(memory_id), "embedding": embedding_list})
+                    separate_db.commit()
+                    logger.debug(f"Generated embedding for memory {memory_id}")
+                except Exception as e:
+                    separate_db.rollback()
+                    raise
             else:
                 logger.warning(f"No text available for embedding generation (memory {memory_id})")
                 
