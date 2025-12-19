@@ -2177,10 +2177,10 @@ class ExecutionService:
         """Helper method to analyze patterns asynchronously (background task)"""
         try:
             # Use async version - runs in background without blocking
-            await meta_learning.analyze_execution_patterns(
-                agent_id=agent_id,
-                time_range_days=30
-            )
+            import asyncio
+            loop = asyncio.get_event_loop()
+            # Run synchronous analysis in executor to avoid blocking
+            await loop.run_in_executor(None, lambda: meta_learning.analyze_execution_patterns_sync(agent_id=agent_id, time_range_days=30))
             logger.debug(
                 f"Analyzed execution patterns for plan {plan_id}",
                 extra={"plan_id": str(plan_id), "agent_id": str(agent_id) if agent_id else None}

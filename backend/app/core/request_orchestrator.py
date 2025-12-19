@@ -955,7 +955,8 @@ class RequestOrchestrator:
                 except (ValueError, TypeError):
                     pass
             
-            patterns = meta_learning_service.analyze_execution_patterns(
+            # Use synchronous analysis to avoid awaiting a coroutine in this context
+            patterns = meta_learning_service.analyze_execution_patterns_sync(
                 agent_id=agent_uuid,
                 time_range_days=1  # Анализ за последний день
             )
