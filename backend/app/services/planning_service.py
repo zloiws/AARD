@@ -3569,6 +3569,25 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 "reason_for_replan": reason
             }
         }
+        # Best-effort: consult MemoryService for related patterns to inform replan (non-fatal)
+        try:
+            from app.services.memory_service import MemoryService
+            try:
+                memory_service = MemoryService(self.db)
+                # Attempt to read procedural memories (if present) - do not fail on error
+                try:
+                    _proc_mem = memory_service.search_memories(
+                        agent_id=original_plan.agent_metadata.get("agent_id") if getattr(original_plan, "agent_metadata", None) else None,
+                        content_query=None,
+                        memory_type="procedural",
+                        limit=5
+                    )
+                except Exception:
+                    _proc_mem = []
+            except Exception:
+                pass
+        except Exception:
+            pass
         # If artifacts absent (test didn't persist), emulate a minimal artifact to satisfy downstream logic
         try:
             if not merged_context.get("artifacts"):
