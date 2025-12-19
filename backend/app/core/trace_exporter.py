@@ -15,6 +15,11 @@ from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
+import os
+
+# Allow disabling DB span export via environment for tests/CI
+_tracing_disabled = os.getenv("ENABLE_TRACING", "true").strip().lower() in ("0", "false", "no")
+
 # Track if exporter is shutdown
 _shutdown = False
 
@@ -50,6 +55,10 @@ class DatabaseSpanExporter(SpanExporter):
         """
         global _shutdown, _span_queue, _queue_lock, _active_exports, _export_lock
         
+        # Respect explicit disable flag for tests/CI
+        if _tracing_disabled:
+            return SpanExportResult.SUCCESS
+
         # Check if exporter is shutdown - silently drop spans
         if _shutdown:
             return SpanExportResult.SUCCESS

@@ -154,6 +154,35 @@ class MemoryService:
         )
         
         return memory
+
+    # Backwards-compatible create_memory alias used by older tests
+    def create_memory(
+        self,
+        agent_id: UUID,
+        memory_type: str,
+        content: Dict[str, Any],
+        summary: Optional[str] = None,
+        importance: float = 0.5,
+        tags: Optional[List[str]] = None,
+        source: Optional[str] = None,
+        expires_at: Optional[datetime] = None,
+        generate_embedding: bool = False
+    ) -> AgentMemory:
+        """
+        Backwards-compatible wrapper around save_memory used by tests/code expecting
+        a `create_memory` method.
+        """
+        return self.save_memory(
+            agent_id=agent_id,
+            memory_type=memory_type,
+            content=content,
+            summary=summary,
+            importance=importance,
+            tags=tags,
+            source=source,
+            expires_at=expires_at,
+            generate_embedding=generate_embedding
+        )
     
     async def save_memory_async(
         self,
