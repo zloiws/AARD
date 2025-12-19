@@ -208,8 +208,19 @@ class StepExecutor:
                 result["message"] = f"Unknown step type: {step_type}"
             
             result["completed_at"] = datetime.now(timezone.utc)
-            if result["started_at"]:
-                result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
+            # Normalize naive datetimes to UTC-aware to avoid TypeError when subtracting
+            try:
+                started = result.get("started_at")
+                completed = result.get("completed_at")
+                if started and getattr(started, "tzinfo", None) is None:
+                    started = started.replace(tzinfo=timezone.utc)
+                if completed and getattr(completed, "tzinfo", None) is None:
+                    completed = completed.replace(tzinfo=timezone.utc)
+                if started and completed:
+                    result["duration"] = (completed - started).total_seconds()
+            except Exception:
+                # Fallback: leave duration as None if calculation fails
+                result["duration"] = result.get("duration")
             
             # Validate result using CriticService if step completed successfully
             if result.get("status") == "completed" and result.get("output") and self.critic_service:
