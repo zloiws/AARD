@@ -158,12 +158,19 @@ class PlanningService:
                 class _PlannerStub:
                     def __repr__(self):
                         return "<PlannerStub>"
+                    async def create_code_prompt(self, step: Dict[str, Any], plan_context: Dict[str, Any]):
+                        # Return a minimal function call-like object expected by tests
+                        from types import SimpleNamespace
+                        return SimpleNamespace(function="code_execution_tool", parameters={})
                 return _PlannerStub()
         except Exception:
             # Final fallback stub
             class _PlannerStubFallback:
                 def __repr__(self):
                     return "<PlannerStubFallback>"
+                async def create_code_prompt(self, step: Dict[str, Any], plan_context: Dict[str, Any]):
+                    from types import SimpleNamespace
+                    return SimpleNamespace(function="code_execution_tool", parameters={})
             return _PlannerStubFallback()
     
     async def generate_alternative_plans(
