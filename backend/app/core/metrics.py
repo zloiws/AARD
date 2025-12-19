@@ -53,7 +53,7 @@ llm_request_duration_seconds = Histogram(
 llm_tokens_total = Counter(
     'llm_tokens_total',
     'Total number of tokens processed',
-    ['model', 'type']  # type: 'input' or 'output'
+    ['model', 'type']  # meaning: 'input' or 'output'
 )
 
 llm_errors_total = Counter(
