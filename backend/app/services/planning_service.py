@@ -4207,7 +4207,19 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                         }
                     )
                 return best_pattern["pattern"]
-            
+
+            # Fallback: if no ranked patterns found, try returning the first procedural memory content if it's sufficiently strong
+            try:
+                for p in similar_patterns:
+                    try:
+                        content = getattr(p, "content", {}) or {}
+                        if content.get("success_rate", 0) > 0.7:
+                            return content
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
             return None
             
         except Exception as e:
