@@ -3915,6 +3915,26 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                 ttl_seconds=86400 * 7  # 7 days
             )
             
+            # Also persist as an AgentMemory entry (working memory) so long-term searches can find it
+            try:
+                memory_service.save_memory(
+                    agent_id=agent_id,
+                    memory_type="working",
+                    content={
+                        "task_id": str(task_id),
+                        "plan_id": str(plan.id),
+                        "todo_list": todo_list,
+                        "total_steps": len(todo_list),
+                    },
+                    summary=f"Working ToDo for task {task_id}",
+                    importance=0.6,
+                    tags=["working", f"task_{task_id}"],
+                    source=f"task_{task_id}"
+                )
+            except Exception:
+                # Non-fatal: if long-term save fails, we keep short-term context saved
+                pass
+            
             # Logging is optional - skip if logger not available
             try:
                 from app.core.logging_config import LoggingConfig
@@ -4056,12 +4076,26 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             meta_learning = MetaLearningService(self.db)
             
             # Search for similar successful plan patterns
-            similar_patterns = memory_service.search_memories(
-                agent_id=agent_id,
-                query_text=task_description,
-                memory_type=MemoryType.PATTERN.value,
-                limit=5
-            )
+            # Search both PATTERN and PROCEDURAL memory types for broader coverage
+            similar_patterns = []
+            try:
+                similar_patterns += memory_service.search_memories(
+                    agent_id=agent_id,
+                    query_text=task_description,
+                    memory_type=MemoryType.PATTERN.value,
+                    limit=5
+                )
+            except Exception:
+                pass
+            try:
+                similar_patterns += memory_service.search_memories(
+                    agent_id=agent_id,
+                    query_text=task_description,
+                    memory_type=MemoryType.PROCEDURAL.value,
+                    limit=5
+                )
+            except Exception:
+                pass
             
             # Also get patterns from MetaLearningService
             learning_patterns = meta_learning.get_learning_patterns(
