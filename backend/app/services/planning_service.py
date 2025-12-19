@@ -4088,14 +4088,23 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             except Exception:
                 pass
             try:
-                # Fetch recent procedural memories for the agent (we'll fuzzy-match task_pattern below)
-                similar_patterns += memory_service.search_memories(
-                    agent_id=agent_id,
-                    memory_type=MemoryType.PROCEDURAL.value,
-                    limit=20
-                )
+                # Fetch recent procedural memories for the agent directly via ORM
+                from app.models.agent_memory import AgentMemory
+                proc_rows = self.db.query(AgentMemory).filter(
+                    AgentMemory.agent_id == agent_id,
+                    AgentMemory.memory_type == MemoryType.PROCEDURAL.value
+                ).all()
+                similar_patterns += proc_rows
             except Exception:
-                pass
+                # Fallback to memory_service if direct ORM fails
+                try:
+                    similar_patterns += memory_service.search_memories(
+                        agent_id=agent_id,
+                        memory_type=MemoryType.PROCEDURAL.value,
+                        limit=20
+                    )
+                except Exception:
+                    pass
             
             # Also get patterns from MetaLearningService
             learning_patterns = meta_learning.get_learning_patterns(
