@@ -17,7 +17,9 @@ class MemoryType(str, Enum):
     """Memory type enumeration"""
     FACT = "fact"  # Factual information
     EXPERIENCE = "experience"  # Experience from task execution
+    WORKING = "working"  # Active ToDo / working memory
     PATTERN = "pattern"  # Recognized patterns
+    PROCEDURAL = "procedural"  # Procedural patterns / strategies
     RULE = "rule"  # Rules and guidelines
     CONTEXT = "context"  # Contextual information
 
