@@ -4094,6 +4094,17 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
                     AgentMemory.agent_id == agent_id,
                     AgentMemory.memory_type == MemoryType.PROCEDURAL.value
                 ).all()
+                # Debug log for diagnostics
+                try:
+                    logger = self._get_logger()
+                    if logger:
+                        logger.debug(f"Procedural memories fetched: count={len(proc_rows)}", extra={"agent_id": str(agent_id)})
+                        if proc_rows:
+                            # Log first item's keys for inspection
+                            first = proc_rows[0]
+                            logger.debug(f"First procedural memory content keys: {list((first.content or {}).keys())}", extra={"memory_id": str(first.id)})
+                except Exception:
+                    pass
                 similar_patterns += proc_rows
             except Exception:
                 # Fallback to memory_service if direct ORM fails
