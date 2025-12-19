@@ -184,7 +184,8 @@ async def test_apply_procedural_memory_patterns(db: Session):
         rows = db.query(AgentMemory).filter(AgentMemory.agent_id == agent.id).all()
         print("DBG: agent_id=", agent.id, "agent_memory_count=", len(rows))
         if rows:
-            print("DBG: first_memory_type=", rows[0].memory_type, "content_keys=", list((rows[0].content or {}).keys()))
+                print("DBG: first_memory_type=", rows[0].memory_type, "content_keys=", list((rows[0].content or {}).keys()))
+                print("DBG: first_content:", rows[0].content)
     except Exception as _:
         print("DBG: failed to dump AgentMemory rows:", _)
     
