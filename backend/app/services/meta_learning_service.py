@@ -52,79 +52,23 @@ class MetaLearningService:
             self.context = ExecutionContext.from_db_session(self.db)
             self.workflow_id = self.context.workflow_id
     
-    async def analyze_execution_patterns(
+    async def analyze_execution_patterns_async(
         self,
         agent_id: Optional[UUID] = None,
         time_range_days: int = 30
     ) -> Dict[str, Any]:
         """
-        Analyze execution patterns for an agent or system-wide (async)
-        
-        This method is now async to allow background processing without blocking.
-        
-        Args:
-            agent_id: Optional agent ID for agent-specific analysis
-            time_range_days: Number of days to analyze
-            
-        Returns:
-            Dictionary with pattern analysis results
+        Async version of analyze_execution_patterns (kept for backwards compat where awaited).
+        Runs the synchronous analysis in a thread executor to avoid blocking the event loop.
         """
         try:
-            # Run database queries in background thread to avoid blocking
             import asyncio
             from concurrent.futures import ThreadPoolExecutor
-            
-            def _analyze_sync():
-                cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
-                
-                # Query execution traces
-                query = self.db.query(ExecutionTrace).filter(
-                    ExecutionTrace.start_time >= cutoff_date
-                )
-                
-                if agent_id:
-                    query = query.filter(ExecutionTrace.agent_id == agent_id)
-                
-                traces = query.all()
-                
-                # Analyze patterns
-                total_executions = len(traces)
-                successful = sum(1 for t in traces if t.status == "success")
-                failed = sum(1 for t in traces if t.status == "error")
-                
-                # Group by operation
-                operations = {}
-                for trace in traces:
-                    op_name = trace.operation_name
-                    if op_name not in operations:
-                        operations[op_name] = {"total": 0, "success": 0, "failed": 0}
-                    operations[op_name]["total"] += 1
-                    if trace.status == "success":
-                        operations[op_name]["success"] += 1
-                    elif trace.status == "error":
-                        operations[op_name]["failed"] += 1
-                
-                # Calculate success rates
-                for op_name, stats in operations.items():
-                    stats["success_rate"] = stats["success"] / stats["total"] if stats["total"] > 0 else 0.0
-                
-                return {
-                    "total_executions": total_executions,
-                    "successful": successful,
-                    "failed": failed,
-                    "overall_success_rate": successful / total_executions if total_executions > 0 else 0.0,
-                    "operations": operations,
-                    "time_range_days": time_range_days
-                }
-            
-            # Run in thread pool to avoid blocking event loop
+
             loop = asyncio.get_event_loop()
-            with ThreadPoolExecutor() as executor:
-                result = await loop.run_in_executor(executor, _analyze_sync)
-                return result
-            
+            return await loop.run_in_executor(None, lambda: self.analyze_execution_patterns_sync(agent_id=agent_id, time_range_days=time_range_days))
         except Exception as e:
-            logger.error(f"Error analyzing execution patterns: {e}", exc_info=True)
+            logger.error(f"Error analyzing execution patterns (async): {e}", exc_info=True)
             return {
                 "total_executions": 0,
                 "successful": 0,
@@ -133,6 +77,17 @@ class MetaLearningService:
                 "operations": {},
                 "time_range_days": time_range_days
             }
+
+    def analyze_execution_patterns(
+        self,
+        agent_id: Optional[UUID] = None,
+        time_range_days: int = 30
+    ) -> Dict[str, Any]:
+        """
+        Synchronous analyze_execution_patterns wrapper for compatibility with callers
+        that call this method without awaiting. Delegates to the synchronous implementation.
+        """
+        return self.analyze_execution_patterns_sync(agent_id=agent_id, time_range_days=time_range_days)
     
     def analyze_execution_patterns_sync(
         self,
