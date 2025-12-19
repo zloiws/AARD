@@ -31,7 +31,8 @@ def upgrade() -> None:
     op.execute("COMMENT ON COLUMN tasks.context IS 'Digital Twin context: stores all task-related data including original request, todos, artifacts, logs, and interaction history';")
 
     # Create GIN index on context JSONB field for efficient queries
-    op.execute("CREATE INDEX IF NOT EXISTS idx_tasks_context ON tasks (context);")
+    # Use a GIN index for JSONB to avoid btree size limits for large documents
+    op.execute("CREATE INDEX IF NOT EXISTS idx_tasks_context ON tasks USING gin (context);")
 
 
 def downgrade() -> None:
