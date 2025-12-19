@@ -9,6 +9,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 env_file = BASE_DIR / ".env"
 load_dotenv(env_file, override=True)
 
@@ -18,6 +19,7 @@ os.chdir(Path(__file__).resolve().parent)
 if __name__ == "__main__":
     import subprocess
     import sys
+
     from sqlalchemy import create_engine
     from sqlalchemy.exc import SQLAlchemyError
 

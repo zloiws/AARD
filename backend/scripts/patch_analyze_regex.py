@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
+
 def main():
     p = Path('backend/analyze_migration_issue.py')
     text = p.read_text(encoding='utf-8')

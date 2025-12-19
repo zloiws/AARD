@@ -1,8 +1,8 @@
 """
 Script to run Alembic migrations, handling local alembic folder conflict
 """
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Remove local alembic folder from path to avoid conflict with installed package
@@ -17,8 +17,8 @@ if str(BACKEND_DIR) in sys.path:
 
 # Now import alembic from installed package
 try:
-    from alembic.config import Config
     from alembic import command
+    from alembic.config import Config
 except ImportError as e:
     print(f"❌ Error: Alembic not installed. Please run: pip install alembic")
     print(f"   Details: {e}")
@@ -40,7 +40,8 @@ try:
         # Prefer using the application's configured engine if possible
         try:
             # Temporarily ensure backend package is importable
-            import importlib, sys
+            import importlib
+            import sys
             backend_dir = Path(__file__).resolve().parent
             if str(backend_dir) not in sys.path:
                 sys.path.insert(0, str(backend_dir))

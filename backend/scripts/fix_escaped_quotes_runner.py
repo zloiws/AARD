@@ -4,6 +4,7 @@ Fix escaped quote artifacts in backend .py files.
 """
 from pathlib import Path
 
+
 def main():
     root = Path('backend')
     changed = []

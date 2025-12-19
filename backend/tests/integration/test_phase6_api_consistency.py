@@ -1,12 +1,12 @@
 """
 API consistency tests for Phase 6 (A/B Testing)
 """
-import pytest
-from fastapi.testclient import TestClient
-from uuid import uuid4
-
 import sys
 from pathlib import Path
+from uuid import uuid4
+
+import pytest
+from fastapi.testclient import TestClient
 
 # Add backend to path
 backend_path = Path(__file__).parent.parent.parent
@@ -14,7 +14,6 @@ sys.path.insert(0, str(backend_path))
 
 from app.core.database import SessionLocal
 from app.models.task import Task, TaskStatus
-
 # Import app after path setup
 from main import app
 

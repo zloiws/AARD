@@ -4,9 +4,10 @@ Create minimal ollama tables if missing and insert/activate specified servers/mo
 Run from project root with venv python:
   ..\\venv\\Scripts\\python.exe -c "import sys; sys.path.insert(0, r'C:\\work\\AARD\\backend'); exec(open(r'C:\\work\\AARD\\backend\\scripts\\create_ollama_tables_and_insert.py').read())"
 """
-from sqlalchemy import create_engine, text
-from app.core.config import get_settings
 from datetime import datetime
+
+from app.core.config import get_settings
+from sqlalchemy import create_engine, text
 
 
 def main():

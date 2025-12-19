@@ -10,6 +10,7 @@ sys.path.insert(0, str(backend_dir))
 from app.core.database import engine
 from sqlalchemy import text
 
+
 def create_table():
     """Создать таблицу system_settings"""
     print("Creating system_settings table...")

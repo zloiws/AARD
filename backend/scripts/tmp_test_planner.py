@@ -1,7 +1,9 @@
+import traceback
+
 from app.core.database import SessionLocal
 from app.core.execution_context import ExecutionContext
 from app.services.planning_service import PlanningService
-import traceback
+
 
 def main():
     try:

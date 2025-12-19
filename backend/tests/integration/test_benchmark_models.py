@@ -2,8 +2,8 @@
 Integration tests for benchmark models
 """
 import pytest
-from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
 from app.core.database import SessionLocal
+from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
 
 
 def test_benchmark_task_integration():

@@ -3,19 +3,18 @@ Basic integration test - minimal test to verify system works
 Uses specific model from database: Server 10.39.0.6, Model gemma3:4b
 """
 import pytest
-from sqlalchemy.orm import Session
-
-from app.core.request_orchestrator import RequestOrchestrator
 from app.core.execution_context import ExecutionContext
+from app.core.request_orchestrator import RequestOrchestrator
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_basic_orchestrator_works(db: Session):
     """Minimal test: Check that orchestrator can be created and process a simple request"""
-    from app.services.ollama_service import OllamaService
     from app.models.ollama_server import OllamaServer
-    
+    from app.services.ollama_service import OllamaService
+
     # Find specific server by URL/IP
     target_server_url = "10.39.0.6"
     target_model_name = "gemma3:4b"

@@ -8,8 +8,8 @@ backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from app.core.database import SessionLocal
-from app.services.system_setting_service import SystemSettingService
 from app.core.logging_config import LoggingConfig
+from app.services.system_setting_service import SystemSettingService
 
 logger = LoggingConfig.get_logger(__name__)
 

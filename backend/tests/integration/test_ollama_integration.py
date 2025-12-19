@@ -1,15 +1,16 @@
 """Test Ollama integration"""
-import sys
 import asyncio
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from dotenv import load_dotenv
+
 load_dotenv(BASE_DIR / ".env")
 
-from app.core.ollama_client import get_ollama_client, TaskType
+from app.core.ollama_client import TaskType, get_ollama_client
 
 
 async def test_ollama():

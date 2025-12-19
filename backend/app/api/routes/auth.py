@@ -2,16 +2,18 @@
 Authentication API routes
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+
+from app.core.auth import (get_current_user, get_current_user_with_role,
+                           security)
+from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.models.user import User, UserRole
+from app.services.auth_service import AuthService
+from fastapi import (APIRouter, Depends, HTTPException, Request, Response,
+                     status)
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.services.auth_service import AuthService
-from app.core.auth import get_current_user, get_current_user_with_role, security
-from app.models.user import User, UserRole
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

@@ -3,13 +3,12 @@ A2A (Agent-to-Agent) Communication Protocol
 Standardized protocol for agent-to-agent communication
 """
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional, List, Union
-from uuid import UUID, uuid4
 from enum import Enum
-
-from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID, uuid4
 
 from app.core.logging_config import LoggingConfig
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 logger = LoggingConfig.get_logger(__name__)
 

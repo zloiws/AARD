@@ -1,13 +1,13 @@
 """
 SQLAlchemy model for checkpoints
 """
-from sqlalchemy import Column, String, DateTime, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
 
 from app.core.database import Base
+from sqlalchemy import Column, DateTime, ForeignKey, Index, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
 
 
 class Checkpoint(Base):

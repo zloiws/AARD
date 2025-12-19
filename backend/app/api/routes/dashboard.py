@@ -1,20 +1,21 @@
 """
 API routes for dashboard
 """
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Body, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
 
 from app.core.database import get_db
 from app.core.templates import templates
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan
 from app.models.approval import ApprovalRequest
-from app.services.interactive_execution_service import InteractiveExecutionService
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from app.services.interactive_execution_service import \
+    InteractiveExecutionService
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["dashboard"])
 
@@ -197,9 +198,9 @@ async def get_plan_history(
         Plan history events
     """
     try:
-        from app.services.memory_service import MemoryService
         from app.models.agent_memory import MemoryType
-        
+        from app.services.memory_service import MemoryService
+
         # Get plan
         plan = db.query(Plan).filter(Plan.id == plan_id).first()
         if not plan:

@@ -26,14 +26,10 @@ def test_component_prompts_exist(prompt_name: str):
 
 
 def test_contract_models_importable():
-    from app.components.contracts import (
-        StructuredIntent,
-        ValidationResult,
-        RoutingDecision,
-        PlanHypothesis,
-        ExecutionValidationResult,
-        ReflectionRecord,
-    )
+    from app.components.contracts import (ExecutionValidationResult,
+                                          PlanHypothesis, ReflectionRecord,
+                                          RoutingDecision, StructuredIntent,
+                                          ValidationResult)
 
     # Basic smoke validation
     intent = StructuredIntent(raw_input="hi", intent="hi")

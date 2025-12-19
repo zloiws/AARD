@@ -3,16 +3,16 @@ Page routes for dashboard web interface
 """
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
 
-from app.core.templates import templates
 from app.core.database import get_db
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan
+from app.core.templates import templates
 from app.models.approval import ApprovalRequest
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["dashboard_pages"])
 

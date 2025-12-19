@@ -1,15 +1,17 @@
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Ensure backend directory is in sys.path so `import app` works when pytest collects scripts
 backend_dir = Path(__file__).parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from app.core.database import SessionLocal, Base, engine
-from app.services.system_setting_service import SystemSettingService
 import os
+
+from app.core.database import Base, SessionLocal, engine
+from app.services.system_setting_service import SystemSettingService
 
 # Ensure models are imported and database schema exists for script tests
 try:

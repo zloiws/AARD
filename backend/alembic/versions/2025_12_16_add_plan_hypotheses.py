@@ -5,8 +5,8 @@ Revises: 20251215_interpretation_timeline
 Create Date: 2025-12-16 00:00:00.000000
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "20251216_plan_hypotheses"

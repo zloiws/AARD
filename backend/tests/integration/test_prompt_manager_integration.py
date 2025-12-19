@@ -1,13 +1,13 @@
 """
 Integration tests for PromptManager with PromptService
 """
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
 
-from app.core.prompt_manager import PromptManager
+import pytest
 from app.core.execution_context import ExecutionContext
-from app.models.prompt import Prompt, PromptType, PromptStatus
+from app.core.prompt_manager import PromptManager
+from app.models.prompt import Prompt, PromptStatus, PromptType
 
 
 @pytest.mark.asyncio
@@ -30,8 +30,8 @@ async def test_record_prompt_usage_integration(db):
     manager = PromptManager(context)
     
     # Create a test prompt
-    from app.services.prompt_service import PromptService
     from app.models.prompt import PromptType
+    from app.services.prompt_service import PromptService
     
     prompt_service = PromptService(db)
     test_prompt = prompt_service.create_prompt(

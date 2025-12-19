@@ -1,8 +1,8 @@
 """
 Test branching visualization endpoints and functionality
 """
-import sys
 import asyncio
+import sys
 from pathlib import Path
 from uuid import uuid4
 
@@ -11,10 +11,10 @@ backend_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from app.core.database import SessionLocal
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan
-from app.services.planning_service import PlanningService
 from app.core.logging_config import LoggingConfig
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from app.services.planning_service import PlanningService
 
 logger = LoggingConfig.get_logger(__name__)
 

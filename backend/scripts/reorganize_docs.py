@@ -2,11 +2,11 @@
 Скрипт для реорганизации документации
 Этап 9.2.1: Реорганизовать документацию
 """
-import sys
 import re
-from pathlib import Path
-from typing import List, Dict, Any
+import sys
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent

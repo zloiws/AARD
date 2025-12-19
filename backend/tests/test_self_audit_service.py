@@ -1,16 +1,16 @@
 """
 Unit tests for SelfAuditService
 """
-import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from app.models.audit_report import AuditReport, AuditType, AuditStatus
-from app.models.task import Task, TaskStatus
+import pytest
+from app.core.database import Base, SessionLocal, engine
+from app.models.audit_report import AuditReport, AuditStatus, AuditType
 from app.models.plan import Plan, PlanStatus
-from app.models.prompt import Prompt, PromptType, PromptStatus
+from app.models.prompt import Prompt, PromptStatus, PromptType
+from app.models.task import Task, TaskStatus
 from app.services.self_audit_service import SelfAuditService
-from app.core.database import SessionLocal, engine, Base
 
 
 @pytest.fixture(scope="module")

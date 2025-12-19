@@ -1,14 +1,14 @@
 """
 Tests for benchmark execution functionality
 """
-import pytest
 import asyncio
 from uuid import uuid4
 
-from app.services.benchmark_service import BenchmarkService
-from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
-from app.models.benchmark_result import BenchmarkResult
+import pytest
 from app.core.database import SessionLocal
+from app.models.benchmark_result import BenchmarkResult
+from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
+from app.services.benchmark_service import BenchmarkService
 
 
 @pytest.fixture
@@ -94,10 +94,10 @@ def test_run_suite_structure(db):
 
 def test_task_type_mapping():
     """Test that task types are correctly mapped"""
-    from app.services.benchmark_service import BenchmarkService
-    from app.models.benchmark_task import BenchmarkTaskType
     from app.core.ollama_client import TaskType
-    
+    from app.models.benchmark_task import BenchmarkTaskType
+    from app.services.benchmark_service import BenchmarkService
+
     # Verify all benchmark task types have corresponding Ollama task types
     task_type_map = {
         BenchmarkTaskType.CODE_GENERATION: TaskType.CODE_GENERATION,

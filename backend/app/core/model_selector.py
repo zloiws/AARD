@@ -2,14 +2,14 @@
 Model Selector for Dual-Model Architecture
 Separates planning models (reasoning) from code generation models
 """
-from typing import Optional, List
-from sqlalchemy.orm import Session
+from typing import List, Optional
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
 from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
 from app.services.ollama_service import OllamaService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

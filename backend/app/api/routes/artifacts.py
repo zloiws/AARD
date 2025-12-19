@@ -2,23 +2,22 @@
 API routes for artifacts (agents and tools)
 """
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from app.models.user import User
+
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from app.core.auth import get_current_user_optional
+from app.core.database import get_db
+from app.core.ollama_client import OllamaClient, get_ollama_client
+from app.models.artifact import Artifact, ArtifactStatus, ArtifactType
+from app.services.artifact_generator import ArtifactGenerator
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.core.ollama_client import OllamaClient, get_ollama_client
-from app.core.auth import get_current_user_optional
-from app.models.artifact import Artifact, ArtifactType, ArtifactStatus
-from app.services.artifact_generator import ArtifactGenerator
-
 
 router = APIRouter(prefix="/api/artifacts", tags=["artifacts"])
 

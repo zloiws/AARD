@@ -5,17 +5,17 @@ Coder Agent - модель "Кода" для генерации и выполн�
 - Выполнение кода в безопасном окружении
 - Валидацию результатов выполнения
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 import json
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.agents.base_agent import BaseAgent
-from app.services.agent_service import AgentService
-from app.core.ollama_client import OllamaClient
-from app.core.model_selector import ModelSelector
-from app.core.function_calling import FunctionCallProtocol, FunctionCall
-from app.tools.python_tool import PythonTool
+from app.core.function_calling import FunctionCall, FunctionCallProtocol
 from app.core.logging_config import LoggingConfig
+from app.core.model_selector import ModelSelector
+from app.core.ollama_client import OllamaClient
+from app.services.agent_service import AgentService
+from app.tools.python_tool import PythonTool
 
 logger = LoggingConfig.get_logger(__name__)
 

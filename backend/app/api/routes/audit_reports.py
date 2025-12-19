@@ -1,16 +1,16 @@
 """
 API routes for audit reports
 """
-from typing import List, Optional
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from typing import List, Optional
 
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
-from app.models.audit_report import AuditReport, AuditType, AuditStatus
+from app.models.audit_report import AuditReport, AuditStatus, AuditType
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/audit-reports", tags=["audit_reports"])
 logger = LoggingConfig.get_logger(__name__)

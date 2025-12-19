@@ -1,18 +1,18 @@
 """
 Decision Router Service for selecting tools, agents, and prompts based on task requirements
 """
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
-from app.models.agent import Agent, AgentStatus, AgentCapability
-from app.models.tool import Tool, ToolStatus, ToolCategory
-from app.models.prompt import Prompt, PromptType, PromptStatus
+from app.core.tracing import add_span_attributes, get_tracer
+from app.models.agent import Agent, AgentCapability, AgentStatus
+from app.models.prompt import Prompt, PromptStatus, PromptType
+from app.models.tool import Tool, ToolCategory, ToolStatus
 from app.services.agent_service import AgentService
 from app.services.tool_service import ToolService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

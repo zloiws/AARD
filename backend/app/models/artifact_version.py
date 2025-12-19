@@ -2,14 +2,15 @@
 Artifact Version model for version control
 """
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float, JSON, Index
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import (JSON, Column, DateTime, Float, ForeignKey, Index,
+                        Integer, String, Text)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class ArtifactVersion(Base):

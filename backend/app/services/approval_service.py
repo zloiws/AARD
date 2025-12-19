@@ -2,20 +2,16 @@
 Approval service for managing approval requests
 """
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
-
-from app.models.approval import (
-    ApprovalRequest,
-    ApprovalRequestType,
-    ApprovalRequestStatus,
-)
+from app.models.approval import (ApprovalRequest, ApprovalRequestStatus,
+                                 ApprovalRequestType)
 from app.models.artifact import Artifact, ArtifactStatus
-from app.models.prompt import Prompt, PromptStatus
 from app.models.plan import Plan, PlanStatus
+from app.models.prompt import Prompt, PromptStatus
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 
 class ApprovalService:
@@ -97,7 +93,8 @@ class ApprovalService:
         
         # Learn from feedback using FeedbackLearningService
         try:
-            from app.services.feedback_learning_service import FeedbackLearningService
+            from app.services.feedback_learning_service import \
+                FeedbackLearningService
             feedback_learning = FeedbackLearningService(self.db)
             feedback_learning.learn_from_approval_feedback(approval, feedback)
         except Exception as e:
@@ -141,7 +138,8 @@ class ApprovalService:
         
         # Learn from feedback using FeedbackLearningService
         try:
-            from app.services.feedback_learning_service import FeedbackLearningService
+            from app.services.feedback_learning_service import \
+                FeedbackLearningService
             feedback_learning = FeedbackLearningService(self.db)
             feedback_learning.learn_from_approval_feedback(approval, feedback)
         except Exception as e:

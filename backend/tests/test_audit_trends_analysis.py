@@ -1,14 +1,14 @@
 """
 Unit tests for trend analysis and recommendations in SelfAuditService
 """
-import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from app.models.audit_report import AuditReport, AuditType, AuditStatus
-from app.models.project_metric import ProjectMetric, MetricType, MetricPeriod
+import pytest
+from app.core.database import Base, SessionLocal, engine
+from app.models.audit_report import AuditReport, AuditStatus, AuditType
+from app.models.project_metric import MetricPeriod, MetricType, ProjectMetric
 from app.services.self_audit_service import SelfAuditService
-from app.core.database import SessionLocal, engine, Base
 
 
 @pytest.fixture(scope="module")

@@ -3,14 +3,14 @@ Web pages for approval requests
 """
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Request, Depends, HTTPException, status
+
+from app.core.database import get_db
+from app.core.templates import templates
+from app.models.approval import ApprovalRequestType
+from app.services.approval_service import ApprovalService
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-
-from app.core.templates import templates
-from app.core.database import get_db
-from app.services.approval_service import ApprovalService
-from app.models.approval import ApprovalRequestType
 
 router = APIRouter(tags=["approvals_pages"])
 

@@ -2,13 +2,13 @@
 Workflow Events API routes
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from app.core.database import get_db
-from app.services.workflow_event_service import WorkflowEventService
 from app.models.workflow_event import WorkflowEvent
+from app.services.workflow_event_service import WorkflowEventService
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/workflow-events", tags=["workflow-events"])
 
@@ -43,10 +43,10 @@ async def get_workflow_events(
     
     # Include related entities if requested
     if include_entities and workflow_id:
-        from app.models.task import Task
-        from app.models.plan import Plan
         from app.models.artifact import Artifact
-        
+        from app.models.plan import Plan
+        from app.models.task import Task
+
         # Get unique entity IDs from events
         task_ids = {e.task_id for e in events if e.task_id}
         plan_ids = {e.plan_id for e in events if e.plan_id}

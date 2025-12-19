@@ -1,16 +1,13 @@
 """
 Tests for AgentConversation model
 """
-import pytest
-from uuid import uuid4, UUID
 from datetime import datetime
+from uuid import UUID, uuid4
 
-from app.models.agent_conversation import (
-    AgentConversation,
-    ConversationStatus,
-    MessageRole
-)
+import pytest
 from app.models.agent import Agent, AgentStatus
+from app.models.agent_conversation import (AgentConversation,
+                                           ConversationStatus, MessageRole)
 from app.models.task import Task, TaskStatus
 
 

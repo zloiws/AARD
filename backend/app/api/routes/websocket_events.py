@@ -3,14 +3,14 @@ WebSocket API for real-time workflow events
 """
 import asyncio
 import json
-from typing import Set, Dict, Optional
 from datetime import datetime
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from typing import Dict, Optional, Set
 
 from app.core.database import get_session_local
-from app.services.workflow_event_service import WorkflowEventService
-from app.models.workflow_event import WorkflowEvent
 from app.core.logging_config import LoggingConfig
+from app.models.workflow_event import WorkflowEvent
+from app.services.workflow_event_service import WorkflowEventService
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 router = APIRouter(prefix="/api/ws", tags=["websocket"])
 logger = LoggingConfig.get_logger(__name__)

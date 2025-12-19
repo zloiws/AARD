@@ -1,16 +1,16 @@
 """
 API routes for task planning
 """
-from typing import Optional, List, Dict, Any
-from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.database import get_db
 from app.models.plan import Plan, PlanStatus
 from app.models.task import Task
 from app.services.planning_service import PlanningService
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/plans", tags=["plans"])
@@ -249,8 +249,8 @@ async def execute_plan(
     db: Session = Depends(get_db)
 ):
     """Start plan execution"""
-    from app.services.execution_service import ExecutionService
     from app.planning.lifecycle import validate_transition
+    from app.services.execution_service import ExecutionService
     
     execution_service = ExecutionService(db)
     
@@ -396,7 +396,8 @@ async def pause_execution(
     db: Session = Depends(get_db)
 ):
     """Pause plan execution for clarification"""
-    from app.services.interactive_execution_service import InteractiveExecutionService
+    from app.services.interactive_execution_service import \
+        InteractiveExecutionService
     
     service = InteractiveExecutionService(db)
     
@@ -415,7 +416,8 @@ async def apply_correction(
     db: Session = Depends(get_db)
 ):
     """Apply human correction to execution step"""
-    from app.services.interactive_execution_service import InteractiveExecutionService
+    from app.services.interactive_execution_service import \
+        InteractiveExecutionService
     
     service = InteractiveExecutionService(db)
     
@@ -433,7 +435,8 @@ async def resume_execution(
     db: Session = Depends(get_db)
 ):
     """Resume plan execution after pause"""
-    from app.services.interactive_execution_service import InteractiveExecutionService
+    from app.services.interactive_execution_service import \
+        InteractiveExecutionService
     
     service = InteractiveExecutionService(db)
     
@@ -617,7 +620,8 @@ async def get_execution_state(
     db: Session = Depends(get_db)
 ):
     """Get current interactive execution state"""
-    from app.services.interactive_execution_service import InteractiveExecutionService
+    from app.services.interactive_execution_service import \
+        InteractiveExecutionService
     
     service = InteractiveExecutionService(db)
     

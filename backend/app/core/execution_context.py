@@ -1,12 +1,12 @@
 """
 Execution Context - единый контекст выполнения для всех сервисов
 """
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.core.tracing import get_current_trace_id
 from app.core.logging_config import LoggingConfig
+from app.core.tracing import get_current_trace_id
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

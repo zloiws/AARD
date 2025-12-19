@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import os, json, sys
+
+import json
+import os
+import sys
+
 from sqlalchemy import create_engine, text
+
 
 def main():
     db_url = os.environ.get("DATABASE_URL")

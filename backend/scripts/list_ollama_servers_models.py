@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """List ollama servers and models from the configured DATABASE_URL"""
 from __future__ import annotations
+
 import os
+
 from sqlalchemy import create_engine, text
+
 
 def main():
     db_url = os.environ.get("DATABASE_URL")

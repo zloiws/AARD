@@ -1,8 +1,8 @@
 """
 Детальный запуск тестов Фазы 3 с полным выводом
 """
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 backend_dir = Path(__file__).parent.parent

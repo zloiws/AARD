@@ -1,13 +1,13 @@
 """
 Тесты для Этапа 4: ToDo-список как Workflow Engine
 """
-import pytest
 from uuid import uuid4
 
-from app.models.task import Task, TaskStatus
-from app.services.task_lifecycle_manager import TaskLifecycleManager, TaskRole
-from app.services.planning_service import PlanningService
+import pytest
 from app.core.execution_context import ExecutionContext
+from app.models.task import Task, TaskStatus
+from app.services.planning_service import PlanningService
+from app.services.task_lifecycle_manager import TaskLifecycleManager, TaskRole
 
 
 @pytest.fixture
@@ -96,8 +96,8 @@ class TestMemoryIntegration:
     @pytest.mark.asyncio
     async def test_execution_saves_to_memory(self, execution_context):
         """Проверить, что ExecutionService сохраняет результаты в память"""
-        from app.services.execution_service import ExecutionService
         from app.models.plan import Plan
+        from app.services.execution_service import ExecutionService
         
         service = ExecutionService(execution_context)
         

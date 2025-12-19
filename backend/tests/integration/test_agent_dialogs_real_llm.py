@@ -2,29 +2,31 @@
 Real LLM tests for Agent Dialogs
 Тесты диалогов между агентами с реальными LLM вызовами
 """
-import pytest
 import asyncio
-import sys
-import os
-from uuid import uuid4, UUID
-from datetime import datetime
 import json
 import logging
+import os
+import sys
+from datetime import datetime
 from pathlib import Path
+from uuid import UUID, uuid4
+
+import pytest
 
 # Настройка кодировки для Windows
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
+from app.core.config import get_settings
+from app.core.model_selector import ModelSelector
+from app.core.ollama_client import OllamaClient, TaskType
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_conversation import (AgentConversation,
+                                           ConversationStatus, MessageRole)
+from app.models.task import Task, TaskStatus
 from app.services.agent_dialog_service import AgentDialogService
 from app.services.agent_service import AgentService
 from app.services.ollama_service import OllamaService
-from app.core.model_selector import ModelSelector
-from app.models.agent_conversation import AgentConversation, ConversationStatus, MessageRole
-from app.models.agent import Agent, AgentStatus
-from app.models.task import Task, TaskStatus
-from app.core.ollama_client import OllamaClient, TaskType
-from app.core.config import get_settings
 
 # Настройка отдельного логирования для этого теста
 TEST_LOG_DIR = Path(__file__).parent.parent.parent / "logs" / "tests"

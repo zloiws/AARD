@@ -1,9 +1,10 @@
 """
 Простой последовательный запуск тестов Фазы 3
 """
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))

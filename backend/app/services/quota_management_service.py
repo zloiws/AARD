@@ -1,18 +1,17 @@
 """
 Quota Management Service for managing resource quotas and limits
 """
-from typing import Dict, Any, List, Optional, Set
-from uuid import UUID
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, func, desc
+from typing import Any, Dict, List, Optional, Set
+from uuid import UUID
 
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
-from app.models.task import Task, TaskStatus
+from app.core.tracing import add_span_attributes, get_tracer
 from app.models.agent import Agent
+from app.models.task import Task, TaskStatus
+from sqlalchemy import and_, desc, func
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

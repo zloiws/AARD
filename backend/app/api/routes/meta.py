@@ -1,9 +1,8 @@
 """Meta API routes (minimal stubs)"""
+from app.core.database import get_db
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-
-from app.core.database import get_db
 
 router = APIRouter(prefix="/api/meta", tags=["meta"])
 

@@ -1,35 +1,33 @@
 """
 Planning service for generating and managing task plans
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID, uuid4
-from datetime import datetime
 import json
 import re
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Session
-
-from app.models.plan import Plan, PlanStatus
-from app.models.task import Task, TaskStatus
-from app.core.ollama_client import OllamaClient, TaskType
-from app.services.ollama_service import OllamaService
-from app.services.approval_service import ApprovalService
-from app.services.prompt_service import PromptService
-from app.services.project_metrics_service import ProjectMetricsService
-from app.services.plan_template_service import PlanTemplateService
-from app.services.plan_evaluation_service import PlanEvaluationService
-from app.services.agent_team_service import AgentTeamService
-from app.services.agent_team_coordination import AgentTeamCoordination
-from app.services.agent_dialog_service import AgentDialogService
-from app.services.planning_service_dialog_integration import (
-    is_complex_task,
-    initiate_agent_dialog_for_planning
-)
-from app.models.approval import ApprovalRequestType
-from app.models.prompt import PromptType
-from app.core.tracing import get_tracer, add_span_attributes, get_current_trace_id
 from app.core.config import get_settings
+from app.core.ollama_client import OllamaClient, TaskType
+from app.core.tracing import (add_span_attributes, get_current_trace_id,
+                              get_tracer)
+from app.models.approval import ApprovalRequestType
+from app.models.plan import Plan, PlanStatus
+from app.models.prompt import PromptType
+from app.models.task import Task, TaskStatus
+from app.services.agent_dialog_service import AgentDialogService
+from app.services.agent_team_coordination import AgentTeamCoordination
+from app.services.agent_team_service import AgentTeamService
+from app.services.approval_service import ApprovalService
+from app.services.ollama_service import OllamaService
+from app.services.plan_evaluation_service import PlanEvaluationService
+from app.services.plan_template_service import PlanTemplateService
+from app.services.planning_service_dialog_integration import (
+    initiate_agent_dialog_for_planning, is_complex_task)
+from app.services.project_metrics_service import ProjectMetricsService
+from app.services.prompt_service import PromptService
 from app.services.request_logger import RequestLogger
+from sqlalchemy.orm import Session
 
 
 class PlanningService:
@@ -85,7 +83,8 @@ class PlanningService:
         self.agent_dialog_service = AgentDialogService(db)  # Agent dialog service for complex tasks
         # Ensure TaskLifecycleManager is available for workflow status transitions
         try:
-            from app.services.task_lifecycle_manager import TaskLifecycleManager
+            from app.services.task_lifecycle_manager import \
+                TaskLifecycleManager
             self.task_lifecycle_manager = TaskLifecycleManager(self.db)
         except Exception:
             # best-effort: tests will check for attribute presence
@@ -151,8 +150,8 @@ class PlanningService:
         Best-effort: returns None on failure.
         """
         try:
-            from app.services.agent_service import AgentService
             from app.agents.planner_agent import PlannerAgent
+            from app.services.agent_service import AgentService
             agent_service = AgentService(self.db)
             try:
                 return PlannerAgent(uuid4(), agent_service, None, self.db)
@@ -202,7 +201,7 @@ class PlanningService:
             List of alternative plans in DRAFT status
         """
         import asyncio
-        
+
         # Limit number of alternatives to 2-3
         num_alternatives = max(2, min(3, num_alternatives))
         
@@ -524,6 +523,7 @@ class PlanningService:
         """
         try:
             from sqlalchemy import text
+
             # Execute SELECT FOR UPDATE in the current transaction (do not start a new one)
             current_raw = self.db.execute(
                 text("SELECT context FROM tasks WHERE id = :id FOR UPDATE"),
@@ -756,14 +756,14 @@ Return a JSON array of steps."""
             return  # No workflow ID, skip saving
         
         try:
-            from app.services.workflow_event_service import WorkflowEventService
-            from app.models.workflow_event import (
-                EventSource as DBEventSource,
-                EventType as DBEventType,
-                EventStatus,
-                WorkflowStage as DBWorkflowStage
-            )
             from app.core.workflow_tracker import WorkflowStage as TrackerStage
+            from app.models.workflow_event import EventSource as DBEventSource
+            from app.models.workflow_event import EventStatus
+            from app.models.workflow_event import EventType as DBEventType
+            from app.models.workflow_event import \
+                WorkflowStage as DBWorkflowStage
+            from app.services.workflow_event_service import \
+                WorkflowEventService
             
             event_service = WorkflowEventService(self.db)
             
@@ -953,8 +953,8 @@ Return a JSON array of steps."""
         # If no agent_id or team_id provided, try to select an agent automatically
         if not agent_id and not team_id:
             try:
-                from app.services.agent_service import AgentService
                 from app.models.agent import AgentCapability
+                from app.services.agent_service import AgentService
                 
                 agent_service = AgentService(self.db)
                 
@@ -1022,7 +1022,8 @@ Return a JSON array of steps."""
         
         # Initialize WorkflowTracker for real-time monitoring
         # Use task_id as workflow_id for consistency (so events can be found by task_id)
-        from app.core.workflow_tracker import get_workflow_tracker, WorkflowStage
+        from app.core.workflow_tracker import (WorkflowStage,
+                                               get_workflow_tracker)
         self.workflow_tracker = get_workflow_tracker()
         self.workflow_id = str(task_id)  # Use task_id as workflow_id
         
@@ -1681,7 +1682,8 @@ Return a JSON array of steps."""
         
         # Track plan quality using PlanningMetricsService
         try:
-            from app.services.planning_metrics_service import PlanningMetricsService
+            from app.services.planning_metrics_service import \
+                PlanningMetricsService
             metrics_service = PlanningMetricsService(self.db)
             quality_score = metrics_service.calculate_plan_quality_score(plan)
             
@@ -1955,7 +1957,7 @@ Return a JSON array of steps."""
             List of alternative plans in DRAFT status
         """
         import asyncio
-        
+
         # Limit number of alternatives to 2-3
         num_alternatives = max(2, min(3, num_alternatives))
         
@@ -2351,7 +2353,8 @@ Return a JSON array of steps."""
             
             # Save workflow event with full prompts before request
             from app.core.workflow_tracker import WorkflowStage
-            from app.models.workflow_event import EventType as DBEventType, EventSource as DBEventSource
+            from app.models.workflow_event import EventSource as DBEventSource
+            from app.models.workflow_event import EventType as DBEventType
             
             self._save_workflow_event_to_db(
                 stage=WorkflowStage.EXECUTION,
@@ -2506,7 +2509,8 @@ Return a JSON array of steps."""
             # Record metrics for task analysis
             try:
                 from datetime import timedelta
-                from app.models.project_metric import MetricType, MetricPeriod
+
+                from app.models.project_metric import MetricPeriod, MetricType
                 
                 now = datetime.utcnow()
                 # Round to hour for consistent period boundaries
@@ -2732,7 +2736,8 @@ Break down this task into executable steps. Return only a valid JSON array."""
             
             # Save workflow event with full prompts before request
             from app.core.workflow_tracker import WorkflowStage
-            from app.models.workflow_event import EventType as DBEventType, EventSource as DBEventSource
+            from app.models.workflow_event import EventSource as DBEventSource
+            from app.models.workflow_event import EventType as DBEventType
             
             self._save_workflow_event_to_db(
                 stage=WorkflowStage.EXECUTION,
@@ -2865,7 +2870,9 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 
                 # Save workflow event with full response
                 from app.core.workflow_tracker import WorkflowStage
-                from app.models.workflow_event import EventType as DBEventType, EventSource as DBEventSource
+                from app.models.workflow_event import \
+                    EventSource as DBEventSource
+                from app.models.workflow_event import EventType as DBEventType
                 
                 self._save_workflow_event_to_db(
                     stage=WorkflowStage.EXECUTION,
@@ -2891,7 +2898,9 @@ Break down this task into executable steps. Return only a valid JSON array."""
                 # Record metrics for task decomposition
                 try:
                     from datetime import timedelta
-                    from app.models.project_metric import MetricType, MetricPeriod
+
+                    from app.models.project_metric import (MetricPeriod,
+                                                           MetricType)
                     
                     now = datetime.utcnow()
                     # Round to hour for consistent period boundaries
@@ -3270,9 +3279,10 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
     
     async def _create_plan_approval_request(self, plan: Plan, risks: Dict[str, Any]):
         """Create an approval request for a newly created plan"""
-        from app.services.approval_service import ApprovalService
-        from app.services.adaptive_approval_service import AdaptiveApprovalService
         from app.models.task import Task, TaskStatus
+        from app.services.adaptive_approval_service import \
+            AdaptiveApprovalService
+        from app.services.approval_service import ApprovalService
         
         approval_service = ApprovalService(self.db)
         adaptive_approval = AdaptiveApprovalService(self.db)
@@ -3766,7 +3776,8 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
         Returns:
             New plan if replanning was successful, None otherwise
         """
-        from app.core.execution_error_types import ExecutionErrorDetector, ErrorSeverity
+        from app.core.execution_error_types import (ErrorSeverity,
+                                                    ExecutionErrorDetector)
         
         logger = self._get_logger()
         
@@ -3857,10 +3868,10 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             plan: Current plan
         """
         try:
-            from app.services.memory_service import MemoryService
-            from app.models.task import Task
             from app.models.agent import Agent
-            
+            from app.models.task import Task
+            from app.services.memory_service import MemoryService
+
             # Get task to find agent_id if available
             task = self.db.query(Task).filter(Task.id == task_id).first()
             if not task:
@@ -3972,10 +3983,10 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             context: Additional context
         """
         try:
-            from app.services.memory_service import MemoryService
-            from app.models.task import Task
             from app.models.agent_memory import MemoryType
-            
+            from app.models.task import Task
+            from app.services.memory_service import MemoryService
+
             # Get task
             task = self.db.query(Task).filter(Task.id == task_id).first()
             if not task:
@@ -4065,9 +4076,9 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             Pattern data if found, None otherwise
         """
         try:
+            from app.models.agent_memory import MemoryType
             from app.services.memory_service import MemoryService
             from app.services.meta_learning_service import MetaLearningService
-            from app.models.agent_memory import MemoryType
             
             if not agent_id:
                 return None
@@ -4106,6 +4117,7 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             try:
                 # Fetch recent procedural memories for the agent directly via ORM
                 from app.models.agent_memory import AgentMemory
+
                 # Directly query procedural memories first (fast path)
                 proc_rows = self.db.query(AgentMemory).filter(
                     AgentMemory.agent_id == agent_id,

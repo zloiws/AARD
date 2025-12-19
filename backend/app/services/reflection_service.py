@@ -1,16 +1,16 @@
 """
 Reflection Service for analyzing failures and generating fixes
 """
-from typing import Dict, Any, Optional, List, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
-from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.core.execution_context import ExecutionContext
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
 from app.core.ollama_client import OllamaClient
+from app.core.tracing import add_span_attributes, get_tracer
 from app.services.memory_service import MemoryService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -229,10 +229,10 @@ class ReflectionService:
         similar_situations: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Use LLM to analyze failure"""
-        import time
         import json
         import re
-        
+        import time
+
         # Get prompt from PromptManager if available
         prompt_used = None
         system_prompt = None
@@ -377,10 +377,10 @@ Provide analysis in JSON format:
         similar_situations: Optional[List[Dict[str, Any]]]
     ) -> Dict[str, Any]:
         """Use LLM to generate fix"""
-        import time
         import json
         import re
-        
+        import time
+
         # Get prompt from PromptManager if available
         prompt_used = None
         system_prompt = None

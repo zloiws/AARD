@@ -1,21 +1,17 @@
 """
 Task Queue Manager for managing task queues and distribution
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc
-
-from app.models.task_queue import TaskQueue, QueueTask
-from app.core.logging_config import LoggingConfig
-from app.core.metrics import (
-    queue_tasks_total,
-    queue_tasks_processed_total,
-    queue_task_duration_seconds,
-    queue_size
-)
 import time
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID
+
+from app.core.logging_config import LoggingConfig
+from app.core.metrics import (queue_size, queue_task_duration_seconds,
+                              queue_tasks_processed_total, queue_tasks_total)
+from app.models.task_queue import QueueTask, TaskQueue
+from sqlalchemy import and_, desc, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

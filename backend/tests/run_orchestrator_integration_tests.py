@@ -1,12 +1,13 @@
 """
 Запуск тестов интеграции сервисов в RequestOrchestrator
 """
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 backend_dir = Path(__file__).parent.parent
 import os
+
 os.chdir(backend_dir)
 
 print("=" * 80)

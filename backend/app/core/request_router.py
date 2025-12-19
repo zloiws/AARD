@@ -1,8 +1,8 @@
 """
 Request Router - определяет тип запроса и маршрутизирует его
 """
-from typing import Dict, Any, Optional, Tuple
 from enum import Enum
+from typing import Any, Dict, Optional, Tuple
 
 from app.core.logging_config import LoggingConfig
 

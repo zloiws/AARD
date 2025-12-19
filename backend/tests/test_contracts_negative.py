@@ -1,5 +1,6 @@
 import json
 
+
 def test_create_prompt_invalid_type(client):
     # invalid prompt_type should return 422
     payload = {
@@ -37,6 +38,7 @@ def test_assign_requires_auth(client):
 def test_assign_invalid_uuid_fields_return_422(client):
     # override auth for creation/assignment
     from types import SimpleNamespace
+
     from app.core.auth import get_current_user_required
     client.app.dependency_overrides[get_current_user_required] = lambda: SimpleNamespace(username="t", role="admin")
 
@@ -81,6 +83,7 @@ def test_events_recent_invalid_limit_returns_422(client):
 def test_delete_assignment_requires_auth(client):
     # create prompt and assignment with auth, then attempt delete without auth
     from types import SimpleNamespace
+
     from app.core.auth import get_current_user_required
     client.app.dependency_overrides[get_current_user_required] = lambda: SimpleNamespace(username="t", role="admin")
 

@@ -5,13 +5,12 @@ Revises: 021_add_benchmark_system
 Create Date: 2025-12-06
 
 """
+import uuid
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
-import uuid
-
 
 # revision identifiers, used by Alembic.
 revision: str = '022_add_project_metrics'

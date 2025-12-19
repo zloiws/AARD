@@ -1,16 +1,16 @@
 """
 API routes for project metrics
 """
-from typing import List, Optional, Dict, Any
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
 
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
+from app.models.project_metric import MetricPeriod, MetricType
 from app.services.project_metrics_service import ProjectMetricsService
-from app.models.project_metric import MetricType, MetricPeriod
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/metrics/project", tags=["project_metrics"])
 logger = LoggingConfig.get_logger(__name__)

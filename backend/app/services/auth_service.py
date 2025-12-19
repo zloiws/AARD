@@ -2,14 +2,15 @@
 Authentication service for user management and sessions
 """
 import secrets
-import bcrypt
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
 
-from app.models.user import User, Session as UserSession, UserRole
+import bcrypt
 from app.core.logging_config import LoggingConfig
+from app.models.user import Session as UserSession
+from app.models.user import User, UserRole
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

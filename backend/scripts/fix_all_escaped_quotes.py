@@ -4,8 +4,8 @@ Traverse backend/ and fix backslash-escaped double quotes in .py files.
 Be careful: this performs a simple textual replacement of '"' -> '"'.
 Run and review changes before committing.
 """
-from pathlib import Path
 import sys
+from pathlib import Path
 
 root = Path("backend")
 if not root.exists():

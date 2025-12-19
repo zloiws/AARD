@@ -1,8 +1,9 @@
 """Seed minimal data for integration tests"""
-from uuid import uuid4
-from datetime import datetime, timezone
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -11,9 +12,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from app.core.config import get_settings
-from app.models.ollama_server import OllamaServer
-from app.models.ollama_model import OllamaModel
 from app.models.agent import Agent
+from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
 
 
 def main():

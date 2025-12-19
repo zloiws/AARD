@@ -4,11 +4,10 @@ Prompt assignment model: maps prompts to models/servers/task types.
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import Column, String, DateTime, ForeignKey
+from app.core.database import Base
+from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
-
-from app.core.database import Base
 
 
 class PromptAssignment(Base):

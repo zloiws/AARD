@@ -2,10 +2,11 @@
 Tests for vector search migration
 """
 import os
+
 import pytest
-from sqlalchemy import text
-from app.core.database import get_engine, SessionLocal
+from app.core.database import SessionLocal, get_engine
 from app.models.agent_memory import AgentMemory
+from sqlalchemy import text
 
 
 @pytest.mark.skipif(os.environ.get("VECTOR_EXTENSION_AVAILABLE") != "1", reason="pgvector extension not available")

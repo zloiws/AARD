@@ -3,28 +3,27 @@ Alembic environment configuration
 """
 import os
 import sys
-from pathlib import Path
 from logging.config import fileConfig
+from pathlib import Path
 
 # Load environment variables BEFORE importing app modules
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from dotenv import load_dotenv
+
 env_file = BASE_DIR / ".env"
 if env_file.exists():
     load_dotenv(env_file, override=True)
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
-from alembic import context
 from urllib.parse import urlparse, urlunparse
 
+from alembic import context
+from app.core.config import get_settings
 # Import Base and models for autogenerate
 from app.core.database import Base
-from app.core.config import get_settings
 from app.models import *  # noqa: F401, F403 - Import all models
+from sqlalchemy import engine_from_config, pool
 
 # this is the Alembic Config object
 config = context.config

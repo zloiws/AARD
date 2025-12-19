@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import os
+
 import json
+import os
 from uuid import UUID
 
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
@@ -9,6 +10,7 @@ os.environ.setdefault("PYTHONPATH", os.path.abspath(os.path.join(os.path.dirname
 
 from app.core.database import SessionLocal
 from app.models.task import Task
+
 
 def main():
     session = SessionLocal()

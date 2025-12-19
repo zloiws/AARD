@@ -4,14 +4,15 @@ Represents teams of agents that work together on tasks
 """
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, Dict, List, Any
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Boolean, JSON, Table
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
+                        String, Table, Text)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class CoordinationStrategy(str, Enum):
@@ -88,7 +89,7 @@ class AgentTeam(Base):
         """Get the team lead agent"""
         from app.models.agent import Agent
         from sqlalchemy.orm import Session
-        
+
         # Query the association table to find the lead
         # This requires a database session, so we'll handle it in the service layer
         return None  # Will be implemented in AgentTeamService

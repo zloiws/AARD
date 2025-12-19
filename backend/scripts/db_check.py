@@ -6,8 +6,8 @@ for interpretation_rules, decision_timelines, decision_nodes, decision_edges.
 Usage: python backend/scripts/db_check.py
 Set DATABASE_URL env var or edit the DATABASE_URL constant below.
 """
-import os
 import json
+import os
 import sys
 
 DATABASE_URL = os.environ.get("DATABASE_URL") or "postgresql://postgres:Cdthrf12@10.39.0.101:5432/aard"

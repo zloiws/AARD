@@ -1,9 +1,9 @@
 """
 Execution error classification and detection
 """
-from enum import Enum
-from typing import Dict, Any, Optional, List
 import re
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class ErrorSeverity(str, Enum):

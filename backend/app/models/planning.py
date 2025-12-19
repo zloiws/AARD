@@ -1,10 +1,13 @@
-from enum import Enum
-from sqlalchemy import Column, String, Text, JSON, TIMESTAMP, ForeignKey, Index, Float
-from sqlalchemy.dialects.postgresql import UUID, ENUM
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 import uuid
+from enum import Enum
+
 from app.core.database import Base
+from sqlalchemy import (JSON, TIMESTAMP, Column, Float, ForeignKey, Index,
+                        String, Text)
+from sqlalchemy.dialects.postgresql import ENUM, UUID
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 
 class PlanLifecycle(str, Enum):
     DRAFT = "draft"
@@ -73,7 +76,7 @@ class PlanHypothesisNode(Base):
     )
 
 # Add relationships to DecisionTimeline
-from app.models.interpretation import DecisionTimeline, DecisionNode
+from app.models.interpretation import DecisionNode, DecisionTimeline
 
 DecisionTimeline.hypotheses = relationship("PlanHypothesis", back_populates="timeline", cascade="all, delete-orphan")
 DecisionTimeline.plan_nodes = relationship("PlanHypothesisNode", back_populates="timeline", cascade="all, delete-orphan")

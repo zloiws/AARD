@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
+
 def main():
     p = Path('backend/scripts/consolidate_plans.py')
     text = p.read_text(encoding='utf-8')

@@ -13,9 +13,10 @@ This script:
 """
 import argparse
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Add project root to path for app imports
@@ -44,8 +45,8 @@ def main():
 
     # Check DB connectivity
     try:
-        from sqlalchemy import create_engine, text
         from app.core.config import get_settings
+        from sqlalchemy import create_engine, text
 
         settings = get_settings()
         engine = create_engine(settings.database_url)

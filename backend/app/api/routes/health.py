@@ -1,21 +1,21 @@
 """
 Health check endpoints
 """
-from typing import Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-import httpx
 import asyncio
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
 
-from app.core.database import get_db
+import httpx
 from app.core.config import get_settings
+from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
-from app.services.ollama_service import OllamaService
-from app.models.task_queue import TaskQueue, QueueTask
 from app.models.checkpoint import Checkpoint
+from app.models.task_queue import QueueTask, TaskQueue
 from app.models.trace import ExecutionTrace
-from datetime import datetime, timezone, timedelta
+from app.services.ollama_service import OllamaService
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 router = APIRouter(tags=["health"])

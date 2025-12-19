@@ -3,14 +3,16 @@ Benchmark Task model for storing test tasks
 """
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Dict, Optional
 from uuid import uuid4
-from typing import Optional, Dict, Any
-
-from sqlalchemy import Column, String, Integer, DateTime, Text, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+from sqlalchemy import Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class BenchmarkTaskType(str, Enum):

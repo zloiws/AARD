@@ -1,13 +1,13 @@
 """
 Tests for BenchmarkResult model
 """
-import pytest
 from datetime import datetime
 from uuid import uuid4
 
+import pytest
+from app.core.database import SessionLocal
 from app.models.benchmark_result import BenchmarkResult
 from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
-from app.core.database import SessionLocal
 
 
 @pytest.fixture

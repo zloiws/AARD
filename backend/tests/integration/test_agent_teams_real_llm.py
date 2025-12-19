@@ -2,17 +2,17 @@
 Real LLM tests for Agent Teams with actual model calls
 Tests agent teams with real LLM calls to Ollama
 """
-import pytest
 import asyncio
 from uuid import uuid4
 
-from app.services.agent_team_service import AgentTeamService
+import pytest
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import CoordinationStrategy, TeamStatus
 from app.services.agent_team_coordination import AgentTeamCoordination
-from app.services.planning_service import PlanningService
+from app.services.agent_team_service import AgentTeamService
 from app.services.execution_service import ExecutionService
 from app.services.ollama_service import OllamaService
-from app.models.agent_team import CoordinationStrategy, TeamStatus
-from app.models.agent import Agent, AgentStatus
+from app.services.planning_service import PlanningService
 
 
 @pytest.mark.asyncio

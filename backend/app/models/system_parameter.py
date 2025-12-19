@@ -4,14 +4,16 @@ Extends UncertaintyParameter concept to all system components
 """
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, Dict, Any, List
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, Float, Text, Enum as SQLEnum, JSON
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import JSON, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import Float, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class ParameterCategory(str, Enum):

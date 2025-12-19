@@ -2,14 +2,14 @@
 Execution graph models: ExecutionGraph, ExecutionNode, ExecutionEdge
 """
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Any, Dict
 from uuid import uuid4
 
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, JSON
+from app.core.database import Base
+from sqlalchemy import (JSON, Column, DateTime, ForeignKey, Integer, String,
+                        Text)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
-
-from app.core.database import Base
 
 
 class ExecutionGraph(Base):

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from app.components.contracts import PlanHypothesis, ExecutionValidationResult
+from app.components.contracts import ExecutionValidationResult, PlanHypothesis
 from app.components.prompt_repository import ComponentPromptRepository
 
 

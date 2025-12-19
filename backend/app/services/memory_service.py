@@ -1,26 +1,23 @@
 """
 Memory Service for managing agent short-term and long-term memory
 """
-from typing import Dict, Any, Optional, List, Union
-from uuid import UUID
-from datetime import datetime, timedelta, timezone
-import json
 import hashlib
-
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func, desc
-from sqlalchemy.dialects.postgresql import JSONB
+import json
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 
 from app.core.database import SessionLocal
 from app.core.execution_context import ExecutionContext
 from app.core.logging_config import LoggingConfig
-from app.models.agent_memory import (
-    AgentMemory, MemoryEntry, MemoryAssociation,
-    MemoryType, AssociationType
-)
 from app.models.agent import Agent
+from app.models.agent_memory import (AgentMemory, AssociationType,
+                                     MemoryAssociation, MemoryEntry,
+                                     MemoryType)
 from app.services.embedding_service import EmbeddingService
-from sqlalchemy import text
+from sqlalchemy import and_, desc, func, or_, text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

@@ -3,14 +3,15 @@ Agent model for AARD platform
 """
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, Dict, List, Any
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Boolean, JSON
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
+                        String, Text)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class AgentStatus(str, Enum):

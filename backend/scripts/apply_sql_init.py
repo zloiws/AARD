@@ -6,6 +6,7 @@ Usage:
   - python backend/scripts/apply_sql_init.py
 """
 from __future__ import annotations
+
 import os
 import sys
 

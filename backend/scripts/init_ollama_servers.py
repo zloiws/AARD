@@ -9,13 +9,16 @@ BACKEND_DIR = BASE_DIR / "backend"
 sys.path.insert(0, str(BACKEND_DIR))
 
 from dotenv import load_dotenv
+
 load_dotenv(BASE_DIR / ".env")
 
-from app.core.database import SessionLocal, engine
-from app.models.ollama_server import OllamaServer
-from app.models.ollama_model import OllamaModel
-from app.core.config import get_settings
 from datetime import datetime
+
+from app.core.config import get_settings
+from app.core.database import SessionLocal, engine
+from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
+
 
 def init_servers():
     """Initialize Ollama servers from .env configuration"""

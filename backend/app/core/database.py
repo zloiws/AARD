@@ -1,22 +1,19 @@
 """
 Database configuration and session management
 """
-from sqlalchemy import create_engine, text as sa_text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from typing import Generator, Optional
 import logging
+import time
+from typing import Generator, Optional
 
 from app.core.config import get_settings
 from app.core.logging_config import LoggingConfig
-from app.core.metrics import (
-    db_queries_total,
-    db_query_duration_seconds,
-    db_connection_pool_size,
-    db_connection_pool_overflow
-)
-from sqlalchemy import event
-import time
+from app.core.metrics import (db_connection_pool_overflow,
+                              db_connection_pool_size, db_queries_total,
+                              db_query_duration_seconds)
+from sqlalchemy import create_engine, event
+from sqlalchemy import text as sa_text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
 
 # Lazy initialization - don't create engine at module level
 _engine: Optional[create_engine] = None

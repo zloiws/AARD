@@ -1,6 +1,7 @@
 from app.core.database import get_engine
 from sqlalchemy import text
 
+
 def main():
     eng = get_engine()
     with eng.connect() as conn:

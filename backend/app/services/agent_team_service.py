@@ -1,18 +1,18 @@
 """
 Agent Team Service for managing teams of agents
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
-
-from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus, agent_team_association
-from app.models.agent import Agent, AgentStatus
-from app.core.logging_config import LoggingConfig
-from app.services.a2a_router import A2ARouter
 from app.core.a2a_protocol import A2AMessage, A2AMessageType, A2AResponse
+from app.core.logging_config import LoggingConfig
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import (AgentTeam, CoordinationStrategy, TeamStatus,
+                                   agent_team_association)
+from app.services.a2a_router import A2ARouter
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

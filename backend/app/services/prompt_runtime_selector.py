@@ -6,15 +6,14 @@ using PromptAssignment resolution order:
   3) global
 Fallback: disk-canonical prompt via PromptService.get_active_prompt(name)
 """
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-
-from app.services.prompt_service import PromptService
-from app.models.prompt_assignment import PromptAssignment
-from app.models.prompt import Prompt
 from app.core.logging_config import LoggingConfig
+from app.models.prompt import Prompt
+from app.models.prompt_assignment import PromptAssignment
+from app.services.prompt_service import PromptService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

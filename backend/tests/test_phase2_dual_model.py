@@ -1,16 +1,16 @@
 """
 Тесты для Этапа 2: Dual-Model архитектура
 """
-import pytest
+from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
-from unittest.mock import Mock, AsyncMock, patch
 
-from app.agents.planner_agent import PlannerAgent
+import pytest
 from app.agents.coder_agent import CoderAgent
-from app.services.planning_service import PlanningService
-from app.services.execution_service import ExecutionService
+from app.agents.planner_agent import PlannerAgent
 from app.core.execution_context import ExecutionContext
 from app.core.function_calling import FunctionCallProtocol
+from app.services.execution_service import ExecutionService
+from app.services.planning_service import PlanningService
 
 
 @pytest.fixture

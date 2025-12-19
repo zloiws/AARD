@@ -1,19 +1,19 @@
 """
 Тесты для Этапа 1: Критические исправления и унификация
 """
-import pytest
+from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
-from unittest.mock import Mock, AsyncMock, patch
-from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan
+import pytest
 from app.core.execution_context import ExecutionContext
-from app.services.execution_service import ExecutionService
-from app.services.planning_service import PlanningService
+from app.core.prompt_manager import PromptManager
 from app.core.request_orchestrator import RequestOrchestrator
 from app.core.workflow_engine import WorkflowEngine, WorkflowState
-from app.core.prompt_manager import PromptManager
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from app.services.execution_service import ExecutionService
+from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -126,7 +126,8 @@ class TestWebSearchIntegration:
         assert hasattr(orchestrator, '_handle_information_query')
         
         # Проверить, что используется AdaptiveApprovalService
-        from app.services.adaptive_approval_service import AdaptiveApprovalService
+        from app.services.adaptive_approval_service import \
+            AdaptiveApprovalService
         assert AdaptiveApprovalService is not None
         
         # Проверить, что AdaptiveApprovalService может быть создан

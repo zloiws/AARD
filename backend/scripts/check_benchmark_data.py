@@ -9,8 +9,8 @@ sys.path.insert(0, str(backend_dir))
 
 from app.core.database import SessionLocal
 from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
-from app.models.prompt import Prompt
 from app.models.ollama_server import OllamaServer
+from app.models.prompt import Prompt
 
 db = SessionLocal()
 

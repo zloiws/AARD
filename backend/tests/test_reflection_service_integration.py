@@ -1,14 +1,14 @@
 """
 Tests for ReflectionService with ExecutionContext integration
 """
-import pytest
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.core.execution_context import ExecutionContext
+import pytest
 from app.core.database import SessionLocal
-from app.services.reflection_service import ReflectionService
+from app.core.execution_context import ExecutionContext
 from app.models.agent import Agent, AgentStatus
+from app.services.reflection_service import ReflectionService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

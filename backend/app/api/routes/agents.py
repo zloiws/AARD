@@ -3,14 +3,14 @@ API routes for agent management
 """
 from typing import List, Optional
 from uuid import UUID
+
+from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.models.agent import Agent, AgentCapability, AgentStatus
+from app.services.agent_service import AgentService
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.models.agent import Agent, AgentStatus, AgentCapability
-from app.services.agent_service import AgentService
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 router = APIRouter(prefix="/api/agents", tags=["agents"])

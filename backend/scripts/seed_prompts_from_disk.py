@@ -6,13 +6,13 @@ Idempotent: will not create duplicate prompt names; will create a new version if
 Usage:
   python backend/scripts/seed_prompts_from_disk.py
 """
-from pathlib import Path
 import json
 from datetime import datetime
+from pathlib import Path
 
 from app.core.database import get_session_local
-from app.services.prompt_service import PromptService
 from app.models.prompt import PromptType
+from app.services.prompt_service import PromptService
 
 
 def load_prompt_files(root: Path) -> dict:

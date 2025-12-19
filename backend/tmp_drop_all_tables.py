@@ -1,5 +1,6 @@
 from app.core.database import engine
-from sqlalchemy import text, inspect
+from sqlalchemy import inspect, text
+
 
 def main():
     insp = inspect(engine)

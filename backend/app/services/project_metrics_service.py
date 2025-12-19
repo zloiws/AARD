@@ -2,18 +2,18 @@
 Project Metrics Service for tracking project-level metrics
 Provides metrics collection, aggregation, and analysis at the project level
 """
-from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, func, desc
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-from app.models.project_metric import ProjectMetric, MetricType, MetricPeriod
-from app.models.task import Task, TaskStatus
 from app.models.plan import Plan, PlanStatus
+from app.models.project_metric import MetricPeriod, MetricType, ProjectMetric
+from app.models.task import Task, TaskStatus
 from app.models.trace import ExecutionTrace
+from sqlalchemy import and_, desc, func
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

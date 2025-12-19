@@ -2,19 +2,19 @@
 Meta-Learning Service for self-improvement
 Analyzes execution patterns and improves planning strategies, prompts, and tool selection
 """
-from typing import Dict, Any, List, Optional, Union
-from uuid import UUID
 from datetime import datetime, timedelta, timezone
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 
 from app.core.database import SessionLocal
 from app.core.execution_context import ExecutionContext
 from app.core.logging_config import LoggingConfig
+from app.models.agent import Agent
 from app.models.learning_pattern import LearningPattern, PatternType
 from app.models.plan import Plan
 from app.models.trace import ExecutionTrace
-from app.models.agent import Agent
+from sqlalchemy import and_, func
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

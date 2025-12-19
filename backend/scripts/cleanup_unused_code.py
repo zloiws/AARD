@@ -2,12 +2,12 @@
 Скрипт для безопасного удаления неиспользуемого кода
 Этап 9.1.2: Удалить или переместить неиспользуемый код
 """
-import sys
-import re
 import ast
-from pathlib import Path
-from typing import List, Dict, Set
+import re
 import shutil
+import sys
+from pathlib import Path
+from typing import Dict, List, Set
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent

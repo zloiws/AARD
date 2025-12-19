@@ -12,7 +12,8 @@ def test_imports():
     print("Тестирование импортов...")
     
     # SystemParameter и ParameterManager
-    from app.models.system_parameter import SystemParameter, SystemParameterType
+    from app.models.system_parameter import (SystemParameter,
+                                             SystemParameterType)
     from app.services.parameter_manager import ParameterManager
     print("  ✅ SystemParameter и ParameterManager")
     
@@ -21,8 +22,9 @@ def test_imports():
     print("  ✅ UncertaintyLevel и UncertaintyType")
     
     # UncertaintyService и UncertaintyLearningService
+    from app.services.uncertainty_learning_service import \
+        UncertaintyLearningService
     from app.services.uncertainty_service import UncertaintyService
-    from app.services.uncertainty_learning_service import UncertaintyLearningService
     print("  ✅ UncertaintyService и UncertaintyLearningService")
     
     # AdaptiveApprovalService
@@ -37,9 +39,9 @@ def test_services_initialization():
     print("Тестирование инициализации сервисов...")
     
     from app.core.database import get_db
+    from app.services.adaptive_approval_service import AdaptiveApprovalService
     from app.services.parameter_manager import ParameterManager
     from app.services.uncertainty_service import UncertaintyService
-    from app.services.adaptive_approval_service import AdaptiveApprovalService
     
     db = next(get_db())
     
@@ -63,8 +65,9 @@ def test_parameter_manager():
     print("Тестирование ParameterManager...")
     
     from app.core.database import get_db
+    from app.models.system_parameter import (ParameterCategory,
+                                             SystemParameterType)
     from app.services.parameter_manager import ParameterManager
-    from app.models.system_parameter import SystemParameterType, ParameterCategory
     
     db = next(get_db())
     pm = ParameterManager(db)
@@ -93,9 +96,10 @@ def test_uncertainty_service():
     """Тест UncertaintyService с параметрами из БД"""
     print("Тестирование UncertaintyService...")
     
+    import asyncio
+
     from app.core.database import get_db
     from app.services.uncertainty_service import UncertaintyService
-    import asyncio
     
     db = next(get_db())
     service = UncertaintyService(db)

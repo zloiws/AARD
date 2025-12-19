@@ -1,8 +1,8 @@
 """
 Step-by-step planning tests - run one at a time, from simple to complex
 """
-import sys
 import asyncio
+import sys
 from pathlib import Path
 
 # Add backend to path
@@ -10,9 +10,9 @@ backend_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from app.core.database import SessionLocal
+from app.core.logging_config import LoggingConfig
 from app.models.task import Task
 from app.services.planning_service import PlanningService
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

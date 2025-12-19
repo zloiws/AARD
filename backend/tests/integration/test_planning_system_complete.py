@@ -2,15 +2,15 @@
 Integration tests for complete Planning System (Phase 1)
 Tests automatic replanning and plan visualization together
 """
-import pytest
-from fastapi.testclient import TestClient
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
+import pytest
+from app.core.database import SessionLocal
 from app.main import app
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
-from app.core.database import SessionLocal
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 client = TestClient(app)
 
@@ -72,7 +72,7 @@ class TestPlanningSystemComplete:
     def test_error_detection_and_auto_replan(self, db: Session):
         """Test error detection triggers automatic replanning"""
         from app.services.execution_service import ExecutionService
-        
+
         # Create a task with empty plan
         task = Task(
             id=uuid4(),
@@ -118,8 +118,8 @@ class TestPlanningSystemComplete:
     
     def test_complete_workflow(self, db: Session):
         """Test complete workflow: plan creation -> visualization -> execution with error detection"""
-        from app.services.planning_service import PlanningService
         from app.services.plan_tree_service import PlanTreeService
+        from app.services.planning_service import PlanningService
         
         planning_service = PlanningService(db)
         

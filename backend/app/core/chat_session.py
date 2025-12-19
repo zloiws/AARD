@@ -3,12 +3,13 @@ Chat session management with database persistence
 """
 import uuid
 from datetime import datetime, timezone
-from typing import List, Dict, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from typing import Dict, List, Optional
 
-from app.models.chat_session import ChatSession as ChatSessionModel, ChatMessage as ChatMessageModel
 from app.core.logging_config import LoggingConfig
+from app.models.chat_session import ChatMessage as ChatMessageModel
+from app.models.chat_session import ChatSession as ChatSessionModel
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

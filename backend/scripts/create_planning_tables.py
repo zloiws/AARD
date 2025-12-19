@@ -13,6 +13,7 @@ sys.path.insert(0, str(backend_path))
 from app.database import engine
 from sqlalchemy import text
 
+
 def create_planning_tables():
     """Create planning hypothesis tables"""
 

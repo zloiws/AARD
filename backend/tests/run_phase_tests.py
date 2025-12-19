@@ -1,8 +1,9 @@
 """
 Запуск тестов для всех выполненных этапов
 """
-import sys
 import subprocess
+import sys
+
 import pytest
 
 

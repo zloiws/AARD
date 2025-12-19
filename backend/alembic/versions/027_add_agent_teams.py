@@ -5,8 +5,8 @@ Revises: 026_add_plan_templates
 Create Date: 2025-12-05 21:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.

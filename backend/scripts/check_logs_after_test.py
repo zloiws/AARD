@@ -8,10 +8,12 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
+from datetime import datetime, timedelta
+
 from app.core.database import SessionLocal
 from app.models.task import Task
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+
 
 def check_latest_task_logs():
     """Check logs in the latest task"""

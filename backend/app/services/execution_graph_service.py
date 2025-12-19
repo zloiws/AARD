@@ -2,13 +2,13 @@
 ExecutionGraphService: manage execution graphs, nodes and edges.
 """
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
-
-from sqlalchemy.orm import Session
+from typing import Any, Dict, Optional
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-from app.models.execution_graph import ExecutionGraph, ExecutionNode, ExecutionEdge
+from app.models.execution_graph import (ExecutionEdge, ExecutionGraph,
+                                        ExecutionNode)
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

@@ -1,26 +1,25 @@
 """
 Request Orchestrator - центральный оркестратор для обработки запросов
 """
-from typing import Dict, Any, Optional, Tuple
 import time
+from typing import Any, Dict, Optional, Tuple
 from uuid import uuid4
 
-from app.core.execution_context import ExecutionContext
-from app.core.request_router import determine_request_type, RequestType
-from app.core.service_registry import get_service_registry
-from app.core.logging_config import LoggingConfig
-from app.core.workflow_engine import WorkflowEngine, WorkflowState
-from app.core.workflow_engine import WorkflowEngine, WorkflowState
-from app.core.ollama_client import OllamaClient, TaskType
-from app.core.prompt_manager import PromptManager
-from app.services.ollama_service import OllamaService
-from app.core.model_selector import ModelSelector
-from app.models.task import Task, TaskStatus
-from app.models.interpretation import DecisionTimeline
-from sqlalchemy.orm import Session
 from app.components.interpretation_service import InterpretationService
 from app.components.semantic_validator import SemanticValidator
+from app.core.execution_context import ExecutionContext
+from app.core.logging_config import LoggingConfig
+from app.core.model_selector import ModelSelector
+from app.core.ollama_client import OllamaClient, TaskType
+from app.core.prompt_manager import PromptManager
+from app.core.request_router import RequestType, determine_request_type
+from app.core.service_registry import get_service_registry
+from app.core.workflow_engine import WorkflowEngine, WorkflowState
+from app.models.interpretation import DecisionTimeline
+from app.models.task import Task, TaskStatus
+from app.services.ollama_service import OllamaService
 from app.services.planning_hypothesis_service import PlanningHypothesisService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -455,13 +454,15 @@ class RequestOrchestrator:
         
         # Если воспоминаний нет, используем WebSearchTool для поиска в интернете
         # Проверяем необходимость одобрения через AdaptiveApprovalService
-        from app.services.adaptive_approval_service import AdaptiveApprovalService
-        from app.services.approval_service import ApprovalService
-        from app.models.approval import ApprovalRequestType
-        from app.tools.web_search_tool import WebSearchTool
-        from app.services.tool_service import ToolService
         from uuid import UUID
-        
+
+        from app.models.approval import ApprovalRequestType
+        from app.services.adaptive_approval_service import \
+            AdaptiveApprovalService
+        from app.services.approval_service import ApprovalService
+        from app.services.tool_service import ToolService
+        from app.tools.web_search_tool import WebSearchTool
+
         # Создаем фиктивный план для проверки одобрения (для информационных запросов)
         # Используем минимальный риск для веб-поиска
         adaptive_approval = AdaptiveApprovalService(context.db)
@@ -678,7 +679,8 @@ class RequestOrchestrator:
             planning_success = plan is not None and plan.status == "approved"
             
             # Использовать AdaptiveApprovalService для определения необходимости одобрения
-            from app.services.adaptive_approval_service import AdaptiveApprovalService
+            from app.services.adaptive_approval_service import \
+                AdaptiveApprovalService
             adaptive_approval = AdaptiveApprovalService(context)
             
             # Get task autonomy level

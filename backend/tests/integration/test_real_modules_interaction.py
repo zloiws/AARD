@@ -7,31 +7,32 @@ Real Modules Interaction Test
 2. Отдельное логирование для удобства разбора проблем
 3. Поэтапный вывод результатов
 """
-import pytest
 import asyncio
-import sys
-import os
-from uuid import uuid4
-from datetime import datetime
 import json
 import logging
+import os
+import sys
+from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
+
+import pytest
 
 # Настройка кодировки для Windows
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-from app.services.planning_service import PlanningService
-from app.services.execution_service import ExecutionService
-from app.services.agent_team_service import AgentTeamService
-from app.services.agent_team_coordination import AgentTeamCoordination
-from app.services.ollama_service import OllamaService
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan, PlanStatus
-from app.models.agent_team import CoordinationStrategy, TeamStatus
-from app.models.agent import Agent, AgentStatus
-from app.core.ollama_client import OllamaClient, TaskType
 from app.core.model_selector import ModelSelector
+from app.core.ollama_client import OllamaClient, TaskType
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import CoordinationStrategy, TeamStatus
+from app.models.plan import Plan, PlanStatus
+from app.models.task import Task, TaskStatus
+from app.services.agent_team_coordination import AgentTeamCoordination
+from app.services.agent_team_service import AgentTeamService
+from app.services.execution_service import ExecutionService
+from app.services.ollama_service import OllamaService
+from app.services.planning_service import PlanningService
 
 # Настройка отдельного логирования для этого теста
 TEST_LOG_DIR = Path(__file__).parent.parent.parent / "logs" / "tests"

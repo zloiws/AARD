@@ -2,12 +2,13 @@
 Configuration management using Pydantic Settings
 """
 import os
-from pathlib import Path
 from functools import lru_cache
+from pathlib import Path
 from typing import List, Optional
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, field_validator
+
 from dotenv import load_dotenv
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load .env from project root
 # config.py is at: backend/app/core/config.py

@@ -1,13 +1,12 @@
 """
 Page routes for project metrics web interface
 """
-from fastapi import APIRouter, Request, Depends, HTTPException
+from app.core.database import get_db
+from app.core.templates import templates
+from app.services.project_metrics_service import ProjectMetricsService
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-
-from app.core.templates import templates
-from app.core.database import get_db
-from app.services.project_metrics_service import ProjectMetricsService
 
 router = APIRouter(tags=["project_metrics_pages"])
 

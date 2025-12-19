@@ -18,13 +18,15 @@ except Exception as e:
     print(f"❌ Ошибка импорта test_workflow_engine.py: {e}")
 
 try:
-    from tests.integration.test_phase3_full_integration import test_level1_basic_context_creation
+    from tests.integration.test_phase3_full_integration import \
+        test_level1_basic_context_creation
     print("✅ test_phase3_full_integration.py импортирован успешно")
 except Exception as e:
     print(f"❌ Ошибка импорта test_phase3_full_integration.py: {e}")
 
 try:
-    from tests.integration.test_phase4_integration import TestWorkflowEngineIntegration
+    from tests.integration.test_phase4_integration import \
+        TestWorkflowEngineIntegration
     print("✅ test_phase4_integration.py импортирован успешно")
 except Exception as e:
     print(f"❌ Ошибка импорта test_phase4_integration.py: {e}")

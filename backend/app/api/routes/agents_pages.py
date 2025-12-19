@@ -3,13 +3,13 @@ Page routes for agents web interface
 """
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse
 
-from app.core.templates import templates
 from app.core.database import get_db
+from app.core.templates import templates
 from app.models.agent import Agent, AgentStatus
 from app.services.agent_service import AgentService
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["agents_pages"])
@@ -55,8 +55,8 @@ async def agents_list(request: Request, db: Session = Depends(get_db)):
 @router.get("/agents/create", response_class=HTMLResponse)
 async def agent_create_form(request: Request, db: Session = Depends(get_db)):
     """Agent creation form"""
-    from app.services.tool_service import ToolService
     from app.models.tool import ToolStatus
+    from app.services.tool_service import ToolService
     
     tool_service = ToolService(db)
     available_tools = tool_service.list_tools(status=ToolStatus.ACTIVE)
@@ -80,8 +80,8 @@ async def agent_detail(request: Request, agent_id: UUID, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="Agent not found")
     
     # Get available tools for assignment
-    from app.services.tool_service import ToolService
     from app.models.tool import ToolStatus
+    from app.services.tool_service import ToolService
     
     tool_service = ToolService(db)
     available_tools = tool_service.list_tools(status=ToolStatus.ACTIVE)
@@ -116,8 +116,8 @@ async def agent_edit_form(request: Request, agent_id: UUID, db: Session = Depend
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     
-    from app.services.tool_service import ToolService
     from app.models.tool import ToolStatus
+    from app.services.tool_service import ToolService
     
     tool_service = ToolService(db)
     available_tools = tool_service.list_tools(status=ToolStatus.ACTIVE)

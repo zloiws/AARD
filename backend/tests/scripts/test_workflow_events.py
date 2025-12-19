@@ -8,14 +8,15 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 
-from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.services.workflow_event_service import WorkflowEventService
-from app.models.workflow_event import (
-    EventSource, EventType, EventStatus, WorkflowStage
-)
-from datetime import datetime
 import uuid
+from datetime import datetime
+
+from app.core.database import get_db
+from app.models.workflow_event import (EventSource, EventStatus, EventType,
+                                       WorkflowStage)
+from app.services.workflow_event_service import WorkflowEventService
+from sqlalchemy.orm import Session
+
 
 def test_workflow_events():
     """Test saving and loading workflow events"""

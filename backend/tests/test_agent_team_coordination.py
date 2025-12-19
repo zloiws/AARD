@@ -1,13 +1,13 @@
 """
 Tests for AgentTeamCoordination
 """
-import pytest
 from uuid import uuid4
 
+import pytest
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus
 from app.services.agent_team_coordination import AgentTeamCoordination
 from app.services.agent_team_service import AgentTeamService
-from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus
-from app.models.agent import Agent, AgentStatus
 
 
 @pytest.mark.asyncio

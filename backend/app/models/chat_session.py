@@ -1,13 +1,14 @@
 """
 Chat session and message models for persistent storage
 """
-from sqlalchemy import Column, String, Text, DateTime, JSON, ForeignKey, Integer
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
 
 from app.core.database import Base
+from sqlalchemy import (JSON, Column, DateTime, ForeignKey, Integer, String,
+                        Text)
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 
 class ChatSession(Base):

@@ -2,18 +2,17 @@
 Agent Approval Agent (AAA) - Validate-Then-Build механизм
 Проверяет необходимость создания новых агентов перед их созданием
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 import json
-
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.logging_config import LoggingConfig
-from app.core.ollama_client import OllamaClient
 from app.core.model_selector import ModelSelector
+from app.core.ollama_client import OllamaClient
+from app.models.approval import ApprovalRequest, ApprovalRequestType
 from app.services.agent_service import AgentService
 from app.services.tool_service import ToolService
-from app.models.approval import ApprovalRequest, ApprovalRequestType
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

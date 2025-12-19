@@ -9,6 +9,7 @@ backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from dotenv import load_dotenv
+
 BASE_DIR = backend_dir.parent
 ENV_FILE = BASE_DIR / ".env"
 if ENV_FILE.exists():
@@ -16,6 +17,7 @@ if ENV_FILE.exists():
 
 from app.core.database import engine
 from sqlalchemy import text
+
 
 def fix_vector_dimension():
     """Fix vector dimension from 1536 to 768"""

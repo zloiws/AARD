@@ -1,12 +1,12 @@
 """
 Unit tests for AuditScheduler
 """
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.services.audit_scheduler import AuditScheduler, AuditSchedule
-from app.models.audit_report import AuditType, AuditStatus
+import pytest
+from app.models.audit_report import AuditStatus, AuditType
+from app.services.audit_scheduler import AuditSchedule, AuditScheduler
 
 
 @pytest.fixture

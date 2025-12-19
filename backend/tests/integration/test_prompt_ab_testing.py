@@ -1,13 +1,13 @@
 """
 Tests for A/B testing of prompt versions
 """
-import pytest
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
-from app.core.prompt_manager import PromptManager
+import pytest
 from app.core.execution_context import ExecutionContext
-from app.models.prompt import Prompt, PromptType, PromptStatus
+from app.core.prompt_manager import PromptManager
+from app.models.prompt import Prompt, PromptStatus, PromptType
 
 
 @pytest.mark.asyncio

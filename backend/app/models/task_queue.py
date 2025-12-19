@@ -1,13 +1,14 @@
 """
 SQLAlchemy models for task queues
 """
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, CheckConstraint, Index, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
 
 from app.core.database import Base
+from sqlalchemy import (Boolean, CheckConstraint, Column, DateTime, ForeignKey,
+                        Index, Integer, String, Text)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
 
 
 class TaskQueue(Base):

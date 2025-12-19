@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
+
 def main():
     p = Path('backend/scripts/patch_create_index_if_not_exists.py')
     text = p.read_text(encoding='utf-8')

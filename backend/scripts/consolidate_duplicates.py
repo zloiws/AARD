@@ -2,12 +2,12 @@
 Скрипт для консолидации дублированного функционала
 Этап 9.1.3: Консолидировать дублированный функционал
 """
-import sys
-import re
 import ast
-from pathlib import Path
-from typing import List, Dict
+import re
 import shutil
+import sys
+from pathlib import Path
+from typing import Dict, List
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent

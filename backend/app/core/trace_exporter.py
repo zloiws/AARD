@@ -1,17 +1,17 @@
 """
 OpenTelemetry database exporter for execution traces
 """
-from typing import Optional, List
-from datetime import datetime
 import threading
 from collections import deque
+from datetime import datetime
+from typing import List, Optional
+
+from app.core.database import get_session_local
+from app.core.logging_config import LoggingConfig
+from app.models.trace import ExecutionTrace
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 from opentelemetry.trace import Status, StatusCode
-
-from app.core.database import get_session_local
-from app.models.trace import ExecutionTrace
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

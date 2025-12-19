@@ -1,16 +1,15 @@
 """
 Artifact Version Service for managing artifact versions
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 from datetime import datetime, timezone
-
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, desc
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.logging_config import LoggingConfig
-from app.models.artifact import Artifact, ArtifactType, ArtifactStatus
+from app.models.artifact import Artifact, ArtifactStatus, ArtifactType
 from app.models.artifact_version import ArtifactVersion
+from sqlalchemy import and_, desc
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

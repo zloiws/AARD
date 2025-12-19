@@ -2,11 +2,10 @@
 Tests for MetaLearningService with ExecutionContext integration
 """
 import pytest
-from sqlalchemy.orm import Session
-
-from app.core.execution_context import ExecutionContext
 from app.core.database import SessionLocal
+from app.core.execution_context import ExecutionContext
 from app.services.meta_learning_service import MetaLearningService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

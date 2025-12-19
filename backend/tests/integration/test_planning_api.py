@@ -1,12 +1,13 @@
 """
 Test script for Planning API endpoints
 """
-import os
-import requests
 import json
-from typing import Optional
+import os
 import time
+from typing import Optional
+
 import pytest
+import requests
 
 # These are manual API checks that require the backend server to be running at localhost:8000.
 # In automated test runs we skip them unless RUN_API_INTEGRATION_TESTS env var is set.

@@ -1,11 +1,11 @@
 """
 Integration tests for extended task lifecycle
 """
-import pytest
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
+import pytest
 from app.models.task import Task, TaskStatus
+from sqlalchemy.orm import Session
 
 
 def test_task_status_enum():

@@ -1,11 +1,12 @@
 """
 Tests for EmbeddingService
 """
-import pytest
 import asyncio
-from unittest.mock import Mock, patch, AsyncMock
-from app.services.embedding_service import EmbeddingService
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from app.core.database import SessionLocal
+from app.services.embedding_service import EmbeddingService
 
 
 @pytest.fixture

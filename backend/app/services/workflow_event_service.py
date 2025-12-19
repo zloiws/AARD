@@ -1,18 +1,16 @@
 """
 Service for managing workflow events in the database
 """
-from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
-
-from app.models.workflow_event import (
-    WorkflowEvent, EventSource, EventType, EventStatus, WorkflowStage
-)
-from app.core.workflow_tracker import WorkflowStage as TrackerStage
 from app.core.logging_config import LoggingConfig
+from app.core.workflow_tracker import WorkflowStage as TrackerStage
+from app.models.workflow_event import (EventSource, EventStatus, EventType,
+                                       WorkflowEvent, WorkflowStage)
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -183,7 +181,7 @@ class WorkflowEventService:
         try:
             # Import broadcast function and connection manager
             from app.api.routes.websocket_events import manager
-            
+
             # Convert event to dict for broadcasting
             event_dict = event.to_dict()
             
@@ -193,8 +191,8 @@ class WorkflowEventService:
             }
             
             # Use threading to broadcast without blocking
-            import threading
             import asyncio
+            import threading
             
             def run_broadcast():
                 """Run broadcast in a new event loop"""

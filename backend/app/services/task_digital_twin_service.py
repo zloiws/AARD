@@ -2,14 +2,13 @@
 Task Digital Twin Service
 Manages the digital twin of a task - a single JSONB context field storing all task-related data
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 from datetime import datetime, timezone
-
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.logging_config import LoggingConfig
 from app.models.task import Task
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

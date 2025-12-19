@@ -3,16 +3,17 @@ Agent Experiment Service for A/B testing
 """
 import random
 import statistics
-from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, Optional, List
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
 
-from app.models.agent_experiment import AgentExperiment, ExperimentResult, ExperimentStatus
-from app.models.agent import Agent
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
+from app.core.tracing import add_span_attributes, get_tracer
+from app.models.agent import Agent
+from app.models.agent_experiment import (AgentExperiment, ExperimentResult,
+                                         ExperimentStatus)
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

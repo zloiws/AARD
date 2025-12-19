@@ -8,11 +8,13 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
+import json
+from datetime import datetime, timedelta
+
 from app.core.database import SessionLocal
 from app.models.plan import Plan
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-import json
+
 
 def check_latest_plan():
     """Check the latest plan details"""

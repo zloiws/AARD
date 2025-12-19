@@ -10,10 +10,12 @@ sys.path.insert(0, str(BASE_DIR))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 env_file = BASE_DIR / ".env"
 load_dotenv(env_file, override=True)
 
 from sqlalchemy import create_engine, text
+
 
 def execute_sql_file():
     """Execute the SQL file to create missing tables"""

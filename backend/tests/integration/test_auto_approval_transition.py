@@ -1,14 +1,14 @@
 """
 Integration tests for automatic DRAFT → PENDING_APPROVAL transition
 """
-import pytest
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskStatus
+import pytest
 from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
 from app.services.adaptive_approval_service import AdaptiveApprovalService
 from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
 
 
 def test_detect_critical_steps_create_agent(db: Session):

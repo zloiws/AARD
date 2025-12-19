@@ -2,25 +2,25 @@
 Полный интеграционный тест Фазы 3 - реальные тесты по нарастающей сложности
 Без заглушек и обходов - только реальные компоненты
 """
-import pytest
 import asyncio
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.core.execution_context import ExecutionContext
+import pytest
 from app.core.database import SessionLocal
-from app.core.service_registry import get_service_registry
-from app.core.request_orchestrator import RequestOrchestrator
+from app.core.execution_context import ExecutionContext
 from app.core.prompt_manager import PromptManager
-from app.services.memory_service import MemoryService
-from app.services.reflection_service import ReflectionService
-from app.services.meta_learning_service import MetaLearningService
-from app.services.planning_service import PlanningService
-from app.services.execution_service import ExecutionService
-from app.services.ollama_service import OllamaService
+from app.core.request_orchestrator import RequestOrchestrator
+from app.core.service_registry import get_service_registry
 from app.models.agent import Agent, AgentStatus
-from app.models.task import Task, TaskStatus
 from app.models.plan import Plan, PlanStatus
+from app.models.task import Task, TaskStatus
+from app.services.execution_service import ExecutionService
+from app.services.memory_service import MemoryService
+from app.services.meta_learning_service import MetaLearningService
+from app.services.ollama_service import OllamaService
+from app.services.planning_service import PlanningService
+from app.services.reflection_service import ReflectionService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture(scope="function")

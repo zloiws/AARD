@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
+
 def fix_file(path: Path):
     b = path.read_bytes()
     if b.find(b'\\n') != -1:

@@ -1,15 +1,15 @@
 """
 Тест интеграции Chat API с PlanningService и ExecutionService
 """
-import pytest
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.api.routes.chat import chat, ChatMessage
-from app.core.request_router import determine_request_type, RequestType
+import pytest
+from app.api.routes.chat import ChatMessage, chat
+from app.core.request_router import RequestType, determine_request_type
 from app.models.task import Task, TaskStatus
-from app.services.planning_service import PlanningService
 from app.services.execution_service import ExecutionService
+from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.asyncio

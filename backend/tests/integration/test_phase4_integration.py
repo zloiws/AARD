@@ -2,18 +2,18 @@
 Интеграционные тесты для Фазы 4
 Проверяют интеграцию WorkflowEngine, улучшенную обработку ошибок и AdaptiveApprovalService
 """
-import pytest
+from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
-from unittest.mock import Mock, AsyncMock, patch
 
+import pytest
+from app.core.database import SessionLocal
 from app.core.execution_context import ExecutionContext
 from app.core.request_orchestrator import RequestOrchestrator
-from app.core.workflow_engine import WorkflowEngine, WorkflowState
 from app.core.request_router import RequestType
-from app.core.database import SessionLocal
+from app.core.workflow_engine import WorkflowEngine, WorkflowState
 from app.models.agent import Agent
-from app.models.ollama_server import OllamaServer
 from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
 
 
 @pytest.fixture
@@ -65,7 +65,7 @@ def test_agent(db_session):
 def real_model_and_server(db_session):
     """Фикстура для реальной модели и сервера из БД"""
     from app.services.ollama_service import OllamaService
-    
+
     # Используем OllamaService для получения серверов (как в test_phase3_full_integration.py)
     target_server_url = "10.39.0.6"
     target_model_name = "gemma3:4b"
@@ -340,10 +340,11 @@ class TestAdaptiveApprovalIntegration:
     @pytest.mark.asyncio
     async def test_adaptive_approval_low_risk(self, execution_context, db_session, test_agent):
         """Тест адаптивного одобрения для низкорисковой задачи"""
-        from app.services.adaptive_approval_service import AdaptiveApprovalService
         from app.models.plan import Plan
         from app.models.task import Task, TaskStatus
-        
+        from app.services.adaptive_approval_service import \
+            AdaptiveApprovalService
+
         # Создаем простой план (низкий риск)
         task = Task(
             description="Simple task: add two numbers",
@@ -380,10 +381,11 @@ class TestAdaptiveApprovalIntegration:
     @pytest.mark.asyncio
     async def test_adaptive_approval_high_risk(self, execution_context, db_session, test_agent):
         """Тест адаптивного одобрения для высокорисковой задачи"""
-        from app.services.adaptive_approval_service import AdaptiveApprovalService
         from app.models.plan import Plan
         from app.models.task import Task, TaskStatus
-        
+        from app.services.adaptive_approval_service import \
+            AdaptiveApprovalService
+
         # Создаем сложный план (высокий риск)
         task = Task(
             description="Complex task: modify system files",

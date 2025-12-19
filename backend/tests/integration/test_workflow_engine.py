@@ -2,13 +2,13 @@
 Интеграционные тесты для WorkflowEngine
 Проверяют управление состояниями workflow, переходы, валидацию
 """
-import pytest
-from uuid import uuid4
 from datetime import datetime, timezone
+from uuid import uuid4
 
+import pytest
+from app.core.database import SessionLocal
 from app.core.execution_context import ExecutionContext
 from app.core.workflow_engine import WorkflowEngine, WorkflowState
-from app.core.database import SessionLocal
 
 
 @pytest.fixture

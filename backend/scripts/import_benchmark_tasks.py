@@ -11,6 +11,7 @@ sys.path.insert(0, str(backend_dir))
 from app.core.database import SessionLocal
 from app.services.benchmark_service import BenchmarkService
 
+
 def main():
     """Import benchmark tasks from data/benchmarks directory"""
     print("=" * 70)

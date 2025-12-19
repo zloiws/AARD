@@ -1,21 +1,20 @@
 """
 Integration tests for full plan execution
 """
-import pytest
-import json
 import asyncio
-from uuid import uuid4
+import json
 from datetime import datetime
+from uuid import uuid4
 
-from sqlalchemy.orm import Session
-
-from app.core.database import SessionLocal, engine, Base
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan
-from app.services.planning_service import PlanningService
-from app.services.execution_service import ExecutionService
-from app.services.approval_service import ApprovalService
+import pytest
+from app.core.database import Base, SessionLocal, engine
 from app.models.approval import ApprovalRequest
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from app.services.approval_service import ApprovalService
+from app.services.execution_service import ExecutionService
+from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture(scope="function")

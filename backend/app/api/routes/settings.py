@@ -1,15 +1,16 @@
 """
 API routes for system settings management
 """
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
 
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
+from app.models.system_setting import (SettingCategory, SettingValueType,
+                                       SystemSetting)
 from app.services.system_setting_service import SystemSettingService
-from app.models.system_setting import SystemSetting, SettingValueType, SettingCategory
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 logger = LoggingConfig.get_logger(__name__)

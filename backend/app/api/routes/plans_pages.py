@@ -3,13 +3,13 @@ Page routes for plans web interface
 """
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse
 
-from app.core.templates import templates
 from app.core.database import get_db
+from app.core.templates import templates
 from app.models.plan import Plan
 from app.services.planning_service import PlanningService
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["plans_pages"])
@@ -97,8 +97,9 @@ async def plans_metrics(
         )
         
         # Add status breakdown
+        from datetime import datetime, timedelta, timezone
+
         from app.models.plan import Plan
-        from datetime import datetime, timezone, timedelta
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
         
         plans = db.query(Plan).filter(Plan.created_at >= cutoff_date).all()
@@ -208,7 +209,8 @@ async def plan_detail(
     # Get plan quality metrics
     quality_data = None
     try:
-        from app.services.planning_metrics_service import PlanningMetricsService
+        from app.services.planning_metrics_service import \
+            PlanningMetricsService
         metrics_service = PlanningMetricsService(db)
         quality_score = metrics_service.calculate_plan_quality_score(plan)
         breakdown = metrics_service.get_plan_quality_breakdown(plan_id)

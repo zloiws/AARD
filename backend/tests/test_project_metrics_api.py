@@ -1,15 +1,15 @@
 """
 Unit tests for project metrics API endpoints
 """
-import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from app.core.database import SessionLocal, engine, Base
-from app.models.project_metric import ProjectMetric, MetricType, MetricPeriod
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan, PlanStatus
+import pytest
 from app.api.routes import project_metrics
+from app.core.database import Base, SessionLocal, engine
+from app.models.plan import Plan, PlanStatus
+from app.models.project_metric import MetricPeriod, MetricType, ProjectMetric
+from app.models.task import Task, TaskStatus
 
 
 @pytest.fixture(scope="module")

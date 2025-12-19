@@ -10,13 +10,14 @@ backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from dotenv import load_dotenv
+
 load_dotenv(backend_dir.parent / ".env")
 
-from app.core.database import SessionLocal
 from app.core.config import get_settings
-from app.services.system_setting_service import SystemSettingService
-from app.models.system_setting import SettingCategory
+from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
+from app.models.system_setting import SettingCategory
+from app.services.system_setting_service import SystemSettingService
 
 logger = LoggingConfig.get_logger(__name__)
 

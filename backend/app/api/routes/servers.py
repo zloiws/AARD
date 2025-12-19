@@ -1,18 +1,18 @@
 """
 API routes for managing Ollama servers in database
 """
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
 from datetime import datetime, timezone
+from typing import List, Optional
 
+import httpx
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
-from app.models.ollama_server import OllamaServer
 from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
 from app.services.ollama_service import OllamaService
-import httpx
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/servers", tags=["servers"])
 logger = LoggingConfig.get_logger(__name__)

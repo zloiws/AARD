@@ -1,16 +1,15 @@
 """
 System Setting model for centralized configuration management
 """
+import json
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Optional
 from uuid import uuid4
-from typing import Optional, Any
-import json
-
-from sqlalchemy import Column, String, Text, Boolean, DateTime, Index
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
 from app.core.database import Base
+from sqlalchemy import Boolean, Column, DateTime, Index, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
 
 class SettingValueType(str, Enum):

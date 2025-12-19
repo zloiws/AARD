@@ -2,14 +2,15 @@
 Комплексное тестирование Фазы 5
 Запускает все тесты и собирает статистику покрытия
 """
-import sys
-import subprocess
-from pathlib import Path
-from datetime import datetime
 import re
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
 
 backend_dir = Path(__file__).parent.parent
 import os
+
 os.chdir(backend_dir)
 
 print("=" * 80)

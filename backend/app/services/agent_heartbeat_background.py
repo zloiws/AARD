@@ -2,13 +2,13 @@
 Background task for agent heartbeat monitoring
 """
 import asyncio
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from app.core.logging_config import LoggingConfig
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.models.agent import Agent, AgentHealthStatus, AgentStatus
 from app.services.agent_heartbeat_service import AgentHeartbeatService
-from app.models.agent import Agent, AgentStatus, AgentHealthStatus
 
 logger = LoggingConfig.get_logger(__name__)
 

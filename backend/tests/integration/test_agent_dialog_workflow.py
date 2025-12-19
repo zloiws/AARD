@@ -2,25 +2,27 @@
 Тест этапа 8.2: Интеграция диалогов в workflow
 Проверяет полную интеграцию диалогов с PlanningService и API
 """
-import pytest
 import asyncio
 import sys
-from uuid import uuid4
 from datetime import datetime
+from uuid import uuid4
+
+import pytest
 
 # Настройка кодировки
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_conversation import ConversationStatus
+from app.models.plan import Plan, PlanStatus
+from app.models.task import Task, TaskStatus
 from app.services.agent_dialog_service import AgentDialogService
 from app.services.agent_service import AgentService
-from app.services.planning_service import PlanningService
 from app.services.ollama_service import OllamaService
-from app.models.agent import Agent, AgentStatus
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan, PlanStatus
-from app.models.agent_conversation import ConversationStatus
-from app.services.planning_service_dialog_integration import is_complex_task, initiate_agent_dialog_for_planning
+from app.services.planning_service import PlanningService
+from app.services.planning_service_dialog_integration import (
+    initiate_agent_dialog_for_planning, is_complex_task)
 
 
 @pytest.mark.asyncio
@@ -230,10 +232,10 @@ async def test_api_dialog_management(db):
     db.commit()
     
     # Импортировать TestClient
-    from fastapi.testclient import TestClient
     from app.core.database import get_db
+    from fastapi.testclient import TestClient
     from main import app
-    
+
     # Override database dependency
     def override_get_db():
         try:

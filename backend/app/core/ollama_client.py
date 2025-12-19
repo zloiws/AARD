@@ -6,23 +6,18 @@ import hashlib
 import json
 import time
 from abc import ABC, abstractmethod
-from enum import Enum
-from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 import httpx
-from pydantic import BaseModel
-
-from app.core.config import get_settings, OllamaInstanceConfig
+from app.core.config import OllamaInstanceConfig, get_settings
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
-from app.core.metrics import (
-    llm_requests_total,
-    llm_request_duration_seconds,
-    llm_tokens_total,
-    llm_errors_total,
-    llm_model_loaded
-)
+from app.core.metrics import (llm_errors_total, llm_model_loaded,
+                              llm_request_duration_seconds, llm_requests_total,
+                              llm_tokens_total)
+from app.core.tracing import add_span_attributes, get_tracer
+from pydantic import BaseModel
 
 logger = LoggingConfig.get_logger(__name__)
 tracer = get_tracer(__name__)
@@ -782,7 +777,8 @@ class OllamaClient:
                             # Try to find models in DB for this server and retry with first available
                             try:
                                 from app.core.database import get_session_local
-                                from app.services.ollama_service import OllamaService
+                                from app.services.ollama_service import \
+                                    OllamaService
                                 SessionLocal = get_session_local()
                                 db = SessionLocal()
                                 try:

@@ -1,16 +1,16 @@
 """
 Integration tests for FeedbackLearningService
 """
-import pytest
-from uuid import uuid4
 from datetime import datetime
-from sqlalchemy.orm import Session
+from uuid import uuid4
 
-from app.services.feedback_learning_service import FeedbackLearningService
+import pytest
 from app.models.approval import ApprovalRequest, ApprovalRequestType
+from app.models.learning_pattern import LearningPattern, PatternType
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
-from app.models.learning_pattern import LearningPattern, PatternType
+from app.services.feedback_learning_service import FeedbackLearningService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

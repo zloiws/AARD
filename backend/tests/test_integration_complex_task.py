@@ -3,10 +3,9 @@ Integration tests for complex tasks - real LLM usage
 Tests full workflow: planning + execution + reflection
 """
 import pytest
-from sqlalchemy.orm import Session
-
-from app.core.request_orchestrator import RequestOrchestrator
 from app.core.execution_context import ExecutionContext
+from app.core.request_orchestrator import RequestOrchestrator
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.asyncio

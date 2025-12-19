@@ -2,12 +2,12 @@
 Ollama Manager - loads instances from database instead of .env
 """
 from typing import List, Optional
-from sqlalchemy.orm import Session
 
-from app.core.ollama_client import OllamaInstanceConfig, OllamaError
-from app.models.ollama_server import OllamaServer
+from app.core.ollama_client import OllamaError, OllamaInstanceConfig
 from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
 from app.services.ollama_service import OllamaService
+from sqlalchemy.orm import Session
 
 
 class OllamaManager:

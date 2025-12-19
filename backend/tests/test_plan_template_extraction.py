@@ -1,16 +1,16 @@
 """
 Integration tests for plan template extraction
 """
-import pytest
-from uuid import uuid4, UUID
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+from uuid import UUID, uuid4
 
-from app.models.plan_template import PlanTemplate, TemplateStatus
+import pytest
 from app.models.plan import Plan, PlanStatus
+from app.models.plan_template import PlanTemplate, TemplateStatus
 from app.models.task import Task, TaskStatus
-from app.services.plan_template_service import PlanTemplateService
 from app.services.execution_service import ExecutionService
+from app.services.plan_template_service import PlanTemplateService
 
 
 @pytest.fixture

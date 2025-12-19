@@ -1,25 +1,21 @@
 """
 Agent Dialog Service for managing conversations between agents
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID, uuid4
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
-from sqlalchemy.orm.attributes import flag_modified
-
-from app.models.agent_conversation import (
-    AgentConversation,
-    ConversationStatus,
-    MessageRole
-)
-from app.models.agent import Agent, AgentStatus
-from app.models.task import Task
-from app.core.logging_config import LoggingConfig
-from app.services.a2a_router import A2ARouter
 from app.core.a2a_protocol import A2AMessage, A2AMessageType, A2AResponse
 from app.core.config import get_settings
+from app.core.logging_config import LoggingConfig
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_conversation import (AgentConversation,
+                                           ConversationStatus, MessageRole)
+from app.models.task import Task
+from app.services.a2a_router import A2ARouter
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 logger = LoggingConfig.get_logger(__name__)
 settings = get_settings()

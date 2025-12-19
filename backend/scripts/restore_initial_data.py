@@ -10,6 +10,7 @@ backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from dotenv import load_dotenv
+
 load_dotenv(backend_dir.parent / ".env")
 
 from app.core.database import SessionLocal
@@ -59,8 +60,8 @@ def restore_initial_prompts():
     
     db = SessionLocal()
     try:
+        from app.models.prompt import PromptStatus, PromptType
         from app.services.prompt_service import PromptService
-        from app.models.prompt import PromptType, PromptStatus
         
         service = PromptService(db)
         
@@ -179,9 +180,9 @@ def restore_ollama_servers():
     
     db = SessionLocal()
     try:
-        from app.models.ollama_server import OllamaServer
         from app.core.config import get_settings
-        
+        from app.models.ollama_server import OllamaServer
+
         # Проверить существующие
         existing_count = db.query(OllamaServer).count()
         if existing_count > 0:
@@ -237,8 +238,8 @@ def main():
     db = SessionLocal()
     try:
         from app.models.benchmark_task import BenchmarkTask
-        from app.models.prompt import Prompt
         from app.models.ollama_server import OllamaServer
+        from app.models.prompt import Prompt
         
         print("\nИтоговая статистика:")
         print(f"  Benchmark задач: {db.query(BenchmarkTask).count()}")

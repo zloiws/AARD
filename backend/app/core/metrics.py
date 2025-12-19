@@ -1,10 +1,12 @@
 """
 Prometheus metrics configuration
 """
-from prometheus_client import Counter, Histogram, Gauge, Info, generate_latest, CONTENT_TYPE_LATEST
-from prometheus_client.registry import REGISTRY
-from prometheus_client.multiprocess import MultiProcessCollector
 import os
+
+from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge, Histogram,
+                               Info, generate_latest)
+from prometheus_client.multiprocess import MultiProcessCollector
+from prometheus_client.registry import REGISTRY
 
 # Check if we're in multiprocess mode
 if os.environ.get('PROMETHEUS_MULTIPROC_DIR'):
@@ -213,6 +215,7 @@ app_info = Info(
 
 # Initialize app info
 from app.core.config import get_settings
+
 try:
     settings = get_settings()
     app_info.info({

@@ -1,15 +1,15 @@
 """
 Agent Service for managing agents lifecycle
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from app.models.agent import Agent, AgentStatus, AgentCapability
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
+from app.core.tracing import add_span_attributes, get_tracer
+from app.models.agent import Agent, AgentCapability, AgentStatus
+from sqlalchemy import and_, desc, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

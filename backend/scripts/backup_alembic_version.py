@@ -4,6 +4,7 @@ Backup alembic_version rows into alembic_version_backup (idempotent).
 """
 import os
 import sys
+
 from sqlalchemy import create_engine, text
 
 DATABASE_URL = os.environ.get("DATABASE_URL") or "postgresql://postgres:Cdthrf12@10.39.0.101:5432/aard"

@@ -1,15 +1,15 @@
 """
 Prompt Manager - менеджер промптов для оркестратора
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
-import time
 import random
+import time
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.execution_context import ExecutionContext
-from app.services.prompt_service import PromptService
-from app.models.prompt import Prompt, PromptType, PromptStatus
 from app.core.logging_config import LoggingConfig
+from app.models.prompt import Prompt, PromptStatus, PromptType
+from app.services.prompt_service import PromptService
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -101,7 +101,8 @@ class PromptManager:
         # Получить промпт
         # First try to resolve runtime assignments via PromptRuntimeSelector (experiment/agent/global)
         try:
-            from app.services.prompt_runtime_selector import PromptRuntimeSelector
+            from app.services.prompt_runtime_selector import \
+                PromptRuntimeSelector
             selector = PromptRuntimeSelector(self.context.db)
             resolved = selector.resolve(component_role=stage, context_metadata=getattr(self.context, "metadata", None), task_type=stage)
             if resolved and resolved.get("prompt_text"):

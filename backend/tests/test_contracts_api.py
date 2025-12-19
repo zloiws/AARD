@@ -1,8 +1,10 @@
 import json
 from uuid import uuid4
 
+
 def test_execution_event_contract(client, db):
     from app.models.workflow_event import WorkflowEvent
+
     # create an event with required fields and extended contract fields
     ev = WorkflowEvent(
         workflow_id="wf-test-1",
@@ -39,6 +41,7 @@ def test_execution_event_contract(client, db):
 def test_prompt_assignment_contract_api(client):
     # Override auth to allow assign endpoint
     from types import SimpleNamespace
+
     from app.core.auth import get_current_user_required
     client.app.dependency_overrides[get_current_user_required] = lambda: SimpleNamespace(username="tester", role="admin")
 

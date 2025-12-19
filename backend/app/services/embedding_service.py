@@ -1,17 +1,18 @@
 """
 Service for generating text embeddings for vector search
 """
-from typing import List, Optional, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
     from app.models.ollama_server import OllamaServer
+
 import asyncio
 import json
-import httpx
 from functools import lru_cache
 
-from app.core.logging_config import LoggingConfig
+import httpx
 from app.core.config import get_settings
+from app.core.logging_config import LoggingConfig
 from app.services.ollama_service import OllamaService
 from sqlalchemy.orm import Session
 

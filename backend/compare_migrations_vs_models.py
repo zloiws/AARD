@@ -1,9 +1,9 @@
 """Compare tables created by migrations vs models"""
 import os
-import sys
 import re
-from pathlib import Path
+import sys
 from collections import defaultdict
+from pathlib import Path
 
 # Add parent directory to path for imports
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -11,11 +11,12 @@ sys.path.insert(0, str(BASE_DIR))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 env_file = BASE_DIR / ".env"
 load_dotenv(env_file, override=True)
 
-from sqlalchemy import create_engine, text
 from app.core.config import get_settings
+from sqlalchemy import create_engine, text
 
 if __name__ == "__main__":
     settings = get_settings()

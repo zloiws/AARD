@@ -2,22 +2,21 @@
 Методы интеграции диалогов в PlanningService
 Вынесены в отдельный файл для читаемости
 """
-from typing import Dict, Any, Optional, List, Tuple
-from uuid import UUID
-from datetime import datetime, timezone
 import asyncio
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
+from uuid import UUID
 
-from sqlalchemy.orm import Session
-
-from app.services.agent_dialog_service import AgentDialogService
-from app.services.agent_service import AgentService
+from app.core.config import get_settings
+from app.core.logging_config import LoggingConfig
+from app.core.model_selector import ModelSelector
+from app.core.ollama_client import OllamaClient, TaskType
 from app.models.agent import Agent, AgentStatus
 from app.models.agent_conversation import ConversationStatus, MessageRole
-from app.core.ollama_client import OllamaClient, TaskType
-from app.core.model_selector import ModelSelector
+from app.services.agent_dialog_service import AgentDialogService
+from app.services.agent_service import AgentService
 from app.services.ollama_service import OllamaService
-from app.core.logging_config import LoggingConfig
-from app.core.config import get_settings
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 settings = get_settings()

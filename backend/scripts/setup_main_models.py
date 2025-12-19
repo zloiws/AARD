@@ -14,6 +14,7 @@ from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
 from sqlalchemy.orm import Session
 
+
 def setup_main_models():
     """Настроить основные модели с приоритетом 100 и capabilities"""
     

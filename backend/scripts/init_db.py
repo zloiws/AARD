@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Run Alembic migrations programmatically and provide an idempotent DB init entrypoint."""
 from __future__ import annotations
+
 import os
 import sys
-from alembic.config import Config
+
 from alembic import command
+from alembic.config import Config
+
 
 def run_alembic_upgrade():
     backend_dir = os.path.join(os.path.dirname(__file__), "..")

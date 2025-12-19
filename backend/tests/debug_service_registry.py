@@ -1,12 +1,13 @@
 """Debug script for ServiceRegistry tests"""
 import sys
 from pathlib import Path
+
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from app.core.database import SessionLocal
-from app.core.service_registry import get_service_registry
 from app.core.execution_context import ExecutionContext
+from app.core.service_registry import get_service_registry
 from app.services.prompt_service import PromptService
 
 db = SessionLocal()

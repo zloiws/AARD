@@ -1,15 +1,15 @@
 """
 Integration tests for plan visualization
 """
-import pytest
-from fastapi.testclient import TestClient
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
+import pytest
+from app.core.database import SessionLocal
 from app.main import app
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
-from app.core.database import SessionLocal
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 client = TestClient(app)
 

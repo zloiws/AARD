@@ -3,9 +3,10 @@ Database model for Ollama server configuration
 """
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, JSON
-from sqlalchemy.dialects.postgresql import UUID
+
 from app.core.database import Base
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class OllamaServer(Base):

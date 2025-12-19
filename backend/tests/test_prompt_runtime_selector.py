@@ -1,15 +1,17 @@
 from uuid import uuid4
 
+
 def create_prompt(svc, name, text="x", prompt_type="system"):
     p = svc.create_prompt(name=name, prompt_text=text, prompt_type=prompt_type, level=0, created_by="test")
     return p
 
 
 def test_prompt_runtime_selector_precedence(db):
-    from app.services.prompt_service import PromptService
-    from app.services.prompt_runtime_selector import PromptRuntimeSelector
-    from app.models.prompt_assignment import PromptAssignment
     from uuid import UUID
+
+    from app.models.prompt_assignment import PromptAssignment
+    from app.services.prompt_runtime_selector import PromptRuntimeSelector
+    from app.services.prompt_service import PromptService
 
     svc = PromptService(db)
     selector = PromptRuntimeSelector(db)

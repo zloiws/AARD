@@ -1,11 +1,11 @@
 """
 Integration tests for RequestOrchestrator
 """
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
-from app.core.request_orchestrator import RequestOrchestrator
+import pytest
 from app.core.execution_context import ExecutionContext
+from app.core.request_orchestrator import RequestOrchestrator
 from app.core.request_router import RequestType
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Apply patch SQL for agents table using SQLAlchemy or psycopg2."""
 from __future__ import annotations
+
 import os
 import sys
 from pathlib import Path

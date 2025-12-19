@@ -1,12 +1,12 @@
 """
 Service Registry - централизованный реестр сервисов
 """
-from typing import Type, TypeVar, Dict, Any, Optional, Callable
-from sqlalchemy.orm import Session
 import threading
+from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
 from app.core.execution_context import ExecutionContext
 from app.core.logging_config import LoggingConfig
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

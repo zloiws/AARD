@@ -1,12 +1,12 @@
 """
 Tests for PromptAssignment creation and basic retrieval/resolution filters
 """
-import pytest
 from uuid import uuid4
 
+import pytest
 from app.core.execution_context import ExecutionContext
-from app.services.prompt_service import PromptService
 from app.models.prompt import Prompt, PromptType
+from app.services.prompt_service import PromptService
 
 
 def test_create_prompt_assignment(db):

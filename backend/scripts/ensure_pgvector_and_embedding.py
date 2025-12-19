@@ -4,6 +4,7 @@ Run: python -u backend/scripts/ensure_pgvector_and_embedding.py
 """
 import os
 import sys
+
 from sqlalchemy import text
 
 # Ensure repo root on path

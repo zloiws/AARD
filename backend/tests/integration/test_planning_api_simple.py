@@ -2,9 +2,10 @@
 Упрощенный тест API планирования - проверка базовой функциональности
 Без генерации через LLM (можно создать план вручную через БД)
 """
-import requests
 import json
 from typing import Optional
+
+import requests
 
 BASE_URL = "http://localhost:8000"
 API_BASE = f"{BASE_URL}/api/plans"

@@ -1,12 +1,12 @@
 """
 Tests for BenchmarkTask model
 """
-import pytest
 from datetime import datetime
 from uuid import uuid4
 
+import pytest
+from app.core.database import Base, SessionLocal, engine
 from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
-from app.core.database import SessionLocal, Base, engine
 
 
 @pytest.fixture

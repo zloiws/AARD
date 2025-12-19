@@ -1,16 +1,18 @@
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE_DIR))
 load_dotenv(BASE_DIR.parent / ".env", override=True)
 
-from app.core.database import get_session_local
-from app.models.ollama_server import OllamaServer
-from app.models.ollama_model import OllamaModel
 from datetime import datetime
+
+from app.core.database import get_session_local
+from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
 
 SERVERS = [
     {

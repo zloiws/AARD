@@ -2,24 +2,24 @@
 Agent Evolution Service
 Self-improvement system for agents through metric analysis and A/B testing
 """
-import re
 import json
-from typing import Dict, Any, Optional, List
-from uuid import UUID
+import re
 from datetime import datetime, timezone
-
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.logging_config import LoggingConfig
+from app.core.ollama_client import OllamaClient
 from app.models.agent import Agent, AgentStatus
-from app.models.artifact import Artifact, ArtifactType
-from app.models.evolution import EvolutionHistory, EntityType, ChangeType, TriggerType, Feedback
 from app.models.agent_experiment import AgentExperiment, ExperimentStatus
+from app.models.artifact import Artifact, ArtifactType
+from app.models.evolution import (ChangeType, EntityType, EvolutionHistory,
+                                  Feedback, TriggerType)
 from app.services.agent_aging_monitor import AgentAgingMonitor
 from app.services.agent_experiment_service import AgentExperimentService
-from app.services.artifact_version_service import ArtifactVersionService
 from app.services.artifact_generator import ArtifactGenerator
-from app.core.ollama_client import OllamaClient
+from app.services.artifact_version_service import ArtifactVersionService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

@@ -1,13 +1,14 @@
 """
 System Setting Service for managing application configuration
 """
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
 
-from app.models.system_setting import SystemSetting, SettingValueType, SettingCategory
 from app.core.logging_config import LoggingConfig
+from app.models.system_setting import (SettingCategory, SettingValueType,
+                                       SystemSetting)
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

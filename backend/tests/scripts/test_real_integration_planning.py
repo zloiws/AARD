@@ -9,13 +9,15 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 
 import asyncio
-from sqlalchemy.orm import Session
+from uuid import UUID
+
 from app.core.database import get_db
+from app.models.task import Task, TaskStatus
+from app.models.workflow_event import EventSource, EventType
 from app.services.planning_service import PlanningService
 from app.services.workflow_event_service import WorkflowEventService
-from app.models.workflow_event import EventType, EventSource
-from app.models.task import Task, TaskStatus
-from uuid import UUID
+from sqlalchemy.orm import Session
+
 
 async def test_real_planning_integration():
     """Test real PlanningService integration with event saving"""

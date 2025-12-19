@@ -1,13 +1,15 @@
 import sys
 from pathlib import Path
+
 # Ensure backend package is importable when running this script directly
 backend_dir = Path(__file__).parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from app.core.database import SessionLocal, Base, engine
-from app.services.system_setting_service import SystemSettingService
+from app.core.database import Base, SessionLocal, engine
 from app.models.system_setting import SystemSetting
+from app.services.system_setting_service import SystemSettingService
+
 
 def main():
     # ensure tables exist

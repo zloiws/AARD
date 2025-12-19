@@ -1,18 +1,19 @@
 """
 Pytest configuration and fixtures
 """
+import os
 import sys
 from pathlib import Path
+
 import pytest
 from sqlalchemy.orm import Session
-import os
 
 # Add backend directory to path for imports
 backend_dir = Path(__file__).parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from app.core.database import SessionLocal, Base, engine
+from app.core.database import Base, SessionLocal, engine
 
 
 @pytest.fixture(scope="function")
@@ -44,7 +45,8 @@ def db() -> Session:
         if os.environ.get("SEED_OLLAMA_SERVERS") == "1":
             try:
                 # Import and run seeding script which uses the same DB session configuration
-                from backend.scripts.seed_ollama_servers import main as _seed_main
+                from backend.scripts.seed_ollama_servers import \
+                    main as _seed_main
                 _seed_main()
             except Exception:
                 # Don't fail tests if seeding fails; tests will report lack of servers
@@ -87,10 +89,10 @@ def db() -> Session:
 @pytest.fixture(scope="function")
 def client(db: Session):
     """Create test client with database dependency override"""
-    import sys
     import importlib.util
+    import sys
     from pathlib import Path
-    
+
     # Ensure backend directory is in path
     backend_dir = Path(__file__).parent.parent
     if str(backend_dir) not in sys.path:
@@ -103,8 +105,8 @@ def client(db: Session):
     spec.loader.exec_module(main_module)
     app = main_module.app
     
-    from fastapi.testclient import TestClient
     from app.core.database import get_db
+    from fastapi.testclient import TestClient
     
     def override_get_db():
         try:

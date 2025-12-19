@@ -1,12 +1,11 @@
 """
 Page routes for system settings management UI
 """
-from fastapi import APIRouter, Request, Depends
+from app.core.database import get_db
+from app.core.templates import templates
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-
-from app.core.templates import templates
-from app.core.database import get_db
 
 router = APIRouter(tags=["settings_pages"])
 

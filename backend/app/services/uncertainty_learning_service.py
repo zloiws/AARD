@@ -1,20 +1,20 @@
 """
 Uncertainty Learning Service for learning and adapting uncertainty parameters
 """
-from typing import Dict, Any, List, Optional
-from uuid import UUID
-from datetime import datetime, timezone
 import json
-
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
 from app.core.ollama_client import OllamaClient, TaskType
-from app.models.uncertainty_parameters import UncertaintyParameter, ParameterType
+from app.core.tracing import add_span_attributes, get_tracer
+from app.models.uncertainty_parameters import (ParameterType,
+                                               UncertaintyParameter)
 from app.models.uncertainty_types import UncertaintyType
 from app.services.meta_learning_service import MetaLearningService
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

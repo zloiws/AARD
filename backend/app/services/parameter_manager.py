@@ -1,11 +1,12 @@
 """
 Parameter Manager for loading and managing system parameters from database
 """
-from typing import Dict, Any, Optional, List
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
 
 from app.core.logging_config import LoggingConfig
-from app.models.system_parameter import SystemParameter, ParameterCategory, SystemParameterType
+from app.models.system_parameter import (ParameterCategory, SystemParameter,
+                                         SystemParameterType)
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

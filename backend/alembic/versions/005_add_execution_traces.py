@@ -5,8 +5,8 @@ Revises: 004_add_plan_id_to_approval_requests
 Create Date: 2025-01-02 12:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.

@@ -2,16 +2,15 @@
 Task Lifecycle Manager - управление жизненным циклом задач
 Реализует ToDo-список как Workflow Engine с четкими статусами и переходами
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from sqlalchemy.orm import Session
-
-from app.models.task import Task, TaskStatus
-from app.core.logging_config import LoggingConfig
 from app.core.execution_context import ExecutionContext
+from app.core.logging_config import LoggingConfig
+from app.models.task import Task, TaskStatus
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

@@ -5,22 +5,23 @@ and prints diagnostics to stdout.
 Run from project root: python -u backend/scripts/diag_procedural_pattern.py
 """
 import asyncio
+import json
 import os
 import sys
 from uuid import uuid4
-import json
 
 # Ensure repository root is on sys.path so 'app' package is importable when run as script
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from app.core.database import SessionLocal, Base, engine
+from datetime import datetime, timezone
+
+from app.core.database import Base, SessionLocal, engine
 from app.models.agent import Agent
-from app.models.agent_memory import MemoryType, AgentMemory
+from app.models.agent_memory import AgentMemory, MemoryType
 from app.services.memory_service import MemoryService
 from app.services.planning_service import PlanningService
-from datetime import datetime, timezone
 
 
 def main():

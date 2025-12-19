@@ -1,17 +1,17 @@
 """
 API routes for managing models (capabilities, priority, etc.)
 """
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field, ConfigDict
-from sqlalchemy.orm import Session
-from datetime import datetime, timezone
-import httpx
 
+import httpx
 from app.core.database import get_db
 from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/models", tags=["models_management"])
 

@@ -1,9 +1,9 @@
 """
 Script to reevaluate existing benchmark results with improved evaluation logic
 """
+import asyncio
 import sys
 from pathlib import Path
-import asyncio
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent

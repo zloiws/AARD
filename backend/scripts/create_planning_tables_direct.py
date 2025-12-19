@@ -2,8 +2,8 @@
 """
 Create planning hypothesis tables directly with SQLAlchemy
 """
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add backend to path
@@ -14,9 +14,10 @@ sys.path.insert(0, str(backend_path))
 if 'DATABASE_URL' not in os.environ:
     os.environ['DATABASE_URL'] = 'postgresql://postgres:Cdthrf12@10.39.0.101:5432/aard'
 
-from app.database import engine, Base
+from app.database import Base, engine
 from app.models.planning import PlanHypothesis, PlanHypothesisNode
 from sqlalchemy import text
+
 
 def create_tables():
     """Create planning tables using SQLAlchemy"""

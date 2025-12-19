@@ -2,7 +2,7 @@ import pytest
 
 
 def test_plan_lifecycle_validate_transition():
-    from app.planning.lifecycle import validate_transition, allowed_targets
+    from app.planning.lifecycle import allowed_targets, validate_transition
 
     assert validate_transition("draft", "approved").allowed
     assert not validate_transition("draft", "executing").allowed
@@ -12,11 +12,11 @@ def test_plan_lifecycle_validate_transition():
 @pytest.mark.integration
 def test_execute_requires_approved(client, db):
     # Create minimal Task + Plan in DB and verify /execute rejects until approved.
-    from uuid import uuid4
     from datetime import datetime, timezone
+    from uuid import uuid4
 
-    from app.models.task import Task
     from app.models.plan import Plan
+    from app.models.task import Task
 
     task = Task(description="test task", status="pending")
     db.add(task)

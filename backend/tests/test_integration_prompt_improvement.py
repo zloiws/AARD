@@ -3,12 +3,11 @@ Integration tests for prompt improvement - real LLM usage
 Tests automatic prompt improvement and A/B testing
 """
 import pytest
-from sqlalchemy.orm import Session
-
-from app.core.request_orchestrator import RequestOrchestrator
 from app.core.execution_context import ExecutionContext
+from app.core.request_orchestrator import RequestOrchestrator
+from app.models.prompt import PromptStatus, PromptType
 from app.services.prompt_service import PromptService
-from app.models.prompt import PromptType, PromptStatus
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.asyncio

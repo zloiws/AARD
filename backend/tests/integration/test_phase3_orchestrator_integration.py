@@ -2,13 +2,13 @@
 Тесты интеграции MemoryService, ReflectionService, MetaLearningService в RequestOrchestrator
 Проверяют, что сервисы правильно используются в различных типах запросов
 """
-import pytest
 from uuid import uuid4
 
+import pytest
+from app.core.database import SessionLocal
 from app.core.execution_context import ExecutionContext
 from app.core.request_orchestrator import RequestOrchestrator
 from app.core.request_router import RequestType
-from app.core.database import SessionLocal
 from app.models.agent import Agent, AgentStatus
 from app.services.ollama_service import OllamaService
 

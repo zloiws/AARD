@@ -1,14 +1,14 @@
 """
 Тесты для Этапа 3: Human-in-the-Loop и уровни автономности
 """
-import pytest
 from uuid import uuid4
 
+import pytest
+from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
 from app.services.adaptive_approval_service import AdaptiveApprovalService
 from app.services.agent_approval_agent import AgentApprovalAgent
 from app.services.task_lifecycle_manager import TaskLifecycleManager, TaskRole
-from app.models.plan import Plan
 
 
 @pytest.fixture

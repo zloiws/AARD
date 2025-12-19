@@ -8,15 +8,14 @@ the full MetaTracker described in docs/implementation/meta_tracker.md.
 import asyncio
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, List
-
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-
-from app.models.evolution import EvolutionHistory, EntityType, ChangeType, TriggerType
 from app.models.artifact import Artifact
+from app.models.evolution import (ChangeType, EntityType, EvolutionHistory,
+                                  TriggerType)
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

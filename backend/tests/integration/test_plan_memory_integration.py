@@ -1,16 +1,16 @@
 """
 Integration tests for plan-memory integration (Phase 1, Task 6.4)
 """
-import pytest
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan
+import pytest
 from app.models.agent import Agent
 from app.models.agent_memory import MemoryType
-from app.services.planning_service import PlanningService
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
 from app.services.memory_service import MemoryService
+from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.asyncio

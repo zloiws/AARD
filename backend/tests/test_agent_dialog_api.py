@@ -1,16 +1,16 @@
 """
 API tests for agent dialogs endpoints
 """
-import pytest
-from uuid import uuid4, UUID
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
+from uuid import UUID, uuid4
 
+import pytest
 from app.api.routes.agent_dialogs import router
+from app.core.database import SessionLocal
 from app.models.agent import Agent, AgentStatus
 from app.models.agent_conversation import ConversationStatus, MessageRole
 from app.services.agent_service import AgentService
-from app.core.database import SessionLocal
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

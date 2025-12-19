@@ -5,8 +5,8 @@ Revises: 009_add_agents
 Create Date: 2025-12-03 13:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.

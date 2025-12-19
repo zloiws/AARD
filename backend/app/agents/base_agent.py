@@ -3,18 +3,18 @@ Base Agent class for AARD platform
 All agents should inherit from this class
 """
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from app.core.ollama_client import OllamaClient, TaskType
-from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
 from app.core.database import SessionLocal
+from app.core.logging_config import LoggingConfig
+from app.core.ollama_client import OllamaClient, TaskType
+from app.core.tracing import add_span_attributes, get_tracer
 from app.models.agent import Agent
 from app.services.agent_service import AgentService
-from app.services.tool_service import ToolService
 from app.services.memory_service import MemoryService
+from app.services.tool_service import ToolService
 from app.tools.python_tool import PythonTool
 
 logger = LoggingConfig.get_logger(__name__)

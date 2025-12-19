@@ -1,18 +1,19 @@
 """
 API routes for agent dialogs/conversations
 """
-from typing import List, Optional, Dict, Any
-from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel, Field
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.models.agent_conversation import (AgentConversation,
+                                           ConversationStatus, MessageRole)
 from app.services.agent_dialog_service import AgentDialogService
 from app.services.agent_service import AgentService
-from app.models.agent_conversation import AgentConversation, ConversationStatus, MessageRole
-from app.core.logging_config import LoggingConfig
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 router = APIRouter(prefix="/api/agent-dialogs", tags=["agent-dialogs"])

@@ -1,4 +1,5 @@
 import asyncio
+
 import pytest
 
 
@@ -12,10 +13,10 @@ def test_interpretation_with_ollama_if_available(db):
     and assert that InterpretationService sets llm_interpretation_used metadata.
     Otherwise skip the test.
     """
-    from app.core.ollama_client import OllamaClient
-    from app.core.config import get_settings
     from app.components.interpretation_service import InterpretationService
+    from app.core.config import get_settings
     from app.core.execution_context import ExecutionContext
+    from app.core.ollama_client import OllamaClient
 
     settings = get_settings()
     client = OllamaClient()
@@ -41,9 +42,9 @@ def test_interpretation_handles_ollama_failure_gracefully(monkeypatch, db):
     Simulate OllamaClient.generate raising an exception and ensure InterpretationService
     records llm_interpretation_error and returns legacy interpretation.
     """
-    from app.core.ollama_client import OllamaClient, OllamaError
     from app.components.interpretation_service import InterpretationService
     from app.core.execution_context import ExecutionContext
+    from app.core.ollama_client import OllamaClient, OllamaError
 
     async def fake_generate(*args, **kwargs):
         raise OllamaError("simulated failure")

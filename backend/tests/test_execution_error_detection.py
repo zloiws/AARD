@@ -2,14 +2,11 @@
 Tests for execution error detection and classification
 """
 import pytest
-from app.core.execution_error_types import (
-    ExecutionErrorDetector,
-    ExecutionError,
-    ErrorSeverity,
-    ErrorCategory,
-    requires_replanning,
-    detect_execution_error
-)
+from app.core.execution_error_types import (ErrorCategory, ErrorSeverity,
+                                            ExecutionError,
+                                            ExecutionErrorDetector,
+                                            detect_execution_error,
+                                            requires_replanning)
 
 
 class TestExecutionErrorDetection:

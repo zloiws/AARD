@@ -6,14 +6,16 @@ from typing import Optional
 # Try to import OpenTelemetry - make it optional
 try:
     from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-    from opentelemetry.sdk.resources import Resource
+    # AioHttpClientInstrumentor imported lazily in configure_tracing() to avoid WMI issues on Windows
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import \
+        OTLPSpanExporter
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
     # SQLAlchemyInstrumentor and AioHttpClientInstrumentor imported lazily to avoid multiprocessing/WMI issues on Windows
     from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-    # AioHttpClientInstrumentor imported lazily in configure_tracing() to avoid WMI issues on Windows
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import (BatchSpanProcessor,
+                                                ConsoleSpanExporter)
     OPENTELEMETRY_AVAILABLE = True
 except ImportError:
     OPENTELEMETRY_AVAILABLE = False
@@ -31,6 +33,7 @@ except ImportError:
 
 # Respect explicit environment flag to disable tracing during tests or CI
 import os
+
 if os.getenv("ENABLE_TRACING", "true").strip().lower() in ("0", "false", "no"):
     OPENTELEMETRY_AVAILABLE = False
     # Ensure Database exporter is not used
@@ -127,7 +130,8 @@ def configure_tracing(app=None):
     
     # Auto-instrument SQLAlchemy (lazy import to avoid multiprocessing issues)
     try:
-        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor as _SQLAlchemyInstrumentor
+        from opentelemetry.instrumentation.sqlalchemy import \
+            SQLAlchemyInstrumentor as _SQLAlchemyInstrumentor
         _SQLAlchemyInstrumentor().instrument()
         logger.info("SQLAlchemy instrumentation enabled")
     except Exception as e:
@@ -142,7 +146,8 @@ def configure_tracing(app=None):
     
     # Lazy import AioHttpClientInstrumentor to avoid WMI issues on Windows
     try:
-        from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor as _AioHttpClientInstrumentor
+        from opentelemetry.instrumentation.aiohttp_client import \
+            AioHttpClientInstrumentor as _AioHttpClientInstrumentor
         _AioHttpClientInstrumentor().instrument()
         logger.info("AioHTTP instrumentation enabled")
     except Exception as e:

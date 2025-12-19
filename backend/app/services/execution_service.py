@@ -1,48 +1,39 @@
 """
 Execution service for plan execution
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
-from datetime import datetime, timezone, timezone
-import json
 import asyncio
+import json
+import json as _json
+import time
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Session
-from typing import Union
-
+from app.agents.simple_agent import SimpleAgent
+from app.core.config import get_settings
+from app.core.database import engine as _engine
+from app.core.execution_context import ExecutionContext
+from app.core.execution_error_types import (ErrorCategory, ErrorSeverity,
+                                            ExecutionError,
+                                            ExecutionErrorDetector,
+                                            detect_execution_error,
+                                            requires_replanning)
+from app.core.logging_config import LoggingConfig
+from app.core.metrics import (plan_execution_duration_seconds,
+                              plan_executions_total,
+                              plan_step_duration_seconds, plan_steps_total)
+from app.core.ollama_client import OllamaClient
+from app.core.tracing import add_span_attributes, get_tracer
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
-from app.core.ollama_client import OllamaClient
-from app.core.execution_context import ExecutionContext
-from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
-from app.core.metrics import (
-    plan_executions_total,
-    plan_execution_duration_seconds,
-    plan_steps_total,
-    plan_step_duration_seconds
-)
-from app.services.ollama_service import OllamaService
-from app.services.checkpoint_service import CheckpointService
 from app.services.agent_service import AgentService
-from app.services.tool_service import ToolService
+from app.services.checkpoint_service import CheckpointService
+from app.services.ollama_service import OllamaService
 from app.services.project_metrics_service import ProjectMetricsService
-from app.agents.simple_agent import SimpleAgent
+from app.services.tool_service import ToolService
 from app.tools.python_tool import PythonTool
-from app.core.execution_error_types import (
-    ExecutionErrorDetector,
-    ExecutionError,
-    ErrorSeverity,
-    ErrorCategory,
-    requires_replanning,
-    detect_execution_error
-)
-from app.core.config import get_settings
-import time
-from uuid import uuid4
-import json as _json
 from sqlalchemy import text as sa_text
-from app.core.database import engine as _engine
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 settings = get_settings()
@@ -93,8 +84,10 @@ class StepExecutor:
         
         # Emit workflow event: step started (include component_role and decision_source when available)
         try:
-            from app.services.workflow_event_service import WorkflowEventService
-            from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
+            from app.models.workflow_event import (EventSource, EventStatus,
+                                                   EventType, WorkflowStage)
+            from app.services.workflow_event_service import \
+                WorkflowEventService
 
             wf_service = WorkflowEventService(self.db)
             prompt_id_for_event = None
@@ -174,8 +167,8 @@ class StepExecutor:
             # Check if step requires approval
             if step.get("approval_required", False):
                 # Create approval request for this step
-                from app.services.approval_service import ApprovalService
                 from app.models.approval import ApprovalRequestType
+                from app.services.approval_service import ApprovalService
                 
                 approval_service = ApprovalService(self.db)
                 approval = approval_service.create_approval_request(
@@ -269,7 +262,8 @@ class StepExecutor:
             # Record project metrics for step execution
             try:
                 from datetime import timedelta
-                from app.models.project_metric import MetricType, MetricPeriod
+
+                from app.models.project_metric import MetricPeriod, MetricType
                 
                 now = datetime.now(timezone.utc)
                 # Round to hour for consistent period boundaries
@@ -298,8 +292,11 @@ class StepExecutor:
             
             # Emit workflow event: step completed (include component_role and decision_source when available)
             try:
-                from app.services.workflow_event_service import WorkflowEventService
-                from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
+                from app.models.workflow_event import (EventSource,
+                                                       EventStatus, EventType,
+                                                       WorkflowStage)
+                from app.services.workflow_event_service import \
+                    WorkflowEventService
 
                 wf_service = WorkflowEventService(self.db)
                 prompt_id_for_event = None
@@ -379,8 +376,11 @@ class StepExecutor:
             ).observe(step_duration)
             # Emit workflow event: step failed (include component_role and decision_source when available)
             try:
-                from app.services.workflow_event_service import WorkflowEventService
-                from app.models.workflow_event import EventSource, EventType, WorkflowStage, EventStatus
+                from app.models.workflow_event import (EventSource,
+                                                       EventStatus, EventType,
+                                                       WorkflowStage)
+                from app.services.workflow_event_service import \
+                    WorkflowEventService
                 wf_service = WorkflowEventService(self.db)
                 prompt_id_for_event = None
                 try:
@@ -512,7 +512,7 @@ class StepExecutor:
         if function_call_data:
             # Process function call using FunctionCallProtocol
             from app.core.function_calling import FunctionCallProtocol
-            
+
             # Parse function call
             if isinstance(function_call_data, dict):
                 function_call = FunctionCallProtocol.create_function_call(
@@ -575,7 +575,8 @@ class StepExecutor:
                         result["status"] = "failed"
                         result["error"] = f"CoderAgent execution error: {str(e)}"
                         # Fallback to direct code execution if CoderAgent fails
-                        from app.services.code_execution_sandbox import CodeExecutionSandbox
+                        from app.services.code_execution_sandbox import \
+                            CodeExecutionSandbox
                         sandbox = CodeExecutionSandbox()
                         code = function_call.parameters.get("code", "")
                         language = function_call.parameters.get("language", "python")
@@ -911,6 +912,7 @@ Execute the given step and return the result in JSON format:
             Updated result dictionary
         """
         from uuid import UUID
+
         from app.services.agent_team_coordination import AgentTeamCoordination
         
         try:
@@ -1021,8 +1023,8 @@ Execute the given step and return the result in JSON format:
         Returns:
             Updated result dictionary with decision
         """
-        from app.services.decision_router import DecisionRouter
         from app.core.model_selector import ModelSelector
+        from app.services.decision_router import DecisionRouter
         
         try:
             # Use DecisionRouter to help with decision if needed
@@ -1290,7 +1292,7 @@ class ExecutionService:
         """
         if self._coder_agent is None:
             from app.agents.coder_agent import CoderAgent
-            
+
             # Try to find existing CoderAgent in database
             coder_agent_db = self.agent_service.get_agent_by_name("CoderAgent")
             
@@ -1732,7 +1734,8 @@ class ExecutionService:
         
         # Track plan execution using PlanningMetricsService
         try:
-            from app.services.planning_metrics_service import PlanningMetricsService
+            from app.services.planning_metrics_service import \
+                PlanningMetricsService
             metrics_service = PlanningMetricsService(self.db)
             
             # Calculate execution time
@@ -1797,7 +1800,8 @@ class ExecutionService:
         # Record project metrics for plan execution
         try:
             from datetime import timedelta
-            from app.models.project_metric import MetricType, MetricPeriod
+
+            from app.models.project_metric import MetricPeriod, MetricType
             
             now = datetime.now(timezone.utc)
             # Round to hour for consistent period boundaries
@@ -1843,7 +1847,8 @@ class ExecutionService:
             # Analyze execution patterns using MetaLearningService for self-improvement
             if plan.status in ["completed", "failed"]:
                 try:
-                    from app.services.meta_learning_service import MetaLearningService
+                    from app.services.meta_learning_service import \
+                        MetaLearningService
                     meta_learning = MetaLearningService(self.db)
                     
                     # Analyze execution patterns asynchronously (don't block)
@@ -1930,10 +1935,10 @@ class ExecutionService:
         Returns:
             New plan if replanning was successful, None otherwise
         """
+        from app.models.task import Task, TaskStatus
+        from app.services.memory_service import MemoryService
         from app.services.planning_service import PlanningService
         from app.services.reflection_service import ReflectionService
-        from app.services.memory_service import MemoryService
-        from app.models.task import Task, TaskStatus
         
         try:
             # Classify error if not already classified
@@ -2086,8 +2091,8 @@ class ExecutionService:
         Args:
             plan: The completed plan to extract template from
         """
-        from app.services.plan_template_service import PlanTemplateService
         from app.core.config import get_settings
+        from app.services.plan_template_service import PlanTemplateService
         
         settings = get_settings()
         

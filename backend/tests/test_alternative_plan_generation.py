@@ -1,14 +1,14 @@
 """
 Tests for alternative plan generation (Phase 6.1.1)
 """
-import pytest
 import asyncio
-from uuid import uuid4
 from datetime import datetime
+from uuid import uuid4
 
+import pytest
 from app.core.database import SessionLocal
-from app.models.task import Task, TaskStatus
 from app.models.plan import Plan, PlanStatus
+from app.models.task import Task, TaskStatus
 from app.services.planning_service import PlanningService
 
 

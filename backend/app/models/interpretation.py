@@ -4,11 +4,11 @@ Models for Interpretation rules and Decision Timeline / nodes for observability.
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Column, String, DateTime, Float, ForeignKey, func
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
-
 from app.core.database import Base
+from sqlalchemy import Column, DateTime, Float, ForeignKey, String, func
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class InterpretationRule(Base):

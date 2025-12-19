@@ -1,20 +1,21 @@
 """
 Task model
 """
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Optional
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
-from typing import Dict, Any, Optional
-from sqlalchemy.ext.mutable import MutableDict
-
-from app.core.database import Base
 import logging
 import traceback
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, Optional
+from uuid import UUID, uuid4
+
+from app.core.database import Base
+from sqlalchemy import Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.orm import relationship
 
 
 class TaskStatus(str, Enum):

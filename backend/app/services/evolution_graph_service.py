@@ -1,13 +1,13 @@
 """
 EvolutionGraphService: build evolution graph from EvolutionHistory entries.
 """
-from typing import Optional, Dict, Any, List
 from collections import defaultdict
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-from app.models.evolution import EvolutionHistory, EntityType
+from app.models.evolution import EntityType, EvolutionHistory
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

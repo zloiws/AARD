@@ -2,19 +2,20 @@
 WorkflowEngine - расширение WorkflowTracker для управления состояниями workflow
 Управляет жизненным циклом workflow, переходами между состояниями и обработкой событий
 """
-from typing import Dict, List, Any, Optional, Set
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Dict, List, Optional, Set
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
-
-from app.core.workflow_tracker import WorkflowTracker, WorkflowStage, WorkflowEvent
 from app.core.execution_context import ExecutionContext
 from app.core.logging_config import LoggingConfig
-from app.models.workflow_event import WorkflowEvent as DBWorkflowEvent, EventStatus, EventType, EventSource
+from app.core.workflow_tracker import (WorkflowEvent, WorkflowStage,
+                                       WorkflowTracker)
+from app.models.workflow_event import EventSource, EventStatus, EventType
+from app.models.workflow_event import WorkflowEvent as DBWorkflowEvent
 from app.services.workflow_event_service import WorkflowEventService
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -383,7 +384,8 @@ class WorkflowEngine:
         
         try:
             # Преобразуем WorkflowStage в WorkflowStage из модели
-            from app.models.workflow_event import WorkflowStage as ModelWorkflowStage
+            from app.models.workflow_event import \
+                WorkflowStage as ModelWorkflowStage
             model_stage = ModelWorkflowStage(self._state_to_stage(to_state).value)
             
             # Save event to database
@@ -421,8 +423,9 @@ class WorkflowEngine:
 
             # Broadcast to WebSocket clients
             try:
-                from app.api.routes.websocket_events import manager
                 import asyncio
+
+                from app.api.routes.websocket_events import manager
 
                 event_message = {
                     "type": "workflow_event",

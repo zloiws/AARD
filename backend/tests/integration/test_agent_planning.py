@@ -1,17 +1,16 @@
 """
 Integration tests for agent selection in planning
 """
-import pytest
 import json
 from uuid import uuid4
 
-from sqlalchemy.orm import Session
-
-from app.core.database import SessionLocal, engine, Base
+import pytest
+from app.core.database import Base, SessionLocal, engine
+from app.models.agent import Agent, AgentCapability, AgentStatus
 from app.models.task import Task, TaskStatus
-from app.models.agent import Agent, AgentStatus, AgentCapability
-from app.services.planning_service import PlanningService
 from app.services.agent_service import AgentService
+from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture(scope="function")

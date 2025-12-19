@@ -1,6 +1,6 @@
 import socket
 import urllib.request
-from urllib.error import URLError, HTTPError
+from urllib.error import HTTPError, URLError
 
 SERVERS = [
     "http://localhost:11434",

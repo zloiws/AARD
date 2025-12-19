@@ -5,9 +5,10 @@ Usage:
   python backend/scripts/restore_from_commit_fixed.py <commit>
 """
 from __future__ import annotations
-import sys
-import subprocess
+
 import os
+import subprocess
+import sys
 
 
 def run(cmd):

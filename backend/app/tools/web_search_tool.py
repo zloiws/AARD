@@ -1,14 +1,14 @@
 """
 Web Search Tool - поиск информации в интернете
 """
-from typing import Dict, Any, Optional
-from uuid import UUID
-import httpx
 import json
+from typing import Any, Dict, Optional
+from uuid import UUID
 
-from app.tools.base_tool import BaseTool
-from app.services.tool_service import ToolService
+import httpx
 from app.core.logging_config import LoggingConfig
+from app.services.tool_service import ToolService
+from app.tools.base_tool import BaseTool
 
 logger = LoggingConfig.get_logger(__name__)
 

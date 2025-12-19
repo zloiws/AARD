@@ -1,18 +1,17 @@
 """
 Conflict Resolution Service for resolving goal conflicts between agents
 """
-from typing import Dict, Any, List, Optional, Set
-from uuid import UUID
 from datetime import datetime, timezone
 from enum import Enum
-
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional, Set
+from uuid import UUID
 
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
-from app.models.task import Task, TaskStatus
+from app.core.tracing import add_span_attributes, get_tracer
 from app.models.agent import Agent
 from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

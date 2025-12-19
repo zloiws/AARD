@@ -1,13 +1,14 @@
 """
 SQLAlchemy models for request logging and ranking
 """
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, CheckConstraint, Index, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
 
 from app.core.database import Base
+from sqlalchemy import (CheckConstraint, Column, DateTime, Float, ForeignKey,
+                        Index, Integer, String, Text)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy.orm import relationship
 
 
 class RequestLog(Base):

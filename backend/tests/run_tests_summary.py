@@ -1,11 +1,12 @@
 """Simple test runner with summary"""
+import re
 import subprocess
 import sys
-import re
 from pathlib import Path
 
 backend_dir = Path(__file__).parent.parent
 import os
+
 os.chdir(backend_dir)
 
 test_files = [

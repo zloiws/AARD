@@ -1,17 +1,17 @@
 """
 Интеграционные тесты для PlanningService с диалогами агентов
 """
-import pytest
 import asyncio
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
-from app.services.planning_service import PlanningService
-from app.services.agent_service import AgentService
-from app.services.agent_dialog_service import AgentDialogService
+import pytest
 from app.models.agent import Agent, AgentStatus
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan, PlanStatus
 from app.models.agent_conversation import ConversationStatus
+from app.models.plan import Plan, PlanStatus
+from app.models.task import Task, TaskStatus
+from app.services.agent_dialog_service import AgentDialogService
+from app.services.agent_service import AgentService
+from app.services.planning_service import PlanningService
 from app.services.planning_service_dialog_integration import is_complex_task
 
 

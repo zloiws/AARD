@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
+
 def main():
     p = Path('backend/compare_migrations_vs_models.py')
     text = p.read_text(encoding='utf-8')

@@ -7,17 +7,16 @@ Writes are gated to ADMIN role (human approval layer can be implemented on top).
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
+from app.core.auth import get_current_user, security
+from app.core.database import get_db
+from app.models.user import UserRole
+from app.registry.service import CapabilityRecord, RegistryService
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.core.auth import get_current_user, security
-from app.models.user import UserRole
-from app.registry.service import RegistryService, CapabilityRecord
 
 if TYPE_CHECKING:
     from app.models.user import User

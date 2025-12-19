@@ -1,16 +1,17 @@
 """
 Agent memory models for short-term and long-term memory
 """
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Optional, Dict, Any
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float, Index
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB, ARRAY
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import (Column, DateTime, Float, ForeignKey, Index, Integer,
+                        String, Text)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class MemoryType(str, Enum):

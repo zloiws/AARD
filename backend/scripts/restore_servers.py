@@ -9,8 +9,9 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from dotenv import load_dotenv
 from pathlib import Path as PathLib
+
+from dotenv import load_dotenv
 
 # Load .env
 BASE_DIR = backend_dir.parent
@@ -18,9 +19,10 @@ ENV_FILE = BASE_DIR / ".env"
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE, override=True)
 
+from app.core.config import get_settings
 from app.core.database import SessionLocal
 from app.models.ollama_server import OllamaServer
-from app.core.config import get_settings
+
 
 def restore_servers():
     """Restore Ollama servers from .env configuration"""

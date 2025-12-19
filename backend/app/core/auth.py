@@ -2,13 +2,13 @@
 Authentication middleware and decorators
 """
 from typing import Optional
-from fastapi import Request, HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.services.auth_service import AuthService
 from app.models.user import User, UserRole
+from app.services.auth_service import AuthService
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
 
 # HTTP Bearer security scheme
 security = HTTPBearer(auto_error=False)

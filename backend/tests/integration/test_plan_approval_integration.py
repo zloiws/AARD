@@ -2,20 +2,20 @@
 Test script for plan-approval integration
 """
 import asyncio
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add backend to path
 backend_path = Path(__file__).parent
 sys.path.insert(0, str(backend_path))
 
-from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
-from app.services.planning_service import PlanningService
-from app.services.approval_service import ApprovalService
 from app.models.approval import ApprovalRequestType
 from app.models.plan import Plan
+from app.services.approval_service import ApprovalService
+from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
 
 
 async def test_plan_approval_integration():

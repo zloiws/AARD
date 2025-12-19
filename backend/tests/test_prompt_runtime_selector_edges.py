@@ -1,14 +1,15 @@
 from uuid import uuid4
 
+
 def create_prompt(svc, name, text="x", prompt_type="system"):
     p = svc.create_prompt(name=name, prompt_text=text, prompt_type=prompt_type, level=0, created_by="test")
     return p
 
 
 def test_experiment_over_agent_precedence(db):
-    from app.services.prompt_service import PromptService
-    from app.services.prompt_runtime_selector import PromptRuntimeSelector
     from app.models.prompt_assignment import PromptAssignment
+    from app.services.prompt_runtime_selector import PromptRuntimeSelector
+    from app.services.prompt_service import PromptService
 
     svc = PromptService(db)
     selector = PromptRuntimeSelector(db)
@@ -38,10 +39,11 @@ def test_experiment_over_agent_precedence(db):
 
 
 def test_model_server_filtering(db):
-    from app.services.prompt_service import PromptService
-    from app.services.prompt_runtime_selector import PromptRuntimeSelector
-    from app.models.prompt_assignment import PromptAssignment
     from uuid import uuid4
+
+    from app.models.prompt_assignment import PromptAssignment
+    from app.services.prompt_runtime_selector import PromptRuntimeSelector
+    from app.services.prompt_service import PromptService
 
     svc = PromptService(db)
     selector = PromptRuntimeSelector(db)
@@ -54,8 +56,8 @@ def test_model_server_filtering(db):
 
     # model-specific (create corresponding OllamaModel to satisfy FK)
     model_id = uuid4()
-    from app.models.ollama_server import OllamaServer
     from app.models.ollama_model import OllamaModel
+    from app.models.ollama_server import OllamaServer
     server = OllamaServer(name="test-server", url="http://localhost:11434", is_active=False)
     db.add(server)
     db.commit()
@@ -76,8 +78,8 @@ def test_model_server_filtering(db):
 
 
 def test_invalid_experiment_id_handling_returns_fallback(db):
-    from app.services.prompt_service import PromptService
     from app.services.prompt_runtime_selector import PromptRuntimeSelector
+    from app.services.prompt_service import PromptService
 
     svc = PromptService(db)
     selector = PromptRuntimeSelector(db)

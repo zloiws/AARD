@@ -12,11 +12,12 @@ to avoid breaking current behavior, while providing a stable typed contract.
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
-from sqlalchemy.orm import Session
 
 from app.components.contracts import ReflectionRecord
 from app.components.prompt_repository import ComponentPromptRepository
-from app.services.reflection_service import ReflectionService as LegacyReflectionService
+from app.services.reflection_service import \
+    ReflectionService as LegacyReflectionService
+from sqlalchemy.orm import Session
 
 
 class ReflectionService:

@@ -1,30 +1,31 @@
 """
 Chat API routes with streaming and cancellation support
 """
-from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, Request
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
 import asyncio
 import json
-import uuid
 import time
+import uuid
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from app.core.ollama_client import get_ollama_client, OllamaClient, TaskType, OllamaError
-from app.core.templates import templates
-from app.core.chat_session import get_session_manager, ChatSessionManager
+from app.api.routes.websocket_events import (broadcast_chat_event,
+                                             broadcast_execution_event)
+from app.core.chat_session import ChatSessionManager, get_session_manager
 from app.core.database import get_db
-from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_current_trace_id
 from app.core.execution_context import ExecutionContext
+from app.core.logging_config import LoggingConfig
+from app.core.ollama_client import (OllamaClient, OllamaError, TaskType,
+                                    get_ollama_client)
 from app.core.request_orchestrator import RequestOrchestrator
-from app.services.request_logger import RequestLogger
-from app.services.prompt_service import PromptService
+from app.core.templates import templates
+from app.core.tracing import get_current_trace_id
 from app.models.prompt import PromptType
+from app.services.prompt_service import PromptService
+from app.services.request_logger import RequestLogger
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from app.api.routes.websocket_events import broadcast_execution_event
-from app.api.routes.websocket_events import broadcast_chat_event
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 logger = LoggingConfig.get_logger(__name__)
@@ -194,7 +195,8 @@ async def chat(
 
         # Create or get execution graph and add a user node
         try:
-            from app.services.execution_graph_service import ExecutionGraphService
+            from app.services.execution_graph_service import \
+                ExecutionGraphService
             eg_service = ExecutionGraphService(db)
             graph = eg_service.create_or_get_graph(session_id)
             user_node = eg_service.add_node(
@@ -234,7 +236,8 @@ async def chat(
             system_prompt = session.system_prompt
         
         # Initialize workflow tracker
-        from app.core.workflow_tracker import get_workflow_tracker, WorkflowStage
+        from app.core.workflow_tracker import (WorkflowStage,
+                                               get_workflow_tracker)
         workflow_tracker = get_workflow_tracker()
         workflow_id = str(uuid.uuid4())
         
@@ -243,9 +246,11 @@ async def chat(
         workflow_tracker.start_workflow(workflow_id, chat_message.message, username=username, interaction_type="chat")
         
         # Save initial workflow events to DB
-        from app.services.workflow_event_service import WorkflowEventService
-        from app.models.workflow_event import EventSource, EventType, EventStatus, WorkflowStage as DBWorkflowStage
         from app.core.tracing import get_current_trace_id
+        from app.models.workflow_event import (EventSource, EventStatus,
+                                               EventType)
+        from app.models.workflow_event import WorkflowStage as DBWorkflowStage
+        from app.services.workflow_event_service import WorkflowEventService
         
         event_service = WorkflowEventService(db)
         trace_id = get_current_trace_id()
@@ -301,7 +306,8 @@ async def chat(
         # Before saving assistant message, record model/server selection as an execution graph node
         model_selection_node = None
         try:
-            from app.services.execution_graph_service import ExecutionGraphService
+            from app.services.execution_graph_service import \
+                ExecutionGraphService
             eg_service_tmp = ExecutionGraphService(db)
             graph_tmp = eg_service_tmp.create_or_get_graph(session_id)
             # result.model may be set by orchestrator; result.metadata may contain server_id
@@ -329,7 +335,8 @@ async def chat(
 
         # Add assistant node and link to user node if graph exists
         try:
-            from app.services.execution_graph_service import ExecutionGraphService
+            from app.services.execution_graph_service import \
+                ExecutionGraphService
             eg_service = ExecutionGraphService(db)
             graph = eg_service.create_or_get_graph(session_id)
             assistant_node = eg_service.add_node(

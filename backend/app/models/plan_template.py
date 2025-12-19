@@ -3,14 +3,15 @@ Plan Template model for storing reusable plan patterns
 """
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, Dict, Any
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float, Boolean
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB, ARRAY
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
+                        String, Text)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class TemplateStatus(str, Enum):

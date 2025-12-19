@@ -1,19 +1,20 @@
 """
 Planning Hypothesis Service for generating and validating plan hypotheses
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 import json
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from sqlalchemy.orm import Session
-
-from app.models.planning import PlanHypothesis, PlanLifecycle, PlanHypothesisNode
-from app.models.interpretation import DecisionTimeline, DecisionNode, DecisionEdge
-from app.core.ollama_client import OllamaClient
-from app.services.ollama_service import OllamaService
 from app.core.config import get_settings
+from app.core.ollama_client import OllamaClient
 from app.core.tracing import get_tracer
+from app.models.interpretation import (DecisionEdge, DecisionNode,
+                                       DecisionTimeline)
+from app.models.planning import (PlanHypothesis, PlanHypothesisNode,
+                                 PlanLifecycle)
+from app.services.ollama_service import OllamaService
+from sqlalchemy.orm import Session
 
 
 class PlanningHypothesisService:

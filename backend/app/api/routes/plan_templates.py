@@ -3,13 +3,13 @@ API routes for plan templates management
 """
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
 from app.models.plan_template import PlanTemplate, TemplateStatus
 from app.services.plan_template_service import PlanTemplateService
-from app.core.logging_config import LoggingConfig
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

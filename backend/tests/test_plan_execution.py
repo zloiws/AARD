@@ -1,15 +1,15 @@
 """
 Unit tests for plan execution functionality
 """
-import pytest
 import json
-from unittest.mock import Mock, AsyncMock, patch
-from uuid import uuid4, UUID
 from datetime import datetime
+from unittest.mock import AsyncMock, Mock, patch
+from uuid import UUID, uuid4
 
-from app.services.execution_service import ExecutionService, StepExecutor
+import pytest
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
+from app.services.execution_service import ExecutionService, StepExecutor
 
 
 class TestStepExecutor:

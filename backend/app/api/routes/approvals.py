@@ -5,14 +5,13 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
+from app.core.database import get_db
+from app.models.approval import (ApprovalRequest, ApprovalRequestStatus,
+                                 ApprovalRequestType)
+from app.services.approval_service import ApprovalService
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.models.approval import ApprovalRequest, ApprovalRequestType, ApprovalRequestStatus
-from app.services.approval_service import ApprovalService
-
 
 router = APIRouter(prefix="/api/approvals", tags=["approvals"])
 
@@ -95,8 +94,8 @@ async def approve_request(
     db: Session = Depends(get_db)
 ):
     """Approve an approval request"""
-    from fastapi.responses import HTMLResponse, JSONResponse
     from fastapi import Request as FastAPIRequest
+    from fastapi.responses import HTMLResponse, JSONResponse
     
     service = ApprovalService(db)
     

@@ -4,12 +4,13 @@ Project Metric model for storing project-level metrics
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, Any, Optional
-
-from sqlalchemy import Column, String, Integer, DateTime, Float, Text, Enum as SQLEnum, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from typing import Any, Dict, Optional
 
 from app.core.database import Base
+from sqlalchemy import Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import Float, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 
 class MetricType(str, Enum):

@@ -1,13 +1,13 @@
 """
 Unit tests for agent selection functionality
 """
-import pytest
+from datetime import datetime
 from unittest.mock import Mock, patch
 from uuid import uuid4
-from datetime import datetime
 
+import pytest
+from app.models.agent import Agent, AgentCapability, AgentStatus
 from app.services.agent_service import AgentService
-from app.models.agent import Agent, AgentStatus, AgentCapability
 
 
 class TestAgentSelection:
@@ -67,7 +67,7 @@ class TestAgentSelection:
     def test_select_agent_for_task_with_capabilities(self, agent_service, sample_agents, mock_db):
         """Test selecting agent with specific capabilities"""
         from sqlalchemy import or_
-        
+
         # Mock query with capability filtering
         mock_query = Mock()
         mock_filter = Mock()

@@ -2,14 +2,15 @@
 Benchmark Result model for storing execution results
 """
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 from uuid import uuid4
-from typing import Optional, Dict, Any
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float, Boolean
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
+                        String, Text)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class BenchmarkResult(Base):

@@ -1,15 +1,16 @@
 """
 Integration test for Agent Teams consistency across all modules
 """
-import pytest
 from uuid import uuid4
 
-from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus, agent_team_association
+import pytest
 from app.models.agent import Agent, AgentStatus
-from app.services.agent_team_service import AgentTeamService
+from app.models.agent_team import (AgentTeam, CoordinationStrategy, TeamStatus,
+                                   agent_team_association)
 from app.services.agent_team_coordination import AgentTeamCoordination
-from app.services.planning_service import PlanningService
+from app.services.agent_team_service import AgentTeamService
 from app.services.execution_service import ExecutionService
+from app.services.planning_service import PlanningService
 
 
 def test_imports_consistency():

@@ -1,16 +1,16 @@
 """
 API routes for task queues
 """
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
 
 from app.core.database import get_db
-from app.models.task_queue import TaskQueue, QueueTask
-from app.services.task_queue_manager import TaskQueueManager
 from app.core.logging_config import LoggingConfig
+from app.models.task_queue import QueueTask, TaskQueue
+from app.services.task_queue_manager import TaskQueueManager
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

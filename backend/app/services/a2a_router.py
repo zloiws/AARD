@@ -4,15 +4,14 @@ Routes A2A messages between agents
 """
 import asyncio
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-
 from app.core.a2a_protocol import A2AMessage, A2AMessageType, A2AResponse
-from app.services.agent_registry import AgentRegistry
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
+from app.core.tracing import add_span_attributes, get_tracer
+from app.services.agent_registry import AgentRegistry
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -271,7 +270,8 @@ class A2ARouter:
             elif message.type == A2AMessageType.HEARTBEAT:
                 # Heartbeat message - update registry
                 # Use heartbeat service directly
-                from app.services.agent_heartbeat_service import AgentHeartbeatService
+                from app.services.agent_heartbeat_service import \
+                    AgentHeartbeatService
                 heartbeat_service = AgentHeartbeatService(self.db)
                 # Register heartbeat asynchronously
                 await heartbeat_service.register_heartbeat(

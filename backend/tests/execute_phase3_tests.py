@@ -2,8 +2,9 @@
 Прямое выполнение тестов Фазы 3 с выводом
 """
 import sys
-import pytest
 from pathlib import Path
+
+import pytest
 
 # Добавляем backend в путь
 backend_dir = Path(__file__).parent.parent

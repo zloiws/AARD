@@ -3,9 +3,10 @@
 """
 import ast
 import os
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 from typing import Dict, List, Set, Tuple
+
 
 def find_duplicate_functions(root_dir: str) -> Dict[str, List[str]]:
     """Найти дублированные функции"""

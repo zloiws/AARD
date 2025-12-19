@@ -1,13 +1,13 @@
 """
 Decision Framework for clear separation of concerns between code and LLM
 """
-from typing import Dict, Any, Optional, Callable, List
-from abc import ABC, abstractmethod
 import json
+from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, List, Optional
 
 from app.core.logging_config import LoggingConfig
 from app.core.ollama_client import OllamaClient
-from app.core.tracing import get_tracer, add_span_attributes
+from app.core.tracing import add_span_attributes, get_tracer
 
 logger = LoggingConfig.get_logger(__name__)
 

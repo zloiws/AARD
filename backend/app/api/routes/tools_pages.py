@@ -3,13 +3,13 @@ Page routes for tools web interface
 """
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse
 
-from app.core.templates import templates
 from app.core.database import get_db
+from app.core.templates import templates
 from app.models.tool import Tool, ToolStatus
 from app.services.tool_service import ToolService
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["tools_pages"])

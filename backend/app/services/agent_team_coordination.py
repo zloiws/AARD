@@ -2,17 +2,16 @@
 Agent Team Coordination Service
 Handles coordination of agent teams through A2A protocol
 """
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Session
-
-from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus
-from app.models.agent import Agent, AgentStatus
-from app.services.a2a_router import A2ARouter
-from app.services.agent_registry import AgentRegistry
 from app.core.a2a_protocol import A2AMessage, A2AMessageType, AgentIdentity
 from app.core.logging_config import LoggingConfig
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus
+from app.services.a2a_router import A2ARouter
+from app.services.agent_registry import AgentRegistry
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -276,7 +275,7 @@ class AgentTeamCoordination:
         elif strategy == CoordinationStrategy.COLLABORATIVE.value:
             # Collaborative: send to all, collect responses, share results
             import asyncio
-            
+
             # First round: send to all agents
             tasks = []
             for agent in agents:

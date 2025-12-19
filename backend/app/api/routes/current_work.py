@@ -1,15 +1,15 @@
 """
 API routes for current work (active tasks) real-time monitoring
 """
-from typing import List, Dict, Any, Optional
-from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.database import get_db
-from app.models.task import Task, TaskStatus
 from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/current-work", tags=["current-work"])

@@ -1,13 +1,13 @@
 """
 Tests for PlanningService with agent teams
 """
-import pytest
 from uuid import uuid4
 
-from app.services.planning_service import PlanningService
-from app.services.agent_team_service import AgentTeamService
-from app.models.agent_team import CoordinationStrategy, TeamStatus
+import pytest
 from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import CoordinationStrategy, TeamStatus
+from app.services.agent_team_service import AgentTeamService
+from app.services.planning_service import PlanningService
 
 
 @pytest.mark.asyncio

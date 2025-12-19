@@ -20,11 +20,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-
+from app.models.agent import Agent
 from app.models.artifact import Artifact
 from app.models.tool import Tool
-from app.models.agent import Agent
+from sqlalchemy.orm import Session
 
 
 @dataclass(frozen=True)

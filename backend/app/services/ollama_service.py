@@ -1,14 +1,14 @@
 """
 Service for managing Ollama servers and models in database
 """
-from typing import List, Optional, Dict
 from datetime import datetime
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from typing import Dict, List, Optional
 
-from app.models.ollama_server import OllamaServer
-from app.models.ollama_model import OllamaModel
 from app.core.ollama_client import OllamaInstanceConfig
+from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 
 class OllamaService:

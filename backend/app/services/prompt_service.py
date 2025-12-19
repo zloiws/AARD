@@ -1,15 +1,15 @@
 """
 Prompt Service for managing prompts with versioning and metrics
 """
-from typing import Optional, List, Dict, Any
-from uuid import UUID
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from app.models.prompt import Prompt, PromptType, PromptStatus
-from app.services.project_metrics_service import ProjectMetricsService
 from app.core.logging_config import LoggingConfig
+from app.models.prompt import Prompt, PromptStatus, PromptType
+from app.services.project_metrics_service import ProjectMetricsService
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -457,7 +457,8 @@ class PromptService:
             # Record project metrics for prompt usage
             try:
                 from datetime import timedelta
-                from app.models.project_metric import MetricType, MetricPeriod
+
+                from app.models.project_metric import MetricPeriod, MetricType
                 
                 now = datetime.now(timezone.utc)
                 # Round to hour for consistent period boundaries
@@ -583,7 +584,8 @@ class PromptService:
             # Record project metrics for prompt success/failure
             try:
                 from datetime import timedelta
-                from app.models.project_metric import MetricType, MetricPeriod
+
+                from app.models.project_metric import MetricPeriod, MetricType
                 
                 now = datetime.now(timezone.utc)
                 # Round to hour for consistent period boundaries
@@ -920,9 +922,9 @@ class PromptService:
     ) -> Optional[List[str]]:
         """Use LLM to generate improvement suggestions"""
         try:
-            from app.core.ollama_client import OllamaClient, TaskType
             from app.core.model_selector import ModelSelector
-            
+            from app.core.ollama_client import OllamaClient, TaskType
+
             # Get planning model for suggestions
             model_selector = ModelSelector(self.db)
             planning_model = model_selector.get_planning_model()
@@ -1112,9 +1114,9 @@ Provide 3-5 specific, actionable suggestions for improving this prompt. Return a
     ) -> Optional[str]:
         """Use LLM to generate improved prompt text based on suggestions"""
         try:
-            from app.core.ollama_client import OllamaClient, TaskType
             from app.core.model_selector import ModelSelector
-            
+            from app.core.ollama_client import OllamaClient, TaskType
+
             # Get planning model
             model_selector = ModelSelector(self.db)
             planning_model = model_selector.get_planning_model()

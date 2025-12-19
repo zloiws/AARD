@@ -4,12 +4,13 @@ Audit Report model for storing self-audit results
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, Any, Optional
-
-from sqlalchemy import Column, String, DateTime, Text, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from typing import Any, Dict, Optional
 
 from app.core.database import Base
+from sqlalchemy import Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 
 class AuditType(str, Enum):

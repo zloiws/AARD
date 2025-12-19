@@ -2,25 +2,25 @@
 Скрипт для консолидации всех планов проекта
 Собирает планы из файлов и БД, анализирует их, проверяет выполнение и генерирует единый план
 """
-import sys
-import re
-import json
 import asyncio
-from pathlib import Path
-from datetime import datetime
-from typing import List, Dict, Any, Optional
+import json
+import re
+import sys
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from app.core.database import SessionLocal
-from app.core.ollama_client import OllamaClient, TaskType
 from app.core.config import get_settings
+from app.core.database import SessionLocal
+from app.core.logging_config import LoggingConfig
+from app.core.ollama_client import OllamaClient, TaskType
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

@@ -1,13 +1,14 @@
 """
 Запуск всех тестов Фаз 3 и 4 с сохранением результатов
 """
-import sys
 import subprocess
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 backend_dir = Path(__file__).parent.parent
 import os
+
 os.chdir(backend_dir)
 
 # Результаты будут сохранены в файл

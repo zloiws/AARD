@@ -11,16 +11,17 @@ to avoid breaking current behavior, while providing a stable typed contract.
 
 from __future__ import annotations
 
+import json
 from typing import Optional
-from sqlalchemy.orm import Session
 
-from app.core.execution_context import ExecutionContext
 from app.components.contracts import StructuredIntent
 from app.components.prompt_repository import ComponentPromptRepository
-from app.services.interpretation_service import InterpretationService as LegacyInterpretationService
-from app.core.ollama_client import OllamaClient, TaskType
 from app.core.config import get_settings
-import json
+from app.core.execution_context import ExecutionContext
+from app.core.ollama_client import OllamaClient, TaskType
+from app.services.interpretation_service import \
+    InterpretationService as LegacyInterpretationService
+from sqlalchemy.orm import Session
 
 
 class InterpretationService:

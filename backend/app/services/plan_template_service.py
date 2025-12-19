@@ -1,23 +1,22 @@
 """
 Plan Template Service for extracting and managing reusable plan templates
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID, uuid4
-from datetime import datetime, timezone
+import asyncio
 import json
 import re
-import asyncio
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
-
-from app.models.plan_template import PlanTemplate, TemplateStatus
-from app.models.plan import Plan, PlanStatus
-from app.models.task import Task, TaskStatus
-from app.core.ollama_client import OllamaClient, TaskType
-from app.services.ollama_service import OllamaService
-from app.services.embedding_service import EmbeddingService
 from app.core.logging_config import LoggingConfig
+from app.core.ollama_client import OllamaClient, TaskType
+from app.models.plan import Plan, PlanStatus
+from app.models.plan_template import PlanTemplate, TemplateStatus
+from app.models.task import Task, TaskStatus
+from app.services.embedding_service import EmbeddingService
+from app.services.ollama_service import OllamaService
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -553,7 +552,7 @@ class PlanTemplateService:
     ) -> List[PlanTemplate]:
         """Find templates using text-based search (using raw SQL to avoid vector type issues)"""
         from sqlalchemy import text
-        
+
         # Search in name, description, goal_pattern, category, tags
         search_terms = task_description.lower().split()[:5]  # Limit to 5 terms
         
@@ -630,7 +629,7 @@ class PlanTemplateService:
     ) -> List[PlanTemplate]:
         """Find templates using text-based search with filters (using raw SQL to avoid vector type issues)"""
         from sqlalchemy import text
-        
+
         # Build WHERE conditions
         conditions = ["status = :status"]
         params = {"status": base_conditions["status"], "limit": limit}

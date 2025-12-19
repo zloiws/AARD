@@ -1,8 +1,8 @@
 """
 Запуск полного интеграционного теста Фазы 3
 """
-import sys
 import asyncio
+import sys
 from pathlib import Path
 
 # Add backend to path

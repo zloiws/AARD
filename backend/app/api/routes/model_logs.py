@@ -1,15 +1,15 @@
 """
 API routes for model logs from Digital Twin context
 """
-from typing import Optional, List, Dict, Any
-from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.database import get_db
-from app.models.task import Task
 from app.models.plan import Plan
+from app.models.task import Task
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/model-logs", tags=["model-logs"])

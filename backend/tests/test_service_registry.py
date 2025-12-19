@@ -1,11 +1,11 @@
 """
 Tests for ServiceRegistry
 """
-import pytest
 from unittest.mock import Mock
 
-from app.core.service_registry import ServiceRegistry, get_service_registry
+import pytest
 from app.core.execution_context import ExecutionContext
+from app.core.service_registry import ServiceRegistry, get_service_registry
 
 
 def test_service_registry_singleton():
@@ -88,7 +88,7 @@ def test_service_registry_clear_workflow_cache(db):
     context = ExecutionContext.from_db_session(db, workflow_id="test_workflow")
     
     from app.services.prompt_service import PromptService
-    
+
     # Get service
     service1 = registry.get_service(PromptService, context)
     
@@ -109,7 +109,7 @@ def test_service_registry_clear_all_cache(db):
     context = ExecutionContext.from_db_session(db)
     
     from app.services.prompt_service import PromptService
-    
+
     # Get service
     service1 = registry.get_service(PromptService, context)
     

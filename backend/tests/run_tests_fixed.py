@@ -1,7 +1,7 @@
 """Fixed test runner with better result parsing"""
+import re
 import subprocess
 import sys
-import re
 from pathlib import Path
 
 backend_dir = Path(__file__).parent.parent

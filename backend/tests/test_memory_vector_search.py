@@ -1,13 +1,14 @@
 """
 Tests for vector search in MemoryService
 """
-import pytest
 import asyncio
-from unittest.mock import Mock, patch, AsyncMock
-from uuid import uuid4, UUID
-from app.services.memory_service import MemoryService
-from app.models.agent_memory import AgentMemory
+from unittest.mock import AsyncMock, Mock, patch
+from uuid import UUID, uuid4
+
+import pytest
 from app.core.database import SessionLocal
+from app.models.agent_memory import AgentMemory
+from app.services.memory_service import MemoryService
 
 
 @pytest.fixture

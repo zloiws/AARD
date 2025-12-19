@@ -1,18 +1,18 @@
 """
 Комплексные интеграционные тесты для всех выполненных этапов
 """
-import pytest
+from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
-from unittest.mock import Mock, AsyncMock, patch
 
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan
+import pytest
 from app.core.execution_context import ExecutionContext
-from app.services.planning_service import PlanningService
-from app.services.execution_service import ExecutionService
-from app.services.task_lifecycle_manager import TaskLifecycleManager, TaskRole
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
 from app.services.adaptive_approval_service import AdaptiveApprovalService
 from app.services.agent_approval_agent import AgentApprovalAgent
+from app.services.execution_service import ExecutionService
+from app.services.planning_service import PlanningService
+from app.services.task_lifecycle_manager import TaskLifecycleManager, TaskRole
 
 
 @pytest.fixture

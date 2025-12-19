@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import os, json, sys
+
+import json
+import os
+import sys
+
 os.environ.setdefault("PYTHONPATH", os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app.core.database import SessionLocal
+
 
 def main():
     session = SessionLocal()

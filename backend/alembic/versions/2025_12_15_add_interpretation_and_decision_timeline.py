@@ -4,8 +4,8 @@ Revision ID: 20251215_interpretation_timeline
 Revises: 
 Create Date: 2025-12-15 00:00:00.000000
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.

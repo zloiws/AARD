@@ -2,15 +2,15 @@
 E2E тесты для полных workflow сценариев Фазы 5
 Проверяют работу всех интегрированных компонентов в реальных сценариях
 """
-import pytest
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
+import pytest
+from app.core.database import SessionLocal
 from app.core.execution_context import ExecutionContext
 from app.core.request_orchestrator import RequestOrchestrator
-from app.core.database import SessionLocal
 from app.models.agent import Agent, AgentStatus
 from app.services.ollama_service import OllamaService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture(scope="function")
@@ -144,7 +144,7 @@ class TestE2EInformationQueryWorkflows:
     ):
         """E2E: Информационный запрос → поиск в памяти → ответ"""
         from app.services.memory_service import MemoryService
-        
+
         # Сначала сохраняем память
         memory_service = MemoryService(execution_context)
         memory_service.save_memory(
@@ -340,7 +340,7 @@ class TestE2EFullIntegrationWorkflow:
     ):
         """E2E: Полная интеграция всех компонентов в одном workflow"""
         from app.services.memory_service import MemoryService
-        
+
         # 1. Сохраняем начальную память
         memory_service = MemoryService(execution_context)
         memory_service.save_memory(

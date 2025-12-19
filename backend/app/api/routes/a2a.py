@@ -1,16 +1,16 @@
 """
 API routes for A2A (Agent-to-Agent) communication
 """
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Body
-from pydantic import BaseModel
 
-from app.core.database import get_db
 from app.core.a2a_protocol import A2AMessage, A2ARequest, A2AResponse
+from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
 from app.services.a2a_router import A2ARouter
 from app.services.agent_registry import AgentRegistry
-from app.core.logging_config import LoggingConfig
+from fastapi import APIRouter, Body, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
@@ -127,7 +127,7 @@ async def find_agents(
         limit: Maximum number of results
     """
     try:
-        from app.models.agent import AgentStatus, AgentHealthStatus
+        from app.models.agent import AgentHealthStatus, AgentStatus
         
         registry = AgentRegistry(db)
         

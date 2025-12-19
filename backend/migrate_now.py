@@ -16,8 +16,8 @@ for p in sys.path[:3]:
     print(f"  {p}")
 
 try:
-    from alembic.config import Config
     from alembic import command
+    from alembic.config import Config
     from alembic.script import ScriptDirectory
     print("✅ Alembic imported successfully")
 

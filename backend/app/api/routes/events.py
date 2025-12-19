@@ -4,13 +4,13 @@ Provides:
 - GET /api/events/recent
 - GET /api/events/graph
 """
-from typing import Optional, Dict, Any
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from typing import Any, Dict, Optional
 
 from app.core.database import get_db
-from app.services.workflow_event_service import WorkflowEventService
 from app.models.execution_graph import ExecutionGraph
+from app.services.workflow_event_service import WorkflowEventService
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/events", tags=["events"])
 

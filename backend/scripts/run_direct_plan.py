@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import os, asyncio, json
+
+import asyncio
+import json
+import os
 
 os.environ.setdefault("PYTHONPATH", os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.core.database import SessionLocal
 from app.services.planning_service import PlanningService
+
 
 async def main():
     db = SessionLocal()

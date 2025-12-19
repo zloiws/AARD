@@ -4,8 +4,8 @@ Activate specific Ollama servers and models for integration tests.
 Marks servers by host (10.39.0.6, 10.39.0.101) and models by name as active.
 Run from project root: .\\venv\\Scripts\\python.exe backend\\scripts\\activate_models.py
 """
-from sqlalchemy import create_engine, text
 from app.core.config import get_settings
+from sqlalchemy import create_engine, text
 
 
 def main():

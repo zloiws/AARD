@@ -2,20 +2,20 @@
 Self Audit Service for project self-analysis
 Provides automated auditing of performance, quality, prompts, and errors
 """
-from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, func, desc
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-from app.models.audit_report import AuditReport, AuditType, AuditStatus
-from app.models.task import Task, TaskStatus
+from app.models.audit_report import AuditReport, AuditStatus, AuditType
 from app.models.plan import Plan, PlanStatus
 from app.models.prompt import Prompt
+from app.models.task import Task, TaskStatus
 from app.services.project_metrics_service import ProjectMetricsService
 from app.services.reflection_service import ReflectionService
+from sqlalchemy import and_, desc, func
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -718,7 +718,7 @@ Return only the summary text, no additional formatting."""
         """
         try:
             from app.models.project_metric import MetricPeriod
-            
+
             # Get trends data
             trends = self.metrics_service.get_trends(
                 metric_name=metric_name,
@@ -1052,7 +1052,7 @@ Return only the summary text, no additional formatting."""
         """
         try:
             from app.core.ollama_client import OllamaClient
-            
+
             # Check if LLM is available (stub - will fail gracefully if not)
             client = OllamaClient()
             

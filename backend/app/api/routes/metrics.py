@@ -1,11 +1,10 @@
 """
 Prometheus metrics endpoint
 """
+from app.core.logging_config import LoggingConfig
+from app.core.metrics import get_metrics, get_metrics_content_type
 from fastapi import APIRouter
 from fastapi.responses import Response
-
-from app.core.metrics import get_metrics, get_metrics_content_type
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

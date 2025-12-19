@@ -1,22 +1,22 @@
 """
 Script to apply Alembic migrations
 """
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Import alembic BEFORE changing directory
 try:
-    from alembic.config import Config
     from alembic import command
+    from alembic.config import Config
 except ImportError:
     # Try to add venv to path if alembic not found
     project_root = Path(__file__).resolve().parent.parent
     venv_site_packages = project_root / "venv" / "Lib" / "site-packages"
     if venv_site_packages.exists():
         sys.path.insert(0, str(venv_site_packages))
-    from alembic.config import Config
     from alembic import command
+    from alembic.config import Config
 
 # Add backend to path and change directory
 BACKEND_DIR = Path(__file__).resolve().parent

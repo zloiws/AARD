@@ -2,17 +2,16 @@
 Agent Aging Monitor Service
 Monitors agent performance degradation and creates update tasks
 """
-from typing import Dict, Any, Optional, List
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
 
 from app.core.logging_config import LoggingConfig
-from app.models.agent import Agent, AgentStatus, AgentHealthStatus
+from app.models.agent import Agent, AgentHealthStatus, AgentStatus
 from app.models.task import Task, TaskStatus
 from app.services.artifact_version_service import ArtifactVersionService
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

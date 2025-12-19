@@ -1,13 +1,14 @@
 """
 SQLAlchemy model for execution traces
 """
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, CheckConstraint, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
 
 from app.core.database import Base
+from sqlalchemy import (CheckConstraint, Column, DateTime, ForeignKey, Index,
+                        Integer, String)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
 
 
 class ExecutionTrace(Base):

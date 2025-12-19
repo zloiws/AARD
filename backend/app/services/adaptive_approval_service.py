@@ -2,20 +2,20 @@
 Adaptive Approval Service for intelligent approval decisions
 Determines if approval is required based on risk level, agent trust score, and task complexity
 """
-from typing import Dict, Any, Optional, List
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
 from app.models.agent import Agent
-from app.models.plan import Plan
-from app.models.trace import ExecutionTrace
 from app.models.approval import ApprovalRequest
+from app.models.plan import Plan
 from app.models.system_parameter import ParameterCategory, SystemParameterType
+from app.models.trace import ExecutionTrace
 from app.services.parameter_manager import ParameterManager
+from sqlalchemy import and_, func
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -35,8 +35,9 @@ class AdaptiveApprovalService:
         Args:
             db_or_context: Database session or ExecutionContext (optional)
         """
-        from app.core.execution_context import ExecutionContext
         from typing import Union
+
+        from app.core.execution_context import ExecutionContext
         
         if isinstance(db_or_context, ExecutionContext):
             self.context = db_or_context

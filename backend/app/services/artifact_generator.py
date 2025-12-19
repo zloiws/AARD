@@ -1,17 +1,16 @@
 """
 Artifact generator service for creating agents and tools
 """
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Session
-
-from app.models.artifact import Artifact, ArtifactType, ArtifactStatus
-from app.models.approval import ApprovalRequestType
-from app.services.approval_service import ApprovalService
-from app.services.agent_approval_agent import AgentApprovalAgent
-from app.services.artifact_version_service import ArtifactVersionService
 from app.core.ollama_client import OllamaClient, TaskType
+from app.models.approval import ApprovalRequestType
+from app.models.artifact import Artifact, ArtifactStatus, ArtifactType
+from app.services.agent_approval_agent import AgentApprovalAgent
+from app.services.approval_service import ApprovalService
+from app.services.artifact_version_service import ArtifactVersionService
+from sqlalchemy.orm import Session
 
 
 class ArtifactGenerator:

@@ -2,16 +2,17 @@
 Integration tests for Agent Dialogs (Phase 8.1)
 Tests the complete dialog system between agents
 """
-import pytest
 import asyncio
-from uuid import uuid4, UUID
 from datetime import datetime
+from uuid import UUID, uuid4
 
+import pytest
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_conversation import (AgentConversation,
+                                           ConversationStatus, MessageRole)
+from app.models.task import Task, TaskStatus
 from app.services.agent_dialog_service import AgentDialogService
 from app.services.agent_service import AgentService
-from app.models.agent_conversation import AgentConversation, ConversationStatus, MessageRole
-from app.models.agent import Agent, AgentStatus
-from app.models.task import Task, TaskStatus
 
 
 @pytest.mark.asyncio

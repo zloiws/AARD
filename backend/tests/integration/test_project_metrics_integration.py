@@ -1,18 +1,18 @@
 """
 Integration tests for project metrics collection in real-time
 """
-import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from app.models.task import Task, TaskStatus
+import pytest
+from app.core.database import Base, SessionLocal, engine
 from app.models.plan import Plan, PlanStatus
-from app.models.project_metric import ProjectMetric, MetricType, MetricPeriod
-from app.services.planning_service import PlanningService
+from app.models.project_metric import MetricPeriod, MetricType, ProjectMetric
+from app.models.task import Task, TaskStatus
 from app.services.execution_service import ExecutionService
-from app.services.prompt_service import PromptService, PromptType
+from app.services.planning_service import PlanningService
 from app.services.project_metrics_service import ProjectMetricsService
-from app.core.database import SessionLocal, engine, Base
+from app.services.prompt_service import PromptService, PromptType
 
 
 @pytest.fixture(scope="module")

@@ -8,8 +8,9 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 
-from sqlalchemy import create_engine, text
 from app.core.config import get_settings
+from sqlalchemy import create_engine, text
+
 
 def apply_migration():
     """Apply migration 020_add_workflow_events"""

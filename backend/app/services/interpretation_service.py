@@ -16,11 +16,11 @@ This is intentionally small and non-invasive: it reuses `UncertaintyService`
 to assess ambiguity and produce clarification questions. Next steps will
 formalize InterpretationRule storage and richer intent extraction.
 """
-from typing import Optional, Dict, Any
-
-from app.services.uncertainty_service import UncertaintyService
-from app.models.interpretation import DecisionTimeline, DecisionNode
+from typing import Any, Dict, Optional
 from uuid import uuid4
+
+from app.models.interpretation import DecisionNode, DecisionTimeline
+from app.services.uncertainty_service import UncertaintyService
 from sqlalchemy.exc import SQLAlchemyError
 
 

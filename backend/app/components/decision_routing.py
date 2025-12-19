@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from app.components.contracts import StructuredIntent, RoutingDecision
+from app.components.contracts import RoutingDecision, StructuredIntent
 from app.components.prompt_repository import ComponentPromptRepository
 
 

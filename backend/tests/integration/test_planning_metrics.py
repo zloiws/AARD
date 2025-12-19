@@ -1,15 +1,15 @@
 """
 Integration tests for PlanningMetricsService
 """
-import pytest
-from uuid import uuid4
 from datetime import datetime
-from sqlalchemy.orm import Session
+from uuid import uuid4
 
-from app.services.planning_metrics_service import PlanningMetricsService
+import pytest
 from app.models.plan import Plan, PlanStatus
 from app.models.task import Task, TaskStatus
 from app.models.trace import ExecutionTrace
+from app.services.planning_metrics_service import PlanningMetricsService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

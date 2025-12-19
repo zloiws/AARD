@@ -4,8 +4,8 @@ Revision ID: 20251216_event_assignment_enrich
 Revises: 20251215_interpretation_timeline
 Create Date: 2025-12-16 00:00:00.000000
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.

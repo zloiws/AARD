@@ -2,21 +2,21 @@
 API routes for prompts
 """
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from app.models.user import User
+
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
-
+from app.core.auth import get_current_user_optional, get_current_user_required
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
-from app.core.auth import get_current_user_optional, get_current_user_required
-from app.models.prompt import Prompt, PromptType, PromptStatus
+from app.models.prompt import Prompt, PromptStatus, PromptType
 from app.services.prompt_service import PromptService
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/prompts", tags=["prompts"])
 logger = LoggingConfig.get_logger(__name__)

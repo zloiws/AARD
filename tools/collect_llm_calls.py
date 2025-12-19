@@ -19,10 +19,9 @@ import argparse
 import ast
 import os
 import re
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable, Optional, List, Dict, Tuple
-
+from typing import Dict, Iterable, List, Optional, Tuple
 
 LLM_ATTR_NAMES = {"generate", "chat", "complete", "completions"}
 SYSTEM_PROMPT_KW = {"system_prompt", "system", "messages"}

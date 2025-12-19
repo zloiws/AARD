@@ -5,6 +5,7 @@ by replacing occurrences of `"` with `"` in a controlled list of files.
 Run from repository root: python backend/scripts/fix_escaped_quotes.py
 """
 from pathlib import Path
+
 files_to_fix = [
     "backend/app/api/routes/execution_graph.py",
     "backend/app/api/routes/meta.py",

@@ -3,13 +3,12 @@ User and Session models for authentication
 """
 from datetime import datetime, timezone
 from enum import Enum
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import relationship
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class UserRole(str, Enum):

@@ -3,13 +3,13 @@ Web pages for artifacts
 """
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Request, Depends, HTTPException, status, Query
+
+from app.core.database import get_db
+from app.core.templates import templates
+from app.models.artifact import Artifact, ArtifactStatus, ArtifactType
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-
-from app.core.templates import templates
-from app.core.database import get_db
-from app.models.artifact import Artifact, ArtifactType, ArtifactStatus
 
 router = APIRouter(tags=["artifacts_pages"])
 

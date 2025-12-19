@@ -2,19 +2,19 @@
 Full End-to-End Test with Real LLM
 Tests the complete system workflow from task creation to execution
 """
-import pytest
 import asyncio
-from uuid import uuid4
 from datetime import datetime
+from uuid import uuid4
 
-from app.services.planning_service import PlanningService
-from app.services.execution_service import ExecutionService
-from app.services.agent_team_service import AgentTeamService
-from app.services.ollama_service import OllamaService
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan, PlanStatus
-from app.models.agent_team import CoordinationStrategy
+import pytest
 from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import CoordinationStrategy
+from app.models.plan import Plan, PlanStatus
+from app.models.task import Task, TaskStatus
+from app.services.agent_team_service import AgentTeamService
+from app.services.execution_service import ExecutionService
+from app.services.ollama_service import OllamaService
+from app.services.planning_service import PlanningService
 
 
 def print_section(title: str, level: int = 1):

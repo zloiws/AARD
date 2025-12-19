@@ -1,8 +1,8 @@
 """
 Apply only the new migration 030 for system_parameters and uncertainty_parameters
 """
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Remove local alembic folder from path
@@ -13,8 +13,8 @@ if str(alembic_local) in sys.path:
 if str(BACKEND_DIR) in sys.path:
     sys.path.remove(str(BACKEND_DIR))
 
-from alembic.config import Config
 from alembic import command
+from alembic.config import Config
 
 os.chdir(BACKEND_DIR)
 

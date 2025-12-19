@@ -1,19 +1,19 @@
 """
 Uncertainty Handling Service for assessing and handling uncertainty in user queries
 """
-from typing import Dict, Any, List, Optional, Tuple
-from uuid import UUID
 from datetime import datetime, timezone
 from enum import Enum
-
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional, Tuple
+from uuid import UUID
 
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
 from app.core.ollama_client import OllamaClient, TaskType
+from app.core.tracing import add_span_attributes, get_tracer
 from app.models.task import Task
-from app.models.uncertainty_parameters import UncertaintyParameter, ParameterType
+from app.models.uncertainty_parameters import (ParameterType,
+                                               UncertaintyParameter)
 from app.models.uncertainty_types import UncertaintyLevel, UncertaintyType
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -41,7 +41,8 @@ class UncertaintyService:
         # Lazy import to avoid circular dependency
         global UncertaintyLearningService
         if UncertaintyLearningService is None:
-            from app.services.uncertainty_learning_service import UncertaintyLearningService as ULS
+            from app.services.uncertainty_learning_service import \
+                UncertaintyLearningService as ULS
             UncertaintyLearningService = ULS
         
         self.learning_service = UncertaintyLearningService(db, ollama_client)

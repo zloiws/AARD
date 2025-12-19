@@ -4,8 +4,8 @@ Revision ID: 031_create_minimal_plans_and_workflow_events
 Revises: 9b00a9011ac1
 Create Date: 2025-12-11 17:50:00.000000
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "031"

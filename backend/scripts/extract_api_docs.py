@@ -1,11 +1,12 @@
 """
 Script to extract API endpoints documentation from route files
 """
+import ast
 import os
 import re
-import ast
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 
 def extract_endpoints_from_file(file_path: str) -> List[Dict[str, Any]]:
     """Extract endpoint information from a route file"""

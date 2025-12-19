@@ -1,8 +1,8 @@
 """
 Test table used for verifying Alembic migrations.
 """
-from sqlalchemy import Column, Integer, String, DateTime, func
 from app.core.database import Base
+from sqlalchemy import Column, DateTime, Integer, String, func
 
 
 class TestTable(Base):

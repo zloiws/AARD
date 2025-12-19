@@ -3,8 +3,9 @@ Apply SQL script to create parameter tables directly
 """
 import sys
 from pathlib import Path
-from sqlalchemy import text
+
 from app.core.database import engine
+from sqlalchemy import text
 
 BACKEND_DIR = Path(__file__).resolve().parent
 SQL_FILE = BACKEND_DIR / "create_parameter_tables.sql"

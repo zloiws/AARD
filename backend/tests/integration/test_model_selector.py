@@ -1,14 +1,14 @@
 """
 Integration tests for ModelSelector
 """
-import pytest
-from sqlalchemy.orm import Session
 from uuid import uuid4
 
+import pytest
 from app.core.model_selector import ModelSelector
-from app.models.ollama_server import OllamaServer
 from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
 from app.services.ollama_service import OllamaService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

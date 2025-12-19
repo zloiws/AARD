@@ -1,10 +1,10 @@
 """
 Простой запуск тестов с выводом в консоль и файл
 """
-import sys
 import subprocess
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 backend_dir = Path(__file__).parent.parent
 os.chdir(backend_dir)

@@ -2,8 +2,8 @@
 Cleanup DB: drop all tables except a whitelist (ollama_server, ollama_model, alembic_version).
 This script is destructive. It will DROP TABLE ... CASCADE for all public tables not in the whitelist.
 """
-from sqlalchemy import text
 from app.core.database import get_engine
+from sqlalchemy import text
 
 WHITELIST = {"ollama_server", "ollama_model", "alembic_version"}
 

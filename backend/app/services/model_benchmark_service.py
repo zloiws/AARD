@@ -4,17 +4,17 @@ Service for benchmarking and testing LLM models
 """
 import asyncio
 import time
-from typing import Dict, List, Optional, Any
-from uuid import UUID
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
+from app.core.config import get_settings
+from app.core.logging_config import LoggingConfig
 from app.core.ollama_client import OllamaClient, TaskType
 from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
 from app.services.ollama_service import OllamaService
-from app.core.logging_config import LoggingConfig
-from app.core.config import get_settings
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 settings = get_settings()

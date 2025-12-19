@@ -9,6 +9,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 env_file = BASE_DIR / ".env"
 load_dotenv(env_file, override=True)
 

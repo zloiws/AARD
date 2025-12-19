@@ -1,11 +1,11 @@
 """
 Последовательный запуск всех тестов Фазы 3 с сохранением результатов
 """
-import sys
-import subprocess
 import os
-from pathlib import Path
+import subprocess
+import sys
 from datetime import datetime
+from pathlib import Path
 
 backend_dir = Path(__file__).parent.parent
 os.chdir(backend_dir)

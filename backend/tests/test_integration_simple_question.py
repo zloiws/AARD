@@ -4,11 +4,10 @@ Tests from simple to complex
 Uses specific model: Server 10.39.0.6, Model gemma3:4b
 """
 import pytest
-from sqlalchemy.orm import Session
-
-from app.core.request_orchestrator import RequestOrchestrator
 from app.core.execution_context import ExecutionContext
+from app.core.request_orchestrator import RequestOrchestrator
 from app.services.ollama_service import OllamaService
+from sqlalchemy.orm import Session
 
 
 def get_test_model_and_server(db: Session):
