@@ -19,7 +19,7 @@ async def test_save_todo_to_working_memory(db: Session):
     # Create an agent
     agent = Agent(
         id=uuid4(),
-        name="Test Agent",
+        name=f"Test Agent {uuid4()}",
         description="Test agent for memory integration",
         system_prompt="You are a test agent"
     )
@@ -85,7 +85,7 @@ async def test_save_plan_to_episodic_memory(db: Session):
     # Create an agent
     agent = Agent(
         id=uuid4(),
-        name="Test Agent",
+        name=f"Test Agent {uuid4()}",
         description="Test agent for memory integration",
         system_prompt="You are a test agent"
     )
@@ -151,7 +151,7 @@ async def test_apply_procedural_memory_patterns(db: Session):
     # Create an agent
     agent = Agent(
         id=uuid4(),
-        name="Test Agent",
+        name=f"Test Agent {uuid4()}",
         description="Test agent for memory integration",
         system_prompt="You are a test agent"
     )
@@ -197,7 +197,7 @@ async def test_plan_creation_saves_to_memory(db: Session):
     # Create an agent
     agent = Agent(
         id=uuid4(),
-        name="Test Agent",
+        name=f"Test Agent {uuid4()}",
         description="Test agent for memory integration",
         system_prompt="You are a test agent"
     )
