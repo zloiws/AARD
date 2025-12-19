@@ -43,11 +43,14 @@ class PlanningService:
             if isinstance(db, ExecutionContext):
                 self.execution_context = db
                 self.db = db.db
+                # Expose context attribute for tests/components expecting it
+                self.context = db
             else:
                 self.db = db
         except Exception:
             # Fallback: treat input as DB session
             self.db = db
+            self.context = None
         self.tracer = get_tracer(__name__)
         self.settings = get_settings()
         # Allow fallback in test environment to make CI robust against external LLM flakiness
