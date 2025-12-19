@@ -4108,15 +4108,32 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             # Combine and rank patterns
             all_patterns = []
             
-            # Add memory patterns
+            # Add memory patterns (filter by task_pattern fuzzy match)
             for pattern in similar_patterns:
-                if pattern.content and pattern.content.get("success_rate", 0) > 0.7:
-                    all_patterns.append({
-                        "source": "memory",
-                        "pattern": pattern.content,
-                        "importance": pattern.importance,
-                        "success_rate": pattern.content.get("success_rate", 0)
-                    })
+                try:
+                    content = getattr(pattern, "content", {}) or {}
+                    success_rate = content.get("success_rate", 0)
+                    task_pattern = content.get("task_pattern") or content.get("task_pattern", "")
+                    # Accept if success_rate high and pattern matches (substring) the task description
+                    if success_rate > 0.7:
+                        if task_pattern:
+                            if task_pattern in task_description or task_description in task_pattern:
+                                all_patterns.append({
+                                    "source": "memory",
+                                    "pattern": content,
+                                    "importance": pattern.importance if hasattr(pattern, "importance") else 0.7,
+                                    "success_rate": success_rate
+                                })
+                        else:
+                            # If no explicit task_pattern, include by success_rate alone
+                            all_patterns.append({
+                                "source": "memory",
+                                "pattern": content,
+                                "importance": pattern.importance if hasattr(pattern, "importance") else 0.7,
+                                "success_rate": success_rate
+                            })
+                except Exception:
+                    continue
             
             # Add learning patterns
             for pattern in learning_patterns:
