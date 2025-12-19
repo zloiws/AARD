@@ -178,6 +178,15 @@ async def test_apply_procedural_memory_patterns(db: Session):
         importance=0.8
     )
     db.commit()
+    # Diagnostic dump: print AgentMemory rows for this agent
+    try:
+        from app.models.agent_memory import AgentMemory
+        rows = db.query(AgentMemory).filter(AgentMemory.agent_id == agent.id).all()
+        print("DBG: agent_id=", agent.id, "agent_memory_count=", len(rows))
+        if rows:
+            print("DBG: first_memory_type=", rows[0].memory_type, "content_keys=", list((rows[0].content or {}).keys()))
+    except Exception as _:
+        print("DBG: failed to dump AgentMemory rows:", _)
     
     # Test applying procedural memory patterns
     planning_service = PlanningService(db)
