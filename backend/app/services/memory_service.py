@@ -126,6 +126,22 @@ class MemoryService:
         self.db.commit()
         self.db.refresh(memory)
         
+        # If procedural memory and no summary provided, use task_pattern as summary for easier search/matching
+        try:
+            if memory_type == (MemoryType.PROCEDURAL.value if isinstance(MemoryType.PROCEDURAL, MemoryType) else "procedural"):
+                if not memory.summary:
+                    try:
+                        task_pattern = None
+                        if isinstance(content, dict):
+                            task_pattern = content.get("task_pattern") or (content.get("strategy") or {}).get("task_pattern")
+                        if task_pattern:
+                            memory.summary = str(task_pattern)
+                            self.db.commit()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+        
         # Invalidate cache for this agent (new memory may affect search results)
         if self._cache_enabled:
             self.clear_cache(agent_id=agent_id)
