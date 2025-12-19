@@ -4090,9 +4090,9 @@ Analyze this task and create a strategic plan. Return only valid JSON."""
             try:
                 # Fetch recent procedural memories for the agent directly via ORM
                 from app.models.agent_memory import AgentMemory
+                # Fetch all memories for the agent and filter in-Python for task_pattern
                 proc_rows = self.db.query(AgentMemory).filter(
-                    AgentMemory.agent_id == agent_id,
-                    AgentMemory.memory_type == MemoryType.PROCEDURAL.value
+                    AgentMemory.agent_id == agent_id
                 ).all()
                 # Debug log for diagnostics
                 try:
