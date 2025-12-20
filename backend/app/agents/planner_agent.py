@@ -1,3 +1,7 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: uses hard-coded system_prompt literals for planning steps; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Planner Agent - модель "Размышлений" для планирования и анализа задач
 Согласно dual-model архитектуре, этот агент отвечает за:

@@ -129,6 +129,16 @@ class WorkflowEvent(Base):
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses"""
+        # Attempt to provide canonical ExecutionEvent fields (contracts_v0)
+        data = self.event_data or {}
+        meta = self.event_metadata or {}
+
+        # input/output summaries may be stored in event_data under several keys
+        input_summary = data.get("input_summary") or data.get("input") or data.get("prompt") or None
+        output_summary = data.get("output_summary") or data.get("output") or data.get("result") or None
+        reason_code = meta.get("reason_code") or data.get("reason_code") or None
+        component_name = meta.get("component_name") or data.get("component") or self.event_source
+
         return {
             "id": str(self.id),
             "workflow_id": self.workflow_id,
@@ -137,12 +147,16 @@ class WorkflowEvent(Base):
             "stage": self.stage,
             "status": self.status,
             "message": self.message,
-            "event_data": self.event_data or {},
-            "metadata": self.event_metadata or {},
+            "event_data": data,
+            "metadata": meta,
             "component_role": self.component_role,
+            "component_name": component_name,
             "prompt_id": str(self.prompt_id) if self.prompt_id else None,
             "prompt_version": self.prompt_version,
             "decision_source": self.decision_source,
+            "input_summary": input_summary,
+            "output_summary": output_summary,
+            "reason_code": reason_code,
             "task_id": str(self.task_id) if self.task_id else None,
             "plan_id": str(self.plan_id) if self.plan_id else None,
             "tool_id": str(self.tool_id) if self.tool_id else None,

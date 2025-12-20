@@ -1,3 +1,7 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: uses a local literal system_prompt for keyword updates; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Uncertainty Learning Service for learning and adapting uncertainty parameters
 """

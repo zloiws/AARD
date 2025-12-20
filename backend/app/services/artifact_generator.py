@@ -1,3 +1,7 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: artifact generation uses purpose-specific local prompts; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Artifact generator service for creating agents and tools
 """

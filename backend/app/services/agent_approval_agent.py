@@ -1,3 +1,7 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: uses a hard-coded system_prompt literal for agent assessment; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Agent Approval Agent (AAA) - Validate-Then-Build механизм
 Проверяет необходимость создания новых агентов перед их созданием

@@ -1,19 +1,54 @@
-# docs/context
+# docs/context — AARD architecture & process hub
 
-This directory contains architecture and operating guidance for the AARD backend.
+Purpose
+-------
+This folder contains the normative architecture rules, operational decisions, readiness checklists and onboarding templates for the AARD backend. It is the starting point for any new chat/agent or human contributor who will work on `backend/app/**`.
 
-Key documents:
+Start here (required reading, in order)
+--------------------------------------
+1. `ARCHITECTURE_BASELINE_v0.md` — canonical execution stages, ExecutionEvent (v0), baseline invariants.
+2. `ARCHITECTURE_LAW.md` — normative architecture laws (authoritative).
+3. `SERVICE_ORCHESTRATION_READINESS_CHECKLIST.md` — mandatory checklist before orchestration.
+4. `docs/api/contracts_v0.md` — API contracts (ExecutionEvent, PromptAssignment).
+5. `backend/docs/entities/catalog.md` — backend inventory & classification.
+6. `backend/docs/architecture/backend_interactions.md` — pipeline mapping and event emission points.
+7. `backend/docs/llm_call_inventory.md` — LLM call inventory and exemptions.
+8. `OPERATIONAL_DECISIONS.md` — actionable operational rules and priorities.
+9. `CHAT_ONBOARDING.md` — onboarding checklist and quick checks.
+10. `onboarding_ack/TEMPLATE_ACK.md` — acknowledgement template: create `docs/context/onboarding_ack/<chat-id>.md` after reading.
 
-- `ARCHITECTURE_LAW.md` — normative architecture principles and invariants.
-- `ARCHITECTURE_BASELINE_v0.md` — canonical baseline for backend architecture.
-- `SERVICE_ORCHESTRATION_READINESS_CHECKLIST.md` — checklist to validate services' orchestration readiness.
-- `architecture_rules.md` — implementation-level architecture rules and constraints.
-- `decision_model.md` — decision and approval model for agent actions.
-- `dialog_rules.md` — conversational and prompt/dialog rules for agents and components.
-- `error_taxonomy.md` — classification of errors and guidance for handling and observability.
-- `ui_architecture.md` — UI-related architecture notes and alignments.
-- `WORKING_CONTRACT.md` — working contract and operational agreements.
+Quick checks (before any edit)
+------------------------------
+- Can you list canonical stages? (`interpretation`, `validator_a`, `routing`, `planning`, `validator_b`, `execution`, `reflection`, `registry_update`)
+- Can you list ExecutionEvent (v0) required fields (component_role, component_name, input_summary, output_summary, reason_code, etc.)?
+- Is the entity you will change classified in `backend/docs/entities/catalog.md`?
+- Does your change touch LLM prompts? If yes — follow PromptAssignment rules or annotate literal prompts with `# LEGACY_PROMPT_EXEMPT`.
 
-See individual files for full details.
+Onboarding & approvals
+----------------------
+- Create `docs/context/onboarding_ack/<chat-id>.md` using `TEMPLATE_ACK.md` to signal readiness to start work.
+- If an entity is being prepared for orchestration, run the readiness checklist and record PASS/FAIL in `backend/docs/services/<service>.md` per `ARCHITECTURE_LAW.md` requirements.
+
+Process constraints (must-follow)
+-------------------------------
+- No refactors/renames/new abstractions without explicit approval.
+- Work one phase at a time; stop and produce `BLOCK STATUS` after each phase (see `CURSOR_WORKING_CONTRACT.md`).
+- Any LLM call must resolve prompt via PromptAssignment or be explicitly annotated as exempt.
+
+Contacts & owners
+-----------------
+- Owner for context docs: `Architecture / System Owner` (add specific owner contact to each service doc).
+- For questions: open an issue or contact the document owner listed in each service doc.
+
+Files in this folder
+--------------------
+- `ARCHITECTURE_BASELINE_v0.md` — baseline (canonical)
+- `ARCHITECTURE_LAW.md` — normative law
+- `SERVICE_ORCHESTRATION_READINESS_CHECKLIST.md` — readiness checklist
+- `WORKING_CONTRACT.md`, `CURSOR_WORKING_CONTRACT.md` — working contract(s)
+- `OPERATIONAL_DECISIONS.md` — operational decisions and priorities
+- `CHAT_ONBOARDING.md`, `onboarding_ack/` — onboarding and ack templates
+- `PROJECT_PHASE.md` — current phase record
+- `architecture_rules.md`, `decision_model.md`, `dialog_rules.md`, `error_taxonomy.md`, `ui_architecture.md` — supporting directives
 
 

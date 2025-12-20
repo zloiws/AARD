@@ -1,3 +1,7 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: uses hard-coded system_prompt literal for code generation; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Coder Agent - модель "Кода" для генерации и выполнения кода
 Согласно dual-model архитектуре, этот агент отвечает за:

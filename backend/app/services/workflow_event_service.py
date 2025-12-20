@@ -21,6 +21,30 @@ class WorkflowEventService:
     def __init__(self, db: Session):
         self.db = db
     
+    def map_stage_to_canonical(self, stage: WorkflowStage) -> str:
+        """
+        Map internal WorkflowStage values to canonical stages required by contracts_v0:
+          interpretation, validator_a, routing, planning, validator_b, execution, reflection
+        Best-effort mapping; default to 'execution' when unknown.
+        """
+        try:
+            s = stage.value.lower()
+        except Exception:
+            s = str(stage).lower()
+
+        if s in ("user_request", "request_parsing"):
+            return "interpretation"
+        if s in ("action_determination", "decision_determination", "decision_routing"):
+            return "routing"
+        if s in ("execution",):
+            return "execution"
+        if s in ("result",):
+            return "reflection"
+        if s in ("error",):
+            return "reflection"
+        # fallback
+        return "execution"
+
     def save_event(
         self,
         workflow_id: str,
@@ -47,11 +71,13 @@ class WorkflowEventService:
     ) -> WorkflowEvent:
         """Save a workflow event to the database"""
         try:
+            # Persist canonical stage name for compatibility with contracts_v0
+            canonical_stage = self.map_stage_to_canonical(stage)
             event = WorkflowEvent(
                 workflow_id=workflow_id,
                 event_type=event_type.value,
                 event_source=event_source.value,
-                stage=stage.value,
+                stage=canonical_stage,
                 status=status.value,
                 message=message,
                 event_data=event_data or {},

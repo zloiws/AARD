@@ -1,3 +1,7 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: execution flows include local system_prompt literals for execution role; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Execution service for plan execution
 """

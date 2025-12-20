@@ -1,3 +1,7 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: contains literal system_prompt strings for planning assistant flows; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Planning service for generating and managing task plans
 """

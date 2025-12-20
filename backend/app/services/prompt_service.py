@@ -1,3 +1,7 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: contains hard-coded system_prompt literals used for prompt improvement flows; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Prompt Service for managing prompts with versioning and metrics
 """
