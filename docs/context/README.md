@@ -50,5 +50,6 @@ Files in this folder
 - `CHAT_ONBOARDING.md`, `onboarding_ack/` — onboarding and ack templates
 - `PROJECT_PHASE.md` — current phase record
 - `architecture_rules.md`, `decision_model.md`, `dialog_rules.md`, `error_taxonomy.md`, `ui_architecture.md` — supporting directives
+ - `DOCS_TESTS_POLICY.md` — documentation & tests policy
 
 
