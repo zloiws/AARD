@@ -1,0 +1,150 @@
+{
+  "generated_by": "assistant",
+  "summary": "Detailed grouping of backend/app modules into logical services with brief descriptions.",
+  "services": [
+    {
+      "name": "Application Core",
+      "modules": [
+        "app.core.config",
+        "app.core.database",
+        "app.core.request_orchestrator",
+        "app.core.request_router",
+        "app.core.tracing",
+        "app.core.metrics",
+        "app.core.auth",
+        "app.core.service_registry",
+        "app.core.workflow_engine",
+        "app.core.logging_config",
+        "app.core.templates"
+      ],
+      "description": "Infrastructure and orchestration (config, DB, tracing, metrics, registries, core runtime helpers).",
+      "inputs": ["env vars / Settings", "HTTP requests", "service calls"],
+      "outputs": ["Settings object", "SQLAlchemy engine/Session", "registered services", "tracing/metrics"]
+    },
+    {
+      "name": "HTTP API (presentation)",
+      "modules": [
+        "app.api.routes.*",
+        "app.main"
+      ],
+      "description": "FastAPI routes and application lifecycle (presentation layer).",
+      "inputs": ["HTTP requests (path/query/body/headers)"],
+      "outputs": ["HTTP responses", "calls to business services", "metrics/events"]
+    },
+    {
+      "name": "Data / ORM layer",
+      "modules": [
+        "app.models.*",
+        "app.core.database",
+        "alembic.*",
+        "backend/sql/*"
+      ],
+      "description": "Domain models and persistence (SQLAlchemy models and migration scripts).",
+      "inputs": ["DB connection string", "ORM queries from services"],
+      "outputs": ["Persisted entities", "DDL migrations"]
+    },
+    {
+      "name": "Business Services",
+      "modules": [
+        "app.services.*"
+      ],
+      "description": "Core business logic (planning, execution, queues, workflows, metrics).",
+      "inputs": ["API calls", "agent calls", "DB entities"],
+      "outputs": ["Domain results", "DB updates", "events"]
+    },
+    {
+      "name": "Agents & Planning",
+      "modules": [
+        "app.agents.*",
+        "app.planning.lifecycle",
+        "app.components.planning_service",
+        "app.components.interpretation_service"
+      ],
+      "description": "Agent implementations and planning lifecycle logic.",
+      "inputs": ["tasks/prompts", "memory/context", "model outputs"],
+      "outputs": ["Plans", "Actions", "Agent messages"]
+    },
+    {
+      "name": "Decision / Interpretation Components",
+      "modules": [
+        "app.components.decision_routing",
+        "app.components.execution_validator",
+        "app.components.semantic_validator",
+        "app.components.reflection_service",
+        "app.components.prompt_repository"
+      ],
+      "description": "Reusable components for decision-making, validation and prompt management.",
+      "inputs": ["intermediate outputs", "prompts", "request context"],
+      "outputs": ["validated decisions", "normalized prompts", "routing decisions"]
+    },
+    {
+      "name": "Tools / External Integrations",
+      "modules": [
+        "app.tools.*",
+        "app.core.ollama_client",
+        "app.core.ollama_manager",
+        "app.core.ollama_db_client"
+      ],
+      "description": "Adapters for external tools and model services (Ollama, web search, python execution).",
+      "inputs": ["tool requests", "model prompts"],
+      "outputs": ["tool results", "errors", "artifacts"]
+    },
+    {
+      "name": "Registry / Service Discovery",
+      "modules": [
+        "app.registry.*",
+        "app.core.service_registry"
+      ],
+      "description": "Service registration and runtime lookup.",
+      "inputs": ["service descriptors", "startup registrations"],
+      "outputs": ["lookup API", "service instances"]
+    },
+    {
+      "name": "Security / Auth / Permissions",
+      "modules": [
+        "app.security.*",
+        "app.core.auth",
+        "app.core.permissions"
+      ],
+      "description": "Authentication and authorization helpers used by API and services.",
+      "inputs": ["credentials", "tokens", "request context"],
+      "outputs": ["auth result", "permission decisions"]
+    },
+    {
+      "name": "Memory / Conversation Storage",
+      "modules": [
+        "app.memory.*",
+        "app.models.agent_memory",
+        "app.models.chat_session"
+      ],
+      "description": "Storage and retrieval of conversational/memory state for agents.",
+      "inputs": ["messages", "agent context"],
+      "outputs": ["memory records", "context objects"]
+    },
+    {
+      "name": "Ops / Maintenance / Migrations",
+      "modules": [
+        "alembic.*",
+        "backend/*.py (apply_migrations, run_migration, update_alembic_version, scripts/*)",
+        "backend/sql/*"
+      ],
+      "description": "CLI and maintenance scripts for schema migrations, checks and DB ops.",
+      "inputs": [".env, DB connection"],
+      "outputs": ["applied migrations", "checks/reports"]
+    },
+    {
+      "name": "Utilities / Observability",
+      "modules": [
+        "app.core.metrics",
+        "app.core.tracing",
+        "app.core.logging_config",
+        "app.utils.*"
+      ],
+      "description": "Utilities for logging, metrics and tracing.",
+      "inputs": ["runtime events", "traces"],
+      "outputs": ["metrics, logs, exported traces"]
+    }
+  ]
+}
+
+

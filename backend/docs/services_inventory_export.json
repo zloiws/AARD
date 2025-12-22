@@ -1,0 +1,153 @@
+{
+  "services": [
+    {
+      "name": "ApplicationCore",
+      "role": "Infrastructure foundation — configuration, DB, orchestration, tracing & metrics, service registry.",
+      "uses_llm": false,
+      "path": "docs/services/ApplicationCore.md"
+    },
+    {
+      "name": "HTTPAPILayer",
+      "role": "Presentation layer — FastAPI handlers, validation and routing to business services.",
+      "uses_llm": false,
+      "path": "docs/services/HTTPAPILayer.md"
+    },
+    {
+      "name": "DataORMLayer",
+      "role": "Domain models and persistence (SQLAlchemy models + migrations).",
+      "uses_llm": false,
+      "path": "docs/services/DataORMLayer.md"
+    },
+    {
+      "name": "BusinessServices",
+      "role": "Core domain logic: planning, execution, queues, metrics, artifact generation.",
+      "uses_llm": null,
+      "path": "docs/services/BusinessServices.md"
+    },
+    {
+      "name": "AgentsAndPlanning",
+      "role": "Agent implementations (Component + Capabilities) and plan lifecycle management.",
+      "uses_llm": true,
+      "path": "docs/services/AgentsAndPlanning.md"
+    },
+    {
+      "name": "DecisionComponents",
+      "role": "LLM-based components for interpretation, routing, validation and reflection.",
+      "uses_llm": true,
+      "path": "docs/services/DecisionComponents.md"
+    },
+    {
+      "name": "ToolsExternalIntegrations",
+      "role": "Adapters to external systems and execution capabilities (Ollama, web search, code execution).",
+      "uses_llm": null,
+      "path": "docs/services/ToolsExternalIntegrations.md"
+    },
+    {
+      "name": "RegistryServiceDiscovery",
+      "role": "Single source of truth for agents, capabilities, versions and lifecycle.",
+      "uses_llm": false,
+      "path": "docs/services/RegistryServiceDiscovery.md"
+    },
+    {
+      "name": "SecurityAuthPermissions",
+      "role": "Authentication and authorization utilities for API and services.",
+      "uses_llm": false,
+      "path": "docs/services/SecurityAuthPermissions.md"
+    },
+    {
+      "name": "MemoryConversationStorage",
+      "role": "Storage and retrieval of agent memory and chat sessions.",
+      "uses_llm": false,
+      "path": "docs/services/MemoryConversationStorage.md"
+    },
+    {
+      "name": "OpsMigrations",
+      "role": "CLI and scripts for schema migrations, seeding and DB maintenance.",
+      "uses_llm": false,
+      "path": "docs/services/OpsMigrations.md"
+    },
+    {
+      "name": "UtilitiesObservability",
+      "role": "Logging, metrics, tracing and helper utilities.",
+      "uses_llm": false,
+      "path": "docs/services/UtilitiesObservability.md"
+    }
+  ]
+}
+
+{
+  "services": [
+    {
+      "name": "AgentsAndPlanning",
+      "role": "# Service: Agents & Planning",
+      "uses_llm": null,
+      "path": "docs\\services\\AgentsAndPlanning.md"
+    },
+    {
+      "name": "ApplicationCore",
+      "role": "# Service: Application Core",
+      "uses_llm": null,
+      "path": "docs\\services\\ApplicationCore.md"
+    },
+    {
+      "name": "BusinessServices",
+      "role": "# Service: Business Services",
+      "uses_llm": null,
+      "path": "docs\\services\\BusinessServices.md"
+    },
+    {
+      "name": "DataORMLayer",
+      "role": "# Service: Data / ORM Layer",
+      "uses_llm": null,
+      "path": "docs\\services\\DataORMLayer.md"
+    },
+    {
+      "name": "DecisionComponents",
+      "role": "# Service: Decision / Interpretation Components",
+      "uses_llm": null,
+      "path": "docs\\services\\DecisionComponents.md"
+    },
+    {
+      "name": "HTTPAPILayer",
+      "role": "# Service: HTTP API Layer",
+      "uses_llm": null,
+      "path": "docs\\services\\HTTPAPILayer.md"
+    },
+    {
+      "name": "MemoryConversationStorage",
+      "role": "# Service: Memory / Conversation Storage",
+      "uses_llm": null,
+      "path": "docs\\services\\MemoryConversationStorage.md"
+    },
+    {
+      "name": "OpsMigrations",
+      "role": "# Service: Ops / Maintenance / Migrations",
+      "uses_llm": null,
+      "path": "docs\\services\\OpsMigrations.md"
+    },
+    {
+      "name": "RegistryServiceDiscovery",
+      "role": "# Service: Registry / Service Discovery",
+      "uses_llm": null,
+      "path": "docs\\services\\RegistryServiceDiscovery.md"
+    },
+    {
+      "name": "SecurityAuthPermissions",
+      "role": "# Service: Security / Auth / Permissions",
+      "uses_llm": null,
+      "path": "docs\\services\\SecurityAuthPermissions.md"
+    },
+    {
+      "name": "ToolsExternalIntegrations",
+      "role": "# Service: Tools & External Integrations",
+      "uses_llm": null,
+      "path": "docs\\services\\ToolsExternalIntegrations.md"
+    },
+    {
+      "name": "UtilitiesObservability",
+      "role": "# Service: Utilities / Observability",
+      "uses_llm": null,
+      "path": "docs\\services\\UtilitiesObservability.md"
+    }
+  ]
+}

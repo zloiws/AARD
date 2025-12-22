@@ -1,0 +1,77 @@
+{
+  "generated_by": "assistant",
+  "notes": "Potential duplicated or overlapping scripts and modules found. Manual review recommended before consolidation.",
+  "groups": [
+    {
+      "area": "Migrations / DB maintenance",
+      "files": [
+        "apply_migrations.py",
+        "apply_single_migration.py",
+        "apply_timezone_migration.py",
+        "run_migration.py",
+        "run_migration_fixed.py",
+        "update_alembic_version.py",
+        "scripts/autogen_and_apply_migration.py",
+        "scripts/apply_migration_019.py",
+        "scripts/apply_migration_020.py",
+        "scripts/patch_migrations_idempotent.py",
+        "migrate_now.py"
+      ],
+      "reason": "Multiple scripts perform migration/apply/version update tasks; likely overlap in connection handling and alembic invocation.",
+      "recommendation": "Consolidate into a small set of well-documented commands (apply, check, repair)."
+    },
+    {
+      "area": "Server start / run wrappers",
+      "files": [
+        "run.py",
+        "run_alembic_upgrade.py",
+        "run_migration.py",
+        "run_migration_fixed.py",
+        "start_server_with_venv.ps1",
+        "start_server.bat",
+        "start_all.bat"
+      ],
+      "reason": "Multiple entrypoint wrappers for running server or migrations; duplication across OS-specific scripts.",
+      "recommendation": "Keep a minimal set (one cross-platform Python runner + platform-specific helpers)."
+    },
+    {
+      "area": "Health / checks",
+      "files": [
+        "check_tables.py",
+        "check_missing_tables.py",
+        "check_db_state.py",
+        "check_artifacts_integration.py",
+        "scripts/check_* (many)"
+      ],
+      "reason": "Several overlapping DB/table/check scripts; some exist both at repo root and in scripts/ dir.",
+      "recommendation": "Unify checks under a single `tools/check` module with subcommands."
+    },
+    {
+      "area": "Temp / helper scripts",
+      "files": [
+        "tmp_add_embedding.py",
+        "tmp_drop_all_tables.py",
+        "tmp_fix_trace_index.py",
+        "tmp_list_indexes.py",
+        "tmp_rename_agents.py",
+        "scripts/tmp_*.py"
+      ],
+      "reason": "One-off scripts with overlapping maintenance tasks.",
+      "recommendation": "Move necessary utilities into namespaced CLI; archive or remove one-offs."
+    },
+    {
+      "area": "Ollama integrations",
+      "files": [
+        "app/core/ollama_client.py",
+        "app/core/ollama_db_client.py",
+        "app/core/ollama_manager.py",
+        "app/services/ollama_service.py",
+        "multiple alembic scripts and seed scripts"
+      ],
+      "reason": "Several modules with similar names; likely separation of concerns (client vs manager vs db client) but needs review for duplicated code paths.",
+      "recommendation": "Confirm responsibilities (HTTP client vs DB-backed client vs orchestration) and extract shared logic into helper utilities."
+    }
+  ]
+}
+
+

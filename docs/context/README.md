@@ -53,3 +53,31 @@ Files in this folder
  - `DOCS_TESTS_POLICY.md` — documentation & tests policy
 
 
+## Chat snapshot — testing stabilization (quick start)
+
+To continue testing stabilization in a new chat, read this section and the linked artifacts — no further onboarding required.
+
+Summary of actions performed in this chat:
+- Declared Active Block: "Test hygiene & deterministic unit stabilization" (scope: only ✅ items from failure triage).
+- Added centralized real‑LLM guard in `backend/tests/conftest.py` (skip `real_llm` unless `RUN_REAL_LLM_TESTS=1`).
+- Created test inventory: `backend/tests/TEST_MATRIX.md`.
+- Created test change log: `backend/tests/TESTING_CHANGELOG.md`.
+- Created failure triage: `backend/docs/testing/FAILURE_TRIAGE_PHASE_0.md`.
+- Finalized stabilization plan: `.cursor/plans/TESTING_BASELINE_v0.plan.md`.
+- Applied safe, non‑architectural fixes to stabilize unit tests:
+  - defensive fallbacks in `backend/app/services/plan_template_service.py`
+  - execution error handling guard in `backend/app/services/execution_service.py`
+  - ServiceRegistry backward compatibility in `backend/app/core/service_registry.py`
+  - conftest improvements for sys.path and env gating `backend/tests/conftest.py`
+
+Primary files to review first in a new chat:
+- `.cursor/plans/TESTING_BASELINE_v0.plan.md`
+- `backend/tests/TEST_MATRIX.md`
+- `backend/docs/testing/FAILURE_TRIAGE_PHASE_0.md`
+- `backend/tests/TESTING_CHANGELOG.md`
+
+Next steps options (pick one in the next chat):
+- Continue Priority‑1 fixes (test hygiene, runner scripts) — safe under Active Block.
+- Or freeze changes and review ❌ items (architecture / prompts / async lifecycle) with stakeholders.
+
+BLOCK_STATUS: an editable template is available in `.cursor/plans/TESTING_BASELINE_v0.plan.md` (use it to record progress and final verification).

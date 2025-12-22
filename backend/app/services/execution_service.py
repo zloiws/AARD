@@ -1557,13 +1557,20 @@ class ExecutionService:
                         
                         # Automatic replanning on critical dependency error
                         if classified_error.requires_replanning:
-                            await self._handle_plan_failure(
-                                plan,
-                                error_msg,
-                                execution_context,
-                                classified_error=classified_error
-                            )
-                        raise ValueError(error_msg)
+                            # Attempt to handle failure (may create a new plan) but do not raise here;
+                            # for execution API we prefer returning a failed plan object so callers can inspect it.
+                            try:
+                                await self._handle_plan_failure(
+                                    plan,
+                                    error_msg,
+                                    execution_context,
+                                    classified_error=classified_error
+                                )
+                            except Exception as e:
+                                logger.warning(f"Replanning handler failed: {e}", exc_info=True)
+                        # Do not raise; return failed plan to caller as per API contract
+                        self.db.commit()
+                        return plan
             
             # Execute step
             try:

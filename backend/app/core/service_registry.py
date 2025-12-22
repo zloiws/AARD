@@ -120,9 +120,25 @@ class ServiceRegistry:
         Returns:
             Экземпляр сервиса
         """
-        # Создаем минимальный контекст из db
-        context = ExecutionContext.from_db_session(db)
-        return self.get_service(service_class, context)
+        # Backward compatibility: try to create service directly with db first
+        try:
+            # If a factory is registered that accepts ExecutionContext, use it with a minimal context
+            if service_class in self._service_factories:
+                context = ExecutionContext.from_db_session(db)
+                service = self._service_factories[service_class](context)
+                return service
+            # Try to instantiate service with raw DB session (preferred for backwards compatibility)
+            try:
+                service = service_class(db)
+                return service
+            except TypeError:
+                # Fall back to creating minimal ExecutionContext and use get_service to handle other cases
+                context = ExecutionContext.from_db_session(db)
+                return self.get_service(service_class, context)
+        except Exception as e:
+            logger.error(f"Failed to get service {service_class.__name__} by db: {e}", exc_info=True)
+            # Re-raise for visibility to tests
+            raise
     
     def _create_service_fallback(
         self,
@@ -149,17 +165,13 @@ class ServiceRegistry:
             try:
                 service = service_class(context.db)
             except Exception as e:
-                        logger.error(
-                            f"Failed to create service {service_class.__name__}: {e}",
-                            exc_info=True
-                        )
-                        raise
-            
-            # Сохраняем в кэше
-            self._services[service_key] = service
-            logger.debug(f"Created and cached service {service_class.__name__} for workflow {context.workflow_id[:8]}")
-            
-            return service
+                    logger.error(
+                        f"Failed to create service {service_class.__name__}: {e}",
+                        exc_info=True
+                    )
+                    raise
+        # Return created service (caching handled by get_service caller)
+        return service
     
     def clear_workflow_cache(self, workflow_id: str) -> None:
         """

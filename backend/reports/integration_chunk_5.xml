@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="12" time="29.226" timestamp="2025-12-22T14:37:59.896303" hostname="zloiws"><testcase classname="tests.integration.test_prompt_ab_testing" name="test_get_prompt_with_ab_testing_no_testing_version" time="0.583" /><testcase classname="tests.integration.test_prompt_ab_testing" name="test_get_prompt_with_ab_testing_with_testing_version" time="0.720" /><testcase classname="tests.integration.test_prompt_auto_improvement" name="test_analyze_and_improve_prompts_low_success_rate" time="0.862"><failure message="TypeError: PromptUsage.__init__() takes from 1 to 3 positional arguments but 6 were given">db = &lt;sqlalchemy.orm.session.Session object at 0x000002A95CBB84D0&gt;
+
+    @pytest.mark.asyncio
+    async def test_analyze_and_improve_prompts_low_success_rate(db):
+        """Test automatic improvement when success rate is low"""
+        context = ExecutionContext.from_db_session(db)
+        manager = PromptManager(context)
+    
+        # Create a prompt with low success rate
+        from app.services.prompt_service import PromptService
+    
+        prompt_service = PromptService(db)
+        test_prompt = prompt_service.create_prompt(
+            name="test_low_success",
+            prompt_text="Test prompt",
+            prompt_type=PromptType.SYSTEM,
+            level=0
+        )
+    
+        # Set low success rate
+        test_prompt.success_rate = 0.3
+        db.commit()
+    
+        # Add usage tracking
+        manager._usage_tracking = [
+&gt;           PromptUsage(test_prompt.id, "planning", 1000.0, False, 50.0)
+        ]
+E       TypeError: PromptUsage.__init__() takes from 1 to 3 positional arguments but 6 were given
+
+..\tests\integration\test_prompt_auto_improvement.py:36: TypeError</failure></testcase><testcase classname="tests.integration.test_prompt_improvement_cycle.TestPromptImprovementCycle" name="test_complete_improvement_cycle" time="21.026" /><testcase classname="tests.integration.test_prompt_improvement_cycle.TestPromptImprovementCycle" name="test_auto_improvement_trigger" time="0.833" /><testcase classname="tests.integration.test_prompt_manager_integration" name="test_prompt_manager_with_real_prompt_service" time="0.608" /><testcase classname="tests.integration.test_prompt_manager_integration" name="test_record_prompt_usage_integration" time="0.762" /><testcase classname="tests.integration.test_prompt_service_integration.TestPromptServiceIntegration" name="test_full_lifecycle" time="0.197" /><testcase classname="tests.integration.test_prompt_service_integration.TestPromptServiceIntegration" name="test_version_chain" time="0.688" /><testcase classname="tests.integration.test_prompt_service_integration.TestPromptServiceIntegration" name="test_filtering_and_search" time="0.688" /><testcase classname="tests.integration.test_prompt_service_integration.TestPromptServiceIntegration" name="test_active_prompt_selection" time="0.728" /><testcase classname="tests.integration.test_prompt_service_integration.TestPromptServiceIntegration" name="test_concurrent_versions" time="0.675" /></testsuite></testsuites>
