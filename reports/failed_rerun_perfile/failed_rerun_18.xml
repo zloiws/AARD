@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="9" time="10.224" timestamp="2025-12-21T22:15:52.159497" hostname="zloiws"><testcase classname="tests.integration.test_dashboard_api" name="test_get_dashboard_tasks" time="2.348" /><testcase classname="tests.integration.test_dashboard_api" name="test_get_dashboard_tasks_with_status_filter" time="0.938" /><testcase classname="tests.integration.test_dashboard_api" name="test_get_plan_history" time="0.964" /><testcase classname="tests.integration.test_dashboard_api" name="test_cancel_task" time="1.010" /><testcase classname="tests.integration.test_dashboard_api" name="test_cancel_task_invalid_status" time="0.883" /><testcase classname="tests.integration.test_dashboard_api" name="test_create_task_manual" time="1.023" /><testcase classname="tests.integration.test_dashboard_api" name="test_create_task_manual_invalid_priority" time="0.856" /><testcase classname="tests.integration.test_dashboard_api" name="test_create_task_manual_invalid_autonomy" time="0.976" /><testcase classname="tests.integration.test_dashboard_api" name="test_dashboard_statistics" time="0.905"><failure message="assert 0 &gt;= 1">db = &lt;sqlalchemy.orm.session.Session object at 0x000001A3EC5CD520&gt;
+client = &lt;starlette.testclient.TestClient object at 0x000001A3EC14BDD0&gt;
+
+    def test_dashboard_statistics(db: Session, client):
+        """Test that dashboard statistics are calculated correctly"""
+        # Create tasks with different statuses
+        tasks = [
+            Task(id=uuid4(), description=f"Task {i}", status=TaskStatus.PENDING_APPROVAL, created_by_role="planner")
+            for i in range(3)
+        ]
+        tasks.extend([
+            Task(id=uuid4(), description=f"Task {i}", status=TaskStatus.IN_PROGRESS, created_by_role="planner")
+            for i in range(2)
+        ])
+        tasks.append(
+            Task(id=uuid4(), description="Failed task", status=TaskStatus.FAILED, created_by_role="planner")
+        )
+    
+        db.add_all(tasks)
+        db.commit()
+    
+        # Get dashboard data
+        response = client.get("/api/dashboard/tasks")
+        assert response.status_code == 200
+    
+        data = response.json()
+        stats = data["statistics"]
+    
+        assert stats["pending_approval"] &gt;= 3
+        assert stats["in_progress"] &gt;= 2
+&gt;       assert stats["failed"] &gt;= 1
+E       assert 0 &gt;= 1
+
+backend\tests\integration\test_dashboard_api.py:271: AssertionError</failure></testcase></testsuite></testsuites>

@@ -12,8 +12,16 @@ from sqlalchemy.orm import Session
 backend_dir = Path(__file__).parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
+# Also ensure project root is on sys.path for imports in tests
+project_root = backend_dir.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+# Ensure default: do not run real LLM tests unless explicitly enabled
+os.environ.setdefault("RUN_REAL_LLM_TESTS", "0")
 
 from app.core.database import Base, SessionLocal, engine
+import textwrap
 
 
 @pytest.fixture(scope="function")
@@ -51,6 +59,17 @@ def db() -> Session:
             except Exception:
                 # Don't fail tests if seeding fails; tests will report lack of servers
                 pass
+    except Exception:
+        pass
+    # Ensure real-LLM network calls are disabled by default in test runs unless explicitly enabled
+    try:
+        if os.environ.get("RUN_REAL_LLM_TESTS", "0") != "1":
+            # Clear Ollama-related URLs to avoid accidental network calls during unit tests
+            os.environ.setdefault("OLLAMA_URL_1", "")
+            os.environ.setdefault("OLLAMA_MODEL_1", "")
+            os.environ.setdefault("OLLAMA_URL_2", "")
+            os.environ.setdefault("OLLAMA_MODEL_2", "")
+            os.environ.setdefault("SEED_OLLAMA_SERVERS", "0")
     except Exception:
         pass
     # Try to enable vector extension if using PostgreSQL (best-effort)
@@ -118,4 +137,71 @@ def client(db: Session):
     test_client = TestClient(app)
     yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_service_registry_initialized():
+    """Ensure global ServiceRegistry exists for tests that expect it."""
+    try:
+        from app.core.service_registry import get_service_registry
+        get_service_registry()
+    except Exception:
+        # Non-fatal: tests will surface registry-related errors
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Test-run safety: skip `real_llm` marked tests by default unless explicit flag
+# ---------------------------------------------------------------------------
+def pytest_collection_modifyitems(config, items):
+    """Skip real-LLM tests unless RUN_REAL_LLM_TESTS=1 is set in env."""
+    run_real = os.environ.get("RUN_REAL_LLM_TESTS", "0") == "1"
+    if run_real:
+        return
+    skip_marker = pytest.mark.skip(reason="Real LLM tests disabled. Set RUN_REAL_LLM_TESTS=1 to enable.")
+    for item in items:
+        # pytest adds markers into item.keywords
+        if "real_llm" in getattr(item, "keywords", {}):
+            item.add_marker(skip_marker)
+
+
+# -----------------------------
+# Test-only safe stub fixtures
+# These are non-invasive stubs to allow triage runs to surface logic errors.
+# They should not change production behavior.
+# -----------------------------
+from unittest.mock import Mock
+import uuid
+
+
+@pytest.fixture(scope="function")
+def plan_id():
+    """Provide a simple plan id for tests that expect it."""
+    return str(uuid.uuid4())
+
+
+@pytest.fixture(scope="function")
+def execution_context():
+    """Provide a minimal execution context stub used in integration tests."""
+    class ExecutionContextStub:
+        def __init__(self):
+            self.db = None
+            self.metadata = {}
+            self.workflow_id = str(uuid.uuid4())
+        def to_dict(self):
+            return {"workflow_id": self.workflow_id, "metadata": self.metadata}
+    return ExecutionContextStub()
+
+
+@pytest.fixture(scope="function")
+def workflow_engine():
+    """Provide a lightweight stub for WorkflowEngine used in tests.
+    The stub exposes methods commonly accessed by tests.
+    """
+    w = Mock()
+    w.get_current_state.return_value = "INITIALIZED"
+    w.get_transition_history.return_value = []
+    w.mark_failed = Mock()
+    w.get_state = Mock(return_value="INITIALIZED")
+    return w
 

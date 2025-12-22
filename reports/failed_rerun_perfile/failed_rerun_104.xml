@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="5" time="22.743" timestamp="2025-12-21T22:21:37.982697" hostname="zloiws"><testcase classname="tests.test_request_orchestrator" name="test_orchestration_result_creation" time="0.001" /><testcase classname="tests.test_request_orchestrator" name="test_request_orchestrator_initialization" time="0.001"><failure message="AttributeError: 'RequestOrchestrator' object has no attribute 'workflow_tracker'">def test_request_orchestrator_initialization():
+        """Test RequestOrchestrator initialization"""
+        orchestrator = RequestOrchestrator()
+    
+        assert orchestrator.registry is not None
+&gt;       assert orchestrator.workflow_tracker is not None
+E       AttributeError: 'RequestOrchestrator' object has no attribute 'workflow_tracker'
+
+backend\tests\test_request_orchestrator.py:34: AttributeError</failure></testcase><testcase classname="tests.test_request_orchestrator" name="test_request_orchestrator_simple_question" time="21.045" /><testcase classname="tests.test_request_orchestrator" name="test_request_orchestrator_extract_plan_results" time="0.002" /><testcase classname="tests.test_request_orchestrator" name="test_request_orchestrator_select_model_and_server" time="0.696" /></testsuite></testsuites>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="2.184" timestamp="2025-12-21T22:20:35.427486" hostname="zloiws"><testcase classname="tests.integration.test_prompt_ab_testing" name="test_get_prompt_with_ab_testing_no_testing_version" time="0.642"><failure message="NameError: name 'AsyncMock' is not defined">db = &lt;sqlalchemy.orm.session.Session object at 0x00000125447407A0&gt;
+
+    @pytest.mark.asyncio
+    async def test_get_prompt_with_ab_testing_no_testing_version(db):
+        """Test A/B testing when no TESTING version exists"""
+        context = ExecutionContext.from_db_session(db)
+        manager = PromptManager(context)
+    
+        # Mock get_prompt_for_stage to return ACTIVE prompt
+        mock_active = Mock()
+        mock_active.name = "test_prompt"
+        mock_active.version = 1
+        mock_active.status = PromptStatus.ACTIVE.value.lower()
+        mock_active.prompt_type = PromptType.SYSTEM.value.lower()
+    
+&gt;       with patch.object(manager, 'get_prompt_for_stage', new_callable=AsyncMock) as mock_get:
+E       NameError: name 'AsyncMock' is not defined
+
+backend\tests\integration\test_prompt_ab_testing.py:26: NameError</failure></testcase><testcase classname="tests.integration.test_prompt_ab_testing" name="test_get_prompt_with_ab_testing_with_testing_version" time="0.705"><failure message="NameError: name 'AsyncMock' is not defined">db = &lt;sqlalchemy.orm.session.Session object at 0x000001254434B1D0&gt;
+
+    @pytest.mark.asyncio
+    async def test_get_prompt_with_ab_testing_with_testing_version(db):
+        """Test A/B testing when TESTING version exists"""
+        context = ExecutionContext.from_db_session(db)
+        manager = PromptManager(context)
+    
+        # Mock prompts
+        mock_active = Mock()
+        mock_active.name = "test_prompt"
+        mock_active.version = 1
+        mock_active.status = PromptStatus.ACTIVE.value.lower()
+        mock_active.prompt_type = PromptType.SYSTEM.value.lower()
+    
+        mock_testing = Mock()
+        mock_testing.name = "test_prompt"
+        mock_testing.version = 2
+        mock_testing.status = PromptStatus.TESTING.value.lower()
+        mock_testing.prompt_type = PromptType.SYSTEM.value.lower()
+    
+&gt;       with patch.object(manager, 'get_prompt_for_stage', new_callable=AsyncMock) as mock_get:
+E       NameError: name 'AsyncMock' is not defined
+
+backend\tests\integration\test_prompt_ab_testing.py:57: NameError</failure></testcase></testsuite></testsuites>

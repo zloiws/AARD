@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="9" failures="0" skipped="0" tests="9" time="0.950" timestamp="2025-12-21T22:21:07.304927" hostname="zloiws"><testcase classname="tests.quick_test.TestWorkflowEngineBasic" name="test_initialization" time="0.001"><error message="failed on setup with &quot;file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 48&#10;      def test_initialization(self, workflow_engine, execution_context):&#10;E       fixture 'workflow_engine' not found&#10;&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;C:\work\AARD\backend\tests\integration\test_workflow_engine.py:48&quot;">file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 48
+      def test_initialization(self, workflow_engine, execution_context):
+E       fixture 'workflow_engine' not found
+&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_workflow_engine.py:48</error></testcase><testcase classname="tests.quick_test.TestWorkflowEngineBasic" name="test_transition_to_parsing" time="0.000"><error message="failed on setup with &quot;file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 59&#10;      def test_transition_to_parsing(self, workflow_engine):&#10;E       fixture 'workflow_engine' not found&#10;&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;C:\work\AARD\backend\tests\integration\test_workflow_engine.py:59&quot;">file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 59
+      def test_transition_to_parsing(self, workflow_engine):
+E       fixture 'workflow_engine' not found
+&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_workflow_engine.py:59</error></testcase><testcase classname="tests.quick_test.TestWorkflowEngineBasic" name="test_transition_to_planning" time="0.000"><error message="failed on setup with &quot;file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 71&#10;      def test_transition_to_planning(self, workflow_engine):&#10;E       fixture 'workflow_engine' not found&#10;&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;C:\work\AARD\backend\tests\integration\test_workflow_engine.py:71&quot;">file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 71
+      def test_transition_to_planning(self, workflow_engine):
+E       fixture 'workflow_engine' not found
+&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_workflow_engine.py:71</error></testcase><testcase classname="tests.quick_test.TestWorkflowEngineBasic" name="test_invalid_transition" time="0.000"><error message="failed on setup with &quot;file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 84&#10;      def test_invalid_transition(self, workflow_engine):&#10;E       fixture 'workflow_engine' not found&#10;&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;C:\work\AARD\backend\tests\integration\test_workflow_engine.py:84&quot;">file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 84
+      def test_invalid_transition(self, workflow_engine):
+E       fixture 'workflow_engine' not found
+&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_workflow_engine.py:84</error></testcase><testcase classname="tests.quick_test.TestWorkflowEngineBasic" name="test_forced_transition" time="0.000"><error message="failed on setup with &quot;file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 97&#10;      def test_forced_transition(self, workflow_engine):&#10;E       fixture 'workflow_engine' not found&#10;&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;C:\work\AARD\backend\tests\integration\test_workflow_engine.py:97&quot;">file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 97
+      def test_forced_transition(self, workflow_engine):
+E       fixture 'workflow_engine' not found
+&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_workflow_engine.py:97</error></testcase><testcase classname="tests.quick_test.TestWorkflowEngineBasic" name="test_transition_history" time="0.000"><error message="failed on setup with &quot;file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 111&#10;      def test_transition_history(self, workflow_engine):&#10;E       fixture 'workflow_engine' not found&#10;&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;C:\work\AARD\backend\tests\integration\test_workflow_engine.py:111&quot;">file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 111
+      def test_transition_history(self, workflow_engine):
+E       fixture 'workflow_engine' not found
+&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_workflow_engine.py:111</error></testcase><testcase classname="tests.quick_test" name="test_level1_basic_context_creation" time="0.021"><error message="failed on setup with &quot;file C:\work\AARD\backend\tests\integration\test_phase3_full_integration.py, line 103&#10;  @pytest.mark.asyncio&#10;  async def test_level1_basic_context_creation(db_session):&#10;      &quot;&quot;&quot;Уровень 1: Базовое создание ExecutionContext&quot;&quot;&quot;&#10;      print(&quot;\n=== УРОВЕНЬ 1: Базовое создание ExecutionContext ===&quot;)&#10;&#10;      # Создание контекста из сессии&#10;      context = ExecutionContext.from_db_session(db_session)&#10;&#10;      assert context is not None&#10;      assert context.db == db_session&#10;      assert context.workflow_id is not None&#10;      assert len(context.workflow_id) &gt; 0&#10;      # trace_id может быть None, если нет активного OpenTelemetry span (нормально для тестов)&#10;      # assert context.trace_id is not None&#10;&#10;      print(f&quot;✅ ExecutionContext создан: workflow_id={context.workflow_id[:8]}...&quot;)&#10;E       fixture 'db_session' not found&#10;&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;C:\work\AARD\backend\tests\integration\test_phase3_full_integration.py:103&quot;">file C:\work\AARD\backend\tests\integration\test_phase3_full_integration.py, line 103
+  @pytest.mark.asyncio
+  async def test_level1_basic_context_creation(db_session):
+      """Уровень 1: Базовое создание ExecutionContext"""
+      print("\n=== УРОВЕНЬ 1: Базовое создание ExecutionContext ===")
+
+      # Создание контекста из сессии
+      context = ExecutionContext.from_db_session(db_session)
+
+      assert context is not None
+      assert context.db == db_session
+      assert context.workflow_id is not None
+      assert len(context.workflow_id) &gt; 0
+      # trace_id может быть None, если нет активного OpenTelemetry span (нормально для тестов)
+      # assert context.trace_id is not None
+
+      print(f"✅ ExecutionContext создан: workflow_id={context.workflow_id[:8]}...")
+E       fixture 'db_session' not found
+&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_phase3_full_integration.py:103</error></testcase><testcase classname="tests.quick_test.TestWorkflowEngineIntegration" name="test_workflow_engine_initialization_in_orchestrator" time="0.002"><error message="failed on setup with &quot;file C:\work\AARD\backend\tests\integration\test_phase4_integration.py, line 107&#10;      @pytest.mark.asyncio&#10;      async def test_workflow_engine_initialization_in_orchestrator(self, execution_context):&#10;          &quot;&quot;&quot;Тест инициализации WorkflowEngine в RequestOrchestrator&quot;&quot;&quot;&#10;          orchestrator = RequestOrchestrator()&#10;&#10;          # Создаем минимальный запрос для инициализации workflow&#10;          message = &quot;Test message&quot;&#10;&#10;          # Мокаем LLM вызовы чтобы не делать реальные запросы&#10;          with patch('app.core.request_orchestrator.OllamaClient') as mock_ollama:&#10;              mock_client = Mock()&#10;              mock_client.generate = AsyncMock(return_value=Mock(&#10;                  response=&quot;Test response&quot;,&#10;                  model=&quot;test-model&quot;,&#10;                  tokens_used=100&#10;              ))&#10;              mock_ollama.return_value = mock_client&#10;&#10;              result = await orchestrator.process_request(&#10;                  message=message,&#10;                  context=execution_context,&#10;                  task_type=&quot;general_chat&quot;&#10;              )&#10;&#10;          # Проверяем, что workflow был инициализирован&#10;          workflow_engine = WorkflowEngine.from_context(execution_context)&#10;          # WorkflowEngine создается внутри process_request, но мы можем проверить через состояние&#10;          # В реальном сценарии workflow должен быть в состоянии COMPLETED или другом финальном&#10;&#10;          assert result is not None&#10;          assert result.response is not None&#10;E       fixture 'execution_context' not found&#10;&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;C:\work\AARD\backend\tests\integration\test_phase4_integration.py:107&quot;">file C:\work\AARD\backend\tests\integration\test_phase4_integration.py, line 107
+      @pytest.mark.asyncio
+      async def test_workflow_engine_initialization_in_orchestrator(self, execution_context):
+          """Тест инициализации WorkflowEngine в RequestOrchestrator"""
+          orchestrator = RequestOrchestrator()
+
+          # Создаем минимальный запрос для инициализации workflow
+          message = "Test message"
+
+          # Мокаем LLM вызовы чтобы не делать реальные запросы
+          with patch('app.core.request_orchestrator.OllamaClient') as mock_ollama:
+              mock_client = Mock()
+              mock_client.generate = AsyncMock(return_value=Mock(
+                  response="Test response",
+                  model="test-model",
+                  tokens_used=100
+              ))
+              mock_ollama.return_value = mock_client
+
+              result = await orchestrator.process_request(
+                  message=message,
+                  context=execution_context,
+                  task_type="general_chat"
+              )
+
+          # Проверяем, что workflow был инициализирован
+          workflow_engine = WorkflowEngine.from_context(execution_context)
+          # WorkflowEngine создается внутри process_request, но мы можем проверить через состояние
+          # В реальном сценарии workflow должен быть в состоянии COMPLETED или другом финальном
+
+          assert result is not None
+          assert result.response is not None
+E       fixture 'execution_context' not found
+&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_phase4_integration.py:107</error></testcase><testcase classname="tests.quick_test.TestWorkflowEngineIntegration" name="test_workflow_state_transitions_in_code_generation" time="0.002"><error message="failed on setup with &quot;file C:\work\AARD\backend\tests\integration\test_phase4_integration.py, line 139&#10;      @pytest.mark.asyncio&#10;      async def test_workflow_state_transitions_in_code_generation(&#10;          self, execution_context, real_model_and_server, test_agent&#10;      ):&#10;          &quot;&quot;&quot;Тест переходов состояний workflow при генерации кода&quot;&quot;&quot;&#10;          model, server = real_model_and_server&#10;&#10;          # Сохраняем модель и server в контекст&#10;          execution_context.metadata = {&#10;              &quot;model&quot;: model.model_name,&#10;              &quot;server_id&quot;: str(server.id),&#10;              &quot;server_url&quot;: server.get_api_url()&#10;          }&#10;&#10;          orchestrator = RequestOrchestrator()&#10;&#10;          # Простой запрос на генерацию кода&#10;          message = &quot;Create a function that adds two numbers&quot;&#10;&#10;          try:&#10;              result = await orchestrator.process_request(&#10;                  message=message,&#10;                  context=execution_context,&#10;                  task_type=&quot;code_generation&quot;,&#10;                  model=model.model_name,&#10;                  server_id=str(server.id)&#10;              )&#10;&#10;              # Проверяем, что workflow прошел через нужные состояния&#10;              workflow_engine = WorkflowEngine.from_context(execution_context)&#10;              current_state = workflow_engine.get_current_state()&#10;&#10;              # Workflow должен быть в финальном состоянии (COMPLETED или FAILED)&#10;              assert current_state in [&#10;                  WorkflowState.COMPLETED,&#10;                  WorkflowState.FAILED,&#10;                  WorkflowState.CANCELLED&#10;              ], f&quot;Unexpected workflow state: {current_state}&quot;&#10;&#10;              # Проверяем историю переходов&#10;              history = workflow_engine.get_transition_history()&#10;              assert len(history) &gt; 0, &quot;Workflow should have transition history&quot;&#10;&#10;              # Первое состояние должно быть INITIALIZED&#10;              assert history[0].from_state is None or history[0].from_state == WorkflowState.INITIALIZED&#10;&#10;          except Exception as e:&#10;              pytest.skip(f&quot;Test requires working LLM: {e}&quot;)&#10;E       fixture 'execution_context' not found&#10;&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;C:\work\AARD\backend\tests\integration\test_phase4_integration.py:139&quot;">file C:\work\AARD\backend\tests\integration\test_phase4_integration.py, line 139
+      @pytest.mark.asyncio
+      async def test_workflow_state_transitions_in_code_generation(
+          self, execution_context, real_model_and_server, test_agent
+      ):
+          """Тест переходов состояний workflow при генерации кода"""
+          model, server = real_model_and_server
+
+          # Сохраняем модель и server в контекст
+          execution_context.metadata = {
+              "model": model.model_name,
+              "server_id": str(server.id),
+              "server_url": server.get_api_url()
+          }
+
+          orchestrator = RequestOrchestrator()
+
+          # Простой запрос на генерацию кода
+          message = "Create a function that adds two numbers"
+
+          try:
+              result = await orchestrator.process_request(
+                  message=message,
+                  context=execution_context,
+                  task_type="code_generation",
+                  model=model.model_name,
+                  server_id=str(server.id)
+              )
+
+              # Проверяем, что workflow прошел через нужные состояния
+              workflow_engine = WorkflowEngine.from_context(execution_context)
+              current_state = workflow_engine.get_current_state()
+
+              # Workflow должен быть в финальном состоянии (COMPLETED или FAILED)
+              assert current_state in [
+                  WorkflowState.COMPLETED,
+                  WorkflowState.FAILED,
+                  WorkflowState.CANCELLED
+              ], f"Unexpected workflow state: {current_state}"
+
+              # Проверяем историю переходов
+              history = workflow_engine.get_transition_history()
+              assert len(history) &gt; 0, "Workflow should have transition history"
+
+              # Первое состояние должно быть INITIALIZED
+              assert history[0].from_state is None or history[0].from_state == WorkflowState.INITIALIZED
+
+          except Exception as e:
+              pytest.skip(f"Test requires working LLM: {e}")
+E       fixture 'execution_context' not found
+&gt;       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_phase4_integration.py:139</error></testcase></testsuite></testsuites>

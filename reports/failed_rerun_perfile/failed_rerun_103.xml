@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="3.287" timestamp="2025-12-21T22:21:33.719736" hostname="zloiws"><testcase classname="tests.test_planning_with_teams" name="test_plan_with_team" time="0.853"><failure message="AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?">db = &lt;sqlalchemy.orm.session.Session object at 0x000001B5DC87B590&gt;
+
+    @pytest.mark.asyncio
+    async def test_plan_with_team(db):
+        """Test creating a plan with a team"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team
+        team = team_service.create_team(
+            name=f"Planning Team {uuid4()}",
+            coordination_strategy=CoordinationStrategy.COLLABORATIVE.value
+        )
+        team_service.activate_team(team.id)
+    
+        # Create agents
+        agent1 = Agent(name=f"Agent 1 {uuid4()}", status=AgentStatus.ACTIVE.value)
+        agent2 = Agent(name=f"Agent 2 {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent1)
+        db.add(agent2)
+        db.commit()
+    
+        # Add agents to team
+        team_service.add_agent_to_team(team.id, agent1.id)
+        team_service.add_agent_to_team(team.id, agent2.id)
+    
+        # Create plan with team
+&gt;       plan = await planning_service.create_plan(
+            task_description="Test task with team",
+            context={"team_id": str(team.id)}
+        )
+E       AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?
+
+backend\tests\test_planning_with_teams.py:38: AttributeError</failure></testcase><testcase classname="tests.test_planning_with_teams" name="test_plan_with_team_and_role" time="0.736"><failure message="assert ('team' in &quot;'planningservice' object has no attribute 'create_plan'&quot; or 'llm' in &quot;'planningservice' object has no attribute 'create_plan'&quot; or 'model' in &quot;'planningservice' object has no attribute 'create_plan'&quot;)&#10; +  where &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt;()&#10; +    where &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))&#10; +  and   &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt;()&#10; +    where &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))&#10; +  and   &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt;()&#10; +    where &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))">db = &lt;sqlalchemy.orm.session.Session object at 0x000001B5DC8D3170&gt;
+
+    @pytest.mark.asyncio
+    async def test_plan_with_team_and_role(db):
+        """Test creating a plan with team and role assignment"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team with roles
+        team = team_service.create_team(
+            name=f"Role Team {uuid4()}",
+            roles={"developer": "Writes code", "reviewer": "Reviews code"}
+        )
+        team_service.activate_team(team.id)
+    
+        # Create agents with roles
+        agent1 = Agent(name=f"Developer {uuid4()}", status=AgentStatus.ACTIVE.value)
+        agent2 = Agent(name=f"Reviewer {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent1)
+        db.add(agent2)
+        db.commit()
+    
+        team_service.add_agent_to_team(team.id, agent1.id, role="developer")
+        team_service.add_agent_to_team(team.id, agent2.id, role="reviewer")
+    
+        # Create plan with team
+        try:
+&gt;           plan = await planning_service.create_plan(
+                task_description="Test task with team roles",
+                context={"team_id": str(team.id)}
+            )
+E           AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?
+
+backend\tests\test_planning_with_teams.py:76: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+db = &lt;sqlalchemy.orm.session.Session object at 0x000001B5DC8D3170&gt;
+
+    @pytest.mark.asyncio
+    async def test_plan_with_team_and_role(db):
+        """Test creating a plan with team and role assignment"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team with roles
+        team = team_service.create_team(
+            name=f"Role Team {uuid4()}",
+            roles={"developer": "Writes code", "reviewer": "Reviews code"}
+        )
+        team_service.activate_team(team.id)
+    
+        # Create agents with roles
+        agent1 = Agent(name=f"Developer {uuid4()}", status=AgentStatus.ACTIVE.value)
+        agent2 = Agent(name=f"Reviewer {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent1)
+        db.add(agent2)
+        db.commit()
+    
+        team_service.add_agent_to_team(team.id, agent1.id, role="developer")
+        team_service.add_agent_to_team(team.id, agent2.id, role="reviewer")
+    
+        # Create plan with team
+        try:
+            plan = await planning_service.create_plan(
+                task_description="Test task with team roles",
+                context={"team_id": str(team.id)}
+            )
+    
+            assert plan is not None
+    
+            # Check that steps have team_id
+            if plan.steps:
+                steps_with_team = [s for s in plan.steps if s.get("team_id") == str(team.id)]
+                # At least some steps should have team_id, or steps might have specific agents assigned
+                assert len(steps_with_team) &gt; 0 or any(s.get("agent") for s in plan.steps)
+        except Exception as e:
+            # If LLM is not available, verify that team_id processing doesn't crash
+&gt;           assert "team" in str(e).lower() or "llm" in str(e).lower() or "model" in str(e).lower()
+E           assert ('team' in "'planningservice' object has no attribute 'create_plan'" or 'llm' in "'planningservice' object has no attribute 'create_plan'" or 'model' in "'planningservice' object has no attribute 'create_plan'")
+E            +  where "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt;()
+E            +    where &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+E            +  and   "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt;()
+E            +    where &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+E            +  and   "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt;()
+E            +    where &lt;built-in method lower of str object at 0x000001B5DC8DE7F0&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+
+backend\tests\test_planning_with_teams.py:90: AssertionError</failure></testcase><testcase classname="tests.test_planning_with_teams" name="test_plan_team_takes_precedence_over_agent" time="0.730"><failure message="assert ('team' in &quot;'planningservice' object has no attribute 'create_plan'&quot; or 'llm' in &quot;'planningservice' object has no attribute 'create_plan'&quot; or 'model' in &quot;'planningservice' object has no attribute 'create_plan'&quot;)&#10; +  where &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt;()&#10; +    where &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))&#10; +  and   &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt;()&#10; +    where &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))&#10; +  and   &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt;()&#10; +    where &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))">db = &lt;sqlalchemy.orm.session.Session object at 0x000001B5DCCFB710&gt;
+
+    def test_plan_team_takes_precedence_over_agent(db):
+        """Test that team_id takes precedence over agent_id in context"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team
+        team = team_service.create_team(name=f"Precedence Team {uuid4()}")
+        team_service.activate_team(team.id)
+    
+        # Create agent
+        agent = Agent(name=f"Agent {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent)
+        db.commit()
+    
+        # Both team_id and agent_id in context - team should take precedence
+        import asyncio
+        try:
+&gt;           plan = asyncio.run(planning_service.create_plan(
+                task_description="Test precedence",
+                context={"team_id": str(team.id), "agent_id": str(agent.id)}
+            ))
+E           AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?
+
+backend\tests\test_planning_with_teams.py:110: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+db = &lt;sqlalchemy.orm.session.Session object at 0x000001B5DCCFB710&gt;
+
+    def test_plan_team_takes_precedence_over_agent(db):
+        """Test that team_id takes precedence over agent_id in context"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team
+        team = team_service.create_team(name=f"Precedence Team {uuid4()}")
+        team_service.activate_team(team.id)
+    
+        # Create agent
+        agent = Agent(name=f"Agent {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent)
+        db.commit()
+    
+        # Both team_id and agent_id in context - team should take precedence
+        import asyncio
+        try:
+            plan = asyncio.run(planning_service.create_plan(
+                task_description="Test precedence",
+                context={"team_id": str(team.id), "agent_id": str(agent.id)}
+            ))
+    
+            assert plan is not None
+            # Steps should have team_id, not agent_id from context
+            if plan.steps:
+                steps_with_team = [s for s in plan.steps if s.get("team_id") == str(team.id)]
+                # Team should be used (steps have team_id or agents from team)
+                assert len(steps_with_team) &gt; 0 or any(s.get("agent") for s in plan.steps)
+        except Exception as e:
+            # If LLM is not available, verify that team precedence logic doesn't crash
+&gt;           assert "team" in str(e).lower() or "llm" in str(e).lower() or "model" in str(e).lower()
+E           assert ('team' in "'planningservice' object has no attribute 'create_plan'" or 'llm' in "'planningservice' object has no attribute 'create_plan'" or 'model' in "'planningservice' object has no attribute 'create_plan'")
+E            +  where "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt;()
+E            +    where &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+E            +  and   "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt;()
+E            +    where &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+E            +  and   "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt;()
+E            +    where &lt;built-in method lower of str object at 0x000001B5DC8DF690&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+
+backend\tests\test_planning_with_teams.py:123: AssertionError</failure></testcase></testsuite></testsuites>

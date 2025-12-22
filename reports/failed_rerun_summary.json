@@ -1,0 +1,538 @@
+[
+  {
+    "index": 1,
+    "file": "backend\\tests\\cli\\test_migrations_cli.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_1.xml",
+    "failures": 1,
+    "errors": 0,
+    "message": "SystemExit: 0"
+  },
+  {
+    "index": 10,
+    "file": "backend\\tests\\integration\\test_api.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_10.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 103,
+    "file": "backend\\tests\\test_planning_with_teams.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_103.xml",
+    "failures": 3,
+    "errors": 0,
+    "message": "AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?"
+  },
+  {
+    "index": 104,
+    "file": "backend\\tests\\test_request_orchestrator.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_104.xml",
+    "failures": 1,
+    "errors": 0,
+    "message": "AttributeError: 'RequestOrchestrator' object has no attribute 'workflow_tracker'"
+  },
+  {
+    "index": 105,
+    "file": "backend\\tests\\test_service_registry.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_105.xml",
+    "failures": 1,
+    "errors": 0,
+    "message": "AttributeError: 'ExecutionContext' object has no attribute 'bind'"
+  },
+  {
+    "index": 11,
+    "file": "backend\\tests\\integration\\test_auto_approval_transition.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_11.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 12,
+    "file": "backend\\tests\\integration\\test_auto_replan_trigger.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_12.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 13,
+    "file": "backend\\tests\\integration\\test_auto_replanning.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_13.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 14,
+    "file": "backend\\tests\\integration\\test_benchmark_models.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_14.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 15,
+    "file": "backend\\tests\\integration\\test_chat_with_planning.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_15.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 17,
+    "file": "backend\\tests\\integration\\test_code_sandbox.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_17.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 18,
+    "file": "backend\\tests\\integration\\test_dashboard_api.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_18.xml",
+    "failures": 1,
+    "errors": 0,
+    "message": "assert 0 >= 1"
+  },
+  {
+    "index": 19,
+    "file": "backend\\tests\\integration\\test_execution_engine.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_19.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 2,
+    "file": "backend\\tests\\docs\\test_service_docs_present.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_2.xml",
+    "failures": 1,
+    "errors": 0,
+    "message": "AssertionError: Missing service docs: ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', 'ToolsExternalIntegrations.md', 'RegistryServiceDiscovery.md', 'SecurityAuthPermissions.md', 'MemoryConversationStorage.md', 'OpsMigrations.md', 'UtilitiesObservability.md']\nassert not ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', ...]"
+  },
+  {
+    "index": 20,
+    "file": "backend\\tests\\integration\\test_feedback_learning.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_20.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 22,
+    "file": "backend\\tests\\integration\\test_full_system_e2e.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_22.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 23,
+    "file": "backend\\tests\\integration\\test_function_calling.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_23.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 24,
+    "file": "backend\\tests\\integration\\test_instance_selection.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_24.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 25,
+    "file": "backend\\tests\\integration\\test_interactive_execution.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_25.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 26,
+    "file": "backend\\tests\\integration\\test_logging_api.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_26.xml",
+    "failures": 6,
+    "errors": 0,
+    "message": "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001ACA4072F30>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))"
+  },
+  {
+    "index": 27,
+    "file": "backend\\tests\\integration\\test_logging_system.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_27.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 28,
+    "file": "backend\\tests\\integration\\test_migration.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_28.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 29,
+    "file": "backend\\tests\\integration\\test_model_benchmark_real.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_29.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 3,
+    "file": "backend\\tests\\integration\\test_agent_dialogs_real_llm.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_3.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 30,
+    "file": "backend\\tests\\integration\\test_model_generation.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_30.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 31,
+    "file": "backend\\tests\\integration\\test_model_selector.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_31.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 32,
+    "file": "backend\\tests\\integration\\test_new_components.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_32.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 33,
+    "file": "backend\\tests\\integration\\test_new_features.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_33.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 34,
+    "file": "backend\\tests\\integration\\test_ollama_connection.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_34.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 35,
+    "file": "backend\\tests\\integration\\test_ollama_integration.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_35.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 36,
+    "file": "backend\\tests\\integration\\test_orchestrator_integration.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_36.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 37,
+    "file": "backend\\tests\\integration\\test_phase3_full_integration.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_37.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 5,
+    "file": "backend\\tests\\integration\\test_agent_teams.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_5.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 53,
+    "file": "backend\\tests\\integration\\test_phase6_api_consistency.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_53.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 54,
+    "file": "backend\\tests\\integration\\test_phase6_consistency.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_54.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 55,
+    "file": "backend\\tests\\integration\\test_plan_approval_integration.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_55.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 56,
+    "file": "backend\\tests\\integration\\test_plan_memory_integration.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_56.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 58,
+    "file": "backend\\tests\\integration\\test_planning_api_simple.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_58.xml",
+    "failures": 0,
+    "errors": 2,
+    "message": "failed on setup with \"file C:\\work\\AARD\\backend\\tests\\integration\\test_planning_api_simple.py, line 70\n  def test_get_plan(plan_id: str):\nE       fixture 'plan_id' not found\n>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory\n>       use 'pytest --fixtures [testpath]' for help on them.\n\nC:\\work\\AARD\\backend\\tests\\integration\\test_planning_api_simple.py:70\""
+  },
+  {
+    "index": 6,
+    "file": "backend\\tests\\integration\\test_agent_teams_consistency.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_6.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 64,
+    "file": "backend\\tests\\integration\\test_planning_metrics.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_64.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 66,
+    "file": "backend\\tests\\integration\\test_planning_with_dialogs.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_66.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 67,
+    "file": "backend\\tests\\integration\\test_planning_with_dialogs_real_llm.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_67.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 69,
+    "file": "backend\\tests\\integration\\test_project_metrics_integration.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_69.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 7,
+    "file": "backend\\tests\\integration\\test_agent_teams_llm.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_7.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 70,
+    "file": "backend\\tests\\integration\\test_prompt_ab_testing.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_70.xml",
+    "failures": 2,
+    "errors": 0,
+    "message": "NameError: name 'AsyncMock' is not defined"
+  },
+  {
+    "index": 71,
+    "file": "backend\\tests\\integration\\test_prompt_auto_improvement.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_71.xml",
+    "failures": 1,
+    "errors": 0,
+    "message": "NameError: name 'PromptUsage' is not defined"
+  },
+  {
+    "index": 72,
+    "file": "backend\\tests\\integration\\test_prompt_create.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_72.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 74,
+    "file": "backend\\tests\\integration\\test_prompt_manager_integration.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_74.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 76,
+    "file": "backend\\tests\\integration\\test_real_llm_full_workflow.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_76.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 77,
+    "file": "backend\\tests\\integration\\test_real_modules_interaction.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_77.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 78,
+    "file": "backend\\tests\\integration\\test_task_lifecycle.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_78.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 79,
+    "file": "backend\\tests\\integration\\test_tracing.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_79.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 8,
+    "file": "backend\\tests\\integration\\test_agent_teams_real_llm.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_8.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 80,
+    "file": "backend\\tests\\integration\\test_vector_search.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_80.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 81,
+    "file": "backend\\tests\\integration\\test_vector_search_complete.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_81.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 87,
+    "file": "backend\\tests\\planning\\test_plan_lifecycle.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_87.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 88,
+    "file": "backend\\tests\\quick_test.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_88.xml",
+    "failures": 0,
+    "errors": 9,
+    "message": "failed on setup with \"file C:\\work\\AARD\\backend\\tests\\integration\\test_workflow_engine.py, line 48\n      def test_initialization(self, workflow_engine, execution_context):\nE       fixture 'workflow_engine' not found\n>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory\n>       use 'pytest --fixtures [testpath]' for help on them.\n\nC:\\work\\AARD\\backend\\tests\\integration\\test_workflow_engine.py:48\""
+  },
+  {
+    "index": 9,
+    "file": "backend\\tests\\integration\\test_alternative_plans.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_9.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 91,
+    "file": "backend\\tests\\scripts\\test_branching.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_91.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 92,
+    "file": "backend\\tests\\scripts\\test_branching_endpoints.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_92.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 93,
+    "file": "backend\\tests\\scripts\\test_planning_step_by_step.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_93.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 94,
+    "file": "backend\\tests\\scripts\\test_real_integration_chat.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_94.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 95,
+    "file": "backend\\tests\\scripts\\test_real_integration_planning.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_95.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 96,
+    "file": "backend\\tests\\scripts\\test_websocket_integration.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_96.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 97,
+    "file": "backend\\tests\\scripts\\test_websocket_simple.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_97.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 98,
+    "file": "backend\\tests\\scripts\\test_workflow_events.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_98.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  },
+  {
+    "index": 99,
+    "file": "backend\\tests\\scripts\\test_workflow_events_detailed.py",
+    "xml": "reports\\failed_rerun_perfile\\failed_rerun_99.xml",
+    "failures": 0,
+    "errors": 0,
+    "message": ""
+  }
+]

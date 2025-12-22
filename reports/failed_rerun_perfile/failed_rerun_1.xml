@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.970" timestamp="2025-12-21T22:12:52.383483" hostname="zloiws"><testcase classname="tests.cli.test_migrations_cli" name="test_build_parser_and_call_migrate" time="0.771"><failure message="SystemExit: 0">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001B4F3324EC0&gt;
+
+    def test_build_parser_and_call_migrate(monkeypatch):
+        m = importlib.import_module("backend.cli.migrations")
+        parser = m.build_parser()
+        # just ensure parser builds and help can be printed
+        parser.format_help()
+        # call help path
+&gt;       rc = m.main(["--help"])
+
+backend\tests\cli\test_migrations_cli.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\cli\migrations.py:75: in main
+    args = p.parse_args(argv)
+C:\Program Files\Python312\Lib\argparse.py:1895: in parse_args
+    args, argv = self.parse_known_args(args, namespace)
+C:\Program Files\Python312\Lib\argparse.py:1931: in parse_known_args
+    namespace, args = self._parse_known_args(args, namespace)
+C:\Program Files\Python312\Lib\argparse.py:2168: in _parse_known_args
+    start_index = consume_optional(start_index)
+C:\Program Files\Python312\Lib\argparse.py:2099: in consume_optional
+    take_action(action, args, option_string)
+C:\Program Files\Python312\Lib\argparse.py:2006: in take_action
+    action(self, namespace, argument_values, option_string)
+C:\Program Files\Python312\Lib\argparse.py:1144: in __call__
+    parser.exit()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ArgumentParser(prog='migrations', usage=None, description=None, formatter_class=&lt;class 'argparse.HelpFormatter'&gt;, conflict_handler='error', add_help=True)
+status = 0, message = None
+
+    def exit(self, status=0, message=None):
+        if message:
+            self._print_message(message, _sys.stderr)
+&gt;       _sys.exit(status)
+E       SystemExit: 0
+
+C:\Program Files\Python312\Lib\argparse.py:2659: SystemExit</failure></testcase></testsuite></testsuites>

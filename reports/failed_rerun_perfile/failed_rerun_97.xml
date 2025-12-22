@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="4.858" timestamp="2025-12-21T22:21:24.129081" hostname="zloiws"><testcase classname="tests.scripts.test_websocket_simple" name="test_websocket_endpoints_exist" time="4.786" /></testsuite></testsuites>

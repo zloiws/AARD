@@ -1,0 +1,183 @@
+file,test,outcome,message,time,category
+tests.integration.test_dashboard_api,test_dashboard_statistics,failure,assert 0 >= 1,0.890,other
+tests.integration.test_logging_api,test_get_log_levels,failure,"requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017905052720>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",4.090,environment
+tests.integration.test_logging_api,test_get_module_level,failure,"requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels/app (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904F3B680>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",4.081,environment
+tests.integration.test_logging_api,test_set_module_level,failure,"requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels/test.api (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904E96300>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",4.082,environment
+tests.integration.test_logging_api,test_get_metrics,failure,"requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/metrics (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904E97980>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",4.118,environment
+tests.integration.test_logging_api,test_reset_metrics,failure,"requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/metrics/reset (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904E94FB0>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",4.112,environment
+tests.integration.test_logging_api,test_middleware_request_id,failure,"requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /health (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904C8E9C0>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",4.077,environment
+tests.integration.test_planning_digital_twin.Test4ComplexTask,test_complex_task_planning,failure,"AssertionError: assert 1 > 3
+ +  where 1 = len([{'agent': None, 'approval_required': False, 'dependencies': [], 'description': 'Create a complete e-commerce application with:\n        1. User authentication and authorization\n        2. Product catalog with categories\n        3. Shopping cart functionality\n        4. Order processing\n        5. Payment integration\n        6. Admin dashboard\n        7. Email notifications\n        8. Search functionality', ...}])
+ +    where [{'agent': None, 'approval_required': False, 'dependencies': [], 'description': 'Create a complete e-commerce application with:\n        1. User authentication and authorization\n        2. Product catalog with categories\n        3. Shopping cart functionality\n        4. Order processing\n        5. Payment integration\n        6. Admin dashboard\n        7. Email notifications\n        8. Search functionality', ...}] = <Plan(id=28135644-081c-422a-85d1-b129b4f7f660, task_id=4d2cb0ed-a9b0-4a4c-9627-36965cae1a8b, version=1, status=draft)>.steps",0.168,logic
+tests.integration.test_prompt_ab_testing,test_get_prompt_with_ab_testing_no_testing_version,failure,NameError: name 'AsyncMock' is not defined,0.657,fixture
+tests.integration.test_prompt_ab_testing,test_get_prompt_with_ab_testing_with_testing_version,failure,NameError: name 'AsyncMock' is not defined,0.700,fixture
+tests.integration.test_prompt_auto_improvement,test_analyze_and_improve_prompts_low_success_rate,failure,NameError: name 'PromptUsage' is not defined,0.712,logic
+tests.cli.test_migrations_cli,test_build_parser_and_call_migrate,failure,SystemExit: 0,0.004,other
+tests.docs.test_service_docs_present,test_service_docs_exist,failure,"AssertionError: Missing service docs: ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', 'ToolsExternalIntegrations.md', 'RegistryServiceDiscovery.md', 'SecurityAuthPermissions.md', 'MemoryConversationStorage.md', 'OpsMigrations.md', 'UtilitiesObservability.md']
+assert not ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', ...]",0.001,documentation
+tests.quick_test.TestWorkflowEngineBasic,test_initialization,failure,"AssertionError: assert 'INITIALIZED' == <WorkflowStat...'initialized'>
+  - initialized
+  + INITIALIZED",0.001,logic
+tests.quick_test.TestWorkflowEngineBasic,test_transition_to_parsing,failure,AssertionError: assert <Mock name='mock.transition_to()' id='1796850771504'> is True,0.001,logic
+tests.quick_test.TestWorkflowEngineBasic,test_transition_to_planning,failure,AssertionError: assert <Mock name='mock.transition_to()' id='1796851614880'> is True,0.001,logic
+tests.quick_test.TestWorkflowEngineBasic,test_invalid_transition,failure,AssertionError: assert <Mock name='mock.transition_to()' id='1796851618240'> is False,0.001,logic
+tests.quick_test.TestWorkflowEngineBasic,test_forced_transition,failure,AssertionError: assert <Mock name='mock.transition_to()' id='1796851622656'> is True,0.001,logic
+tests.quick_test.TestWorkflowEngineBasic,test_transition_history,failure,"assert 0 == 2
+ +  where 0 = len([])",0.001,other
+tests.quick_test,test_level1_basic_context_creation,error,"failed on setup with ""file C:\work\AARD\backend\tests\integration\test_phase3_full_integration.py, line 103
+  @pytest.mark.asyncio
+  async def test_level1_basic_context_creation(db_session):
+      """"""Уровень 1: Базовое создание ExecutionContext""""""
+      print(""\n=== УРОВЕНЬ 1: Базовое создание ExecutionContext ==="")
+
+      # Создание контекста из сессии
+      context = ExecutionContext.from_db_session(db_session)
+
+      assert context is not None
+      assert context.db == db_session
+      assert context.workflow_id is not None
+      assert len(context.workflow_id) > 0
+      # trace_id может быть None, если нет активного OpenTelemetry span (нормально для тестов)
+      # assert context.trace_id is not None
+
+      print(f""✅ ExecutionContext создан: workflow_id={context.workflow_id[:8]}..."")
+E       fixture 'db_session' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, execution_context, monkeypatch, plan_id, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, workflow_engine
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_phase3_full_integration.py:103""",0.003,fixture
+tests.quick_test.TestWorkflowEngineIntegration,test_workflow_engine_initialization_in_orchestrator,failure,AttributeError: 'ExecutionContextStub' object has no attribute 'user_id',0.003,logic
+tests.quick_test.TestWorkflowEngineIntegration,test_workflow_state_transitions_in_code_generation,error,"failed on setup with ""file C:\work\AARD\backend\tests\integration\test_phase4_integration.py, line 139
+      @pytest.mark.asyncio
+      async def test_workflow_state_transitions_in_code_generation(
+          self, execution_context, real_model_and_server, test_agent
+      ):
+          """"""Тест переходов состояний workflow при генерации кода""""""
+          model, server = real_model_and_server
+
+          # Сохраняем модель и server в контекст
+          execution_context.metadata = {
+              ""model"": model.model_name,
+              ""server_id"": str(server.id),
+              ""server_url"": server.get_api_url()
+          }
+
+          orchestrator = RequestOrchestrator()
+
+          # Простой запрос на генерацию кода
+          message = ""Create a function that adds two numbers""
+
+          try:
+              result = await orchestrator.process_request(
+                  message=message,
+                  context=execution_context,
+                  task_type=""code_generation"",
+                  model=model.model_name,
+                  server_id=str(server.id)
+              )
+
+              # Проверяем, что workflow прошел через нужные состояния
+              workflow_engine = WorkflowEngine.from_context(execution_context)
+              current_state = workflow_engine.get_current_state()
+
+              # Workflow должен быть в финальном состоянии (COMPLETED или FAILED)
+              assert current_state in [
+                  WorkflowState.COMPLETED,
+                  WorkflowState.FAILED,
+                  WorkflowState.CANCELLED
+              ], f""Unexpected workflow state: {current_state}""
+
+              # Проверяем историю переходов
+              history = workflow_engine.get_transition_history()
+              assert len(history) > 0, ""Workflow should have transition history""
+
+              # Первое состояние должно быть INITIALIZED
+              assert history[0].from_state is None or history[0].from_state == WorkflowState.INITIALIZED
+
+          except Exception as e:
+              pytest.skip(f""Test requires working LLM: {e}"")
+E       fixture 'real_model_and_server' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, execution_context, monkeypatch, plan_id, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, workflow_engine
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_phase4_integration.py:139""",0.002,fixture
+backend\tests\cli\test_migrations_cli.py,,summary,SystemExit: 0,1,other
+backend\tests\integration\test_api.py,,summary,,10,other
+backend\tests\test_planning_with_teams.py,,summary,AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?,103,logic
+backend\tests\test_request_orchestrator.py,,summary,AttributeError: 'RequestOrchestrator' object has no attribute 'workflow_tracker',104,logic
+backend\tests\test_service_registry.py,,summary,AttributeError: 'ExecutionContext' object has no attribute 'bind',105,logic
+backend\tests\integration\test_auto_approval_transition.py,,summary,,11,other
+backend\tests\integration\test_auto_replan_trigger.py,,summary,,12,other
+backend\tests\integration\test_auto_replanning.py,,summary,,13,other
+backend\tests\integration\test_benchmark_models.py,,summary,,14,other
+backend\tests\integration\test_chat_with_planning.py,,summary,,15,other
+backend\tests\integration\test_code_sandbox.py,,summary,,17,other
+backend\tests\integration\test_dashboard_api.py,,summary,assert 0 >= 1,18,other
+backend\tests\integration\test_execution_engine.py,,summary,,19,other
+backend\tests\docs\test_service_docs_present.py,,summary,"AssertionError: Missing service docs: ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', 'ToolsExternalIntegrations.md', 'RegistryServiceDiscovery.md', 'SecurityAuthPermissions.md', 'MemoryConversationStorage.md', 'OpsMigrations.md', 'UtilitiesObservability.md']
+assert not ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', ...]",2,documentation
+backend\tests\integration\test_feedback_learning.py,,summary,,20,other
+backend\tests\integration\test_full_system_e2e.py,,summary,,22,other
+backend\tests\integration\test_function_calling.py,,summary,,23,other
+backend\tests\integration\test_instance_selection.py,,summary,,24,other
+backend\tests\integration\test_interactive_execution.py,,summary,,25,other
+backend\tests\integration\test_logging_api.py,,summary,"requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001ACA4072F30>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",26,environment
+backend\tests\integration\test_logging_system.py,,summary,,27,other
+backend\tests\integration\test_migration.py,,summary,,28,other
+backend\tests\integration\test_model_benchmark_real.py,,summary,,29,other
+backend\tests\integration\test_agent_dialogs_real_llm.py,,summary,,3,other
+backend\tests\integration\test_model_generation.py,,summary,,30,other
+backend\tests\integration\test_model_selector.py,,summary,,31,other
+backend\tests\integration\test_new_components.py,,summary,,32,other
+backend\tests\integration\test_new_features.py,,summary,,33,other
+backend\tests\integration\test_ollama_connection.py,,summary,,34,other
+backend\tests\integration\test_ollama_integration.py,,summary,,35,other
+backend\tests\integration\test_orchestrator_integration.py,,summary,,36,other
+backend\tests\integration\test_phase3_full_integration.py,,summary,,37,other
+backend\tests\integration\test_agent_teams.py,,summary,,5,other
+backend\tests\integration\test_phase6_api_consistency.py,,summary,,53,other
+backend\tests\integration\test_phase6_consistency.py,,summary,,54,other
+backend\tests\integration\test_plan_approval_integration.py,,summary,,55,other
+backend\tests\integration\test_plan_memory_integration.py,,summary,,56,other
+backend\tests\integration\test_planning_api_simple.py,,summary,"failed on setup with ""file C:\work\AARD\backend\tests\integration\test_planning_api_simple.py, line 70
+  def test_get_plan(plan_id: str):
+E       fixture 'plan_id' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_planning_api_simple.py:70""",58,fixture
+backend\tests\integration\test_agent_teams_consistency.py,,summary,,6,other
+backend\tests\integration\test_planning_metrics.py,,summary,,64,other
+backend\tests\integration\test_planning_with_dialogs.py,,summary,,66,other
+backend\tests\integration\test_planning_with_dialogs_real_llm.py,,summary,,67,other
+backend\tests\integration\test_project_metrics_integration.py,,summary,,69,other
+backend\tests\integration\test_agent_teams_llm.py,,summary,,7,other
+backend\tests\integration\test_prompt_ab_testing.py,,summary,NameError: name 'AsyncMock' is not defined,70,fixture
+backend\tests\integration\test_prompt_auto_improvement.py,,summary,NameError: name 'PromptUsage' is not defined,71,logic
+backend\tests\integration\test_prompt_create.py,,summary,,72,other
+backend\tests\integration\test_prompt_manager_integration.py,,summary,,74,other
+backend\tests\integration\test_real_llm_full_workflow.py,,summary,,76,other
+backend\tests\integration\test_real_modules_interaction.py,,summary,,77,other
+backend\tests\integration\test_task_lifecycle.py,,summary,,78,other
+backend\tests\integration\test_tracing.py,,summary,,79,other
+backend\tests\integration\test_agent_teams_real_llm.py,,summary,,8,other
+backend\tests\integration\test_vector_search.py,,summary,,80,other
+backend\tests\integration\test_vector_search_complete.py,,summary,,81,other
+backend\tests\planning\test_plan_lifecycle.py,,summary,,87,other
+backend\tests\quick_test.py,,summary,"failed on setup with ""file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 48
+      def test_initialization(self, workflow_engine, execution_context):
+E       fixture 'workflow_engine' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_workflow_engine.py:48""",88,fixture
+backend\tests\integration\test_alternative_plans.py,,summary,,9,other
+backend\tests\scripts\test_branching.py,,summary,,91,other
+backend\tests\scripts\test_branching_endpoints.py,,summary,,92,other
+backend\tests\scripts\test_planning_step_by_step.py,,summary,,93,other
+backend\tests\scripts\test_real_integration_chat.py,,summary,,94,other
+backend\tests\scripts\test_real_integration_planning.py,,summary,,95,other
+backend\tests\scripts\test_websocket_integration.py,,summary,,96,other
+backend\tests\scripts\test_websocket_simple.py,,summary,,97,other
+backend\tests\scripts\test_workflow_events.py,,summary,,98,other
+backend\tests\scripts\test_workflow_events_detailed.py,,summary,,99,other

@@ -1,0 +1,14 @@
+[
+  {
+    "file": "backend\\tests\\integration\\test_planning_api_simple.py",
+    "failures": 0,
+    "errors": 2,
+    "message": "failed on setup with \"file C:\\work\\AARD\\backend\\tests\\integration\\test_planning_api_simple.py, line 70\n  def test_get_plan(plan_id: str):\nE       fixture 'plan_id' not found\n>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory\n>       use 'pytest --fixtures [testpath]' for help on them.\n\nC:\\work\\AARD\\backend\\tests\\integration\\test_planning_api_simple.py:70\""
+  },
+  {
+    "file": "backend\\tests\\quick_test.py",
+    "failures": 0,
+    "errors": 9,
+    "message": "failed on setup with \"file C:\\work\\AARD\\backend\\tests\\integration\\test_workflow_engine.py, line 48\n      def test_initialization(self, workflow_engine, execution_context):\nE       fixture 'workflow_engine' not found\n>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory\n>       use 'pytest --fixtures [testpath]' for help on them.\n\nC:\\work\\AARD\\backend\\tests\\integration\\test_workflow_engine.py:48\""
+  }
+]

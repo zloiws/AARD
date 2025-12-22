@@ -1,0 +1,36 @@
+{
+  "csv": [
+    {
+      "file": "backend\\tests\\integration\\test_logging_api.py",
+      "failures": 6,
+      "errors": 0,
+      "message": "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001ACA4072F30>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))"
+    }
+  ],
+  "log": [
+    {
+      "keyword": "connection error",
+      "snippet": ", see ``retry.default``. pass a\n            :class:`~urllib3.util.retry.retry` object for fine-grained control\n            over different types of retries.\n            pass an integer number to retry connection errors that many times,\n            but no other types of errors. pass zero to never retry.\n    \n            if ``false``, then retries are disabled and any exception is raised\n            "
+    },
+    {
+      "keyword": "failed to establish a new connection",
+      "snippet": "         f\"connection to {self.host} timed out. (connect timeout={self.timeout})\",\n            ) from e\n    \n        except oserror as e:\n>           raise newconnectionerror(\n                self, f\"failed to establish a new connection: {e}\"\n            ) from e\ne           urllib3.exceptions.newconnectionerror: <urllib3.connection.httpconnection object at 0x000001aca4072f30>: failed to establish"
+    },
+    {
+      "keyword": "max retries exceeded",
+      "snippet": "seerror(cause)\n>           raise maxretryerror(_pool, url, reason) from reason  # type: ignore[arg-type]\ne           urllib3.exceptions.maxretryerror: httpconnectionpool(host='localhost', port=8000): max retries exceeded with url: /api/logging/levels (caused by newconnectionerror('<urllib3.connection.httpconnection object at 0x000001aca4072f30>: failed to establish a new connection: [winerror 1006"
+    },
+    {
+      "keyword": "ollama",
+      "snippet": "===========================================================================================\n2025-12-21 22:12:57 [   error]   \\u2717 \\u041d\\u0435\\u0442 \\u0430\\u043a\\u0442\\u0438\\u0432\\u043d\\u044b\\u0445 ollama \\u0441\\u0435\\u0440\\u0432\\u0435\\u0440\\u043e\\u0432\\n2025-12-21 22:12:57 [    info] \n----------------------------------------------------------------------------------------------------\n2025-12-21"
+    },
+    {
+      "keyword": "psycopg2",
+      "snippet": "s_llm.py::test_team_collaborative_task_llm \n------------------------------- live log setup --------------------------------\n2025-12-21 22:13:23 [   error] failed to export span 17284197732562003246: (psycopg2.errors.undefinedtable) relation \"execution_traces\" does not exist\nline 2: from execution_traces \n             ^\n\n[sql: select execution_traces.id as execution_traces_id, execution_traces.trac"
+    },
+    {
+      "keyword": "timeout",
+      "snippet": "on\\python312\\site-packages\\_pytest\\config\\__init__.py:1373\n  c:\\users\\tehno\\appdata\\roaming\\python\\python312\\site-packages\\_pytest\\config\\__init__.py:1373: pytestconfigwarning: unknown config option: timeout\n  \n    self._warn_or_fail_if_strict(f\"unknown config option: {key}\\n\")\n\n..\\..\\users\\tehno\\appdata\\roaming\\python\\python312\\site-packages\\_pytest\\config\\__init__.py:1373\n  c:\\users\\tehno\\appdat"
+    }
+  ]
+}

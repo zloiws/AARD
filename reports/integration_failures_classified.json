@@ -1,0 +1,714 @@
+[
+  {
+    "file": "tests.integration.test_dashboard_api",
+    "test": "test_dashboard_statistics",
+    "outcome": "failure",
+    "message": "assert 0 >= 1",
+    "time": "0.890",
+    "category": "other"
+  },
+  {
+    "file": "tests.integration.test_logging_api",
+    "test": "test_get_log_levels",
+    "outcome": "failure",
+    "message": "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017905052720>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",
+    "time": "4.090",
+    "category": "environment"
+  },
+  {
+    "file": "tests.integration.test_logging_api",
+    "test": "test_get_module_level",
+    "outcome": "failure",
+    "message": "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels/app (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904F3B680>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",
+    "time": "4.081",
+    "category": "environment"
+  },
+  {
+    "file": "tests.integration.test_logging_api",
+    "test": "test_set_module_level",
+    "outcome": "failure",
+    "message": "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels/test.api (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904E96300>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",
+    "time": "4.082",
+    "category": "environment"
+  },
+  {
+    "file": "tests.integration.test_logging_api",
+    "test": "test_get_metrics",
+    "outcome": "failure",
+    "message": "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/metrics (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904E97980>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",
+    "time": "4.118",
+    "category": "environment"
+  },
+  {
+    "file": "tests.integration.test_logging_api",
+    "test": "test_reset_metrics",
+    "outcome": "failure",
+    "message": "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/metrics/reset (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904E94FB0>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",
+    "time": "4.112",
+    "category": "environment"
+  },
+  {
+    "file": "tests.integration.test_logging_api",
+    "test": "test_middleware_request_id",
+    "outcome": "failure",
+    "message": "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /health (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000017904C8E9C0>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",
+    "time": "4.077",
+    "category": "environment"
+  },
+  {
+    "file": "tests.integration.test_planning_digital_twin.Test4ComplexTask",
+    "test": "test_complex_task_planning",
+    "outcome": "failure",
+    "message": "AssertionError: assert 1 > 3\n +  where 1 = len([{'agent': None, 'approval_required': False, 'dependencies': [], 'description': 'Create a complete e-commerce application with:\\n        1. User authentication and authorization\\n        2. Product catalog with categories\\n        3. Shopping cart functionality\\n        4. Order processing\\n        5. Payment integration\\n        6. Admin dashboard\\n        7. Email notifications\\n        8. Search functionality', ...}])\n +    where [{'agent': None, 'approval_required': False, 'dependencies': [], 'description': 'Create a complete e-commerce application with:\\n        1. User authentication and authorization\\n        2. Product catalog with categories\\n        3. Shopping cart functionality\\n        4. Order processing\\n        5. Payment integration\\n        6. Admin dashboard\\n        7. Email notifications\\n        8. Search functionality', ...}] = <Plan(id=28135644-081c-422a-85d1-b129b4f7f660, task_id=4d2cb0ed-a9b0-4a4c-9627-36965cae1a8b, version=1, status=draft)>.steps",
+    "time": "0.168",
+    "category": "logic"
+  },
+  {
+    "file": "tests.integration.test_prompt_ab_testing",
+    "test": "test_get_prompt_with_ab_testing_no_testing_version",
+    "outcome": "failure",
+    "message": "NameError: name 'AsyncMock' is not defined",
+    "time": "0.657",
+    "category": "fixture"
+  },
+  {
+    "file": "tests.integration.test_prompt_ab_testing",
+    "test": "test_get_prompt_with_ab_testing_with_testing_version",
+    "outcome": "failure",
+    "message": "NameError: name 'AsyncMock' is not defined",
+    "time": "0.700",
+    "category": "fixture"
+  },
+  {
+    "file": "tests.integration.test_prompt_auto_improvement",
+    "test": "test_analyze_and_improve_prompts_low_success_rate",
+    "outcome": "failure",
+    "message": "NameError: name 'PromptUsage' is not defined",
+    "time": "0.712",
+    "category": "logic"
+  },
+  {
+    "file": "tests.cli.test_migrations_cli",
+    "test": "test_build_parser_and_call_migrate",
+    "outcome": "failure",
+    "message": "SystemExit: 0",
+    "time": "0.004",
+    "category": "other"
+  },
+  {
+    "file": "tests.docs.test_service_docs_present",
+    "test": "test_service_docs_exist",
+    "outcome": "failure",
+    "message": "AssertionError: Missing service docs: ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', 'ToolsExternalIntegrations.md', 'RegistryServiceDiscovery.md', 'SecurityAuthPermissions.md', 'MemoryConversationStorage.md', 'OpsMigrations.md', 'UtilitiesObservability.md']\nassert not ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', ...]",
+    "time": "0.001",
+    "category": "documentation"
+  },
+  {
+    "file": "tests.quick_test.TestWorkflowEngineBasic",
+    "test": "test_initialization",
+    "outcome": "failure",
+    "message": "AssertionError: assert 'INITIALIZED' == <WorkflowStat...'initialized'>\n  - initialized\n  + INITIALIZED",
+    "time": "0.001",
+    "category": "logic"
+  },
+  {
+    "file": "tests.quick_test.TestWorkflowEngineBasic",
+    "test": "test_transition_to_parsing",
+    "outcome": "failure",
+    "message": "AssertionError: assert <Mock name='mock.transition_to()' id='1796850771504'> is True",
+    "time": "0.001",
+    "category": "logic"
+  },
+  {
+    "file": "tests.quick_test.TestWorkflowEngineBasic",
+    "test": "test_transition_to_planning",
+    "outcome": "failure",
+    "message": "AssertionError: assert <Mock name='mock.transition_to()' id='1796851614880'> is True",
+    "time": "0.001",
+    "category": "logic"
+  },
+  {
+    "file": "tests.quick_test.TestWorkflowEngineBasic",
+    "test": "test_invalid_transition",
+    "outcome": "failure",
+    "message": "AssertionError: assert <Mock name='mock.transition_to()' id='1796851618240'> is False",
+    "time": "0.001",
+    "category": "logic"
+  },
+  {
+    "file": "tests.quick_test.TestWorkflowEngineBasic",
+    "test": "test_forced_transition",
+    "outcome": "failure",
+    "message": "AssertionError: assert <Mock name='mock.transition_to()' id='1796851622656'> is True",
+    "time": "0.001",
+    "category": "logic"
+  },
+  {
+    "file": "tests.quick_test.TestWorkflowEngineBasic",
+    "test": "test_transition_history",
+    "outcome": "failure",
+    "message": "assert 0 == 2\n +  where 0 = len([])",
+    "time": "0.001",
+    "category": "other"
+  },
+  {
+    "file": "tests.quick_test",
+    "test": "test_level1_basic_context_creation",
+    "outcome": "error",
+    "message": "failed on setup with \"file C:\\work\\AARD\\backend\\tests\\integration\\test_phase3_full_integration.py, line 103\n  @pytest.mark.asyncio\n  async def test_level1_basic_context_creation(db_session):\n      \"\"\"Уровень 1: Базовое создание ExecutionContext\"\"\"\n      print(\"\\n=== УРОВЕНЬ 1: Базовое создание ExecutionContext ===\")\n\n      # Создание контекста из сессии\n      context = ExecutionContext.from_db_session(db_session)\n\n      assert context is not None\n      assert context.db == db_session\n      assert context.workflow_id is not None\n      assert len(context.workflow_id) > 0\n      # trace_id может быть None, если нет активного OpenTelemetry span (нормально для тестов)\n      # assert context.trace_id is not None\n\n      print(f\"✅ ExecutionContext создан: workflow_id={context.workflow_id[:8]}...\")\nE       fixture 'db_session' not found\n>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, execution_context, monkeypatch, plan_id, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, workflow_engine\n>       use 'pytest --fixtures [testpath]' for help on them.\n\nC:\\work\\AARD\\backend\\tests\\integration\\test_phase3_full_integration.py:103\"",
+    "time": "0.003",
+    "category": "fixture"
+  },
+  {
+    "file": "tests.quick_test.TestWorkflowEngineIntegration",
+    "test": "test_workflow_engine_initialization_in_orchestrator",
+    "outcome": "failure",
+    "message": "AttributeError: 'ExecutionContextStub' object has no attribute 'user_id'",
+    "time": "0.003",
+    "category": "logic"
+  },
+  {
+    "file": "tests.quick_test.TestWorkflowEngineIntegration",
+    "test": "test_workflow_state_transitions_in_code_generation",
+    "outcome": "error",
+    "message": "failed on setup with \"file C:\\work\\AARD\\backend\\tests\\integration\\test_phase4_integration.py, line 139\n      @pytest.mark.asyncio\n      async def test_workflow_state_transitions_in_code_generation(\n          self, execution_context, real_model_and_server, test_agent\n      ):\n          \"\"\"Тест переходов состояний workflow при генерации кода\"\"\"\n          model, server = real_model_and_server\n\n          # Сохраняем модель и server в контекст\n          execution_context.metadata = {\n              \"model\": model.model_name,\n              \"server_id\": str(server.id),\n              \"server_url\": server.get_api_url()\n          }\n\n          orchestrator = RequestOrchestrator()\n\n          # Простой запрос на генерацию кода\n          message = \"Create a function that adds two numbers\"\n\n          try:\n              result = await orchestrator.process_request(\n                  message=message,\n                  context=execution_context,\n                  task_type=\"code_generation\",\n                  model=model.model_name,\n                  server_id=str(server.id)\n              )\n\n              # Проверяем, что workflow прошел через нужные состояния\n              workflow_engine = WorkflowEngine.from_context(execution_context)\n              current_state = workflow_engine.get_current_state()\n\n              # Workflow должен быть в финальном состоянии (COMPLETED или FAILED)\n              assert current_state in [\n                  WorkflowState.COMPLETED,\n                  WorkflowState.FAILED,\n                  WorkflowState.CANCELLED\n              ], f\"Unexpected workflow state: {current_state}\"\n\n              # Проверяем историю переходов\n              history = workflow_engine.get_transition_history()\n              assert len(history) > 0, \"Workflow should have transition history\"\n\n              # Первое состояние должно быть INITIALIZED\n              assert history[0].from_state is None or history[0].from_state == WorkflowState.INITIALIZED\n\n          except Exception as e:\n              pytest.skip(f\"Test requires working LLM: {e}\")\nE       fixture 'real_model_and_server' not found\n>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, execution_context, monkeypatch, plan_id, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory, workflow_engine\n>       use 'pytest --fixtures [testpath]' for help on them.\n\nC:\\work\\AARD\\backend\\tests\\integration\\test_phase4_integration.py:139\"",
+    "time": "0.002",
+    "category": "fixture"
+  },
+  {
+    "file": "backend\\tests\\cli\\test_migrations_cli.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "SystemExit: 0",
+    "time": "1",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_api.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "10",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\test_planning_with_teams.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?",
+    "time": "103",
+    "category": "logic"
+  },
+  {
+    "file": "backend\\tests\\test_request_orchestrator.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "AttributeError: 'RequestOrchestrator' object has no attribute 'workflow_tracker'",
+    "time": "104",
+    "category": "logic"
+  },
+  {
+    "file": "backend\\tests\\test_service_registry.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "AttributeError: 'ExecutionContext' object has no attribute 'bind'",
+    "time": "105",
+    "category": "logic"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_auto_approval_transition.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "11",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_auto_replan_trigger.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "12",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_auto_replanning.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "13",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_benchmark_models.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "14",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_chat_with_planning.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "15",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_code_sandbox.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "17",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_dashboard_api.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "assert 0 >= 1",
+    "time": "18",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_execution_engine.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "19",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\docs\\test_service_docs_present.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "AssertionError: Missing service docs: ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', 'ToolsExternalIntegrations.md', 'RegistryServiceDiscovery.md', 'SecurityAuthPermissions.md', 'MemoryConversationStorage.md', 'OpsMigrations.md', 'UtilitiesObservability.md']\nassert not ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', ...]",
+    "time": "2",
+    "category": "documentation"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_feedback_learning.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "20",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_full_system_e2e.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "22",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_function_calling.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "23",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_instance_selection.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "24",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_interactive_execution.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "25",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_logging_api.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001ACA4072F30>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))",
+    "time": "26",
+    "category": "environment"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_logging_system.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "27",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_migration.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "28",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_model_benchmark_real.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "29",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_agent_dialogs_real_llm.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "3",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_model_generation.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "30",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_model_selector.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "31",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_new_components.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "32",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_new_features.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "33",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_ollama_connection.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "34",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_ollama_integration.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "35",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_orchestrator_integration.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "36",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_phase3_full_integration.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "37",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_agent_teams.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "5",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_phase6_api_consistency.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "53",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_phase6_consistency.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "54",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_plan_approval_integration.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "55",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_plan_memory_integration.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "56",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_planning_api_simple.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "failed on setup with \"file C:\\work\\AARD\\backend\\tests\\integration\\test_planning_api_simple.py, line 70\n  def test_get_plan(plan_id: str):\nE       fixture 'plan_id' not found\n>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory\n>       use 'pytest --fixtures [testpath]' for help on them.\n\nC:\\work\\AARD\\backend\\tests\\integration\\test_planning_api_simple.py:70\"",
+    "time": "58",
+    "category": "fixture"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_agent_teams_consistency.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "6",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_planning_metrics.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "64",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_planning_with_dialogs.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "66",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_planning_with_dialogs_real_llm.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "67",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_project_metrics_integration.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "69",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_agent_teams_llm.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "7",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_prompt_ab_testing.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "NameError: name 'AsyncMock' is not defined",
+    "time": "70",
+    "category": "fixture"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_prompt_auto_improvement.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "NameError: name 'PromptUsage' is not defined",
+    "time": "71",
+    "category": "logic"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_prompt_create.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "72",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_prompt_manager_integration.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "74",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_real_llm_full_workflow.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "76",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_real_modules_interaction.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "77",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_task_lifecycle.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "78",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_tracing.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "79",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_agent_teams_real_llm.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "8",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_vector_search.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "80",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_vector_search_complete.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "81",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\planning\\test_plan_lifecycle.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "87",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\quick_test.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "failed on setup with \"file C:\\work\\AARD\\backend\\tests\\integration\\test_workflow_engine.py, line 48\n      def test_initialization(self, workflow_engine, execution_context):\nE       fixture 'workflow_engine' not found\n>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory\n>       use 'pytest --fixtures [testpath]' for help on them.\n\nC:\\work\\AARD\\backend\\tests\\integration\\test_workflow_engine.py:48\"",
+    "time": "88",
+    "category": "fixture"
+  },
+  {
+    "file": "backend\\tests\\integration\\test_alternative_plans.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "9",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\scripts\\test_branching.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "91",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\scripts\\test_branching_endpoints.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "92",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\scripts\\test_planning_step_by_step.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "93",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\scripts\\test_real_integration_chat.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "94",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\scripts\\test_real_integration_planning.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "95",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\scripts\\test_websocket_integration.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "96",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\scripts\\test_websocket_simple.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "97",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\scripts\\test_workflow_events.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "98",
+    "category": "other"
+  },
+  {
+    "file": "backend\\tests\\scripts\\test_workflow_events_detailed.py",
+    "test": "",
+    "outcome": "summary",
+    "message": "",
+    "time": "99",
+    "category": "other"
+  }
+]
