@@ -170,7 +170,7 @@ def pytest_collection_modifyitems(config, items):
 # These are non-invasive stubs to allow triage runs to surface logic errors.
 # They should not change production behavior.
 # -----------------------------
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 import uuid
 
 
@@ -188,8 +188,13 @@ def execution_context():
             self.db = None
             self.metadata = {}
             self.workflow_id = str(uuid.uuid4())
+            self.user_id = None
+            self.bind = None
         def to_dict(self):
             return {"workflow_id": self.workflow_id, "metadata": self.metadata}
+        def bind(self, *args, **kwargs):
+            # noop bind used by some tests
+            return self
     return ExecutionContextStub()
 
 
@@ -204,4 +209,25 @@ def workflow_engine():
     w.mark_failed = Mock()
     w.get_state = Mock(return_value="INITIALIZED")
     return w
+
+
+class PromptUsage:
+    """Minimal stub for PromptUsage used in tests."""
+    def __init__(self, prompt_id=None, usage=0):
+        self.prompt_id = prompt_id
+        self.usage = usage
+
+
+@pytest.fixture(scope="function")
+def real_model_and_server():
+    """Provide a minimal (model, server) tuple for tests that expect a real model and server pair."""
+    class ModelStub:
+        def __init__(self):
+            self.model_name = "test-model"
+    class ServerStub:
+        def __init__(self):
+            self.id = uuid.uuid4()
+        def get_api_url(self):
+            return "http://localhost:11434"
+    return ModelStub(), ServerStub()
 
