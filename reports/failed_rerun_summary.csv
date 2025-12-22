@@ -1,0 +1,81 @@
+index,file,xml,failures,errors,message
+1,backend\tests\cli\test_migrations_cli.py,reports\failed_rerun_perfile\failed_rerun_1.xml,1,0,SystemExit: 0
+10,backend\tests\integration\test_api.py,reports\failed_rerun_perfile\failed_rerun_10.xml,0,0,
+103,backend\tests\test_planning_with_teams.py,reports\failed_rerun_perfile\failed_rerun_103.xml,3,0,AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?
+104,backend\tests\test_request_orchestrator.py,reports\failed_rerun_perfile\failed_rerun_104.xml,1,0,AttributeError: 'RequestOrchestrator' object has no attribute 'workflow_tracker'
+105,backend\tests\test_service_registry.py,reports\failed_rerun_perfile\failed_rerun_105.xml,1,0,AttributeError: 'ExecutionContext' object has no attribute 'bind'
+11,backend\tests\integration\test_auto_approval_transition.py,reports\failed_rerun_perfile\failed_rerun_11.xml,0,0,
+12,backend\tests\integration\test_auto_replan_trigger.py,reports\failed_rerun_perfile\failed_rerun_12.xml,0,0,
+13,backend\tests\integration\test_auto_replanning.py,reports\failed_rerun_perfile\failed_rerun_13.xml,0,0,
+14,backend\tests\integration\test_benchmark_models.py,reports\failed_rerun_perfile\failed_rerun_14.xml,0,0,
+15,backend\tests\integration\test_chat_with_planning.py,reports\failed_rerun_perfile\failed_rerun_15.xml,0,0,
+17,backend\tests\integration\test_code_sandbox.py,reports\failed_rerun_perfile\failed_rerun_17.xml,0,0,
+18,backend\tests\integration\test_dashboard_api.py,reports\failed_rerun_perfile\failed_rerun_18.xml,1,0,assert 0 >= 1
+19,backend\tests\integration\test_execution_engine.py,reports\failed_rerun_perfile\failed_rerun_19.xml,0,0,
+2,backend\tests\docs\test_service_docs_present.py,reports\failed_rerun_perfile\failed_rerun_2.xml,1,0,"AssertionError: Missing service docs: ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', 'ToolsExternalIntegrations.md', 'RegistryServiceDiscovery.md', 'SecurityAuthPermissions.md', 'MemoryConversationStorage.md', 'OpsMigrations.md', 'UtilitiesObservability.md']
+assert not ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', ...]"
+20,backend\tests\integration\test_feedback_learning.py,reports\failed_rerun_perfile\failed_rerun_20.xml,0,0,
+22,backend\tests\integration\test_full_system_e2e.py,reports\failed_rerun_perfile\failed_rerun_22.xml,0,0,
+23,backend\tests\integration\test_function_calling.py,reports\failed_rerun_perfile\failed_rerun_23.xml,0,0,
+24,backend\tests\integration\test_instance_selection.py,reports\failed_rerun_perfile\failed_rerun_24.xml,0,0,
+25,backend\tests\integration\test_interactive_execution.py,reports\failed_rerun_perfile\failed_rerun_25.xml,0,0,
+26,backend\tests\integration\test_logging_api.py,reports\failed_rerun_perfile\failed_rerun_26.xml,6,0,"requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001ACA4072F30>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))"
+27,backend\tests\integration\test_logging_system.py,reports\failed_rerun_perfile\failed_rerun_27.xml,0,0,
+28,backend\tests\integration\test_migration.py,reports\failed_rerun_perfile\failed_rerun_28.xml,0,0,
+29,backend\tests\integration\test_model_benchmark_real.py,reports\failed_rerun_perfile\failed_rerun_29.xml,0,0,
+3,backend\tests\integration\test_agent_dialogs_real_llm.py,reports\failed_rerun_perfile\failed_rerun_3.xml,0,0,
+30,backend\tests\integration\test_model_generation.py,reports\failed_rerun_perfile\failed_rerun_30.xml,0,0,
+31,backend\tests\integration\test_model_selector.py,reports\failed_rerun_perfile\failed_rerun_31.xml,0,0,
+32,backend\tests\integration\test_new_components.py,reports\failed_rerun_perfile\failed_rerun_32.xml,0,0,
+33,backend\tests\integration\test_new_features.py,reports\failed_rerun_perfile\failed_rerun_33.xml,0,0,
+34,backend\tests\integration\test_ollama_connection.py,reports\failed_rerun_perfile\failed_rerun_34.xml,0,0,
+35,backend\tests\integration\test_ollama_integration.py,reports\failed_rerun_perfile\failed_rerun_35.xml,0,0,
+36,backend\tests\integration\test_orchestrator_integration.py,reports\failed_rerun_perfile\failed_rerun_36.xml,0,0,
+37,backend\tests\integration\test_phase3_full_integration.py,reports\failed_rerun_perfile\failed_rerun_37.xml,0,0,
+5,backend\tests\integration\test_agent_teams.py,reports\failed_rerun_perfile\failed_rerun_5.xml,0,0,
+53,backend\tests\integration\test_phase6_api_consistency.py,reports\failed_rerun_perfile\failed_rerun_53.xml,0,0,
+54,backend\tests\integration\test_phase6_consistency.py,reports\failed_rerun_perfile\failed_rerun_54.xml,0,0,
+55,backend\tests\integration\test_plan_approval_integration.py,reports\failed_rerun_perfile\failed_rerun_55.xml,0,0,
+56,backend\tests\integration\test_plan_memory_integration.py,reports\failed_rerun_perfile\failed_rerun_56.xml,0,0,
+58,backend\tests\integration\test_planning_api_simple.py,reports\failed_rerun_perfile\failed_rerun_58.xml,0,2,"failed on setup with ""file C:\work\AARD\backend\tests\integration\test_planning_api_simple.py, line 70
+  def test_get_plan(plan_id: str):
+E       fixture 'plan_id' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_planning_api_simple.py:70"""
+6,backend\tests\integration\test_agent_teams_consistency.py,reports\failed_rerun_perfile\failed_rerun_6.xml,0,0,
+64,backend\tests\integration\test_planning_metrics.py,reports\failed_rerun_perfile\failed_rerun_64.xml,0,0,
+66,backend\tests\integration\test_planning_with_dialogs.py,reports\failed_rerun_perfile\failed_rerun_66.xml,0,0,
+67,backend\tests\integration\test_planning_with_dialogs_real_llm.py,reports\failed_rerun_perfile\failed_rerun_67.xml,0,0,
+69,backend\tests\integration\test_project_metrics_integration.py,reports\failed_rerun_perfile\failed_rerun_69.xml,0,0,
+7,backend\tests\integration\test_agent_teams_llm.py,reports\failed_rerun_perfile\failed_rerun_7.xml,0,0,
+70,backend\tests\integration\test_prompt_ab_testing.py,reports\failed_rerun_perfile\failed_rerun_70.xml,2,0,NameError: name 'AsyncMock' is not defined
+71,backend\tests\integration\test_prompt_auto_improvement.py,reports\failed_rerun_perfile\failed_rerun_71.xml,1,0,NameError: name 'PromptUsage' is not defined
+72,backend\tests\integration\test_prompt_create.py,reports\failed_rerun_perfile\failed_rerun_72.xml,0,0,
+74,backend\tests\integration\test_prompt_manager_integration.py,reports\failed_rerun_perfile\failed_rerun_74.xml,0,0,
+76,backend\tests\integration\test_real_llm_full_workflow.py,reports\failed_rerun_perfile\failed_rerun_76.xml,0,0,
+77,backend\tests\integration\test_real_modules_interaction.py,reports\failed_rerun_perfile\failed_rerun_77.xml,0,0,
+78,backend\tests\integration\test_task_lifecycle.py,reports\failed_rerun_perfile\failed_rerun_78.xml,0,0,
+79,backend\tests\integration\test_tracing.py,reports\failed_rerun_perfile\failed_rerun_79.xml,0,0,
+8,backend\tests\integration\test_agent_teams_real_llm.py,reports\failed_rerun_perfile\failed_rerun_8.xml,0,0,
+80,backend\tests\integration\test_vector_search.py,reports\failed_rerun_perfile\failed_rerun_80.xml,0,0,
+81,backend\tests\integration\test_vector_search_complete.py,reports\failed_rerun_perfile\failed_rerun_81.xml,0,0,
+87,backend\tests\planning\test_plan_lifecycle.py,reports\failed_rerun_perfile\failed_rerun_87.xml,0,0,
+88,backend\tests\quick_test.py,reports\failed_rerun_perfile\failed_rerun_88.xml,0,9,"failed on setup with ""file C:\work\AARD\backend\tests\integration\test_workflow_engine.py, line 48
+      def test_initialization(self, workflow_engine, execution_context):
+E       fixture 'workflow_engine' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, db, doctest_namespace, ensure_service_registry_initialized, event_loop, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\work\AARD\backend\tests\integration\test_workflow_engine.py:48"""
+9,backend\tests\integration\test_alternative_plans.py,reports\failed_rerun_perfile\failed_rerun_9.xml,0,0,
+91,backend\tests\scripts\test_branching.py,reports\failed_rerun_perfile\failed_rerun_91.xml,0,0,
+92,backend\tests\scripts\test_branching_endpoints.py,reports\failed_rerun_perfile\failed_rerun_92.xml,0,0,
+93,backend\tests\scripts\test_planning_step_by_step.py,reports\failed_rerun_perfile\failed_rerun_93.xml,0,0,
+94,backend\tests\scripts\test_real_integration_chat.py,reports\failed_rerun_perfile\failed_rerun_94.xml,0,0,
+95,backend\tests\scripts\test_real_integration_planning.py,reports\failed_rerun_perfile\failed_rerun_95.xml,0,0,
+96,backend\tests\scripts\test_websocket_integration.py,reports\failed_rerun_perfile\failed_rerun_96.xml,0,0,
+97,backend\tests\scripts\test_websocket_simple.py,reports\failed_rerun_perfile\failed_rerun_97.xml,0,0,
+98,backend\tests\scripts\test_workflow_events.py,reports\failed_rerun_perfile\failed_rerun_98.xml,0,0,
+99,backend\tests\scripts\test_workflow_events_detailed.py,reports\failed_rerun_perfile\failed_rerun_99.xml,0,0,

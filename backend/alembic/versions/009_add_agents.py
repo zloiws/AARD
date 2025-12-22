@@ -5,8 +5,8 @@ Revises: 008_add_checkpoints
 Create Date: 2025-12-03 12:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create agents table
-    op.create_table(
-        'agents',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agents')")).scalar():
+        op.create_table('agents',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False, unique=True),
         sa.Column('description', sa.Text(), nullable=True),
@@ -74,11 +75,11 @@ def upgrade():
     )
     
     # Create indexes
-    op.create_index('ix_agents_name', 'agents', ['name'], unique=True)
-    op.create_index('ix_agents_status', 'agents', ['status'])
-    op.create_index('ix_agents_created_at', 'agents', ['created_at'])
-    op.create_index('ix_agents_capabilities', 'agents', ['capabilities'], postgresql_using='gin')
-    op.create_index('ix_agents_tags', 'agents', ['tags'], postgresql_using='gin')
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_agents_name ON agents (name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_status ON agents (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_created_at ON agents (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_capabilities ON agents (capabilities);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agents_tags ON agents (tags);")
 
 
 def downgrade():

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-from sqlalchemy import create_engine, text
 import os
+
+from sqlalchemy import create_engine, text
+
 
 def main():
     db_url = os.environ.get("DATABASE_URL")

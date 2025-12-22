@@ -1,26 +1,24 @@
 """
 Agent Gym Service - Automated testing and benchmarking for agents
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
-from datetime import datetime
+import asyncio
 import time
 import traceback as tb
-import asyncio
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
-
+from app.agents.simple_agent import SimpleAgent
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-from app.models.agent_test import (
-    AgentTest, AgentTestRun, AgentBenchmark, AgentBenchmarkRun,
-    TestStatus, TestType
-)
-from app.models.agent import Agent
-from app.services.agent_service import AgentService
-from app.agents.simple_agent import SimpleAgent
 from app.core.ollama_client import OllamaClient
+from app.models.agent import Agent
+from app.models.agent_test import (AgentBenchmark, AgentBenchmarkRun,
+                                   AgentTest, AgentTestRun, TestStatus,
+                                   TestType)
+from app.services.agent_service import AgentService
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -222,7 +220,7 @@ class AgentGymService:
             test_run.duration_ms = duration_ms
         
         finally:
-            test_run.completed_at = datetime.utcnow()
+            test_run.completed_at = datetime.now(timezone.utc)
             self.db.commit()
             self.db.refresh(test_run)
             
@@ -472,7 +470,7 @@ class AgentGymService:
         finally:
             duration_ms = int((time.time() - start_time) * 1000)
             benchmark_run.duration_ms = duration_ms
-            benchmark_run.completed_at = datetime.utcnow()
+            benchmark_run.completed_at = datetime.now(timezone.utc)
             self.db.commit()
             self.db.refresh(benchmark_run)
         

@@ -1,10 +1,9 @@
 """
 Page routes for web interface
 """
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse
-
 from app.core.templates import templates
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse
 
 router = APIRouter(tags=["pages"])
 

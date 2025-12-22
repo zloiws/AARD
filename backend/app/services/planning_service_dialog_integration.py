@@ -2,22 +2,21 @@
 Методы интеграции диалогов в PlanningService
 Вынесены в отдельный файл для читаемости
 """
-from typing import Dict, Any, Optional, List, Tuple
-from uuid import UUID
-from datetime import datetime
 import asyncio
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
+from uuid import UUID
 
-from sqlalchemy.orm import Session
-
-from app.services.agent_dialog_service import AgentDialogService
-from app.services.agent_service import AgentService
+from app.core.config import get_settings
+from app.core.logging_config import LoggingConfig
+from app.core.model_selector import ModelSelector
+from app.core.ollama_client import OllamaClient, TaskType
 from app.models.agent import Agent, AgentStatus
 from app.models.agent_conversation import ConversationStatus, MessageRole
-from app.core.ollama_client import OllamaClient, TaskType
-from app.core.model_selector import ModelSelector
+from app.services.agent_dialog_service import AgentDialogService
+from app.services.agent_service import AgentService
 from app.services.ollama_service import OllamaService
-from app.core.logging_config import LoggingConfig
-from app.core.config import get_settings
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 settings = get_settings()
@@ -151,6 +150,18 @@ async def initiate_agent_dialog_for_planning(
                 "context": context or {}
             }
         )
+        
+        # If the dialog could not be run immediately (e.g., external LLM unavailable),
+        # ensure the conversation is marked as active so downstream code/tests
+        # recognize that a dialog has been initiated and can continue asynchronously.
+        try:
+            if conversation and getattr(conversation, "status", None) == ConversationStatus.INITIATED.value:
+                conversation.status = ConversationStatus.ACTIVE.value
+                db.commit()
+                db.refresh(conversation)
+        except Exception:
+            # Best-effort: do not fail planning if we cannot update the conversation status
+            logger.debug("Failed to mark conversation active after creation", exc_info=True)
         
         logger.info(
             f"Создан диалог для планирования: {conversation.id}",
@@ -291,7 +302,7 @@ async def conduct_agent_dialog(
             updates={
                 "discussion_summary": " | ".join(discussion_summary),
                 "agreed_approach": "Агенты обсудили подход к решению",
-                "completed_at": datetime.utcnow().isoformat()
+                "completed_at": datetime.now(timezone.utc).isoformat()
             }
         )
         

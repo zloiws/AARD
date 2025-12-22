@@ -2,18 +2,20 @@
 Adaptive Approval Service for intelligent approval decisions
 Determines if approval is required based on risk level, agent trust score, and task complexity
 """
-from typing import Dict, Any, Optional, List
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
 from app.models.agent import Agent
-from app.models.plan import Plan
-from app.models.trace import ExecutionTrace
 from app.models.approval import ApprovalRequest
+from app.models.plan import Plan
+from app.models.system_parameter import ParameterCategory, SystemParameterType
+from app.models.trace import ExecutionTrace
+from app.services.parameter_manager import ParameterManager
+from sqlalchemy import and_, func
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -26,29 +28,37 @@ class AdaptiveApprovalService:
     - Plan complexity (number of steps, dependencies)
     """
     
-    # Thresholds for approval decisions
-    TRUST_SCORE_THRESHOLD = 0.8  # Agents with trust > 0.8 may skip approval for low-risk tasks
-    HIGH_RISK_THRESHOLD = 0.7  # Tasks with risk > 0.7 always require approval
-    MEDIUM_RISK_THRESHOLD = 0.4  # Tasks with risk > 0.4 require approval if trust < threshold
-    
-    # Minimum number of executions for trust calculation
-    MIN_EXECUTIONS_FOR_TRUST = 5
-    
-    def __init__(self, db: Session = None):
+    def __init__(self, db_or_context = None):
         """
         Initialize Adaptive Approval Service
         
         Args:
-            db: Database session (optional)
+            db_or_context: Database session or ExecutionContext (optional)
         """
-        self.db = db or SessionLocal()
+        from typing import Union
+
+        from app.core.execution_context import ExecutionContext
+        
+        if isinstance(db_or_context, ExecutionContext):
+            self.context = db_or_context
+            self.db = db_or_context.db
+        elif db_or_context is not None:
+            self.db = db_or_context
+            self.context = None
+        else:
+            self.db = SessionLocal()
+            self.context = None
+        
+        # Initialize parameter manager for learnable parameters
+        self.param_manager = ParameterManager(self.db)
     
     def should_require_approval(
         self,
         plan: Plan,
         agent_id: Optional[UUID] = None,
         task_risk_level: Optional[float] = None,
-        override_risk: bool = False
+        override_risk: bool = False,
+        task_autonomy_level: Optional[int] = None
     ) -> tuple[bool, Dict[str, Any]]:
         """
         Determine if approval is required for a plan
@@ -58,6 +68,12 @@ class AdaptiveApprovalService:
             agent_id: Optional agent ID (if plan is executed by specific agent)
             task_risk_level: Optional pre-calculated risk level (0.0 to 1.0)
             override_risk: If True, always require approval regardless of calculations
+            task_autonomy_level: Optional task autonomy level (0-4)
+                - 0: Read-only (no execution)
+                - 1: Step-by-step approval (every step requires approval)
+                - 2: Plan approval (plan requires approval before execution)
+                - 3: Autonomous with notification (executes autonomously, notifies human)
+                - 4: Full autonomous (no approval needed)
             
         Returns:
             Tuple of (requires_approval, decision_metadata)
@@ -68,6 +84,57 @@ class AdaptiveApprovalService:
                     "reason": "override_risk",
                     "message": "Approval required due to override"
                 }
+            
+            # Check autonomy level first - it overrides risk-based decisions
+            if task_autonomy_level is not None:
+                if task_autonomy_level == 0:
+                    # Read-only: no execution allowed
+                    return True, {
+                        "reason": "autonomy_level_0",
+                        "message": "Task autonomy level is 0 (read-only), execution not allowed",
+                        "autonomy_level": task_autonomy_level
+                    }
+                elif task_autonomy_level == 1:
+                    # Step-by-step: every step requires approval
+                    return True, {
+                        "reason": "autonomy_level_1",
+                        "message": "Task autonomy level is 1 (step-by-step approval required)",
+                        "autonomy_level": task_autonomy_level
+                    }
+                elif task_autonomy_level == 2:
+                    # Plan approval: plan requires approval before execution
+                    return True, {
+                        "reason": "autonomy_level_2",
+                        "message": "Task autonomy level is 2 (plan approval required)",
+                        "autonomy_level": task_autonomy_level
+                    }
+                elif task_autonomy_level == 3:
+                    # Autonomous with notification: execute autonomously, notify human
+                    # Still check risk for critical operations
+                    pass  # Continue to risk-based evaluation
+                elif task_autonomy_level == 4:
+                    # Full autonomous: no approval needed (unless high risk)
+                    # Only require approval for very high-risk tasks
+                    if task_risk_level is None:
+                        task_risk_level = self.calculate_task_risk_level(
+                            plan.goal,
+                            plan.steps if isinstance(plan.steps, list) else []
+                        )
+                    # Get threshold for autonomy level 4
+                    autonomy_level_4_threshold = self.param_manager.get_parameter_value(
+                        "autonomy_level_4_threshold",
+                        ParameterCategory.APPROVAL,
+                        SystemParameterType.THRESHOLD,
+                        default=0.9
+                    )
+                    
+                    if task_risk_level < autonomy_level_4_threshold:  # Only require approval for extremely high risk
+                        return False, {
+                            "reason": "autonomy_level_4",
+                            "message": "Task autonomy level is 4 (full autonomous), approval not required",
+                            "autonomy_level": task_autonomy_level,
+                            "task_risk_level": task_risk_level
+                        }
             
             # Calculate risk level if not provided
             if task_risk_level is None:
@@ -81,18 +148,44 @@ class AdaptiveApprovalService:
             if agent_id:
                 agent_trust_score = self.calculate_agent_trust_score(agent_id)
             
-            # Decision logic
+            # Decision logic (for autonomy level 3 or when autonomy_level is None)
             requires_approval = False
             reason = "low_risk_high_trust"
             
-            # Always require approval for high-risk tasks
-            if task_risk_level >= self.HIGH_RISK_THRESHOLD:
+            # Get thresholds from parameters
+            high_risk_threshold = self.param_manager.get_parameter_value(
+                "high_risk_threshold",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.THRESHOLD,
+                default=0.7
+            )
+            medium_risk_threshold = self.param_manager.get_parameter_value(
+                "medium_risk_threshold",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.THRESHOLD,
+                default=0.4
+            )
+            trust_score_threshold = self.param_manager.get_parameter_value(
+                "trust_score_threshold",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.THRESHOLD,
+                default=0.8
+            )
+            low_trust_threshold = self.param_manager.get_parameter_value(
+                "low_trust_threshold",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.THRESHOLD,
+                default=0.5
+            )
+            
+            # Always require approval for high-risk tasks (unless autonomy level 4)
+            if task_risk_level >= high_risk_threshold:
                 requires_approval = True
                 reason = "high_risk"
             
             # Require approval for medium-risk tasks if agent trust is low
-            elif task_risk_level >= self.MEDIUM_RISK_THRESHOLD:
-                if agent_trust_score is None or agent_trust_score < self.TRUST_SCORE_THRESHOLD:
+            elif task_risk_level >= medium_risk_threshold:
+                if agent_trust_score is None or agent_trust_score < trust_score_threshold:
                     requires_approval = True
                     reason = "medium_risk_low_trust"
                 else:
@@ -101,7 +194,7 @@ class AdaptiveApprovalService:
             
             # Low-risk tasks: require approval only if agent trust is very low
             else:
-                if agent_trust_score is not None and agent_trust_score < 0.5:
+                if agent_trust_score is not None and agent_trust_score < low_trust_threshold:
                     requires_approval = True
                     reason = "low_risk_very_low_trust"
                 else:
@@ -113,10 +206,12 @@ class AdaptiveApprovalService:
                 "reason": reason,
                 "task_risk_level": task_risk_level,
                 "agent_trust_score": agent_trust_score,
+                "task_autonomy_level": task_autonomy_level,
                 "thresholds": {
-                    "high_risk": self.HIGH_RISK_THRESHOLD,
-                    "medium_risk": self.MEDIUM_RISK_THRESHOLD,
-                    "trust_threshold": self.TRUST_SCORE_THRESHOLD
+                    "high_risk": high_risk_threshold,
+                    "medium_risk": medium_risk_threshold,
+                    "trust_threshold": trust_score_threshold,
+                    "low_trust": low_trust_threshold
                 }
             }
             
@@ -168,10 +263,32 @@ class AdaptiveApprovalService:
             successful_tasks = agent.successful_tasks or 0
             failed_tasks = agent.failed_tasks or 0
             
+            # Get minimum executions threshold from parameters
+            min_executions_for_trust = self.param_manager.get_parameter_value(
+                "min_executions_for_trust",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.COUNT_THRESHOLD,
+                default=5
+            )
+            
+            # Get base trust values from parameters
+            base_trust_with_history = self.param_manager.get_parameter_value(
+                "base_trust_with_history",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.WEIGHT,
+                default=0.3
+            )
+            base_trust_no_history = self.param_manager.get_parameter_value(
+                "base_trust_no_history",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.WEIGHT,
+                default=0.1
+            )
+            
             # Need minimum executions for reliable trust score
-            if total_tasks < self.MIN_EXECUTIONS_FOR_TRUST:
+            if total_tasks < min_executions_for_trust:
                 # New agent: low trust, but not zero
-                base_trust = 0.3 if total_tasks > 0 else 0.1
+                base_trust = base_trust_with_history if total_tasks > 0 else base_trust_no_history
                 logger.debug(
                     f"Agent {agent.name} has insufficient history ({total_tasks} tasks), using base trust: {base_trust}",
                     extra={"agent_id": str(agent_id), "total_tasks": total_tasks}
@@ -185,7 +302,7 @@ class AdaptiveApprovalService:
                 success_rate = 0.0
             
             # Calculate recent performance (last 30 days)
-            thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+            thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
             recent_traces = self.db.query(ExecutionTrace).filter(
                 and_(
                     ExecutionTrace.agent_id == agent_id,
@@ -201,11 +318,39 @@ class AdaptiveApprovalService:
             if recent_total > 0:
                 recent_performance = recent_successful / recent_total
             
+            # Get weights for trust score calculation from parameters
+            weight_success_rate = self.param_manager.get_parameter_value(
+                "weight_trust_success_rate",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.WEIGHT,
+                default=0.6
+            )
+            weight_experience = self.param_manager.get_parameter_value(
+                "weight_trust_experience",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.WEIGHT,
+                default=0.2
+            )
+            weight_recent_performance = self.param_manager.get_parameter_value(
+                "weight_trust_recent_performance",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.WEIGHT,
+                default=0.2
+            )
+            
+            # Get experience normalization factor
+            experience_normalization = self.param_manager.get_parameter_value(
+                "experience_normalization_factor",
+                ParameterCategory.APPROVAL,
+                SystemParameterType.COUNT_THRESHOLD,
+                default=100.0
+            )
+            
             # Weighted trust score
             trust_score = (
-                success_rate * 0.6 +  # Overall success rate (60%)
-                min(1.0, total_tasks / 100.0) * 0.2 +  # Experience factor (20%)
-                recent_performance * 0.2  # Recent performance (20%)
+                success_rate * weight_success_rate +  # Overall success rate
+                min(1.0, total_tasks / experience_normalization) * weight_experience +  # Experience factor
+                recent_performance * weight_recent_performance  # Recent performance
             )
             
             # Normalize to 0.0-1.0

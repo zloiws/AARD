@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from app.core.database import engine
 from sqlalchemy import text
 
+
 def apply_migration():
     """Apply the timezone migration"""
     migration_file = Path(__file__).parent / "migrate_timezone_datetime.sql"

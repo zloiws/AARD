@@ -2,17 +2,17 @@
 Base Tool class for AARD platform
 All tools should inherit from this class or implement the same interface
 """
-from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
-from uuid import UUID
-import time
 import importlib
 import sys
-from io import StringIO
+import time
 import traceback
+from abc import ABC, abstractmethod
+from io import StringIO
+from typing import Any, Dict, Optional
+from uuid import UUID
 
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
+from app.core.tracing import add_span_attributes, get_tracer
 from app.models.tool import Tool
 from app.services.tool_service import ToolService
 

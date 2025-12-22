@@ -1,16 +1,17 @@
 """
 API routes for agent A/B testing experiments
 """
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
 
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
+from app.models.agent_experiment import (AgentExperiment, ExperimentResult,
+                                         ExperimentStatus)
 from app.services.agent_experiment_service import AgentExperimentService
-from app.models.agent_experiment import AgentExperiment, ExperimentResult, ExperimentStatus
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 router = APIRouter(prefix="/api/experiments", tags=["experiments"])

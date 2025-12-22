@@ -1,6 +1,7 @@
 """Quick server check"""
-import httpx
 import sys
+
+import httpx
 
 try:
     response = httpx.get("http://localhost:8000/health", timeout=2.0)

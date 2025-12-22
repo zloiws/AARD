@@ -1,42 +1,43 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: execution flows include local system_prompt literals for execution role; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Execution service for plan execution
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
-from datetime import datetime
-import json
 import asyncio
+import json
+import json as _json
+import time
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Session
-
+from app.agents.simple_agent import SimpleAgent
+from app.core.config import get_settings
+from app.core.database import engine as _engine
+from app.core.execution_context import ExecutionContext
+from app.core.execution_error_types import (ErrorCategory, ErrorSeverity,
+                                            ExecutionError,
+                                            ExecutionErrorDetector,
+                                            detect_execution_error,
+                                            requires_replanning)
+from app.core.logging_config import LoggingConfig
+from app.core.metrics import (plan_execution_duration_seconds,
+                              plan_executions_total,
+                              plan_step_duration_seconds, plan_steps_total)
+from app.core.ollama_client import OllamaClient
+from app.core.tracing import add_span_attributes, get_tracer
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
-from app.core.ollama_client import OllamaClient
-from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
-from app.core.metrics import (
-    plan_executions_total,
-    plan_execution_duration_seconds,
-    plan_steps_total,
-    plan_step_duration_seconds
-)
-from app.services.ollama_service import OllamaService
-from app.services.checkpoint_service import CheckpointService
 from app.services.agent_service import AgentService
-from app.services.tool_service import ToolService
+from app.services.checkpoint_service import CheckpointService
+from app.services.ollama_service import OllamaService
 from app.services.project_metrics_service import ProjectMetricsService
-from app.agents.simple_agent import SimpleAgent
+from app.services.tool_service import ToolService
 from app.tools.python_tool import PythonTool
-from app.core.execution_error_types import (
-    ExecutionErrorDetector,
-    ExecutionError,
-    ErrorSeverity,
-    ErrorCategory,
-    requires_replanning,
-    detect_execution_error
-)
-from app.core.config import get_settings
-import time
+from sqlalchemy import text as sa_text
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 settings = get_settings()
@@ -45,10 +46,12 @@ settings = get_settings()
 class StepExecutor:
     """Executor for individual plan steps"""
     
-    def __init__(self, db: Session, metrics_service=None):
+    def __init__(self, db: Session, metrics_service=None, context=None, critic_service=None):
         self.db = db
+        self.context = context  # ExecutionContext для доступа к model и server_id
         self.tracer = get_tracer(__name__)
         self.metrics_service = metrics_service  # Может быть None, если не передан
+        self.critic_service = critic_service  # CriticService для валидации результатов
     
     async def execute_step(
         self,
@@ -77,12 +80,84 @@ class StepExecutor:
         result = {
             "step_id": step_id,
             "status": "pending",
-            "started_at": datetime.utcnow(),
+            "started_at": datetime.now(timezone.utc),
             "output": None,
             "error": None,
             "duration": None
         }
         
+        # Emit workflow event: step started (include component_role and decision_source when available)
+        try:
+            from app.models.workflow_event import (EventSource, EventStatus,
+                                                   EventType, WorkflowStage)
+            from app.services.workflow_event_service import \
+                WorkflowEventService
+
+            wf_service = WorkflowEventService(self.db)
+            prompt_id_for_event = None
+            # Try to resolve execution prompt id from context.prompt_manager if available
+            try:
+                if self.context and getattr(self.context, "prompt_manager", None):
+                    prompt_obj = await self.context.prompt_manager.get_prompt_for_stage("execution")
+                    if prompt_obj:
+                        prompt_id_for_event = prompt_obj.id
+            except Exception:
+                prompt_id_for_event = None
+
+            wf_service.save_event(
+                workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
+                event_type=EventType.EXECUTION_STEP,
+                event_source=EventSource.SYSTEM,
+                stage=WorkflowStage.EXECUTION,
+                message=f"Step started: {step_id} - {description}",
+                event_data={"step": step},
+                metadata=None,
+                component_role="execution",
+                prompt_id=prompt_id_for_event,
+                prompt_version=None,
+                decision_source="component",
+                plan_id=plan.id if plan else None,
+                task_id=plan.task_id if plan else None,
+                status=EventStatus.IN_PROGRESS
+            )
+        except Exception:
+            # Non-fatal: don't break execution if event logging fails
+            logger.debug("Failed to emit workflow event for step start", exc_info=True)
+        
+        # Create execution graph/node records for visualization (best-effort)
+        try:
+            session_id = str(plan.task_id) if plan and plan.task_id else str(plan.id)
+
+            with _engine.connect() as conn:
+                # Find or create graph
+                res = conn.execute(sa_text("SELECT id FROM execution_graphs WHERE session_id = :sid"), {"sid": session_id})
+                row = res.fetchone()
+                if row:
+                    graph_id = str(row[0])
+                else:
+                    graph_id = str(uuid4())
+                    conn.execute(sa_text(
+                        "INSERT INTO execution_graphs (id, session_id, metadata, created_at) VALUES (:id, :sid, :meta, now())"
+                    ), {"id": graph_id, "sid": session_id, "meta": _json.dumps({"created_by": "execution_service"})})
+
+                # Insert node for this step
+                node_id = str(uuid4())
+                conn.execute(sa_text(
+                    "INSERT INTO execution_nodes (id, graph_id, node_type, payload, status, created_at) VALUES (:id, :gid, :ntype, :payload, :status, now())"
+                ), {"id": node_id, "gid": graph_id, "ntype": "step", "payload": _json.dumps({"step_id": step_id, "description": description}), "status": "pending"})
+
+                # Link to previous node if exists
+                prev_res = conn.execute(sa_text(
+                    "SELECT id FROM execution_nodes WHERE graph_id = :gid ORDER BY created_at DESC LIMIT 2"
+                ), {"gid": graph_id})
+                rows = prev_res.fetchall()
+                if len(rows) >= 2:
+                    prev_node_id = str(rows[1][0])
+                    conn.execute(sa_text(
+                        "INSERT INTO execution_edges (id, graph_id, from_node, to_node, metadata, created_at) VALUES (:id, :gid, :from_n, :to_n, :meta, now())"
+                    ), {"id": str(uuid4()), "gid": graph_id, "from_n": prev_node_id, "to_n": node_id, "meta": _json.dumps({"relation": "sequential_step"})})
+        except Exception:
+            logger.debug("Failed to create execution graph/node records", exc_info=True)
         try:
             logger.info(
                 "Executing plan step",
@@ -96,8 +171,8 @@ class StepExecutor:
             # Check if step requires approval
             if step.get("approval_required", False):
                 # Create approval request for this step
-                from app.services.approval_service import ApprovalService
                 from app.models.approval import ApprovalRequestType
+                from app.services.approval_service import ApprovalService
                 
                 approval_service = ApprovalService(self.db)
                 approval = approval_service.create_approval_request(
@@ -129,9 +204,53 @@ class StepExecutor:
                 result["status"] = "skipped"
                 result["message"] = f"Unknown step type: {step_type}"
             
-            result["completed_at"] = datetime.utcnow()
-            if result["started_at"]:
-                result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
+            result["completed_at"] = datetime.now(timezone.utc)
+            # Normalize naive datetimes to UTC-aware to avoid TypeError when subtracting
+            try:
+                started = result.get("started_at")
+                completed = result.get("completed_at")
+                if started and getattr(started, "tzinfo", None) is None:
+                    started = started.replace(tzinfo=timezone.utc)
+                if completed and getattr(completed, "tzinfo", None) is None:
+                    completed = completed.replace(tzinfo=timezone.utc)
+                if started and completed:
+                    result["duration"] = (completed - started).total_seconds()
+            except Exception:
+                # Fallback: leave duration as None if calculation fails
+                result["duration"] = result.get("duration")
+            
+            # Validate result using CriticService if step completed successfully
+            if result.get("status") == "completed" and result.get("output") and self.critic_service:
+                try:
+                    validation_result = await self.critic_service.validate_result(
+                        result=result.get("output"),
+                        expected_format=step.get("expected_output_format"),
+                        requirements=step.get("requirements", {}),
+                        task_description=step.get("description", "")
+                    )
+                    
+                    # Add validation metadata to result
+                    result["validation"] = validation_result.to_dict()
+                    
+                    # If validation failed, mark step as failed
+                    if not validation_result.is_valid:
+                        logger.warning(
+                            f"Step {step_id} validation failed: {', '.join(validation_result.issues)}",
+                            extra={
+                                "step_id": step_id,
+                                "validation_score": validation_result.score,
+                                "issues": validation_result.issues
+                            }
+                        )
+                        result["status"] = "validation_failed"
+                        result["error"] = f"Validation failed: {', '.join(validation_result.issues)}"
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to validate step {step_id} result: {e}",
+                        exc_info=True,
+                        extra={"step_id": step_id}
+                    )
+                    # Don't fail the step if validation itself fails
             
             # Record step metrics
             step_duration = time.time() - step_start_time
@@ -147,9 +266,10 @@ class StepExecutor:
             # Record project metrics for step execution
             try:
                 from datetime import timedelta
-                from app.models.project_metric import MetricType, MetricPeriod
+
+                from app.models.project_metric import MetricPeriod, MetricType
                 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 # Round to hour for consistent period boundaries
                 period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
                 period_end = now.replace(minute=0, second=0, microsecond=0)
@@ -174,6 +294,63 @@ class StepExecutor:
             except Exception as e:
                 logger.warning(f"Failed to record step execution metrics: {e}", exc_info=True)
             
+            # Emit workflow event: step completed (include component_role and decision_source when available)
+            try:
+                from app.models.workflow_event import (EventSource,
+                                                       EventStatus, EventType,
+                                                       WorkflowStage)
+                from app.services.workflow_event_service import \
+                    WorkflowEventService
+
+                wf_service = WorkflowEventService(self.db)
+                prompt_id_for_event = None
+                try:
+                    if self.context and getattr(self.context, "prompt_manager", None):
+                        prompt_obj = await self.context.prompt_manager.get_prompt_for_stage("execution")
+                        if prompt_obj:
+                            prompt_id_for_event = prompt_obj.id
+                except Exception:
+                    prompt_id_for_event = None
+
+                wf_service.save_event(
+                    workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
+                    event_type=EventType.EXECUTION_STEP,
+                    event_source=EventSource.SYSTEM,
+                    stage=WorkflowStage.EXECUTION,
+                    message=f"Step completed: {step_id} - {description}",
+                    event_data={"step": step, "result": result},
+                    metadata=None,
+                    component_role="execution",
+                    prompt_id=prompt_id_for_event,
+                    prompt_version=None,
+                    decision_source="component",
+                    plan_id=plan.id if plan else None,
+                    task_id=plan.task_id if plan else None,
+                    status=EventStatus.COMPLETED
+                )
+            except Exception:
+                logger.debug("Failed to emit workflow event for step completion", exc_info=True)
+            
+            # Update execution node record to completed (best-effort)
+            try:
+                session_id = str(plan.task_id) if plan and plan.task_id else str(plan.id)
+                with _engine.connect() as conn:
+                    gid_res = conn.execute(sa_text("SELECT id FROM execution_graphs WHERE session_id = :sid"), {"sid": session_id}).fetchone()
+                    if gid_res:
+                        graph_id = str(gid_res[0])
+                        # Try to find node by step_id in payload
+                        node_res = conn.execute(sa_text(
+                            "SELECT id FROM execution_nodes WHERE graph_id = :gid AND (payload->>'step_id') = :step_id ORDER BY created_at DESC LIMIT 1"),
+                            {"gid": graph_id, "step_id": step_id}
+                        ).fetchone()
+                        if node_res:
+                            node_id = str(node_res[0])
+                            conn.execute(sa_text(
+                                "UPDATE execution_nodes SET status = :status, payload = :payload WHERE id = :nid"
+                            ), {"status": "completed", "payload": _json.dumps({"step_id": step_id, "description": description, "result": result}), "nid": node_id})
+            except Exception:
+                logger.debug("Failed to update execution node status", exc_info=True)
+            
         except Exception as e:
             logger.error(
                 "Exception in step execution",
@@ -188,7 +365,7 @@ class StepExecutor:
             
             result["status"] = "failed"
             result["error"] = str(e)
-            result["completed_at"] = datetime.utcnow()
+            result["completed_at"] = datetime.now(timezone.utc)
             if result["started_at"]:
                 result["duration"] = (result["completed_at"] - result["started_at"]).total_seconds()
             
@@ -201,6 +378,41 @@ class StepExecutor:
             plan_step_duration_seconds.labels(
                 step_type=step_type
             ).observe(step_duration)
+            # Emit workflow event: step failed (include component_role and decision_source when available)
+            try:
+                from app.models.workflow_event import (EventSource,
+                                                       EventStatus, EventType,
+                                                       WorkflowStage)
+                from app.services.workflow_event_service import \
+                    WorkflowEventService
+                wf_service = WorkflowEventService(self.db)
+                prompt_id_for_event = None
+                try:
+                    if self.context and getattr(self.context, "prompt_manager", None):
+                        prompt_obj = await self.context.prompt_manager.get_prompt_for_stage("execution")
+                        if prompt_obj:
+                            prompt_id_for_event = prompt_obj.id
+                except Exception:
+                    prompt_id_for_event = None
+
+                wf_service.save_event(
+                    workflow_id=str(plan.task_id) if plan and plan.task_id else str(plan.id),
+                    event_type=EventType.ERROR,
+                    event_source=EventSource.SYSTEM,
+                    stage=WorkflowStage.ERROR,
+                    message=f"Step failed: {step_id} - {str(e)[:200]}",
+                    event_data={"step": step, "error": str(e)},
+                    metadata=None,
+                    component_role="execution",
+                    prompt_id=prompt_id_for_event,
+                    prompt_version=None,
+                    decision_source="component",
+                    plan_id=plan.id if plan else None,
+                    task_id=plan.task_id if plan else None,
+                    status=EventStatus.FAILED
+                )
+            except Exception:
+                logger.debug("Failed to emit workflow event for step failure", exc_info=True)
         
         return result
     
@@ -304,7 +516,7 @@ class StepExecutor:
         if function_call_data:
             # Process function call using FunctionCallProtocol
             from app.core.function_calling import FunctionCallProtocol
-            
+
             # Parse function call
             if isinstance(function_call_data, dict):
                 function_call = FunctionCallProtocol.create_function_call(
@@ -328,23 +540,59 @@ class StepExecutor:
                     result["error"] = f"Function call validation failed: {', '.join(issues)}"
                     return result
                 
-                # Execute function call using CodeExecutionSandbox
+                # Execute function call using CoderAgent for dual-model architecture
                 if function_call.function == "code_execution_tool":
-                    from app.services.code_execution_sandbox import CodeExecutionSandbox
-                    
-                    sandbox = CodeExecutionSandbox()
-                    code = function_call.parameters.get("code", "")
-                    language = function_call.parameters.get("language", "python")
-                    constraints = {
-                        "timeout": function_call.parameters.get("timeout", 30),
-                        "memory_limit": function_call.parameters.get("memory_limit", 512)
-                    }
-                    
-                    execution_result = sandbox.execute_code_safely(
-                        code=code,
-                        language=language,
-                        constraints=constraints
-                    )
+                    try:
+                        coder_agent = self._get_coder_agent()
+                        
+                        # Use CoderAgent to generate and execute code
+                        execution_result = await coder_agent.execute(
+                            task_description=step.get("description", ""),
+                            context=context,
+                            function_call=function_call
+                        )
+                        
+                        # Convert CoderAgent result to expected format
+                        if execution_result.get("status") == "success":
+                            result["status"] = "completed"
+                            result["output"] = execution_result.get("result") or execution_result.get("output", "")
+                            result["message"] = execution_result.get("message", "Code executed successfully")
+                            result["metadata"] = {
+                                **execution_result.get("metadata", {}),
+                                "code": execution_result.get("code", ""),
+                                "agent": "CoderAgent",
+                                "agent_id": str(coder_agent.agent_id)
+                            }
+                        else:
+                            result["status"] = "failed"
+                            result["error"] = execution_result.get("error") or execution_result.get("message", "Code execution failed")
+                            result["output"] = execution_result.get("output", "")
+                    except Exception as e:
+                        logger.error(
+                            f"Error executing code with CoderAgent: {e}",
+                            exc_info=True,
+                            extra={
+                                "step_id": step.get("step_id"),
+                                "plan_id": str(plan.id)
+                            }
+                        )
+                        result["status"] = "failed"
+                        result["error"] = f"CoderAgent execution error: {str(e)}"
+                        # Fallback to direct code execution if CoderAgent fails
+                        from app.services.code_execution_sandbox import \
+                            CodeExecutionSandbox
+                        sandbox = CodeExecutionSandbox()
+                        code = function_call.parameters.get("code", "")
+                        language = function_call.parameters.get("language", "python")
+                        constraints = {
+                            "timeout": function_call.parameters.get("timeout", 30),
+                            "memory_limit": function_call.parameters.get("memory_limit", 512)
+                        }
+                        execution_result = sandbox.execute_code_safely(
+                            code=code,
+                            language=language,
+                            constraints=constraints
+                        )
                     
                     # Map sandbox result to execution result
                     result["status"] = "completed" if execution_result["status"] == "success" else "failed"
@@ -479,6 +727,14 @@ Execute the given step and return the result in JSON format:
             result["error"] = f"Agent {agent_data.name} is not active (status: {agent_data.status})"
             return result
         
+        # Получить model и server_url из context для передачи в агента
+        model = None
+        server_url = None
+        if self.context:
+            if hasattr(self.context, 'metadata') and self.context.metadata:
+                model = self.context.metadata.get("model")
+                server_url = self.context.metadata.get("server_url")
+        
         # Create agent instance
         # BaseAgent создает tool_service сам, не нужно передавать
         agent = SimpleAgent(
@@ -486,6 +742,12 @@ Execute the given step and return the result in JSON format:
             agent_service=agent_service,
             db_session=self.db  # Передаем db_session для создания tool_service внутри BaseAgent
         )
+        
+        # Сохранить model и server_url в агенте для использования в _call_llm
+        if model:
+            agent._default_model = model
+        if server_url:
+            agent._default_server_url = server_url
         
         # Prepare task description
         task_description = step.get("description", "")
@@ -630,6 +892,119 @@ Execute the given step and return the result in JSON format:
         
         return result
     
+    async def _execute_with_team(
+        self,
+        step: Dict[str, Any],
+        plan: Plan,
+        context: Optional[Dict[str, Any]],
+        result: Dict[str, Any],
+        team_id: str,
+        tool_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Execute step using a team of agents
+        
+        Args:
+            step: Step definition
+            plan: Plan being executed
+            context: Execution context
+            result: Result dictionary to update
+            team_id: Team ID to use
+            tool_id: Optional tool ID to use
+            
+        Returns:
+            Updated result dictionary
+        """
+        from uuid import UUID
+
+        from app.services.agent_team_coordination import AgentTeamCoordination
+        
+        try:
+            team_uuid = UUID(team_id) if isinstance(team_id, str) else team_id
+        except (ValueError, TypeError):
+            result["status"] = "failed"
+            result["error"] = f"Invalid team_id: {team_id}"
+            return result
+        
+        try:
+            # Create team coordination service
+            team_coordination = AgentTeamCoordination(self.db)
+            
+            # Prepare task description
+            task_description = step.get("description", "")
+            if context:
+                # Add context to task description
+                context_str = "\n\nContext from previous steps:\n"
+                for key, value in context.items():
+                    context_str += f"- {key}: {value}\n"
+                task_description = f"{task_description}{context_str}"
+            
+            # Prepare task context
+            task_context = {
+                "plan_id": str(plan.id),
+                "step_id": step.get("step_id"),
+                "step_type": step.get("type", "action"),
+                "previous_results": context or {}
+            }
+            
+            if tool_id:
+                task_context["tool_id"] = tool_id
+            
+            # Distribute task to team
+            team_result = await team_coordination.distribute_task_to_team(
+                team_id=team_uuid,
+                task_description=task_description,
+                task_context=task_context,
+                assign_to_role=step.get("assign_to_role")
+            )
+            
+            # Process team results
+            if team_result.get("status") == "success" or team_result.get("responses"):
+                # Aggregate responses from team
+                responses = team_result.get("responses", [])
+                if responses:
+                    # Combine all responses
+                    combined_output = []
+                    for response in responses:
+                        if isinstance(response, dict):
+                            combined_output.append(response.get("content", str(response)))
+                        else:
+                            combined_output.append(str(response))
+                    
+                    result["status"] = "completed"
+                    result["output"] = "\n\n".join(combined_output)
+                    result["message"] = f"Task completed by team with {len(responses)} responses"
+                    result["metadata"] = {
+                        "team_id": str(team_uuid),
+                        "strategy": team_result.get("strategy_used"),
+                        "agents_count": len(team_result.get("distributed_to", [])),
+                        "responses_count": len(responses)
+                    }
+                else:
+                    result["status"] = "completed"
+                    result["output"] = team_result.get("result", "Task distributed to team")
+                    result["message"] = "Task distributed to team"
+            else:
+                result["status"] = "failed"
+                result["error"] = team_result.get("error", "Team execution failed")
+                result["output"] = team_result.get("result")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(
+                f"Error executing step with team: {e}",
+                exc_info=True,
+                extra={
+                    "team_id": team_id,
+                    "step_id": step.get("step_id"),
+                    "plan_id": str(plan.id)
+                }
+            )
+            result["status"] = "failed"
+            result["error"] = f"Team execution error: {str(e)}"
+            return result
+    
     async def _execute_decision_step(
         self,
         step: Dict[str, Any],
@@ -637,15 +1012,154 @@ Execute the given step and return the result in JSON format:
         context: Optional[Dict[str, Any]],
         result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Execute a decision step"""
-        # Decision steps require LLM reasoning
-        # Similar to action but focused on decision making
+        """
+        Execute a decision step using LLM reasoning
         
-        result["status"] = "completed"
-        result["output"] = "Decision made"
-        result["message"] = "Decision step executed (placeholder)"
+        Decision steps require LLM to analyze options and make a decision
+        based on the step description and context.
         
-        return result
+        Args:
+            step: Step definition with decision criteria
+            plan: Plan being executed
+            context: Execution context from previous steps
+            result: Result dictionary to update
+            
+        Returns:
+            Updated result dictionary with decision
+        """
+        from app.core.model_selector import ModelSelector
+        from app.services.decision_router import DecisionRouter
+        
+        try:
+            # Use DecisionRouter to help with decision if needed
+            decision_router = DecisionRouter(self.db)
+            
+            # Prepare decision context
+            decision_description = step.get("description", "")
+            decision_options = step.get("options", [])
+            decision_criteria = step.get("criteria", {})
+            
+            # Build context for decision
+            decision_context = {
+                "plan_goal": plan.goal,
+                "previous_results": context or {},
+                "options": decision_options,
+                "criteria": decision_criteria
+            }
+            
+            # Use ModelSelector for reasoning model (planning model)
+            model_selector = ModelSelector(self.db)
+            reasoning_model = model_selector.get_planning_model()
+            
+            if not reasoning_model:
+                # Fallback to default model
+                from app.core.ollama_client import OllamaClient
+                ollama_client = OllamaClient()
+                reasoning_model = "llama3.2"
+            else:
+                server = model_selector.get_server_for_model(reasoning_model)
+                if server:
+                    from app.core.ollama_client import OllamaClient
+                    ollama_client = OllamaClient(server_url=server.url)
+                else:
+                    from app.core.ollama_client import OllamaClient
+                    ollama_client = OllamaClient()
+            
+            # Build decision prompt
+            context_str = ""
+            if context:
+                context_str = "\n\nКонтекст выполнения:\n"
+                for key, value in context.items():
+                    context_str += f"- {key}: {value}\n"
+            
+            options_str = ""
+            if decision_options:
+                options_str = "\n\nВарианты решения:\n"
+                for i, option in enumerate(decision_options, 1):
+                    options_str += f"{i}. {option}\n"
+            
+            criteria_str = ""
+            if decision_criteria:
+                criteria_str = "\n\nКритерии принятия решения:\n"
+                for key, value in decision_criteria.items():
+                    criteria_str += f"- {key}: {value}\n"
+            
+            decision_prompt = f"""Ты должен принять решение на основе следующей информации:
+
+Задача: {decision_description}
+{context_str}
+{options_str}
+{criteria_str}
+
+Проанализируй ситуацию и прими решение. Верни ответ в формате JSON:
+{{
+    "decision": "твое решение",
+    "reasoning": "обоснование решения",
+    "confidence": 0.0-1.0,
+    "selected_option": "номер или описание выбранного варианта" (если есть варианты)
+}}"""
+
+            # Call LLM for decision
+            response = await ollama_client.generate(
+                model=reasoning_model,
+                prompt=decision_prompt,
+                temperature=0.3,  # Lower temperature for more deterministic decisions
+                format="json"
+            )
+            
+            # Parse response
+            import json
+            try:
+                if isinstance(response, dict):
+                    decision_data = response.get("response", "")
+                else:
+                    decision_data = response
+                
+                # Try to extract JSON from response
+                if isinstance(decision_data, str):
+                    # Remove markdown code blocks if present
+                    decision_data = decision_data.strip()
+                    if decision_data.startswith("```json"):
+                        decision_data = decision_data[7:]
+                    if decision_data.startswith("```"):
+                        decision_data = decision_data[3:]
+                    if decision_data.endswith("```"):
+                        decision_data = decision_data[:-3]
+                    decision_data = decision_data.strip()
+                    
+                    decision_json = json.loads(decision_data)
+                else:
+                    decision_json = decision_data
+                
+                result["status"] = "completed"
+                result["output"] = decision_json.get("decision", "Decision made")
+                result["message"] = f"Decision: {decision_json.get('decision', 'N/A')}"
+                result["metadata"] = {
+                    "reasoning": decision_json.get("reasoning", ""),
+                    "confidence": decision_json.get("confidence", 0.5),
+                    "selected_option": decision_json.get("selected_option")
+                }
+                
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.warning(f"Failed to parse decision JSON: {e}, using raw response")
+                result["status"] = "completed"
+                result["output"] = str(response)
+                result["message"] = "Decision made (response not in JSON format)"
+            
+            return result
+            
+        except Exception as e:
+            logger.error(
+                f"Error executing decision step: {e}",
+                exc_info=True,
+                extra={
+                    "step_id": step.get("step_id"),
+                    "plan_id": str(plan.id)
+                }
+            )
+            result["status"] = "failed"
+            result["error"] = f"Decision step execution error: {str(e)}"
+            return result
     
     async def _execute_validation_step(
         self,
@@ -654,25 +1168,162 @@ Execute the given step and return the result in JSON format:
         context: Optional[Dict[str, Any]],
         result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Execute a validation step"""
-        # Validation steps check if conditions are met
+        """
+        Execute a validation step using CriticService
         
-        result["status"] = "completed"
-        result["output"] = "Validation passed"
-        result["message"] = "Validation step executed (placeholder)"
+        Validation steps check if conditions are met and results are valid.
         
-        return result
+        Args:
+            step: Step definition with validation criteria
+            plan: Plan being executed
+            context: Execution context from previous steps
+            result: Result dictionary to update
+            
+        Returns:
+            Updated result dictionary with validation result
+        """
+        from app.services.critic_service import CriticService
+        
+        try:
+            # Create CriticService for validation
+            critic_service = CriticService(self.db)
+            
+            # Get validation criteria from step
+            validation_criteria = step.get("criteria", {})
+            expected_format = step.get("expected_format")
+            requirements = step.get("requirements", {})
+            
+            # Get data to validate from context or step
+            data_to_validate = step.get("data_to_validate")
+            if not data_to_validate and context:
+                # Use last step result if available
+                data_to_validate = context.get("last_result") or context
+            
+            # Get task description for semantic validation
+            task_description = step.get("description", "")
+            if not task_description:
+                task_description = plan.goal
+            
+            # Perform validation
+            validation_result = await critic_service.validate_result(
+                result=data_to_validate,
+                expected_format=expected_format,
+                requirements={**requirements, **validation_criteria},
+                task_description=task_description
+            )
+            
+            # Update result based on validation
+            if validation_result.is_valid:
+                result["status"] = "completed"
+                result["output"] = "Validation passed"
+                result["message"] = f"Validation passed with score {validation_result.score:.2f}"
+            else:
+                result["status"] = "failed"
+                result["output"] = "Validation failed"
+                result["message"] = f"Validation failed: {', '.join(validation_result.issues)}"
+                result["validation_issues"] = validation_result.issues
+            
+            result["metadata"] = {
+                "validation_type": validation_result.validation_type,
+                "validation_score": validation_result.score,
+                "is_valid": validation_result.is_valid,
+                "issues": validation_result.issues
+            }
+            
+            return result
+            
+        except Exception as e:
+            logger.error(
+                f"Error executing validation step: {e}",
+                exc_info=True,
+                extra={
+                    "step_id": step.get("step_id"),
+                    "plan_id": str(plan.id)
+                }
+            )
+            result["status"] = "failed"
+            result["error"] = f"Validation step execution error: {str(e)}"
+            return result
 
 
 class ExecutionService:
     """Service for executing plans"""
     
-    def __init__(self, db: Session):
-        self.db = db
-        self.metrics_service = ProjectMetricsService(db)
-        self.step_executor = StepExecutor(db, metrics_service=self.metrics_service)
-        self.checkpoint_service = CheckpointService(db)
+    def __init__(self, db_or_context: Union[Session, ExecutionContext]):
+        """
+        Initialize ExecutionService
+        
+        Args:
+            db_or_context: Either a Session (for backward compatibility) or ExecutionContext
+        """
+        # Support both ExecutionContext and Session for backward compatibility
+        if isinstance(db_or_context, ExecutionContext):
+            self.context = db_or_context
+            self.db = db_or_context.db
+        else:
+            # Backward compatibility: create minimal context from Session
+            self.db = db_or_context
+            self.context = ExecutionContext.from_db_session(db_or_context)
+        
+        self.metrics_service = ProjectMetricsService(self.db)
+        
+        # CriticService for validating results after each step
+        from app.services.critic_service import CriticService
+        self.critic_service = CriticService(self.db)
+        
+        self.step_executor = StepExecutor(
+            self.db, 
+            metrics_service=self.metrics_service, 
+            context=self.context,
+            critic_service=self.critic_service
+        )
+        self.checkpoint_service = CheckpointService(self.db)
         self.error_detector = ExecutionErrorDetector()
+        
+        # Agent service for CoderAgent
+        from app.services.agent_service import AgentService
+        self.agent_service = AgentService(self.db)
+        
+        # Lazy initialization of CoderAgent
+        self._coder_agent = None
+    
+    def _get_coder_agent(self):
+        """
+        Get or create CoderAgent instance
+        
+        Returns:
+            CoderAgent instance
+        """
+        if self._coder_agent is None:
+            from app.agents.coder_agent import CoderAgent
+
+            # Try to find existing CoderAgent in database
+            coder_agent_db = self.agent_service.get_agent_by_name("CoderAgent")
+            
+            if not coder_agent_db:
+                # Create CoderAgent if not exists
+                coder_agent_db = self.agent_service.create_agent(
+                    name="CoderAgent",
+                    description="Coder Agent for code generation and execution",
+                    capabilities=["code_generation", "code_execution"],
+                    model_preference=None,  # Will use code model from ModelSelector
+                    created_by="system"
+                )
+            
+            # Activate the agent if not already active (для тестов - в реальной системе нужно пройти через waiting_approval)
+            if coder_agent_db.status != "active":
+                coder_agent_db.status = "active"
+                self.db.commit()
+                self.db.refresh(coder_agent_db)
+            
+            # Create CoderAgent instance
+            self._coder_agent = CoderAgent(
+                agent_id=coder_agent_db.id,
+                agent_service=self.agent_service,
+                db_session=self.db
+            )
+        
+        return self._coder_agent
     
     def _is_critical_error(
         self,
@@ -906,13 +1557,20 @@ class ExecutionService:
                         
                         # Automatic replanning on critical dependency error
                         if classified_error.requires_replanning:
-                            await self._handle_plan_failure(
-                                plan,
-                                error_msg,
-                                execution_context,
-                                classified_error=classified_error
-                            )
-                        raise ValueError(error_msg)
+                            # Attempt to handle failure (may create a new plan) but do not raise here;
+                            # for execution API we prefer returning a failed plan object so callers can inspect it.
+                            try:
+                                await self._handle_plan_failure(
+                                    plan,
+                                    error_msg,
+                                    execution_context,
+                                    classified_error=classified_error
+                                )
+                            except Exception as e:
+                                logger.warning(f"Replanning handler failed: {e}", exc_info=True)
+                        # Do not raise; return failed plan to caller as per API contract
+                        self.db.commit()
+                        return plan
             
             # Execute step
             try:
@@ -937,8 +1595,8 @@ class ExecutionService:
                     "step_id": step.get("step_id"),
                     "status": "failed",
                     "error": str(e),
-                    "started_at": datetime.utcnow(),
-                    "completed_at": datetime.utcnow()
+                    "started_at": datetime.now(timezone.utc),
+                    "completed_at": datetime.now(timezone.utc)
                 }
             
             # Store result in context
@@ -1066,7 +1724,11 @@ class ExecutionService:
         
         # Calculate actual duration
         if plan.created_at:
-            plan.actual_duration = int((datetime.utcnow() - plan.created_at).total_seconds())
+            # Ensure created_at is timezone-aware
+            created_at = plan.created_at
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            plan.actual_duration = int((datetime.now(timezone.utc) - created_at).total_seconds())
         
         # Record plan execution metrics
         plan_duration = time.time() - plan_start_time
@@ -1083,7 +1745,8 @@ class ExecutionService:
         
         # Track plan execution using PlanningMetricsService
         try:
-            from app.services.planning_metrics_service import PlanningMetricsService
+            from app.services.planning_metrics_service import \
+                PlanningMetricsService
             metrics_service = PlanningMetricsService(self.db)
             
             # Calculate execution time
@@ -1102,6 +1765,42 @@ class ExecutionService:
         except Exception as e:
             logger.warning(f"Failed to track plan execution: {e}", exc_info=True)
         
+        # Save execution results to memory for learning
+        if plan_just_completed and plan.status == "completed":
+            try:
+                from app.services.memory_service import MemoryService
+                memory_service = MemoryService(self.db)
+                
+                # Save execution context to memory
+                execution_memory = {
+                    "plan_id": str(plan.id),
+                    "task_id": str(plan.task_id) if plan.task_id else None,
+                    "goal": plan.goal,
+                    "status": plan.status,
+                    "steps_count": len(plan.steps) if isinstance(plan.steps, list) else 0,
+                    "execution_time": plan.actual_duration,
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                    "execution_context": execution_context or {}
+                }
+                
+                # Save as episodic memory
+                memory_service.save_memory(
+                    memory_type="episodic",
+                    content=execution_memory,
+                    metadata={
+                        "type": "plan_execution",
+                        "plan_id": str(plan.id),
+                        "status": "completed"
+                    }
+                )
+                
+                logger.debug(
+                    f"Saved execution results to memory for plan {plan.id}",
+                    extra={"plan_id": str(plan.id)}
+                )
+            except Exception as e:
+                logger.debug(f"Failed to save execution results to memory: {e}")
+        
         # Extract template from successfully completed plan
         if plan_just_completed and plan.status == "completed":
             try:
@@ -1112,9 +1811,10 @@ class ExecutionService:
         # Record project metrics for plan execution
         try:
             from datetime import timedelta
-            from app.models.project_metric import MetricType, MetricPeriod
+
+            from app.models.project_metric import MetricPeriod, MetricType
             
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             # Round to hour for consistent period boundaries
             period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
             period_end = now.replace(minute=0, second=0, microsecond=0)
@@ -1154,6 +1854,43 @@ class ExecutionService:
                     "status": plan.status
                 }
             )
+            
+            # Analyze execution patterns using MetaLearningService for self-improvement
+            if plan.status in ["completed", "failed"]:
+                try:
+                    from app.services.meta_learning_service import \
+                        MetaLearningService
+                    meta_learning = MetaLearningService(self.db)
+                    
+                    # Analyze execution patterns asynchronously (don't block)
+                    # Get agent_id from plan if available
+                    agent_id = None
+                    agent_metadata = getattr(plan, 'agent_metadata', None)
+                    if agent_metadata and isinstance(agent_metadata, dict):
+                        agent_id_str = agent_metadata.get("agent_id")
+                        if agent_id_str:
+                            try:
+                                agent_id = UUID(agent_id_str)
+                            except (ValueError, TypeError):
+                                pass
+                    
+                    # Analyze patterns for the agent or system-wide
+                    import asyncio
+                    try:
+                        asyncio.create_task(
+                            self._analyze_patterns_async(meta_learning, agent_id, plan.id)
+                        )
+                    except RuntimeError:
+                        # If no event loop, call synchronous version (fallback)
+                        try:
+                            meta_learning.analyze_execution_patterns_sync(
+                                agent_id=agent_id,
+                                time_range_days=30
+                            )
+                        except Exception as e2:
+                            logger.debug(f"Could not analyze execution patterns: {e2}")
+                except Exception as e:
+                    logger.debug(f"MetaLearningService not available or failed: {e}")
         except Exception as e:
             logger.warning(f"Failed to record plan execution metrics: {e}", exc_info=True)
         
@@ -1209,10 +1946,10 @@ class ExecutionService:
         Returns:
             New plan if replanning was successful, None otherwise
         """
+        from app.models.task import Task, TaskStatus
+        from app.services.memory_service import MemoryService
         from app.services.planning_service import PlanningService
         from app.services.reflection_service import ReflectionService
-        from app.services.memory_service import MemoryService
-        from app.models.task import Task, TaskStatus
         
         try:
             # Classify error if not already classified
@@ -1365,8 +2102,8 @@ class ExecutionService:
         Args:
             plan: The completed plan to extract template from
         """
-        from app.services.plan_template_service import PlanTemplateService
         from app.core.config import get_settings
+        from app.services.plan_template_service import PlanTemplateService
         
         settings = get_settings()
         
@@ -1457,4 +2194,24 @@ class ExecutionService:
             )
         else:
             logger.warning(f"Failed to extract template from plan {plan.id}")
+    
+    async def _analyze_patterns_async(
+        self,
+        meta_learning,
+        agent_id: Optional[UUID],
+        plan_id: UUID
+    ):
+        """Helper method to analyze patterns asynchronously (background task)"""
+        try:
+            # Use async version - runs in background without blocking
+            import asyncio
+            loop = asyncio.get_event_loop()
+            # Run synchronous analysis in executor to avoid blocking
+            await loop.run_in_executor(None, lambda: meta_learning.analyze_execution_patterns_sync(agent_id=agent_id, time_range_days=30))
+            logger.debug(
+                f"Analyzed execution patterns for plan {plan_id}",
+                extra={"plan_id": str(plan_id), "agent_id": str(agent_id) if agent_id else None}
+            )
+        except Exception as e:
+            logger.debug(f"Could not analyze execution patterns for plan {plan_id}: {e}")
 

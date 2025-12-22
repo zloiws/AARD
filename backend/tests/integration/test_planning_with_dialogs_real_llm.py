@@ -1,25 +1,26 @@
 """
 Реальный тест планирования с диалогами агентов через LLM
 """
-import pytest
 import asyncio
 import sys
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
 # Настройка кодировки
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-from app.services.planning_service import PlanningService
-from app.services.agent_service import AgentService
-from app.services.agent_dialog_service import AgentDialogService
-from app.services.ollama_service import OllamaService
 from app.core.model_selector import ModelSelector
 from app.models.agent import Agent, AgentStatus
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan, PlanStatus
 from app.models.agent_conversation import ConversationStatus
+from app.models.plan import Plan, PlanStatus
+from app.models.task import Task, TaskStatus
+from app.services.agent_dialog_service import AgentDialogService
+from app.services.agent_service import AgentService
+from app.services.ollama_service import OllamaService
+from app.services.planning_service import PlanningService
 from app.services.planning_service_dialog_integration import is_complex_task
 
 

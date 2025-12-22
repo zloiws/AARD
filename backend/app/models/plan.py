@@ -1,16 +1,17 @@
 """
 Plan model for task planning
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Enum as SQLEnum, JSON
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import relationship
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import JSON, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class PlanStatus(str, Enum):
@@ -45,13 +46,15 @@ class Plan(Base):
     estimated_duration = Column(Integer, nullable=True)  # seconds
     actual_duration = Column(Integer, nullable=True)  # seconds
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     approved_at = Column(DateTime, nullable=True)
     
     # Relationships
     task = relationship("Task", backref="plans")
     approval_request = relationship("ApprovalRequest", back_populates="plan", uselist=False, overlaps="approval_requests")
     traces = relationship("ExecutionTrace", back_populates="plan", foreign_keys="ExecutionTrace.plan_id")
+    # Optional agent metadata (agent id, preferences) stored as JSON
+    agent_metadata = Column(JSON, nullable=True)
     
     def __repr__(self):
         return f"<Plan(id={self.id}, task_id={self.task_id}, version={self.version}, status={self.status})>"

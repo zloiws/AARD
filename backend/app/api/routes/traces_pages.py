@@ -1,18 +1,18 @@
 """
 Page routes for traces web interface
 """
-from typing import Optional
 from datetime import datetime, timedelta
+from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Request, Depends, Query, HTTPException
-from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import func
 
-from app.core.templates import templates
 from app.core.database import get_db
-from app.models.trace import ExecutionTrace
 from app.core.logging_config import LoggingConfig
+from app.core.templates import templates
+from app.models.trace import ExecutionTrace
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

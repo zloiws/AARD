@@ -8,12 +8,12 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
-from app.models.ollama_server import OllamaServer
-from app.models.ollama_model import OllamaModel
-from app.services.ollama_service import OllamaService
 from app.core.logging_config import LoggingConfig
+from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
+from app.services.ollama_service import OllamaService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

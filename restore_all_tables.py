@@ -1,8 +1,8 @@
 """
 Automatically restore all missing tables preserving existing data
 """
-import sys
 import os
+import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -11,13 +11,14 @@ os.chdir(BACKEND_DIR)
 sys.path.insert(0, str(BACKEND_DIR))
 
 from dotenv import load_dotenv
+
 env_file = PROJECT_ROOT / ".env"
 if env_file.exists():
     load_dotenv(env_file, override=True)
 
-from sqlalchemy import inspect
 from app.core.database import Base, engine
 from app.models import *  # Import all models
+from sqlalchemy import inspect
 
 print("=" * 70)
 print(" Restoring All Missing Tables")

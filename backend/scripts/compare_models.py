@@ -1,19 +1,19 @@
 """
 Script to compare two models using benchmark suite
 """
+import asyncio
 import sys
 from pathlib import Path
-import asyncio
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from app.core.database import SessionLocal
+from app.models.benchmark_result import BenchmarkResult
 from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
 from app.services.benchmark_service import BenchmarkService
-from app.models.benchmark_result import BenchmarkResult
 
 
 def find_model_by_name(db, server_name, model_name):

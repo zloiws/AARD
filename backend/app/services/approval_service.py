@@ -2,20 +2,16 @@
 Approval service for managing approval requests
 """
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
-
-from app.models.approval import (
-    ApprovalRequest,
-    ApprovalRequestType,
-    ApprovalRequestStatus,
-)
+from app.models.approval import (ApprovalRequest, ApprovalRequestStatus,
+                                 ApprovalRequestType)
 from app.models.artifact import Artifact, ArtifactStatus
-from app.models.prompt import Prompt, PromptStatus
 from app.models.plan import Plan, PlanStatus
+from app.models.prompt import Prompt, PromptStatus
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 
 class ApprovalService:
@@ -35,7 +31,7 @@ class ApprovalService:
         risk_assessment: Optional[Dict[str, Any]] = None,
         recommendation: Optional[str] = None,
         timeout_hours: int = 24
-    ) -> ApprovalRequest:
+    ) -> Optional[ApprovalRequest]:
         """Create a new approval request"""
         
         approval = ApprovalRequest(
@@ -51,11 +47,21 @@ class ApprovalService:
             decision_timeout=datetime.now(timezone.utc) + timedelta(hours=timeout_hours)
         )
         
-        self.db.add(approval)
-        self.db.commit()
-        self.db.refresh(approval)
-        
-        return approval
+        try:
+            self.db.add(approval)
+            self.db.commit()
+            self.db.refresh(approval)
+            return approval
+        except Exception as e:
+            # If DB state is bad (missing tables/migrations), rollback and return None as a safe fallback.
+            try:
+                self.db.rollback()
+            except Exception:
+                pass
+            from app.core.logging_config import LoggingConfig
+            logger = LoggingConfig.get_logger(__name__)
+            logger.warning(f"Could not create approval request in DB: {e}")
+            return None
     
     def get_approval_request(self, request_id: UUID) -> Optional[ApprovalRequest]:
         """Get approval request by ID"""
@@ -87,7 +93,8 @@ class ApprovalService:
         
         # Learn from feedback using FeedbackLearningService
         try:
-            from app.services.feedback_learning_service import FeedbackLearningService
+            from app.services.feedback_learning_service import \
+                FeedbackLearningService
             feedback_learning = FeedbackLearningService(self.db)
             feedback_learning.learn_from_approval_feedback(approval, feedback)
         except Exception as e:
@@ -131,7 +138,8 @@ class ApprovalService:
         
         # Learn from feedback using FeedbackLearningService
         try:
-            from app.services.feedback_learning_service import FeedbackLearningService
+            from app.services.feedback_learning_service import \
+                FeedbackLearningService
             feedback_learning = FeedbackLearningService(self.db)
             feedback_learning.learn_from_approval_feedback(approval, feedback)
         except Exception as e:

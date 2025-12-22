@@ -2,16 +2,15 @@
 Plan Evaluation Service for A/B testing
 Evaluates plans based on multiple criteria and ranks them
 """
-from typing import Dict, Any, List, Optional
-from uuid import UUID
 from datetime import datetime
-
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-from app.models.plan import Plan
 from app.models.approval import ApprovalRequest, ApprovalRequestType
+from app.models.plan import Plan
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

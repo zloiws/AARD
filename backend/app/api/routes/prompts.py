@@ -2,21 +2,21 @@
 API routes for prompts
 """
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from app.models.user import User
+
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
-
+from app.core.auth import get_current_user_optional, get_current_user_required
 from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
-from app.core.auth import get_current_user_optional
-from app.models.prompt import Prompt, PromptType, PromptStatus
+from app.models.prompt import Prompt, PromptStatus, PromptType
 from app.services.prompt_service import PromptService
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/prompts", tags=["prompts"])
 logger = LoggingConfig.get_logger(__name__)
@@ -57,6 +57,35 @@ class UpdatePromptRequest(BaseModel):
 class PromptVersionRequest(BaseModel):
     """Request model for creating prompt version"""
     prompt_text: str = Field(..., description="New prompt text for the version")
+
+
+class AssignmentRequest(BaseModel):
+    model_id: Optional[UUID] = None
+    server_id: Optional[UUID] = None
+    task_type: Optional[str] = None
+    component_role: Optional[str] = None
+    stage: Optional[str] = None
+    scope: Optional[str] = "global"
+    agent_id: Optional[UUID] = None
+    experiment_id: Optional[UUID] = None
+
+
+class AssignmentResponse(BaseModel):
+    id: UUID
+    prompt_id: UUID
+    model_id: Optional[UUID] = None
+    server_id: Optional[UUID] = None
+    task_type: Optional[str] = None
+    component_role: Optional[str] = None
+    stage: Optional[str] = None
+    scope: Optional[str] = None
+    agent_id: Optional[UUID] = None
+    experiment_id: Optional[UUID] = None
+    created_at: datetime
+    created_by: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 
 @router.get("/", response_model=List[PromptResponse])
@@ -355,3 +384,71 @@ async def delete_prompt(
     
     return {"status": "deleted", "prompt_id": str(prompt_id)}
 
+
+@router.post("/{prompt_id}/assign", response_model=AssignmentResponse)
+async def assign_prompt(
+    prompt_id: UUID,
+    request: AssignmentRequest,
+    db: Session = Depends(get_db),
+    current_user: "User" = Depends(get_current_user_required),
+):
+    """Assign prompt to model/server/task_type"""
+    svc = PromptService(db)
+    created_by = current_user.username if current_user else "system"
+    try:
+        assignment = svc.assign_prompt_to_model_or_server(
+            prompt_id=prompt_id,
+            model_id=request.model_id,
+            server_id=request.server_id,
+            task_type=request.task_type,
+            component_role=request.component_role,
+            stage=request.stage,
+            scope=request.scope or "global",
+            agent_id=request.agent_id,
+            experiment_id=request.experiment_id,
+            created_by=created_by,
+        )
+        return assignment
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{prompt_id}/assignments", response_model=List[AssignmentResponse])
+async def list_prompt_assignments(
+    prompt_id: UUID,
+    db: Session = Depends(get_db)
+):
+    svc = PromptService(db)
+    assignments = svc.list_assignments(prompt_id=prompt_id)
+    return assignments
+
+
+@router.get("/assignments")
+async def list_assignments(
+    model_id: Optional[UUID] = None,
+    server_id: Optional[UUID] = None,
+    db: Session = Depends(get_db)
+):
+    svc = PromptService(db)
+    assignments = svc.list_assignments(model_id=model_id, server_id=server_id)
+    return [a.to_dict() for a in assignments]
+
+
+@router.delete("/assignments/{assignment_id}", status_code=204)
+async def delete_assignment(
+    assignment_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: "User" = Depends(get_current_user_required),
+):
+    """Delete a prompt assignment by id"""
+    from app.models.prompt_assignment import PromptAssignment
+    assignment = db.query(PromptAssignment).filter(PromptAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
+    try:
+        db.delete(assignment)
+        db.commit()
+        return
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

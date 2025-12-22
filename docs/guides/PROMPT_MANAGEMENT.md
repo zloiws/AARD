@@ -42,6 +42,56 @@
 - `usage_count` - количество использований
 - `improvement_history` - история улучшений (JSON)
 
+## Интеграция с RequestOrchestrator
+
+### PromptManager
+
+**Расположение:** `backend/app/core/prompt_manager.py`
+
+**Функционал:**
+- Управление жизненным циклом промптов в рамках запроса
+- Получение активных промптов для каждого этапа (planning, execution, reflection)
+- Отслеживание использования промптов
+- Автоматическая запись метрик через PromptService
+- Автоматический анализ производительности
+- Автоматическое создание улучшенных версий при низкой производительности
+- A/B тестирование версий (использование TESTING версий параллельно с ACTIVE)
+
+**Использование:**
+```python
+from app.core.prompt_manager import PromptManager
+from app.core.execution_context import ExecutionContext
+
+context = ExecutionContext.from_db_session(db)
+prompt_manager = PromptManager(context)
+context.set_prompt_manager(prompt_manager)
+
+# Получить промпт для этапа
+prompt = await prompt_manager.get_prompt_for_stage("planning")
+
+# Записать использование
+await prompt_manager.record_prompt_usage(
+    prompt_id=prompt.id,
+    success=True,
+    execution_time_ms=100.0,
+    stage="planning"
+)
+
+# Анализировать и улучшить промпты
+results = await prompt_manager.analyze_and_improve_prompts()
+```
+
+**Автоматическое улучшение:**
+- После каждого использования промпта записываются метрики
+- После завершения запроса автоматически анализируется производительность
+- Если success_rate < 0.5 или execution_time > 10000ms, создается улучшенная версия
+- Улучшенные версии получают статус TESTING и тестируются параллельно с ACTIVE
+
+**A/B тестирование:**
+- По умолчанию 10% запросов используют TESTING версии
+- Метрики сравниваются автоматически
+- При лучших показателях TESTING версия может быть переведена в ACTIVE
+
 ## Использование
 
 ### Создание промпта

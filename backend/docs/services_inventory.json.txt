@@ -1,0 +1,339 @@
+{
+  "nodes": [
+    "app.__init__",
+    "app.agents",
+    "app.api",
+    "app.components",
+    "app.core",
+    "app.main",
+    "app.memory",
+    "app.models",
+    "app.ops",
+    "app.planning",
+    "app.registry",
+    "app.security",
+    "app.services",
+    "app.tools",
+    "app.utils"
+  ],
+  "edges": [
+    {
+      "source": "app.agents",
+      "target": "app.core",
+      "weight": 14,
+      "examples": [
+        "app\\agents\\base_agent.py",
+        "app\\agents\\base_agent.py",
+        "app\\agents\\base_agent.py"
+      ]
+    },
+    {
+      "source": "app.agents",
+      "target": "app.models",
+      "weight": 1,
+      "examples": [
+        "app\\agents\\base_agent.py"
+      ]
+    },
+    {
+      "source": "app.agents",
+      "target": "app.services",
+      "weight": 6,
+      "examples": [
+        "app\\agents\\base_agent.py",
+        "app\\agents\\base_agent.py",
+        "app\\agents\\base_agent.py"
+      ]
+    },
+    {
+      "source": "app.agents",
+      "target": "app.tools",
+      "weight": 2,
+      "examples": [
+        "app\\agents\\base_agent.py",
+        "app\\agents\\coder_agent.py"
+      ]
+    },
+    {
+      "source": "app.agents",
+      "target": "app.agents",
+      "weight": 7,
+      "examples": [
+        "app\\agents\\coder_agent.py",
+        "app\\agents\\planner_agent.py",
+        "app\\agents\\simple_agent.py"
+      ]
+    },
+    {
+      "source": "app.components",
+      "target": "app.components",
+      "weight": 12,
+      "examples": [
+        "app\\components\\decision_routing.py",
+        "app\\components\\decision_routing.py",
+        "app\\components\\execution_validator.py"
+      ]
+    },
+    {
+      "source": "app.components",
+      "target": "app.core",
+      "weight": 3,
+      "examples": [
+        "app\\components\\interpretation_service.py",
+        "app\\components\\interpretation_service.py",
+        "app\\components\\interpretation_service.py"
+      ]
+    },
+    {
+      "source": "app.components",
+      "target": "app.services",
+      "weight": 2,
+      "examples": [
+        "app\\components\\interpretation_service.py",
+        "app\\components\\reflection_service.py"
+      ]
+    },
+    {
+      "source": "app.core",
+      "target": "app.core",
+      "weight": 58,
+      "examples": [
+        "app\\core\\a2a_protocol.py",
+        "app\\core\\auth.py",
+        "app\\core\\auth.py"
+      ]
+    },
+    {
+      "source": "app.core",
+      "target": "app.models",
+      "weight": 20,
+      "examples": [
+        "app\\core\\auth.py",
+        "app\\core\\chat_session.py",
+        "app\\core\\chat_session.py"
+      ]
+    },
+    {
+      "source": "app.core",
+      "target": "app.services",
+      "weight": 21,
+      "examples": [
+        "app\\core\\auth.py",
+        "app\\core\\model_selector.py",
+        "app\\core\\ollama_client.py"
+      ]
+    },
+    {
+      "source": "app.core",
+      "target": "app.api",
+      "weight": 2,
+      "examples": [
+        "app\\core\\meta_tracker.py",
+        "app\\core\\workflow_engine.py"
+      ]
+    },
+    {
+      "source": "app.core",
+      "target": "app.components",
+      "weight": 2,
+      "examples": [
+        "app\\core\\request_orchestrator.py",
+        "app\\core\\request_orchestrator.py"
+      ]
+    },
+    {
+      "source": "app.core",
+      "target": "app.tools",
+      "weight": 1,
+      "examples": [
+        "app\\core\\request_orchestrator.py"
+      ]
+    },
+    {
+      "source": "app.models",
+      "target": "app.core",
+      "weight": 39,
+      "examples": [
+        "app\\models\\agent.py",
+        "app\\models\\agent_conversation.py",
+        "app\\models\\agent_experiment.py"
+      ]
+    },
+    {
+      "source": "app.models",
+      "target": "app.models",
+      "weight": 40,
+      "examples": [
+        "app\\models\\agent_team.py",
+        "app\\models\\agent_team.py",
+        "app\\models\\planning.py"
+      ]
+    },
+    {
+      "source": "app.registry",
+      "target": "app.models",
+      "weight": 3,
+      "examples": [
+        "app\\registry\\service.py",
+        "app\\registry\\service.py",
+        "app\\registry\\service.py"
+      ]
+    },
+    {
+      "source": "app.services",
+      "target": "app.core",
+      "weight": 174,
+      "examples": [
+        "app\\services\\a2a_router.py",
+        "app\\services\\a2a_router.py",
+        "app\\services\\a2a_router.py"
+      ]
+    },
+    {
+      "source": "app.services",
+      "target": "app.services",
+      "weight": 107,
+      "examples": [
+        "app\\services\\a2a_router.py",
+        "app\\services\\a2a_router.py",
+        "app\\services\\adaptive_approval_service.py"
+      ]
+    },
+    {
+      "source": "app.services",
+      "target": "app.models",
+      "weight": 153,
+      "examples": [
+        "app\\services\\adaptive_approval_service.py",
+        "app\\services\\adaptive_approval_service.py",
+        "app\\services\\adaptive_approval_service.py"
+      ]
+    },
+    {
+      "source": "app.services",
+      "target": "app.agents",
+      "weight": 4,
+      "examples": [
+        "app\\services\\agent_gym_service.py",
+        "app\\services\\execution_service.py",
+        "app\\services\\execution_service.py"
+      ]
+    },
+    {
+      "source": "app.services",
+      "target": "app.tools",
+      "weight": 1,
+      "examples": [
+        "app\\services\\execution_service.py"
+      ]
+    },
+    {
+      "source": "app.services",
+      "target": "app.planning",
+      "weight": 1,
+      "examples": [
+        "app\\services\\planning_service.py"
+      ]
+    },
+    {
+      "source": "app.services",
+      "target": "app.api",
+      "weight": 1,
+      "examples": [
+        "app\\services\\workflow_event_service.py"
+      ]
+    },
+    {
+      "source": "app.tools",
+      "target": "app.core",
+      "weight": 4,
+      "examples": [
+        "app\\tools\\base_tool.py",
+        "app\\tools\\base_tool.py",
+        "app\\tools\\python_tool.py"
+      ]
+    },
+    {
+      "source": "app.tools",
+      "target": "app.models",
+      "weight": 1,
+      "examples": [
+        "app\\tools\\base_tool.py"
+      ]
+    },
+    {
+      "source": "app.tools",
+      "target": "app.services",
+      "weight": 3,
+      "examples": [
+        "app\\tools\\base_tool.py",
+        "app\\tools\\python_tool.py",
+        "app\\tools\\web_search_tool.py"
+      ]
+    },
+    {
+      "source": "app.tools",
+      "target": "app.tools",
+      "weight": 4,
+      "examples": [
+        "app\\tools\\python_tool.py",
+        "app\\tools\\web_search_tool.py",
+        "app\\tools\\__init__.py"
+      ]
+    },
+    {
+      "source": "app.api",
+      "target": "app.core",
+      "weight": 110,
+      "examples": [
+        "app\\api\\routes\\a2a.py",
+        "app\\api\\routes\\a2a.py",
+        "app\\api\\routes\\a2a.py"
+      ]
+    },
+    {
+      "source": "app.api",
+      "target": "app.services",
+      "weight": 62,
+      "examples": [
+        "app\\api\\routes\\a2a.py",
+        "app\\api\\routes\\a2a.py",
+        "app\\api\\routes\\agents.py"
+      ]
+    },
+    {
+      "source": "app.api",
+      "target": "app.models",
+      "weight": 81,
+      "examples": [
+        "app\\api\\routes\\a2a.py",
+        "app\\api\\routes\\agents.py",
+        "app\\api\\routes\\agents_pages.py"
+      ]
+    },
+    {
+      "source": "app.api",
+      "target": "app.api",
+      "weight": 1,
+      "examples": [
+        "app\\api\\routes\\chat.py"
+      ]
+    },
+    {
+      "source": "app.api",
+      "target": "app.planning",
+      "weight": 1,
+      "examples": [
+        "app\\api\\routes\\plans.py"
+      ]
+    },
+    {
+      "source": "app.api",
+      "target": "app.registry",
+      "weight": 1,
+      "examples": [
+        "app\\api\\routes\\registry.py"
+      ]
+    }
+  ]
+}

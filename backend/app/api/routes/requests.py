@@ -1,17 +1,17 @@
 """
 API routes for request logs and ranking
 """
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc
 
 from app.core.database import get_db
-from app.models.request_log import RequestLog, RequestConsequence
 from app.core.logging_config import LoggingConfig
+from app.models.request_log import RequestConsequence, RequestLog
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import and_, desc, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

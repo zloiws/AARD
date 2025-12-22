@@ -2,8 +2,8 @@
 Script to apply all migrations from the beginning
 This will create all missing tables
 """
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Get project root
@@ -19,11 +19,11 @@ if venv_site_packages.exists():
 os.chdir(BACKEND_DIR)
 
 try:
-    from alembic.config import Config
     from alembic import command
-    from sqlalchemy import create_engine, text, inspect
+    from alembic.config import Config
     from dotenv import load_dotenv
-    
+    from sqlalchemy import create_engine, inspect, text
+
     # Load environment variables
     env_file = PROJECT_ROOT / ".env"
     if env_file.exists():

@@ -2,7 +2,7 @@
 Tests for Ollama client
 """
 import pytest
-from app.core.ollama_client import OllamaClient, TaskType, OllamaError
+from app.core.ollama_client import OllamaClient, OllamaError, TaskType
 
 
 @pytest.fixture

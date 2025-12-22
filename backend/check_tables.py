@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from app.core.database import engine
 from sqlalchemy import text
 
+
 def check_tables():
     """Check which tables exist"""
     with engine.connect() as conn:

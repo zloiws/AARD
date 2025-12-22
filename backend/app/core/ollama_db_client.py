@@ -1,11 +1,11 @@
 """
 Ollama client that loads instances from database
 """
-from typing import Optional, List
-from sqlalchemy.orm import Session
+from typing import List, Optional
 
 from app.core.ollama_client import OllamaClient, OllamaInstanceConfig
 from app.services.ollama_service import OllamaService
+from sqlalchemy.orm import Session
 
 
 class OllamaDBClient:

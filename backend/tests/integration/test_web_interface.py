@@ -1,12 +1,14 @@
 """Test web interface"""
 import sys
-import requests
 from pathlib import Path
+
+import requests
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from dotenv import load_dotenv
+
 load_dotenv(BASE_DIR / ".env")
 
 BASE_URL = "http://localhost:8000"

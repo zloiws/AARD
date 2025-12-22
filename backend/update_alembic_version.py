@@ -9,11 +9,12 @@ sys.path.insert(0, str(BASE_DIR))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 env_file = BASE_DIR / ".env"
 load_dotenv(env_file, override=True)
 
-from sqlalchemy import create_engine, text
 from app.core.config import get_settings
+from sqlalchemy import create_engine, text
 
 if __name__ == "__main__":
     settings = get_settings()
@@ -31,7 +32,7 @@ if __name__ == "__main__":
             with open(last_migration, 'r') as f:
                 for line in f:
                     if 'revision' in line and '=' in line:
-                        revision = line.split('=')[1].strip().strip("'\"")
+                        revision = line.split('=')[1].strip().strip("'")
                         break
             
             # Update alembic_version

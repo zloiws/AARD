@@ -1,16 +1,17 @@
 """
 Evolution history and feedback models
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Enum as SQLEnum, Boolean, JSON
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import relationship
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import JSON, Boolean, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class EntityType(str, Enum):
@@ -65,7 +66,7 @@ class EvolutionHistory(Base):
     improvement_metrics = Column(JSON, nullable=True)
     success = Column(Boolean, nullable=True)
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     def __repr__(self):
         return f"<EvolutionHistory(id={self.id}, entity={self.entity_type}:{self.entity_id}, change={self.change_type})>"
@@ -98,7 +99,7 @@ class Feedback(Base):
     processed = Column(Boolean, nullable=False, default=False)
     insights_extracted = Column(JSON, nullable=True)
     
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     task = relationship("Task", backref="feedback")

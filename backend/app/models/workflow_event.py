@@ -1,16 +1,17 @@
 """
 Workflow Event model for persistent storage of workflow execution events
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, Dict, Any
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Index, CheckConstraint
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import (CheckConstraint, Column, DateTime, ForeignKey, Index,
+                        Integer, String, Text)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class EventSource(str, Enum):
@@ -83,6 +84,11 @@ class WorkflowEvent(Base):
     # Detailed event data (JSONB for flexibility)
     event_data = Column(JSONB, nullable=True)  # Full prompt, response, tool call details, etc.
     event_metadata = Column("metadata", JSONB, nullable=True)  # Additional metadata (model, server, duration, etc.) - using Column name to avoid SQLAlchemy reserved word
+    # Canonical mapping fields for observability / audit
+    component_role = Column(String(100), nullable=True, index=True)  # e.g., interpretation, planning, routing
+    prompt_id = Column(PGUUID(as_uuid=True), ForeignKey("prompts.id", ondelete="SET NULL"), nullable=True, index=True)
+    prompt_version = Column(String(50), nullable=True)
+    decision_source = Column(String(50), nullable=True, index=True)  # one of: component | registry | human
     
     # Relationships to other entities
     task_id = Column(PGUUID(as_uuid=True), ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -96,7 +102,7 @@ class WorkflowEvent(Base):
     parent_event_id = Column(PGUUID(as_uuid=True), ForeignKey("workflow_events.id", ondelete="SET NULL"), nullable=True, index=True)
     
     # Timing (millisecond precision)
-    timestamp = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     duration_ms = Column(Integer, nullable=True)  # Duration of the event if applicable
     
     # Relationships
@@ -123,6 +129,16 @@ class WorkflowEvent(Base):
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses"""
+        # Attempt to provide canonical ExecutionEvent fields (contracts_v0)
+        data = self.event_data or {}
+        meta = self.event_metadata or {}
+
+        # input/output summaries may be stored in event_data under several keys
+        input_summary = data.get("input_summary") or data.get("input") or data.get("prompt") or None
+        output_summary = data.get("output_summary") or data.get("output") or data.get("result") or None
+        reason_code = meta.get("reason_code") or data.get("reason_code") or None
+        component_name = meta.get("component_name") or data.get("component") or self.event_source
+
         return {
             "id": str(self.id),
             "workflow_id": self.workflow_id,
@@ -131,8 +147,16 @@ class WorkflowEvent(Base):
             "stage": self.stage,
             "status": self.status,
             "message": self.message,
-            "event_data": self.event_data or {},
-            "metadata": self.event_metadata or {},
+            "event_data": data,
+            "metadata": meta,
+            "component_role": self.component_role,
+            "component_name": component_name,
+            "prompt_id": str(self.prompt_id) if self.prompt_id else None,
+            "prompt_version": self.prompt_version,
+            "decision_source": self.decision_source,
+            "input_summary": input_summary,
+            "output_summary": output_summary,
+            "reason_code": reason_code,
             "task_id": str(self.task_id) if self.task_id else None,
             "plan_id": str(self.plan_id) if self.plan_id else None,
             "tool_id": str(self.tool_id) if self.tool_id else None,

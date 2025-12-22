@@ -2,9 +2,10 @@
 Test script for OpenTelemetry tracing
 """
 import asyncio
-import httpx
 import sys
 from datetime import datetime
+
+import httpx
 
 BASE_URL = "http://localhost:8000"
 REQUEST_TIMEOUT = 30.0

@@ -2,14 +2,14 @@
 Page routes for audit reports web interface
 """
 from typing import Optional
-from fastapi import APIRouter, Request, Depends, HTTPException, Query
-from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
 
-from app.core.templates import templates
 from app.core.database import get_db
-from app.models.audit_report import AuditReport, AuditType, AuditStatus
+from app.core.templates import templates
+from app.models.audit_report import AuditReport, AuditStatus, AuditType
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["audit_reports_pages"])
 

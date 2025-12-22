@@ -2,11 +2,13 @@
 Database model for Ollama model configuration
 """
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, BigInteger
-from sqlalchemy.dialects.postgresql import UUID, JSON
-from sqlalchemy.orm import relationship
+from datetime import datetime, timezone
+
 from app.core.database import Base
+from sqlalchemy import (BigInteger, Boolean, Column, DateTime, ForeignKey,
+                        Integer, String)
+from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy.orm import relationship
 
 
 class OllamaModel(Base):
@@ -35,8 +37,8 @@ class OllamaModel(Base):
     priority = Column(Integer, default=0)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     last_seen_at = Column(DateTime, nullable=True)  # Last time model was seen on server
     
     # Relationship

@@ -9,6 +9,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 env_file = BASE_DIR / ".env"
 load_dotenv(env_file, override=True)
 
@@ -16,9 +17,9 @@ load_dotenv(env_file, override=True)
 os.chdir(Path(__file__).resolve().parent)
 
 if __name__ == "__main__":
-    from alembic.config import Config
     from alembic import command
-    
+    from alembic.config import Config
+
     # Load Alembic config
     alembic_cfg = Config("alembic.ini")
     

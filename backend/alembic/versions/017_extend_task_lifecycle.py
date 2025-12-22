@@ -7,8 +7,8 @@ Create Date: 2025-12-03 20:00:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -19,11 +19,11 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Add new columns to tasks table
-    op.add_column('tasks', sa.Column('created_by_role', sa.String(50), nullable=True))
-    op.add_column('tasks', sa.Column('approved_by', sa.String(255), nullable=True))
-    op.add_column('tasks', sa.Column('approved_by_role', sa.String(50), nullable=True))
-    op.add_column('tasks', sa.Column('autonomy_level', sa.Integer(), nullable=False, server_default='2'))
+    # Add new columns to tasks table (idempotent)
+    op.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS created_by_role VARCHAR(50);")
+    op.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS approved_by VARCHAR(255);")
+    op.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS approved_by_role VARCHAR(50);")
+    op.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS autonomy_level INTEGER DEFAULT 2;" )
     
     # Note: TaskStatus enum values are handled by SQLAlchemy model
     # The database column uses String type (not enum), so no enum migration needed
@@ -31,11 +31,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Remove columns
-    op.drop_column('tasks', 'autonomy_level')
-    op.drop_column('tasks', 'approved_by_role')
-    op.drop_column('tasks', 'approved_by')
-    op.drop_column('tasks', 'created_by_role')
+    # Remove columns if exist
+    op.execute("ALTER TABLE tasks DROP COLUMN IF EXISTS autonomy_level;")
+    op.execute("ALTER TABLE tasks DROP COLUMN IF EXISTS approved_by_role;")
+    op.execute("ALTER TABLE tasks DROP COLUMN IF EXISTS approved_by;")
+    op.execute("ALTER TABLE tasks DROP COLUMN IF EXISTS created_by_role;")
     
     # Note: Removing enum values is complex in PostgreSQL
     # We'll leave the enum values in place for safety

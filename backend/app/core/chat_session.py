@@ -2,13 +2,14 @@
 Chat session management with database persistence
 """
 import uuid
-from datetime import datetime
-from typing import List, Dict, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
 
-from app.models.chat_session import ChatSession as ChatSessionModel, ChatMessage as ChatMessageModel
 from app.core.logging_config import LoggingConfig
+from app.models.chat_session import ChatMessage as ChatMessageModel
+from app.models.chat_session import ChatSession as ChatSessionModel
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -21,7 +22,7 @@ class ChatMessage:
         self.role = role
         self.content = content
         self.model = model
-        self.timestamp = timestamp or datetime.utcnow()
+        self.timestamp = timestamp or datetime.now(timezone.utc)
         self.metadata = metadata or {}
 
 
@@ -30,7 +31,7 @@ class ChatSession:
     def __init__(self, id: str, created_at: datetime = None, messages: List[ChatMessage] = None,
                  system_prompt: Optional[str] = None, title: Optional[str] = None):
         self.id = id
-        self.created_at = created_at or datetime.utcnow()
+        self.created_at = created_at or datetime.now(timezone.utc)
         self.messages = messages or []
         self.system_prompt = system_prompt
         self.title = title
@@ -129,7 +130,7 @@ class ChatSessionManager:
             db.add(db_message)
             
             # Update session updated_at
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = datetime.now(timezone.utc)
             
             db.commit()
             db.refresh(db_message)

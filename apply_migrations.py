@@ -2,8 +2,8 @@
 Script to apply Alembic migrations
 Run from project root: python apply_migrations.py
 """
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Get project root
@@ -19,9 +19,9 @@ if venv_site_packages.exists():
 os.chdir(BACKEND_DIR)
 
 try:
-    from alembic.config import Config
     from alembic import command
-    
+    from alembic.config import Config
+
     # Create Alembic config
     alembic_cfg = Config("alembic.ini")
     

@@ -2,16 +2,16 @@
 API routes for model management
 Now uses servers from database instead of .env
 """
-from typing import List, Dict, Optional
-from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel
+from typing import Dict, List, Optional
 
+import httpx
 from app.core.database import get_db
 from app.core.ollama_client import OllamaClient, get_ollama_client
-from app.services.ollama_service import OllamaService
 from app.models.ollama_server import OllamaServer
+from app.services.ollama_service import OllamaService
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-import httpx
 
 router = APIRouter(prefix="/api/models", tags=["models"])
 

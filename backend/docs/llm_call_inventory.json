@@ -1,0 +1,177 @@
+{
+  "generated_by": "assistant",
+  "summary": "Inventory of LLM call sites (Phase 2 - option A). For each call site: whether it calls OllamaClient.generate, whether it resolves system_prompt via PromptService/PromptRuntimeSelector/PromptManager or uses agent/system literals, and a recommended action.",
+  "entries": [
+    {
+      "path": "app/core/ollama_client.py",
+      "calls_generate": true,
+      "role": "LLM transport (low-level client)",
+      "resolves_prompt": false,
+      "prompt_source": "n/a (client accepts system_prompt parameter)",
+      "notes": "Lowest-level client; callers must resolve prompts before calling."
+    },
+    {
+      "path": "app/services/reflection_service.py",
+      "calls_generate": true,
+      "role": "Component/service (reflection)",
+      "resolves_prompt": true,
+      "prompt_source": "context.prompt_manager (PromptManager)",
+      "notes": "Resolves prompt via prompt_manager; compliant."
+    },
+    {
+      "path": "app/components/interpretation_service.py",
+      "calls_generate": true,
+      "role": "Component (interpretation)",
+      "resolves_prompt": true,
+      "prompt_source": "ComponentPromptRepository.get_system_prompt",
+      "notes": "Resolves component prompt before calling client; compliant."
+    },
+    {
+      "path": "app/core/request_orchestrator.py",
+      "calls_generate": true,
+      "role": "Orchestrator",
+      "resolves_prompt": true,
+      "prompt_source": "PromptManager / context.prompt_manager",
+      "notes": "Resolves prompts and records usage via PromptManager; compliant."
+    },
+    {
+      "path": "app/services/planning_service.py",
+      "calls_generate": true,
+      "role": "Service (planning)",
+      "resolves_prompt": true,
+      "prompt_source": "PromptService / local resolution",
+      "notes": "Uses PromptService to resolve system_prompt before calling."
+    },
+    {
+      "path": "app/services/benchmark_service.py",
+      "calls_generate": true,
+      "role": "Service (benchmark)",
+      "resolves_prompt": true,
+      "prompt_source": "PromptService",
+      "notes": "Resolves prompts via PromptService; compliant."
+    },
+    {
+      "path": "app/services/model_benchmark_service.py",
+      "calls_generate": true,
+      "role": "Service (model benchmarking)",
+      "resolves_prompt": true,
+      "prompt_source": "PromptService",
+      "notes": "Uses PromptService to obtain prompts."
+    },
+    {
+      "path": "app/services/execution_service.py",
+      "calls_generate": true,
+      "role": "Service (execution)",
+      "resolves_prompt": true,
+      "prompt_source": "context.prompt_manager (fallback literal defined)",
+      "notes": "Attempts to resolve via prompt_manager; has a local fallback literal."
+    },
+    {
+      "path": "app/agents/base_agent.py",
+      "calls_generate": true,
+      "role": "Agent base",
+      "resolves_prompt": true,
+      "prompt_source": "agent.system_prompt (from agent registry)",
+      "notes": "Uses agent-level system_prompt via registry/agent data."
+    },
+    {
+      "path": "app/services/reflection_service.py",
+      "calls_generate_duplicate": true
+    },
+    {
+      "path": "app/services/prompt_service.py",
+      "calls_generate": true,
+      "role": "Prompt management/expert service",
+      "resolves_prompt": true,
+      "prompt_source": "internal (manages prompt artifacts)",
+      "notes": "Manages and may call LLM to improve prompts."
+    },
+    {
+      "path": "app/services/artifact_generator.py",
+      "calls_generate": true,
+      "role": "Service (artifact/tool generation)",
+      "resolves_prompt": false,
+      "prompt_source": "local hard-coded system_prompt strings",
+      "notes": "Uses local hard-coded system_prompt literals — must be annotated as legacy/exempt or migrated to PromptAssignment/PromptManager."
+    },
+    {
+      "path": "app/services/agent_approval_agent.py",
+      "calls_generate": true,
+      "role": "Agent (approval helper)",
+      "resolves_prompt": false,
+      "prompt_source": "hard-coded literal",
+      "notes": "Hard-coded system_prompt literal present; needs annotation or migration."
+    },
+    {
+      "path": "app/services/self_audit_service.py",
+      "calls_generate": true,
+      "role": "Service (self-audit)",
+      "resolves_prompt": false,
+      "prompt_source": "no explicit system_prompt passed",
+      "notes": "Calls client.generate without system_prompt — requires review: either resolve via selector or mark exempt."
+    },
+    {
+      "path": "app/services/uncertainty_learning_service.py",
+      "calls_generate": true,
+      "role": "Service (uncertainty learning)",
+      "resolves_prompt": false,
+      "prompt_source": "hard-coded literal",
+      "notes": "Hard-coded system_prompt literal present; must be annotated or migrated to PromptAssignment."
+    },
+    {
+      "path": "app/services/planning_service_dialog_integration.py",
+      "calls_generate": true,
+      "role": "Service (planning dialog integration)",
+      "resolves_prompt": false,
+      "prompt_source": "no prompt resolution visible",
+      "notes": "Calls generate() directly without prompt resolution — needs review."
+    },
+    {
+      "path": "app/services/planning_hypothesis_service.py",
+      "calls_generate": true,
+      "role": "Service (planning hypothesis)",
+      "resolves_prompt": false,
+      "prompt_source": "no prompt resolution visible",
+      "notes": "Calls ollama_service.generate_completion without visible prompt resolution."
+    },
+    {
+      "path": "app/services/critic_service.py",
+      "calls_generate": true,
+      "role": "Service (critic)",
+      "resolves_prompt": false,
+      "prompt_source": "no prompt resolution visible",
+      "notes": "Calls generate() without prompt resolution; needs review."
+    },
+    {
+      "path": "app/services/benchmark_service.py",
+      "calls_generate_duplicate": true
+    },
+    {
+      "path": "app/core/decision_framework.py",
+      "calls_generate": true,
+      "role": "Core decision framework",
+      "resolves_prompt": false,
+      "prompt_source": "no prompt resolution visible",
+      "notes": "Calls LLM without prompt resolution; needs review."
+    },
+    {
+      "path": "app/services/agent_evolution_service.py",
+      "calls_generate": true,
+      "role": "Service (agent evolution)",
+      "resolves_prompt": true,
+      "prompt_source": "uses agent.system_prompt / agent registry",
+      "notes": "Uses agent-level system_prompt where available."
+    },
+    {
+      "path": "app/services/embedding_service.py",
+      "calls_generate": true,
+      "role": "Service (embeddings)",
+      "resolves_prompt": false,
+      "prompt_source": "uses OllamaService (no prompt visible)",
+      "notes": "Embedding generation may not require system_prompt; mark as NO_PROMPT_REQUIRED if true."
+    }
+  ]
+  , 
+  "block_status": "DONE"
+}
+

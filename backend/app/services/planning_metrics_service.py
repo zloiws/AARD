@@ -2,17 +2,17 @@
 Planning Metrics Service for tracking plan quality and performance
 Provides metrics and statistics for plan generation and execution
 """
-from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
 from app.models.plan import Plan, PlanStatus
-from app.models.trace import ExecutionTrace
 from app.models.task import Task, TaskStatus
+from app.models.trace import ExecutionTrace
+from sqlalchemy import and_, func
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -186,7 +186,7 @@ class PlanningMetricsService:
             Dictionary with planning statistics
         """
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=time_range_days)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
             
             # Query plans
             query = self.db.query(Plan).filter(Plan.created_at >= cutoff_date)

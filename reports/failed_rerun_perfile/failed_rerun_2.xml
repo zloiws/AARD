@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.874" timestamp="2025-12-21T22:12:54.342989" hostname="zloiws"><testcase classname="tests.docs.test_service_docs_present" name="test_service_docs_exist" time="0.750"><failure message="AssertionError: Missing service docs: ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', 'ToolsExternalIntegrations.md', 'RegistryServiceDiscovery.md', 'SecurityAuthPermissions.md', 'MemoryConversationStorage.md', 'OpsMigrations.md', 'UtilitiesObservability.md']&#10;assert not ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', ...]">def test_service_docs_exist():
+        base = os.path.join(os.path.dirname(__file__), "..", "docs", "services")
+        base = os.path.normpath(base)
+        missing = []
+        for fn in EXPECTED:
+            path = os.path.join(base, fn)
+            if not os.path.exists(path):
+                missing.append(fn)
+&gt;       assert not missing, f"Missing service docs: {missing}"
+E       AssertionError: Missing service docs: ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', 'ToolsExternalIntegrations.md', 'RegistryServiceDiscovery.md', 'SecurityAuthPermissions.md', 'MemoryConversationStorage.md', 'OpsMigrations.md', 'UtilitiesObservability.md']
+E       assert not ['ApplicationCore.md', 'HTTPAPILayer.md', 'DataORMLayer.md', 'BusinessServices.md', 'AgentsAndPlanning.md', 'DecisionComponents.md', ...]
+
+backend\tests\docs\test_service_docs_present.py:31: AssertionError</failure></testcase></testsuite></testsuites>

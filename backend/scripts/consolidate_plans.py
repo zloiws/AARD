@@ -2,25 +2,25 @@
 Скрипт для консолидации всех планов проекта
 Собирает планы из файлов и БД, анализирует их, проверяет выполнение и генерирует единый план
 """
-import sys
-import re
-import json
 import asyncio
-from pathlib import Path
-from datetime import datetime
-from typing import List, Dict, Any, Optional
+import json
+import re
+import sys
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from app.core.database import SessionLocal
-from app.core.ollama_client import OllamaClient, TaskType
 from app.core.config import get_settings
+from app.core.database import SessionLocal
+from app.core.logging_config import LoggingConfig
+from app.core.ollama_client import OllamaClient, TaskType
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -385,7 +385,7 @@ class PlanConsolidator:
             try:
                 content = migration_file.read_text(encoding="utf-8")
                 # Искать revision ID в файле
-                revision_match = re.search(r"revision\s*:\s*str\s*=\s*['\"](\d+)['\"]", content)
+                revision_match = re.search(r'revision\s*:\s*str\s*=\s*[\'\"](\d+)[\'\"]', content)
                 if revision_match:
                     revision_id = revision_match.group(1)
                     if revision_id in migration_name or migration_name in revision_id:
@@ -423,7 +423,7 @@ class PlanConsolidator:
             return False
         
         # Нормализовать путь
-        template_path = template_path.replace("\\", "/")
+        template_path = template_path.replace("\\\\", "/")
         if template_path.startswith("frontend/templates/"):
             template_path = template_path.replace("frontend/templates/", "")
         

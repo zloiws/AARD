@@ -1,0 +1,37 @@
+# Full env template for running full backend tests (real DB + real LLM)
+# Copy this to backend/.env and fill values before running `run_full_backend_tests.sh`
+
+# Application
+SECRET_KEY=changeme_secret_key
+APP_ENV=testing
+
+# PostgreSQL (match docker-compose.test.yml defaults)
+POSTGRES_USER=test_user
+POSTGRES_PASSWORD=test_pass
+POSTGRES_DB=aard_test
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+
+# Ollama / LLM instances (must be reachable for real_llm tests)
+# Provide full URLs (e.g., http://localhost:11434)
+OLLAMA_URL_1=http://localhost:11434
+OLLAMA_MODEL_1=ggml-model.bin
+OLLAMA_CAPABILITIES_1=
+OLLAMA_MAX_CONCURRENT_1=2
+
+OLLAMA_URL_2=
+OLLAMA_MODEL_2=
+OLLAMA_CAPABILITIES_2=
+OLLAMA_MAX_CONCURRENT_2=1
+
+# Feature flags for full run
+ENABLE_TRACING=false
+ENABLE_AGENT_OPS=true
+ENABLE_PLANNING=true
+
+# Optional: seed Ollama servers into DB before tests (1 = enabled)
+SEED_OLLAMA_SERVERS=0
+
+# Other settings can be added as needed; the project also reads env from project root .env
+
+

@@ -1,16 +1,16 @@
 """
 Integration tests for plan-memory integration (Phase 1, Task 6.4)
 """
-import pytest
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan
+import pytest
 from app.models.agent import Agent
 from app.models.agent_memory import MemoryType
-from app.services.planning_service import PlanningService
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
 from app.services.memory_service import MemoryService
+from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.asyncio
@@ -19,7 +19,7 @@ async def test_save_todo_to_working_memory(db: Session):
     # Create an agent
     agent = Agent(
         id=uuid4(),
-        name="Test Agent",
+        name=f"Test Agent {uuid4()}",
         description="Test agent for memory integration",
         system_prompt="You are a test agent"
     )
@@ -85,7 +85,7 @@ async def test_save_plan_to_episodic_memory(db: Session):
     # Create an agent
     agent = Agent(
         id=uuid4(),
-        name="Test Agent",
+        name=f"Test Agent {uuid4()}",
         description="Test agent for memory integration",
         system_prompt="You are a test agent"
     )
@@ -151,7 +151,7 @@ async def test_apply_procedural_memory_patterns(db: Session):
     # Create an agent
     agent = Agent(
         id=uuid4(),
-        name="Test Agent",
+        name=f"Test Agent {uuid4()}",
         description="Test agent for memory integration",
         system_prompt="You are a test agent"
     )
@@ -178,6 +178,7 @@ async def test_apply_procedural_memory_patterns(db: Session):
         importance=0.8
     )
     db.commit()
+    # diagnostic removed
     
     # Test applying procedural memory patterns
     planning_service = PlanningService(db)
@@ -197,7 +198,7 @@ async def test_plan_creation_saves_to_memory(db: Session):
     # Create an agent
     agent = Agent(
         id=uuid4(),
-        name="Test Agent",
+        name=f"Test Agent {uuid4()}",
         description="Test agent for memory integration",
         system_prompt="You are a test agent"
     )

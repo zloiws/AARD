@@ -1,18 +1,16 @@
 """
 Service for managing workflow events in the database
 """
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
-
-from app.models.workflow_event import (
-    WorkflowEvent, EventSource, EventType, EventStatus, WorkflowStage
-)
-from app.core.workflow_tracker import WorkflowStage as TrackerStage
 from app.core.logging_config import LoggingConfig
+from app.core.workflow_tracker import WorkflowStage as TrackerStage
+from app.models.workflow_event import (EventSource, EventStatus, EventType,
+                                       WorkflowEvent, WorkflowStage)
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -23,6 +21,30 @@ class WorkflowEventService:
     def __init__(self, db: Session):
         self.db = db
     
+    def map_stage_to_canonical(self, stage: WorkflowStage) -> str:
+        """
+        Map internal WorkflowStage values to canonical stages required by contracts_v0:
+          interpretation, validator_a, routing, planning, validator_b, execution, reflection
+        Best-effort mapping; default to 'execution' when unknown.
+        """
+        try:
+            s = stage.value.lower()
+        except Exception:
+            s = str(stage).lower()
+
+        if s in ("user_request", "request_parsing"):
+            return "interpretation"
+        if s in ("action_determination", "decision_determination", "decision_routing"):
+            return "routing"
+        if s in ("execution",):
+            return "execution"
+        if s in ("result",):
+            return "reflection"
+        if s in ("error",):
+            return "reflection"
+        # fallback
+        return "execution"
+
     def save_event(
         self,
         workflow_id: str,
@@ -32,6 +54,10 @@ class WorkflowEventService:
         message: str,
         event_data: Optional[Dict[str, Any]] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        component_role: Optional[str] = None,
+        prompt_id: Optional[UUID] = None,
+        prompt_version: Optional[str] = None,
+        decision_source: Optional[str] = None,
         task_id: Optional[UUID] = None,
         plan_id: Optional[UUID] = None,
         tool_id: Optional[UUID] = None,
@@ -45,15 +71,21 @@ class WorkflowEventService:
     ) -> WorkflowEvent:
         """Save a workflow event to the database"""
         try:
+            # Persist canonical stage name for compatibility with contracts_v0
+            canonical_stage = self.map_stage_to_canonical(stage)
             event = WorkflowEvent(
                 workflow_id=workflow_id,
                 event_type=event_type.value,
                 event_source=event_source.value,
-                stage=stage.value,
+                stage=canonical_stage,
                 status=status.value,
                 message=message,
                 event_data=event_data or {},
                 event_metadata=metadata or {},  # Use event_metadata instead of metadata
+                component_role=component_role,
+                prompt_id=prompt_id,
+                prompt_version=prompt_version,
+                decision_source=decision_source,
                 task_id=task_id,
                 plan_id=plan_id,
                 tool_id=tool_id,
@@ -62,7 +94,7 @@ class WorkflowEventService:
                 trace_id=trace_id,
                 parent_event_id=parent_event_id,
                 duration_ms=duration_ms,
-                timestamp=timestamp or datetime.utcnow()
+                timestamp=timestamp or datetime.now(timezone.utc)
             )
             
             self.db.add(event)
@@ -175,7 +207,7 @@ class WorkflowEventService:
         try:
             # Import broadcast function and connection manager
             from app.api.routes.websocket_events import manager
-            
+
             # Convert event to dict for broadcasting
             event_dict = event.to_dict()
             
@@ -185,8 +217,8 @@ class WorkflowEventService:
             }
             
             # Use threading to broadcast without blocking
-            import threading
             import asyncio
+            import threading
             
             def run_broadcast():
                 """Run broadcast in a new event loop"""

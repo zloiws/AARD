@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Apply round2 SQL patch for missing columns."""
 from __future__ import annotations
+
 import os
 import sys
 from pathlib import Path

@@ -4,13 +4,14 @@ Approval request model
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Enum as SQLEnum, JSON
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import relationship
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import JSON, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class ApprovalRequestType(str, Enum):

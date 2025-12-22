@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # Alter plans table column types to match SQLAlchemy models (idempotent).
+import os
+import sys
+
 from sqlalchemy import create_engine, text
-import os, sys
 
 SQL = [
     "ALTER TABLE plans ALTER COLUMN version TYPE INTEGER USING (version::integer);",

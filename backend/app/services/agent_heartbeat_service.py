@@ -3,17 +3,16 @@ Agent Heartbeat Service
 Manages periodic health checks and heartbeat for agents
 """
 import asyncio
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
-
-from app.models.agent import Agent, AgentStatus, AgentHealthStatus
-from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.core.tracing import add_span_attributes, get_tracer
+from app.models.agent import Agent, AgentHealthStatus, AgentStatus
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -60,7 +59,7 @@ class AgentHeartbeatService:
                     return False
                 
                 # Update heartbeat timestamp
-                agent.last_heartbeat = datetime.utcnow()
+                agent.last_heartbeat = datetime.now(timezone.utc)
                 
                 # Update endpoint if provided (first registration)
                 if endpoint:
@@ -69,7 +68,7 @@ class AgentHeartbeatService:
                 # Update response time if provided
                 if response_time_ms is not None:
                     agent.response_time_ms = response_time_ms
-                    agent.last_health_check = datetime.utcnow()
+                    agent.last_health_check = datetime.now(timezone.utc)
                 
                 # Update health status based on response time
                 if response_time_ms is not None:
@@ -149,7 +148,7 @@ class AgentHeartbeatService:
                 }
             
             # Calculate time since last heartbeat
-            time_since_heartbeat = datetime.utcnow() - agent.last_heartbeat
+            time_since_heartbeat = datetime.now(timezone.utc) - agent.last_heartbeat
             
             # Determine health status
             if time_since_heartbeat.total_seconds() > self.removal_threshold * 60:
@@ -253,7 +252,7 @@ class AgentHeartbeatService:
         Returns:
             List of agents without recent heartbeat
         """
-        threshold = datetime.utcnow() - timedelta(minutes=minutes)
+        threshold = datetime.now(timezone.utc) - timedelta(minutes=minutes)
         
         return self.db.query(Agent).filter(
             and_(

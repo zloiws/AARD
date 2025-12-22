@@ -1,23 +1,26 @@
 """
 Agent memory models for short-term and long-term memory
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Optional, Dict, Any
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float, Index
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB, ARRAY
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import (Column, DateTime, Float, ForeignKey, Index, Integer,
+                        String, Text)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class MemoryType(str, Enum):
     """Memory type enumeration"""
     FACT = "fact"  # Factual information
     EXPERIENCE = "experience"  # Experience from task execution
+    WORKING = "working"  # Active ToDo / working memory
     PATTERN = "pattern"  # Recognized patterns
+    PROCEDURAL = "procedural"  # Procedural patterns / strategies
     RULE = "rule"  # Rules and guidelines
     CONTEXT = "context"  # Contextual information
 
@@ -46,7 +49,7 @@ class AgentMemory(Base):
     # Vector embedding for semantic search
     # Note: embedding is stored as vector type in DB, but SQLAlchemy can't read it directly
     # Use raw SQL to read/write embeddings (see MemoryService)
-    # embedding = Column(ARRAY(Float), nullable=True)  # Commented out - use raw SQL instead
+    embedding = Column(ARRAY(Float), nullable=True)  # Embedding column (array of floats) - use raw SQL for vector ops if available
     
     # Importance and access tracking
     importance = Column(Float, default=0.5, nullable=False)  # 0.0 to 1.0
@@ -58,7 +61,7 @@ class AgentMemory(Base):
     source = Column(String(255), nullable=True)  # Source of memory (task_id, user, etc.)
     
     # Lifecycle
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     expires_at = Column(DateTime, nullable=True)  # Optional expiration
     
     # Relationships
@@ -113,7 +116,7 @@ class MemoryEntry(Base):
     
     # TTL
     ttl_seconds = Column(Integer, nullable=True)  # Time to live in seconds
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     expires_at = Column(DateTime, nullable=True)  # Calculated from ttl_seconds
     
     # Relationships
@@ -139,7 +142,10 @@ class MemoryEntry(Base):
         """Check if entry is expired"""
         if not self.expires_at:
             return False
-        return datetime.utcnow() > self.expires_at
+        expires_at = self.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) > expires_at
 
 
 class MemoryAssociation(Base):
@@ -156,7 +162,7 @@ class MemoryAssociation(Base):
     
     # Metadata
     description = Column(Text, nullable=True)  # Description of association
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     memory = relationship("AgentMemory", foreign_keys=[memory_id], back_populates="associations")

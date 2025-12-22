@@ -1,10 +1,11 @@
 """
 Test branching visualization API endpoints
 """
-import sys
-import requests
 import json
+import sys
 from pathlib import Path
+
+import requests
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent.parent

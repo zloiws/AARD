@@ -1,0 +1,57 @@
+Environment issues found in CSV summary:
+
+backend\tests\integration\test_logging_api.py: failures=6, errors=0
+  message: requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/logging/levels (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001ACA4072F30>: Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение'))
+
+
+Log snippets for keywords:
+
+--- connection error ---
+, see ``retry.default``. pass a
+            :class:`~urllib3.util.retry.retry` object for fine-grained control
+            over different types of retries.
+            pass an integer number to retry connection errors that many times,
+            but no other types of errors. pass zero to never retry.
+    
+            if ``false``, then retries are disabled and any exception is raised
+            
+
+--- failed to establish a new connection ---
+         f"connection to {self.host} timed out. (connect timeout={self.timeout})",
+            ) from e
+    
+        except oserror as e:
+>           raise newconnectionerror(
+                self, f"failed to establish a new connection: {e}"
+            ) from e
+e           urllib3.exceptions.newconnectionerror: <urllib3.connection.httpconnection object at 0x000001aca4072f30>: failed to establish
+
+--- max retries exceeded ---
+seerror(cause)
+>           raise maxretryerror(_pool, url, reason) from reason  # type: ignore[arg-type]
+e           urllib3.exceptions.maxretryerror: httpconnectionpool(host='localhost', port=8000): max retries exceeded with url: /api/logging/levels (caused by newconnectionerror('<urllib3.connection.httpconnection object at 0x000001aca4072f30>: failed to establish a new connection: [winerror 1006
+
+--- ollama ---
+===========================================================================================
+2025-12-21 22:12:57 [   error]   \u2717 \u041d\u0435\u0442 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 ollama \u0441\u0435\u0440\u0432\u0435\u0440\u043e\u0432\n2025-12-21 22:12:57 [    info] 
+----------------------------------------------------------------------------------------------------
+2025-12-21
+
+--- psycopg2 ---
+s_llm.py::test_team_collaborative_task_llm 
+------------------------------- live log setup --------------------------------
+2025-12-21 22:13:23 [   error] failed to export span 17284197732562003246: (psycopg2.errors.undefinedtable) relation "execution_traces" does not exist
+line 2: from execution_traces 
+             ^
+
+[sql: select execution_traces.id as execution_traces_id, execution_traces.trac
+
+--- timeout ---
+on\python312\site-packages\_pytest\config\__init__.py:1373
+  c:\users\tehno\appdata\roaming\python\python312\site-packages\_pytest\config\__init__.py:1373: pytestconfigwarning: unknown config option: timeout
+  
+    self._warn_or_fail_if_strict(f"unknown config option: {key}\n")
+
+..\..\users\tehno\appdata\roaming\python\python312\site-packages\_pytest\config\__init__.py:1373
+  c:\users\tehno\appdat
+

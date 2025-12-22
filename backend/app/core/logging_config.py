@@ -1,16 +1,16 @@
 """
 Unified logging configuration with structured JSON logging, context support, and multiple handlers
 """
+import json
 import logging
-import sys
-import json
 import re
-from pathlib import Path
-from typing import Dict, Optional, Any
+import sys
 from contextvars import ContextVar
-from logging.handlers import TimedRotatingFileHandler
-import json
 from datetime import datetime
+from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 from app.core.config import get_settings
 
 # Context variables for request context

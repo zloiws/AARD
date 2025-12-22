@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="7" time="4.842" timestamp="2025-12-21T22:22:01.770297" hostname="zloiws"><testcase classname="tests.test_service_registry" name="test_service_registry_singleton" time="0.001" /><testcase classname="tests.test_service_registry" name="test_service_registry_get_service_with_db" time="0.732" /><testcase classname="tests.test_service_registry" name="test_service_registry_get_service_with_context" time="0.676"><failure message="AttributeError: 'ExecutionContext' object has no attribute 'bind'">db = &lt;sqlalchemy.orm.session.Session object at 0x000001D9306E4290&gt;
+
+    def test_service_registry_get_service_with_context(db):
+        """Test getting service using ExecutionContext"""
+        registry = get_service_registry()
+    
+        # Очищаем кэш перед тестом
+        registry.clear_all_cache()
+    
+        context = ExecutionContext.from_db_session(db)
+    
+        # Test with a service that takes db
+        from app.services.prompt_service import PromptService
+    
+        service = registry.get_service(PromptService, context)
+    
+        assert service is not None
+        assert isinstance(service, PromptService)
+        # Проверяем, что service имеет db и он работает
+        assert hasattr(service, 'db')
+        assert service.db is not None
+        # Проверяем, что service использует db из контекста
+        # Проверяем через bind (engine) - engine должен быть тем же объектом
+        # или через прямое сравнение Session объектов
+&gt;       assert (service.db.bind is context.db.bind) or (service.db is context.db) or (service.db.bind == context.db.bind)
+E       AttributeError: 'ExecutionContext' object has no attribute 'bind'
+
+backend\tests\test_service_registry.py:65: AttributeError</failure></testcase><testcase classname="tests.test_service_registry" name="test_service_registry_caching" time="0.587" /><testcase classname="tests.test_service_registry" name="test_service_registry_clear_workflow_cache" time="0.637" /><testcase classname="tests.test_service_registry" name="test_service_registry_clear_all_cache" time="0.703" /><testcase classname="tests.test_service_registry" name="test_service_registry_register_factory" time="0.652" /></testsuite></testsuites>

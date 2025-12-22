@@ -1,14 +1,14 @@
 """
 Tests for BenchmarkService
 """
-import pytest
 import json
 import tempfile
 from pathlib import Path
 
-from app.services.benchmark_service import BenchmarkService
-from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
+import pytest
 from app.core.database import SessionLocal
+from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
+from app.services.benchmark_service import BenchmarkService
 
 
 @pytest.fixture

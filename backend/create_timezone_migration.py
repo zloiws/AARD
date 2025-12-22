@@ -2,8 +2,8 @@
 """Create migration for timezone-aware datetime columns"""
 import os
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -14,8 +14,8 @@ sys.path.insert(0, str(venv_path))
 
 def create_migration():
     """Create a new migration file for timezone datetime support"""
-    from alembic.config import Config
     from alembic import command
+    from alembic.config import Config
 
     # Create config
     cfg = Config("alembic.ini")

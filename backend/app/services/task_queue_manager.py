@@ -1,21 +1,17 @@
 """
 Task Queue Manager for managing task queues and distribution
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc
-
-from app.models.task_queue import TaskQueue, QueueTask
-from app.core.logging_config import LoggingConfig
-from app.core.metrics import (
-    queue_tasks_total,
-    queue_tasks_processed_total,
-    queue_task_duration_seconds,
-    queue_size
-)
 import time
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
+from uuid import UUID
+
+from app.core.logging_config import LoggingConfig
+from app.core.metrics import (queue_size, queue_task_duration_seconds,
+                              queue_tasks_processed_total, queue_tasks_total)
+from app.models.task_queue import QueueTask, TaskQueue
+from sqlalchemy import and_, desc, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -180,7 +176,7 @@ class TaskQueueManager:
                         QueueTask.status == "queued",
                         or_(
                             QueueTask.next_retry_at.is_(None),
-                            QueueTask.next_retry_at <= datetime.utcnow()
+                            QueueTask.next_retry_at <= datetime.now(timezone.utc)
                         )
                     )
                 )
@@ -194,7 +190,7 @@ class TaskQueueManager:
             # Assign to worker
             task.status = "processing"
             task.assigned_worker = worker_id
-            task.started_at = datetime.utcnow()
+            task.started_at = datetime.now(timezone.utc)
             self.db.commit()
             self.db.refresh(task)
             
@@ -238,7 +234,7 @@ class TaskQueueManager:
         
         task.status = "completed"
         task.result_data = result_data
-        task.completed_at = datetime.utcnow()
+        task.completed_at = datetime.now(timezone.utc)
         task.assigned_worker = None
         
         # Calculate processing duration
@@ -299,7 +295,7 @@ class TaskQueueManager:
         if retry and task.retry_count <= task.max_retries:
             # Schedule retry with exponential backoff
             delay = self._calculate_retry_delay(task.retry_count)
-            task.next_retry_at = datetime.utcnow() + timedelta(seconds=delay)
+            task.next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
             task.status = "queued"
             task.error_message = error_message
             task.assigned_worker = None
@@ -317,7 +313,7 @@ class TaskQueueManager:
             task.status = "failed"
             task.error_message = error_message
             task.assigned_worker = None
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(timezone.utc)
             
             # Calculate processing duration
             processing_duration = None
@@ -343,7 +339,7 @@ class TaskQueueManager:
         
         task.status = "cancelled"
         task.assigned_worker = None
-        task.completed_at = datetime.utcnow()
+        task.completed_at = datetime.now(timezone.utc)
         
         self.db.commit()
         self.db.refresh(task)

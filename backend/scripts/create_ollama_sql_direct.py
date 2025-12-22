@@ -3,8 +3,9 @@
 Create minimal ollama tables and activate specified servers/models using direct DB URL (no app import).
 This script uses the current configured DB for tests.
 """
-from sqlalchemy import create_engine, text
 from datetime import datetime
+
+from sqlalchemy import create_engine, text
 
 # Replace with DB URL printed earlier (ensure this matches your environment)
 DB_URL = "postgresql://postgres:Cdthrf12@10.39.0.101:5432/aard"

@@ -1,0 +1,25 @@
+{
+  "generated_by": "assistant",
+  "summary": "Final report summarizing logical services, module groups, IO, dependency artifacts and duplication notes for backend/",
+  "artifacts": {
+    "dependency_dot": "backend/docs/dependency_graph.dot",
+    "dependency_png": "backend/docs/dependency_graph.png",
+    "services_inventory": "backend/docs/services_inventory.json",
+    "services_inventory_detailed": "backend/docs/services_inventory_detailed.json",
+    "module_io": "backend/docs/module_io.json",
+    "duplicates": "backend/docs/duplicate_modules.json"
+  },
+  "high_level_findings": {
+    "core_components": ["app.core", "app.services", "app.api", "app.models"],
+    "tight_coupling": ["app.services <-> app.models", "app.api -> app.core"],
+    "areas_for_consolidation": ["migration scripts", "start/run wrappers", "check scripts", "tmp utilities", "ollama-related modules"]
+  },
+  "recommendations": [
+    "Consolidate migration and server-runner scripts into a small, documented CLI.",
+    "Move one-off tmp scripts into a namespaced tools CLI or archive them.",
+    "Review Ollama-related modules to confirm separation of client/manager/db responsibilities and extract shared helpers.",
+    "Consider adding import layering rules to reduce cyclic imports inside app.services/app.core/app.models."
+  ]
+}
+
+

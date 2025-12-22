@@ -1,16 +1,16 @@
 """
 Unit tests for ProjectMetricsService
 """
-import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from app.models.project_metric import ProjectMetric, MetricType, MetricPeriod
-from app.models.task import Task, TaskStatus
+import pytest
+from app.core.database import Base, SessionLocal, engine
 from app.models.plan import Plan, PlanStatus
+from app.models.project_metric import MetricPeriod, MetricType, ProjectMetric
+from app.models.task import Task, TaskStatus
 from app.models.trace import ExecutionTrace
 from app.services.project_metrics_service import ProjectMetricsService
-from app.core.database import SessionLocal, engine, Base
 
 
 @pytest.fixture(scope="module")

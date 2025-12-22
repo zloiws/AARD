@@ -2,25 +2,26 @@
 Script to migrate existing memories to vector embeddings
 Generates embeddings for all memories that don't have them yet
 """
-import sys
 import asyncio
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from dotenv import load_dotenv
+
 BASE_DIR = backend_dir.parent
 ENV_FILE = BASE_DIR / ".env"
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE, override=True)
 
 from app.core.database import SessionLocal
+from app.core.logging_config import LoggingConfig
 from app.models.agent_memory import AgentMemory
 from app.services.embedding_service import EmbeddingService
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

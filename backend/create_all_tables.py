@@ -9,6 +9,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 env_file = BASE_DIR / ".env"
 load_dotenv(env_file, override=True)
 
@@ -20,7 +21,7 @@ if __name__ == "__main__":
     try:
         # Create all tables
         Base.metadata.create_all(bind=engine)
-        print("✓ All tables created successfully!")
+        print("All tables created successfully!")
         
         # Verify
         from sqlalchemy import inspect
@@ -29,7 +30,7 @@ if __name__ == "__main__":
         print(f"\nCreated {len(tables)} tables:")
         for table in sorted(tables):
             if table != 'alembic_version':
-                print(f"  ✓ {table}")
+                print(f"  {table}")
                 
     except Exception as e:
         print(f"Error creating tables: {e}")

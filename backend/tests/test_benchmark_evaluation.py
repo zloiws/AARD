@@ -1,13 +1,13 @@
 """
 Tests for benchmark evaluation functionality
 """
-import pytest
 from uuid import uuid4
 
-from app.services.benchmark_service import BenchmarkService
-from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
-from app.models.benchmark_result import BenchmarkResult
+import pytest
 from app.core.database import SessionLocal
+from app.models.benchmark_result import BenchmarkResult
+from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
+from app.services.benchmark_service import BenchmarkService
 
 
 @pytest.fixture

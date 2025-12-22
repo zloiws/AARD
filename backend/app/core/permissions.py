@@ -1,11 +1,12 @@
 """
 Permission checking utilities
 """
-from typing import List, Optional, TYPE_CHECKING
-from sqlalchemy.orm import Session
-from fastapi import Request, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials
+from typing import TYPE_CHECKING, List, Optional
+
 from app.models.user import User, UserRole
+from fastapi import HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
     from app.models.user import User

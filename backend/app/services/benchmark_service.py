@@ -1,22 +1,22 @@
 """
 Benchmark Service for managing benchmark tasks and results
 """
+import asyncio
 import json
 import time
-import asyncio
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
 
-from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
+from app.core.logging_config import LoggingConfig
+from app.core.ollama_client import OllamaClient, TaskType
 from app.models.benchmark_result import BenchmarkResult
+from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
 from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
-from app.core.ollama_client import OllamaClient, TaskType
-from app.core.logging_config import LoggingConfig
 from app.services.prompt_service import PromptService
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -503,7 +503,7 @@ class BenchmarkService:
         """
         try:
             from app.core.ollama_client import OllamaClient, TaskType
-            
+
             # Create evaluation prompt
             eval_prompt = f"""Evaluate the following output against the expected output and criteria.
 

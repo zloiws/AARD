@@ -2,13 +2,13 @@
 Authentication middleware and decorators
 """
 from typing import Optional
-from fastapi import Request, HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.services.auth_service import AuthService
 from app.models.user import User, UserRole
+from app.services.auth_service import AuthService
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
 
 # HTTP Bearer security scheme
 security = HTTPBearer(auto_error=False)
@@ -130,6 +130,23 @@ async def get_current_user_with_role(
             detail=f"Access denied. Required roles: {[r.value for r in allowed_roles]}"
         )
     
+    return user
+
+
+async def get_current_user_required(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> "User":
+    """
+    Require authentication: return User or raise 401
+    """
+    user = await get_current_user(request=request, credentials=credentials)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return user
 
 

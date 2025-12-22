@@ -1,15 +1,15 @@
 """
 API routes for current work (active tasks) real-time monitoring
 """
-from typing import List, Dict, Any, Optional
-from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.database import get_db
-from app.models.task import Task, TaskStatus
 from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/current-work", tags=["current-work"])
@@ -55,21 +55,31 @@ class CurrentWorkResponse(BaseModel):
 
 @router.get("/tasks", response_model=CurrentWorkResponse)
 async def get_active_tasks(
+    include_all: bool = False,
     db: Session = Depends(get_db)
 ):
-    """Get all currently active tasks with real-time progress"""
-    # Get active tasks (planning, in_progress, pending_approval)
-    active_statuses = [
-        TaskStatus.PLANNING,
-        TaskStatus.IN_PROGRESS,
-        TaskStatus.PENDING_APPROVAL,
-        TaskStatus.EXECUTING,
-        TaskStatus.PAUSED
-    ]
+    """Get all currently active tasks with real-time progress
     
-    tasks = db.query(Task).filter(
-        Task.status.in_(active_statuses)
-    ).order_by(Task.updated_at.desc()).all()
+    Args:
+        include_all: If True, return all tasks (including completed/failed). 
+                     If False, return only active tasks.
+    """
+    if include_all:
+        # Get all tasks
+        tasks = db.query(Task).order_by(Task.updated_at.desc()).all()
+    else:
+        # Get active tasks (planning, in_progress, pending_approval)
+        active_statuses = [
+            TaskStatus.PLANNING,
+            TaskStatus.IN_PROGRESS,
+            TaskStatus.PENDING_APPROVAL,
+            TaskStatus.EXECUTING,
+            TaskStatus.PAUSED
+        ]
+        
+        tasks = db.query(Task).filter(
+            Task.status.in_(active_statuses)
+        ).order_by(Task.updated_at.desc()).all()
     
     active_tasks = []
     
@@ -83,7 +93,7 @@ async def get_active_tasks(
         elif task.plans:  # Using backref
             plan = max(task.plans, key=lambda p: p.version) if task.plans else None
         
-        # Determine current stage
+        # Determine current stage based on status
         current_stage = "planning"
         if task.status == TaskStatus.IN_PROGRESS or task.status == TaskStatus.EXECUTING:
             current_stage = "executing"
@@ -91,6 +101,10 @@ async def get_active_tasks(
             current_stage = "pending_approval"
         elif task.status == TaskStatus.PLANNING:
             current_stage = "planning"
+        elif task.status == TaskStatus.COMPLETED:
+            current_stage = "completed"
+        elif task.status == TaskStatus.FAILED:
+            current_stage = "failed"
         
         # Get progress
         total_steps = 0
@@ -169,28 +183,35 @@ async def get_active_tasks(
 @router.get("/task/{task_id}", response_model=ActiveTask)
 async def get_active_task_details(
     task_id: UUID,
+    include_all: bool = False,
     db: Session = Depends(get_db)
 ):
-    """Get detailed information about a specific active task"""
+    """Get detailed information about a specific task
+    
+    Args:
+        include_all: If True, return task regardless of status. 
+                     If False, only return active tasks.
+    """
     task = db.query(Task).filter(Task.id == task_id).first()
     
     if not task:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
     
-    # Check if task is active
-    active_statuses = [
-        TaskStatus.PLANNING,
-        TaskStatus.IN_PROGRESS,
-        TaskStatus.PENDING_APPROVAL,
-        TaskStatus.EXECUTING,
-        TaskStatus.PAUSED
-    ]
-    
-    if task.status not in active_statuses:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Task {task_id} is not active (status: {task.status})"
-        )
+    # Check if task is active (only if include_all is False)
+    if not include_all:
+        active_statuses = [
+            TaskStatus.PLANNING,
+            TaskStatus.IN_PROGRESS,
+            TaskStatus.PENDING_APPROVAL,
+            TaskStatus.EXECUTING,
+            TaskStatus.PAUSED
+        ]
+        
+        if task.status not in active_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Task {task_id} is not active (status: {task.status}). Use ?include_all=true to get all tasks."
+            )
     
     # Reuse logic from get_active_tasks
     context = task.get_context()
@@ -201,6 +222,7 @@ async def get_active_task_details(
     elif task.plans:
         plan = max(task.plans, key=lambda p: p.version) if task.plans else None
     
+    # Determine current stage based on status
     current_stage = "planning"
     if task.status == TaskStatus.IN_PROGRESS or task.status == TaskStatus.EXECUTING:
         current_stage = "executing"
@@ -208,6 +230,10 @@ async def get_active_task_details(
         current_stage = "pending_approval"
     elif task.status == TaskStatus.PLANNING:
         current_stage = "planning"
+    elif task.status == TaskStatus.COMPLETED:
+        current_stage = "completed"
+    elif task.status == TaskStatus.FAILED:
+        current_stage = "failed"
     
     total_steps = 0
     completed_steps = 0

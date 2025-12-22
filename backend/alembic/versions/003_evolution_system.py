@@ -7,8 +7,8 @@ Create Date: 2025-01-14 00:00:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -20,8 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create prompts table
-    op.create_table(
-        'prompts',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.prompts')")).scalar():
+        op.create_table('prompts',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('prompt_text', sa.Text(), nullable=False),
@@ -45,15 +46,16 @@ def upgrade() -> None:
     )
     
     # Create indexes for prompts
-    op.create_index('idx_prompts_type', 'prompts', ['prompt_type'])
-    op.create_index('idx_prompts_status', 'prompts', ['status'])
-    op.create_index('idx_prompts_level', 'prompts', ['level'])
-    op.create_index('idx_prompts_parent', 'prompts', ['parent_prompt_id'])
-    op.create_index('idx_prompts_name', 'prompts', ['name'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_type ON prompts (prompt_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_status ON prompts (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_level ON prompts (level);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_parent ON prompts (parent_prompt_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_prompts_name ON prompts (name);")
     
     # Create approval_requests table
-    op.create_table(
-        'approval_requests',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.approval_requests')")).scalar():
+        op.create_table('approval_requests',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('request_type', sa.String(50), nullable=False),
         sa.Column('artifact_id', postgresql.UUID(as_uuid=True), nullable=True),
@@ -77,16 +79,17 @@ def upgrade() -> None:
     )
     
     # Create indexes for approval_requests
-    op.create_index('idx_approval_requests_status', 'approval_requests', ['status'])
-    op.create_index('idx_approval_requests_type', 'approval_requests', ['request_type'])
-    op.create_index('idx_approval_requests_artifact', 'approval_requests', ['artifact_id'])
-    op.create_index('idx_approval_requests_prompt', 'approval_requests', ['prompt_id'])
-    op.create_index('idx_approval_requests_task', 'approval_requests', ['task_id'])
-    op.create_index('idx_approval_requests_created', 'approval_requests', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_status ON approval_requests (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_type ON approval_requests (request_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_artifact ON approval_requests (artifact_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_prompt ON approval_requests (prompt_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_task ON approval_requests (task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_approval_requests_created ON approval_requests (created_at);")
     
     # Create evolution_history table
-    op.create_table(
-        'evolution_history',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.evolution_history')")).scalar():
+        op.create_table('evolution_history',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('entity_type', sa.String(50), nullable=False),
         sa.Column('entity_id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -104,15 +107,16 @@ def upgrade() -> None:
     )
     
     # Create indexes for evolution_history
-    op.create_index('idx_evolution_entity', 'evolution_history', ['entity_type', 'entity_id'])
-    op.create_index('idx_evolution_change_type', 'evolution_history', ['change_type'])
-    op.create_index('idx_evolution_trigger', 'evolution_history', ['trigger_type'])
-    op.create_index('idx_evolution_created', 'evolution_history', ['created_at'])
-    op.create_index('idx_evolution_success', 'evolution_history', ['success'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_entity ON evolution_history (entity_type, entity_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_change_type ON evolution_history (change_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_trigger ON evolution_history (trigger_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_created ON evolution_history (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_evolution_success ON evolution_history (success);")
     
     # Create feedback table
-    op.create_table(
-        'feedback',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.feedback')")).scalar():
+        op.create_table('feedback',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('entity_type', sa.String(50), nullable=False),
         sa.Column('entity_id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -131,15 +135,16 @@ def upgrade() -> None:
     )
     
     # Create indexes for feedback
-    op.create_index('idx_feedback_entity', 'feedback', ['entity_type', 'entity_id'])
-    op.create_index('idx_feedback_type', 'feedback', ['feedback_type'])
-    op.create_index('idx_feedback_processed', 'feedback', ['processed'])
-    op.create_index('idx_feedback_task', 'feedback', ['task_id'])
-    op.create_index('idx_feedback_created', 'feedback', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_entity ON feedback (entity_type, entity_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback (feedback_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_processed ON feedback (processed);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_task ON feedback (task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback (created_at);")
     
     # Create plans table
-    op.create_table(
-        'plans',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.plans')")).scalar():
+        op.create_table('plans',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('task_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('version', sa.Integer(), nullable=False, server_default='1'),
@@ -158,9 +163,9 @@ def upgrade() -> None:
     )
     
     # Create indexes for plans
-    op.create_index('idx_plans_task', 'plans', ['task_id'])
-    op.create_index('idx_plans_status', 'plans', ['status'])
-    op.create_index('idx_plans_version', 'plans', ['task_id', 'version'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_plans_task ON plans (task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_plans_status ON plans (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_plans_version ON plans (task_id, version);")
     
     # Update tasks table to reference plans (add foreign key if not exists)
     # Note: plan_id column already exists from migration 001

@@ -1,6 +1,7 @@
 """Test environment loading"""
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,6 +40,7 @@ os.environ["OLLAMA_MODEL_2"] = os.getenv("OLLAMA_MODEL_2", "")
 os.environ["SECRET_KEY"] = os.getenv("SECRET_KEY", "")
 
 from app.core.config import get_settings
+
 try:
     settings = get_settings()
     print("✓ Settings loaded!")

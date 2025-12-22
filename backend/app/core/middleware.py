@@ -4,10 +4,12 @@ FastAPI middleware for request context and logging
 import time
 import uuid
 from typing import Callable
+
+from app.core.logging_config import LoggingConfig
+from app.core.tracing import (add_span_attributes, get_current_span_id,
+                              get_current_trace_id)
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_current_trace_id, get_current_span_id, add_span_attributes
 
 logger = LoggingConfig.get_logger(__name__)
 

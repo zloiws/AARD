@@ -2,20 +2,20 @@
 Decision Pipeline for multi-stage task execution
 Combines: Planner → Router → Executor → Critic → Reflection
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
-from sqlalchemy.orm import Session
 import time
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
-from app.services.planning_service import PlanningService
+from app.core.tracing import add_span_attributes, get_tracer
+from app.services.critic_service import CriticService
 from app.services.decision_router import DecisionRouter
 from app.services.execution_service import ExecutionService
-from app.services.critic_service import CriticService
-from app.services.reflection_service import ReflectionService
 from app.services.memory_service import MemoryService
+from app.services.planning_service import PlanningService
+from app.services.reflection_service import ReflectionService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

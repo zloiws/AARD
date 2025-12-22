@@ -1,18 +1,19 @@
 """
 API routes for agent dialogs/conversations
 """
-from typing import List, Optional, Dict, Any
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel, Field
-from datetime import datetime
-from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.models.agent_conversation import (AgentConversation,
+                                           ConversationStatus, MessageRole)
 from app.services.agent_dialog_service import AgentDialogService
 from app.services.agent_service import AgentService
-from app.models.agent_conversation import AgentConversation, ConversationStatus, MessageRole
-from app.core.logging_config import LoggingConfig
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 router = APIRouter(prefix="/api/agent-dialogs", tags=["agent-dialogs"])
@@ -187,7 +188,7 @@ async def add_message(
             agent_id=message.get("agent_id", str(message_data.agent_id)),
             role=message.get("role", role.value),
             content=message.get("content", message_data.content),
-            timestamp=message.get("timestamp", datetime.utcnow().isoformat()),
+            timestamp=message.get("timestamp", datetime.now(timezone.utc).isoformat()),
             metadata=message.get("metadata")
         )
         
@@ -227,7 +228,7 @@ async def send_message_to_participants(
             agent_id=message.get("agent_id", str(message_data.sender_agent_id)),
             role=message.get("role", MessageRole.AGENT.value),
             content=message.get("content", message_data.content),
-            timestamp=message.get("timestamp", datetime.utcnow().isoformat()),
+            timestamp=message.get("timestamp", datetime.now(timezone.utc).isoformat()),
             metadata=message.get("metadata")
         )
         

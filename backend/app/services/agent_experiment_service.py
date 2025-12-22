@@ -3,16 +3,17 @@ Agent Experiment Service for A/B testing
 """
 import random
 import statistics
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
 
-from app.models.agent_experiment import AgentExperiment, ExperimentResult, ExperimentStatus
-from app.models.agent import Agent
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
+from app.core.tracing import add_span_attributes, get_tracer
+from app.models.agent import Agent
+from app.models.agent_experiment import (AgentExperiment, ExperimentResult,
+                                         ExperimentStatus)
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -122,7 +123,7 @@ class AgentExperimentService:
             raise ValueError(f"Experiment must be in DRAFT status to start, current: {experiment.status}")
         
         experiment.status = ExperimentStatus.RUNNING.value
-        experiment.start_date = datetime.utcnow()
+        experiment.start_date = datetime.now(timezone.utc)
         
         if experiment.max_duration_hours:
             experiment.end_date = experiment.start_date + timedelta(hours=experiment.max_duration_hours)
@@ -247,7 +248,7 @@ class AgentExperimentService:
     def _check_auto_complete(self, experiment: AgentExperiment):
         """Check if experiment should be auto-completed"""
         # Check duration
-        if experiment.end_date and datetime.utcnow() >= experiment.end_date:
+        if experiment.end_date and datetime.now(timezone.utc) >= experiment.end_date:
             self.complete_experiment(experiment.id)
             return
         
@@ -369,7 +370,7 @@ class AgentExperimentService:
         self._calculate_statistics(experiment)
         
         experiment.status = ExperimentStatus.COMPLETED.value
-        experiment.end_date = datetime.utcnow()
+        experiment.end_date = datetime.now(timezone.utc)
         
         self.db.commit()
         self.db.refresh(experiment)

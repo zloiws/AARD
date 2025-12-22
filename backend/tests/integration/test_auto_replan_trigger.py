@@ -1,15 +1,16 @@
 """
 Integration tests for automatic replanning trigger based on error detection
 """
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskStatus
+import pytest
+from app.core.execution_error_types import (ErrorCategory, ErrorSeverity,
+                                            ExecutionError)
 from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
 from app.services.execution_service import ExecutionService
-from app.core.execution_error_types import ErrorSeverity, ErrorCategory, ExecutionError
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.asyncio

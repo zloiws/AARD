@@ -1,13 +1,13 @@
 """
 SQLAlchemy model for checkpoints
 """
-from sqlalchemy import Column, String, DateTime, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-from datetime import datetime
 import uuid
+from datetime import datetime, timezone
 
 from app.core.database import Base
+from sqlalchemy import Column, DateTime, ForeignKey, Index, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
 
 
 class Checkpoint(Base):
@@ -29,7 +29,7 @@ class Checkpoint(Base):
     # Metadata
     reason = Column(String(255), nullable=True)
     created_by = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     
     # Links
     request_id = Column(UUID(as_uuid=True), ForeignKey("request_logs.id", ondelete="SET NULL"), nullable=True)

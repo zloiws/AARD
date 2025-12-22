@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
+import json
+import os
+
 from sqlalchemy import create_engine, text
-import os, json
+
 
 def main():
     db_url = os.environ.get("DATABASE_URL")

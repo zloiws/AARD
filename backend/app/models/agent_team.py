@@ -2,16 +2,17 @@
 Agent Team model for AARD platform
 Represents teams of agents that work together on tasks
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, Dict, List, Any
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Boolean, JSON, Table
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
+                        String, Table, Text)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class CoordinationStrategy(str, Enum):
@@ -38,7 +39,7 @@ agent_team_association = Table(
     Column('team_id', PGUUID(as_uuid=True), ForeignKey('agent_teams.id'), primary_key=True),
     Column('agent_id', PGUUID(as_uuid=True), ForeignKey('agents.id'), primary_key=True),
     Column('role', String(100), nullable=True),  # Role of agent in this team
-    Column('assigned_at', DateTime, default=datetime.utcnow, nullable=False),
+            Column('assigned_at', DateTime, default=lambda: datetime.now(timezone.utc), nullable=False),
     Column('is_lead', Boolean, default=False, nullable=False),  # Is this agent the team lead?
 )
 
@@ -59,8 +60,8 @@ class AgentTeam(Base):
     # Status and lifecycle
     status = Column(String(50), nullable=False, default=TeamStatus.DRAFT.value)
     created_by = Column(String(255), nullable=True)  # User who created the team
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Team metadata
     team_metadata = Column(JSONB, nullable=True)  # Additional metadata (renamed from 'metadata' to avoid SQLAlchemy reserved name conflict)
@@ -88,7 +89,7 @@ class AgentTeam(Base):
         """Get the team lead agent"""
         from app.models.agent import Agent
         from sqlalchemy.orm import Session
-        
+
         # Query the association table to find the lead
         # This requires a database session, so we'll handle it in the service layer
         return None  # Will be implemented in AgentTeamService

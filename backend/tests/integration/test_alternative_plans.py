@@ -1,15 +1,15 @@
 """
 Integration tests for alternative plans generation and evaluation (Phase 6.1)
 """
-import pytest
 import asyncio
 from uuid import uuid4
 
+import pytest
 from app.core.database import SessionLocal
-from app.models.task import Task, TaskStatus
 from app.models.plan import Plan, PlanStatus
-from app.services.planning_service import PlanningService
+from app.models.task import Task, TaskStatus
 from app.services.plan_evaluation_service import PlanEvaluationService
+from app.services.planning_service import PlanningService
 
 
 @pytest.fixture

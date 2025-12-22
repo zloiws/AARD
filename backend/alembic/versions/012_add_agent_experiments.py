@@ -7,8 +7,8 @@ Create Date: 2025-12-03 14:00:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -20,8 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create agent_experiments table
-    op.create_table(
-        'agent_experiments',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_experiments')")).scalar():
+        op.create_table('agent_experiments',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
@@ -58,8 +59,9 @@ def upgrade() -> None:
     )
     
     # Create experiment_results table
-    op.create_table(
-        'experiment_results',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.experiment_results')")).scalar():
+        op.create_table('experiment_results',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('experiment_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('agent_id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -82,14 +84,14 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('ix_experiments_status', 'agent_experiments', ['status'])
-    op.create_index('ix_experiments_agent_a', 'agent_experiments', ['agent_a_id'])
-    op.create_index('ix_experiments_agent_b', 'agent_experiments', ['agent_b_id'])
-    op.create_index('ix_experiments_created_at', 'agent_experiments', ['created_at'])
-    op.create_index('ix_results_experiment', 'experiment_results', ['experiment_id'])
-    op.create_index('ix_results_agent', 'experiment_results', ['agent_id'])
-    op.create_index('ix_results_variant', 'experiment_results', ['variant'])
-    op.create_index('ix_results_created_at', 'experiment_results', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_experiments_status ON agent_experiments (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_experiments_agent_a ON agent_experiments (agent_a_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_experiments_agent_b ON agent_experiments (agent_b_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_experiments_created_at ON agent_experiments (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_results_experiment ON experiment_results (experiment_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_results_agent ON experiment_results (agent_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_results_variant ON experiment_results (variant);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_results_created_at ON experiment_results (created_at);")
 
 
 def downgrade() -> None:

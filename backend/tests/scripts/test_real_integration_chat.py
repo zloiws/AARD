@@ -9,13 +9,14 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 
 import asyncio
-from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.core.ollama_client import OllamaClient
+
 from app.core.chat_session import ChatSessionManager
-from app.services.workflow_event_service import WorkflowEventService
-from app.models.workflow_event import EventType, EventSource
+from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
+from app.core.ollama_client import OllamaClient
+from app.models.workflow_event import EventSource, EventType
+from app.services.workflow_event_service import WorkflowEventService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

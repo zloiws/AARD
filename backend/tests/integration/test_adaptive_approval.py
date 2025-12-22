@@ -1,16 +1,16 @@
 """
 Integration tests for AdaptiveApprovalService
 """
-import pytest
-from uuid import uuid4
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
+from uuid import uuid4
 
-from app.services.adaptive_approval_service import AdaptiveApprovalService
+import pytest
 from app.models.agent import Agent, AgentStatus
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
 from app.models.trace import ExecutionTrace
+from app.services.adaptive_approval_service import AdaptiveApprovalService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

@@ -7,8 +7,8 @@ Create Date: 2025-12-05
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -20,8 +20,9 @@ depends_on = None
 
 def upgrade() -> None:
     # Create benchmark_tasks table
-    op.create_table(
-        'benchmark_tasks',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.benchmark_tasks')")).scalar():
+        op.create_table('benchmark_tasks',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('task_type', sa.String(length=50), nullable=False),
         sa.Column('category', sa.String(length=100), nullable=True),
@@ -41,14 +42,15 @@ def upgrade() -> None:
     )
     
     # Create indexes for benchmark_tasks
-    op.create_index('idx_benchmark_tasks_task_type', 'benchmark_tasks', ['task_type'])
-    op.create_index('idx_benchmark_tasks_category', 'benchmark_tasks', ['category'])
-    op.create_index('idx_benchmark_tasks_name', 'benchmark_tasks', ['name'], unique=True)
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_tasks_task_type ON benchmark_tasks (task_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_tasks_category ON benchmark_tasks (category);")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_benchmark_tasks_name ON benchmark_tasks (name);")
     
     # Create benchmark_results table
     # First create table without foreign keys to ollama tables (they may not exist)
-    op.create_table(
-        'benchmark_results',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.benchmark_results')")).scalar():
+        op.create_table('benchmark_results',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('benchmark_task_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('model_id', postgresql.UUID(as_uuid=True), nullable=True),
@@ -87,10 +89,10 @@ def upgrade() -> None:
         )
     
     # Create indexes for benchmark_results
-    op.create_index('idx_benchmark_results_task_id', 'benchmark_results', ['benchmark_task_id'])
-    op.create_index('idx_benchmark_results_model_id', 'benchmark_results', ['model_id'])
-    op.create_index('idx_benchmark_results_server_id', 'benchmark_results', ['server_id'])
-    op.create_index('idx_benchmark_results_created_at', 'benchmark_results', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_results_task_id ON benchmark_results (benchmark_task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_results_model_id ON benchmark_results (model_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_results_server_id ON benchmark_results (server_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_benchmark_results_created_at ON benchmark_results (created_at);")
 
 
 def downgrade() -> None:

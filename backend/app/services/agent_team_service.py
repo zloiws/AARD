@@ -1,18 +1,18 @@
 """
 Agent Team Service for managing teams of agents
 """
-from typing import Dict, Any, Optional, List
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
-
-from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus, agent_team_association
-from app.models.agent import Agent, AgentStatus
-from app.core.logging_config import LoggingConfig
-from app.services.a2a_router import A2ARouter
 from app.core.a2a_protocol import A2AMessage, A2AMessageType, A2AResponse
+from app.core.logging_config import LoggingConfig
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import (AgentTeam, CoordinationStrategy, TeamStatus,
+                                   agent_team_association)
+from app.services.a2a_router import A2ARouter
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -190,7 +190,7 @@ class AgentTeamService:
         if metadata is not None:
             team.team_metadata = metadata
         
-        team.updated_at = datetime.utcnow()
+        team.updated_at = datetime.now(timezone.utc)
         
         self.db.commit()
         self.db.refresh(team)
@@ -286,7 +286,7 @@ class AgentTeamService:
                 agent_id=agent_id,
                 role=role,
                 is_lead=is_lead,
-                assigned_at=datetime.utcnow()
+                assigned_at=datetime.now(timezone.utc)
             )
         )
         
@@ -537,7 +537,7 @@ class AgentTeamService:
             return False
         
         team.status = TeamStatus.ACTIVE.value
-        team.updated_at = datetime.utcnow()
+        team.updated_at = datetime.now(timezone.utc)
         
         self.db.commit()
         self.db.refresh(team)
@@ -560,7 +560,7 @@ class AgentTeamService:
             return False
         
         team.status = TeamStatus.PAUSED.value
-        team.updated_at = datetime.utcnow()
+        team.updated_at = datetime.now(timezone.utc)
         
         self.db.commit()
         self.db.refresh(team)

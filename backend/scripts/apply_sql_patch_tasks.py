@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Apply SQL patch to add missing task columns."""
 from __future__ import annotations
+
 import os
 import sys
 from pathlib import Path

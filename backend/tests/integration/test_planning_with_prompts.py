@@ -2,12 +2,11 @@
 Integration tests for PlanningService with prompts from database
 """
 import pytest
-from sqlalchemy.orm import Session
-
+from app.core.database import Base, SessionLocal, engine
+from app.models.prompt import PromptType
 from app.services.planning_service import PlanningService
 from app.services.prompt_service import PromptService
-from app.models.prompt import PromptType
-from app.core.database import SessionLocal, Base, engine
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -69,9 +68,10 @@ class TestPlanningWithPrompts:
     
     def test_prompt_usage_tracking(self, db: Session):
         """Test that prompt usage is tracked in Digital Twin context"""
-        from app.models.task import Task, TaskStatus
         from uuid import uuid4
-        
+
+        from app.models.task import Task, TaskStatus
+
         # Create prompts
         prompt_service = PromptService(db)
         

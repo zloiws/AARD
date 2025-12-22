@@ -7,21 +7,22 @@ Create Date: 2025-01-13 00:00:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = '002'
-down_revision: Union[str, None] = '001'
+down_revision: Union[str, None] = '001_initial_schema'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     # Create ollama_servers table
-    op.create_table(
-        'ollama_servers',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.ollama_servers')")).scalar():
+        op.create_table('ollama_servers',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('url', sa.String(500), nullable=False),
@@ -44,14 +45,15 @@ def upgrade() -> None:
     )
     
     # Create indexes for ollama_servers
-    op.create_index('idx_ollama_servers_active', 'ollama_servers', ['is_active'])
-    op.create_index('idx_ollama_servers_default', 'ollama_servers', ['is_default'])
-    op.create_index('idx_ollama_servers_priority', 'ollama_servers', ['priority'])
-    op.create_index('idx_ollama_servers_available', 'ollama_servers', ['is_available'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_servers_active ON ollama_servers (is_active);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_servers_default ON ollama_servers (is_default);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_servers_priority ON ollama_servers (priority);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_servers_available ON ollama_servers (is_available);")
     
     # Create ollama_models table
-    op.create_table(
-        'ollama_models',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.ollama_models')")).scalar():
+        op.create_table('ollama_models',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('server_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('name', sa.String(255), nullable=False),
@@ -71,10 +73,10 @@ def upgrade() -> None:
     )
     
     # Create indexes for ollama_models
-    op.create_index('idx_ollama_models_server', 'ollama_models', ['server_id'])
-    op.create_index('idx_ollama_models_active', 'ollama_models', ['is_active'])
-    op.create_index('idx_ollama_models_name', 'ollama_models', ['model_name'])
-    op.create_index('idx_ollama_models_server_name', 'ollama_models', ['server_id', 'model_name'], unique=True)
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_models_server ON ollama_models (server_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_models_active ON ollama_models (is_active);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_ollama_models_name ON ollama_models (model_name);")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ollama_models_server_name ON ollama_models (server_id, model_name);")
 
 
 def downgrade() -> None:

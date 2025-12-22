@@ -1,14 +1,15 @@
 """
 Tests for plan evaluation service (Phase 6.1.2)
 """
-import pytest
-from uuid import uuid4
 from datetime import datetime
+from uuid import uuid4
 
+import pytest
 from app.core.database import SessionLocal
 from app.models.plan import Plan, PlanStatus
 from app.models.task import Task, TaskStatus
-from app.services.plan_evaluation_service import PlanEvaluationService, PlanEvaluationResult
+from app.services.plan_evaluation_service import (PlanEvaluationResult,
+                                                  PlanEvaluationService)
 
 
 @pytest.fixture

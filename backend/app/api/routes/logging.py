@@ -1,10 +1,11 @@
 """
 API endpoints for logging management
 """
+from typing import Dict, Optional
+
+from app.core.logging_config import LoggingConfig
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Dict, Optional
-from app.core.logging_config import LoggingConfig
 
 router = APIRouter(prefix="/api/logging", tags=["logging"])
 

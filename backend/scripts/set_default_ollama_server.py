@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Set default Ollama server and default_model metadata for planning."""
 from __future__ import annotations
+
 import os
+
 from sqlalchemy import create_engine, text
+
 
 def main():
     db_url = os.environ.get("DATABASE_URL")

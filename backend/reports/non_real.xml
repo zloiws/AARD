@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="9" skipped="19" tests="385" time="452.059" timestamp="2025-12-21T20:56:40.091768" hostname="zloiws"><testcase classname="" name="tests.integration.test_planning_api" time="0.000"><skipped message="collection skipped">('C:\\work\\AARD\\backend\\tests\\integration\\test_planning_api.py', 15, 'Skipped: Skipping planning API integration tests (require running server). Set RUN_API_INTEGRATION_TESTS=1 to enable.')</skipped></testcase><testcase classname="tests.test_agent_conversation_model" name="test_agent_conversation_creation" time="0.832" /><testcase classname="tests.test_agent_conversation_model" name="test_agent_conversation_add_message" time="0.552" /><testcase classname="tests.test_agent_conversation_model" name="test_agent_conversation_multiple_messages" time="0.699" /><testcase classname="tests.test_agent_conversation_model" name="test_agent_conversation_participants" time="0.662" /><testcase classname="tests.test_agent_conversation_model" name="test_agent_conversation_context" time="0.659" /><testcase classname="tests.test_agent_conversation_model" name="test_agent_conversation_complete" time="0.653" /><testcase classname="tests.test_agent_conversation_model" name="test_agent_conversation_task_relationship" time="0.736" /><testcase classname="tests.test_agent_conversation_model" name="test_agent_conversation_to_dict" time="0.673" /><testcase classname="tests.test_agent_conversation_model" name="test_agent_conversation_default_values" time="0.678" /><testcase classname="tests.test_agent_dialog_api" name="test_create_conversation" time="0.884" /><testcase classname="tests.test_agent_dialog_api" name="test_create_conversation_insufficient_participants" time="0.653" /><testcase classname="tests.test_agent_dialog_api" name="test_get_conversation" time="0.662" /><testcase classname="tests.test_agent_dialog_api" name="test_get_conversation_not_found" time="0.631" /><testcase classname="tests.test_agent_dialog_api" name="test_list_conversations" time="0.694" /><testcase classname="tests.test_agent_dialog_api" name="test_list_conversations_by_task" time="0.703" /><testcase classname="tests.test_agent_dialog_api" name="test_add_message" time="0.784" /><testcase classname="tests.test_agent_dialog_api" name="test_add_message_non_participant" time="0.714" /><testcase classname="tests.test_agent_dialog_api" name="test_send_message_to_participants" time="0.682" /><testcase classname="tests.test_agent_dialog_api" name="test_update_context" time="0.780" /><testcase classname="tests.test_agent_dialog_api" name="test_complete_conversation" time="0.743" /><testcase classname="tests.test_agent_dialog_api" name="test_pause_resume_conversation" time="0.728" /><testcase classname="tests.test_agent_dialog_api" name="test_get_messages" time="0.730" /><testcase classname="tests.test_agent_dialog_service" name="test_create_conversation" time="0.666" /><testcase classname="tests.test_agent_dialog_service" name="test_create_conversation_insufficient_participants" time="0.721" /><testcase classname="tests.test_agent_dialog_service" name="test_create_conversation_invalid_agent" time="0.677" /><testcase classname="tests.test_agent_dialog_service" name="test_get_conversation" time="0.633" /><testcase classname="tests.test_agent_dialog_service" name="test_add_message" time="0.627" /><testcase classname="tests.test_agent_dialog_service" name="test_add_message_non_participant" time="0.667" /><testcase classname="tests.test_agent_dialog_service" name="test_update_context" time="0.651" /><testcase classname="tests.test_agent_dialog_service" name="test_is_conversation_complete" time="0.675" /><testcase classname="tests.test_agent_dialog_service" name="test_complete_conversation" time="0.682" /><testcase classname="tests.test_agent_dialog_service" name="test_pause_and_resume_conversation" time="0.606" /><testcase classname="tests.test_agent_dialog_service" name="test_get_conversations_by_task" time="0.639" /><testcase classname="tests.test_agent_dialog_service" name="test_get_conversations_by_agent" time="0.782" /><testcase classname="tests.test_agent_selection.TestAgentSelection" name="test_select_agent_for_task_no_capabilities" time="0.002" /><testcase classname="tests.test_agent_selection.TestAgentSelection" name="test_select_agent_for_task_with_capabilities" time="0.002" /><testcase classname="tests.test_agent_selection.TestAgentSelection" name="test_select_agent_preferred_agent" time="0.002" /><testcase classname="tests.test_agent_selection.TestAgentSelection" name="test_select_agent_no_matching_agents" time="0.001" /><testcase classname="tests.test_agent_team_coordination" name="test_distribute_task_sequential" time="0.711" /><testcase classname="tests.test_agent_team_coordination" name="test_distribute_task_parallel" time="0.730" /><testcase classname="tests.test_agent_team_coordination" name="test_distribute_task_hierarchical" time="0.731" /><testcase classname="tests.test_agent_team_coordination" name="test_distribute_task_to_role" time="0.759" /><testcase classname="tests.test_agent_team_coordination" name="test_distribute_task_inactive_team" time="0.603" /><testcase classname="tests.test_agent_team_coordination" name="test_distribute_task_no_agents" time="0.592" /><testcase classname="tests.test_agent_team_model" name="test_agent_team_creation" time="0.643" /><testcase classname="tests.test_agent_team_model" name="test_agent_team_unique_name" time="0.746" /><testcase classname="tests.test_agent_team_model" name="test_agent_team_defaults" time="0.677" /><testcase classname="tests.test_agent_team_model" name="test_agent_team_to_dict" time="0.604" /><testcase classname="tests.test_agent_team_model" name="test_agent_team_coordination_strategies" time="0.775" /><testcase classname="tests.test_agent_team_model" name="test_agent_team_status_enum" time="0.718" /><testcase classname="tests.test_agent_team_service" name="test_create_team" time="0.602" /><testcase classname="tests.test_agent_team_service" name="test_create_team_duplicate_name" time="0.670" /><testcase classname="tests.test_agent_team_service" name="test_get_team" time="0.596" /><testcase classname="tests.test_agent_team_service" name="test_get_team_not_found" time="0.629" /><testcase classname="tests.test_agent_team_service" name="test_list_teams" time="0.660" /><testcase classname="tests.test_agent_team_service" name="test_list_teams_by_status" time="0.589" /><testcase classname="tests.test_agent_team_service" name="test_update_team" time="0.566" /><testcase classname="tests.test_agent_team_service" name="test_add_agent_to_team" time="0.740" /><testcase classname="tests.test_agent_team_service" name="test_add_agent_to_team_duplicate" time="0.605" /><testcase classname="tests.test_agent_team_service" name="test_remove_agent_from_team" time="0.596" /><testcase classname="tests.test_agent_team_service" name="test_set_team_lead" time="0.743" /><testcase classname="tests.test_agent_team_service" name="test_get_agents_by_role" time="0.633" /><testcase classname="tests.test_agent_team_service" name="test_activate_team" time="0.619" /><testcase classname="tests.test_agent_team_service" name="test_pause_team" time="0.627" /><testcase classname="tests.test_agent_team_service" name="test_delete_team" time="0.761" /><testcase classname="tests.test_alternative_plan_generation" name="test_generate_alternative_plans_basic" time="0.558" /><testcase classname="tests.test_alternative_plan_generation" name="test_generate_alternative_plans_three_variants" time="0.417" /><testcase classname="tests.test_alternative_plan_generation" name="test_generate_alternative_plans_parallel_execution" time="0.903" /><testcase classname="tests.test_alternative_plan_generation" name="test_generate_alternative_plans_different_strategies" time="0.438" /><testcase classname="tests.test_alternative_plan_generation" name="test_generate_alternative_plans_with_context" time="0.331" /><testcase classname="tests.test_alternative_plan_generation" name="test_generate_alternative_plans_limit_enforcement" time="0.710" /><testcase classname="tests.test_audit_scheduler" name="test_scheduler_initialization" time="0.000" /><testcase classname="tests.test_audit_scheduler" name="test_get_schedule" time="0.001" /><testcase classname="tests.test_audit_scheduler" name="test_update_schedule" time="0.000" /><testcase classname="tests.test_audit_scheduler" name="test_update_schedule_invalid_type" time="0.000" /><testcase classname="tests.test_audit_scheduler" name="test_start_stop" time="0.002" /><testcase classname="tests.test_audit_scheduler" name="test_audit_already_exists" time="0.005" /><testcase classname="tests.test_audit_scheduler" name="test_run_audit_now" time="0.014" /><testcase classname="tests.test_audit_scheduler" name="test_check_daily_audit_time" time="0.000" /><testcase classname="tests.test_audit_scheduler" name="test_check_weekly_audit_time" time="0.000" /><testcase classname="tests.test_audit_scheduler" name="test_check_monthly_audit_time" time="0.000" /><testcase classname="tests.test_audit_trends_analysis" name="test_analyze_trends_improving" time="0.152" /><testcase classname="tests.test_audit_trends_analysis" name="test_analyze_trends_insufficient_data" time="0.075" /><testcase classname="tests.test_audit_trends_analysis" name="test_detect_improvements_degradations" time="0.104" /><testcase classname="tests.test_audit_trends_analysis" name="test_generate_smart_recommendations" time="0.063" /><testcase classname="tests.test_audit_trends_analysis" name="test_generate_smart_recommendations_no_issues" time="0.078" /><testcase classname="tests.test_audit_trends_analysis" name="test_analyze_trends_with_llm_stub" time="20.315" /><testcase classname="tests.test_audit_trends_analysis" name="test_generate_enhanced_report" time="0.150" /><testcase classname="tests.test_audit_trends_analysis" name="test_generate_fallback_insights" time="0.053" /><testcase classname="tests.test_audit_trends_analysis" name="test_format_trends_for_llm" time="0.194" /><testcase classname="tests.test_auto_replan_service" name="test_auto_replan_on_error_creates_new_plan" time="0.544" /><testcase classname="tests.test_auto_replan_service" name="test_auto_replan_on_error_with_classification" time="0.707" /><testcase classname="tests.test_auto_replan_service" name="test_auto_replan_on_error_includes_error_context" time="0.553" /><testcase classname="tests.test_auto_replan_service" name="test_auto_replan_on_error_handles_failure" time="0.631" /><testcase classname="tests.test_auto_replan_service" name="test_auto_replan_on_error_reason_formatting" time="0.666" /><testcase classname="tests.test_benchmark_api" name="test_benchmark_router_exists" time="0.000" /><testcase classname="tests.test_benchmark_api" name="test_benchmark_router_routes" time="0.000" /><testcase classname="tests.test_benchmark_api" name="test_benchmark_service_integration" time="0.018" /><testcase classname="tests.test_benchmark_evaluation" name="test_simple_evaluate_exact_match" time="0.019" /><testcase classname="tests.test_benchmark_evaluation" name="test_simple_evaluate_contains_expected" time="0.017" /><testcase classname="tests.test_benchmark_evaluation" name="test_simple_evaluate_no_match" time="0.012" /><testcase classname="tests.test_benchmark_evaluation" name="test_simple_evaluate_no_expected_output" time="0.008" /><testcase classname="tests.test_benchmark_evaluation" name="test_calculate_score_from_metrics" time="0.001" /><testcase classname="tests.test_benchmark_evaluation" name="test_calculate_score_with_weights" time="0.000" /><testcase classname="tests.test_benchmark_evaluation" name="test_evaluate_result_no_output" time="0.024" /><testcase classname="tests.test_benchmark_evaluation" name="test_evaluate_result_with_output" time="0.023" /><testcase classname="tests.test_benchmark_execution" name="test_run_benchmark_basic" time="3.033" /><testcase classname="tests.test_benchmark_execution" name="test_compare_models_structure" time="0.004" /><testcase classname="tests.test_benchmark_execution" name="test_run_suite_structure" time="0.003" /><testcase classname="tests.test_benchmark_execution" name="test_task_type_mapping" time="0.000" /><testcase classname="tests.test_benchmark_result_model" name="test_create_benchmark_result" time="0.014" /><testcase classname="tests.test_benchmark_result_model" name="test_benchmark_result_failed" time="0.015" /><testcase classname="tests.test_benchmark_result_model" name="test_benchmark_result_to_dict" time="0.016" /><testcase classname="tests.test_benchmark_result_model" name="test_benchmark_result_relationship" time="0.017" /><testcase classname="tests.test_benchmark_service" name="test_import_task" time="0.010" /><testcase classname="tests.test_benchmark_service" name="test_import_task_duplicate" time="0.012" /><testcase classname="tests.test_benchmark_service" name="test_load_tasks_from_file" time="0.004" /><testcase classname="tests.test_benchmark_service" name="test_list_tasks" time="0.008" /><testcase classname="tests.test_benchmark_service" name="test_get_task_count_by_type" time="0.007" /><testcase classname="tests.test_benchmark_service" name="test_import_tasks_from_directory" time="0.218" /><testcase classname="tests.test_benchmark_task_model" name="test_create_benchmark_task" time="0.007" /><testcase classname="tests.test_benchmark_task_model" name="test_benchmark_task_unique_name" time="0.012" /><testcase classname="tests.test_benchmark_task_model" name="test_benchmark_task_to_dict" time="0.007" /><testcase classname="tests.test_benchmark_task_model" name="test_benchmark_task_types" time="0.019" /><testcase classname="tests.test_contracts_api" name="test_execution_event_contract" time="1.015" /><testcase classname="tests.test_contracts_api" name="test_prompt_assignment_contract_api" time="0.879" /><testcase classname="tests.test_contracts_negative" name="test_create_prompt_invalid_type" time="0.884" /><testcase classname="tests.test_contracts_negative" name="test_assign_requires_auth" time="0.931" /><testcase classname="tests.test_contracts_negative" name="test_assign_invalid_uuid_fields_return_422" time="0.944" /><testcase classname="tests.test_contracts_negative" name="test_events_recent_invalid_limit_returns_422" time="0.883" /><testcase classname="tests.test_contracts_negative" name="test_delete_assignment_requires_auth" time="0.794" /><testcase classname="tests.test_embedding_service" name="test_embedding_service_initialization" time="0.000" /><testcase classname="tests.test_embedding_service" name="test_normalize_vector" time="0.000" /><testcase classname="tests.test_embedding_service" name="test_cosine_similarity" time="0.000" /><testcase classname="tests.test_embedding_service" name="test_cache_embedding" time="0.000" /><testcase classname="tests.test_embedding_service" name="test_clear_cache" time="0.000" /><testcase classname="tests.test_embedding_service" name="test_get_cache_stats" time="0.000" /><testcase classname="tests.test_embedding_service" name="test_generate_embedding_empty_text" time="0.002" /><testcase classname="tests.test_embedding_service" name="test_generate_embedding_with_cache" time="0.003" /><testcase classname="tests.test_embedding_service" name="test_generate_embeddings_batch" time="0.002" /><testcase classname="tests.test_embedding_service" name="test_generate_embedding_error_handling" time="0.004" /><testcase classname="tests.test_execution_context" name="test_execution_context_creation" time="0.668" /><testcase classname="tests.test_execution_context" name="test_execution_context_with_workflow_id" time="0.570" /><testcase classname="tests.test_execution_context" name="test_execution_context_metadata" time="0.595" /><testcase classname="tests.test_execution_context" name="test_execution_context_prompt_manager" time="0.695" /><testcase classname="tests.test_execution_context" name="test_execution_context_repr" time="0.638" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_critical_plan_structure_error" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_critical_dependency_error" time="0.001" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_critical_environment_error" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_high_severity_agent_error" time="0.001" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_high_severity_validation_error" time="0.001" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_timeout_error" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_timeout_after_retries" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_medium_severity_unknown_error" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_requires_replanning_function" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_error_with_context" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_error_with_type" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_error_to_dict" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_case_insensitive_patterns" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_multiple_pattern_matching" time="0.000" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_resource_error_detection" time="0.001" /><testcase classname="tests.test_execution_error_detection.TestExecutionErrorDetection" name="test_circular_dependency_error" time="0.000" /><testcase classname="tests.test_integration_basic" name="test_basic_orchestrator_works" time="0.637"><skipped type="pytest.skip" message="Server with URL containing 10.39.0.6 not found in database">C:\work\AARD\backend\tests\test_integration_basic.py:32: Server with URL containing 10.39.0.6 not found in database</skipped></testcase><testcase classname="tests.test_integration_code_generation" name="test_code_generation_simple_function" time="0.694"><skipped type="pytest.skip" message="Server with URL containing 10.39.0.6 not found">C:\work\AARD\backend\tests\test_integration_code_generation.py:27: Server with URL containing 10.39.0.6 not found</skipped></testcase><testcase classname="tests.test_integration_code_generation" name="test_code_generation_with_planning" time="0.609"><skipped type="pytest.skip" message="Server with URL containing 10.39.0.6 not found">C:\work\AARD\backend\tests\test_integration_code_generation.py:27: Server with URL containing 10.39.0.6 not found</skipped></testcase><testcase classname="tests.test_integration_code_generation" name="test_code_generation_prompt_metrics" time="0.697"><skipped type="pytest.skip" message="Server with URL containing 10.39.0.6 not found">C:\work\AARD\backend\tests\test_integration_code_generation.py:27: Server with URL containing 10.39.0.6 not found</skipped></testcase><testcase classname="tests.test_integration_code_generation" name="test_planning_only" time="0.586"><skipped type="pytest.skip" message="Server with URL containing 10.39.0.6 not found">C:\work\AARD\backend\tests\test_integration_code_generation.py:27: Server with URL containing 10.39.0.6 not found</skipped></testcase><testcase classname="tests.test_integration_complex_task" name="test_complex_task_multi_step" time="0.643"><skipped type="pytest.skip" message="No Ollama servers configured">C:\work\AARD\backend\tests\test_integration_complex_task.py:19: No Ollama servers configured</skipped></testcase><testcase classname="tests.test_integration_complex_task" name="test_complex_task_with_context" time="0.585"><skipped type="pytest.skip" message="No Ollama servers configured">C:\work\AARD\backend\tests\test_integration_complex_task.py:59: No Ollama servers configured</skipped></testcase><testcase classname="tests.test_integration_complex_task" name="test_full_workflow_with_prompts" time="0.639"><skipped type="pytest.skip" message="No Ollama servers configured">C:\work\AARD\backend\tests\test_integration_complex_task.py:97: No Ollama servers configured</skipped></testcase><testcase classname="tests.test_integration_complex_task" name="test_error_handling_and_fallback" time="0.615"><skipped type="pytest.skip" message="No Ollama servers configured">C:\work\AARD\backend\tests\test_integration_complex_task.py:137: No Ollama servers configured</skipped></testcase><testcase classname="tests.test_integration_comprehensive.TestEndToEndWorkflow" name="test_full_workflow_with_autonomy_levels" time="0.024" /><testcase classname="tests.test_integration_comprehensive.TestEndToEndWorkflow" name="test_adaptive_approval_with_autonomy" time="0.040" /><testcase classname="tests.test_integration_comprehensive.TestEndToEndWorkflow" name="test_agent_approval_workflow" time="0.013" /><testcase classname="tests.test_integration_comprehensive.TestDualModelIntegration" name="test_planner_coder_separation" time="0.017" /><testcase classname="tests.test_integration_comprehensive.TestDualModelIntegration" name="test_function_call_creation" time="0.005" /><testcase classname="tests.test_integration_comprehensive.TestComponentIntegration" name="test_all_services_use_execution_context" time="0.001" /><testcase classname="tests.test_integration_comprehensive.TestComponentIntegration" name="test_workflow_engine_available" time="0.001" /><testcase classname="tests.test_integration_comprehensive.TestComponentIntegration" name="test_prompt_manager_available" time="0.001" /><testcase classname="tests.test_integration_prompt_improvement" name="test_prompt_usage_tracking" time="0.591"><skipped type="pytest.skip" message="No Ollama servers configured">C:\work\AARD\backend\tests\test_integration_prompt_improvement.py:21: No Ollama servers configured</skipped></testcase><testcase classname="tests.test_integration_prompt_improvement" name="test_prompt_improvement_analysis" time="0.621"><skipped type="pytest.skip" message="No Ollama servers configured">C:\work\AARD\backend\tests\test_integration_prompt_improvement.py:56: No Ollama servers configured</skipped></testcase><testcase classname="tests.test_integration_prompt_improvement" name="test_ab_testing_prompts" time="0.678"><skipped type="pytest.skip" message="No Ollama servers configured">C:\work\AARD\backend\tests\test_integration_prompt_improvement.py:101: No Ollama servers configured</skipped></testcase><testcase classname="tests.test_integration_prompt_improvement" name="test_prompt_metrics_aggregation" time="0.575"><skipped type="pytest.skip" message="No Ollama servers configured">C:\work\AARD\backend\tests\test_integration_prompt_improvement.py:160: No Ollama servers configured</skipped></testcase><testcase classname="tests.test_integration_simple_question" name="test_simple_question_basic" time="0.624"><skipped type="pytest.skip" message="No Ollama servers configured in database">C:\work\AARD\backend\tests\test_integration_simple_question.py:53: No Ollama servers configured in database</skipped></testcase><testcase classname="tests.test_integration_simple_question" name="test_simple_question_greeting" time="0.624"><skipped type="pytest.skip" message="Server with URL containing 10.39.0.6 not found">C:\work\AARD\backend\tests\test_integration_simple_question.py:27: Server with URL containing 10.39.0.6 not found</skipped></testcase><testcase classname="tests.test_integration_simple_question" name="test_simple_question_factual" time="0.723"><skipped type="pytest.skip" message="Server with URL containing 10.39.0.6 not found">C:\work\AARD\backend\tests\test_integration_simple_question.py:27: Server with URL containing 10.39.0.6 not found</skipped></testcase><testcase classname="tests.test_integration_simple_question" name="test_simple_question_explanation" time="0.727"><skipped type="pytest.skip" message="Server with URL containing 10.39.0.6 not found">C:\work\AARD\backend\tests\test_integration_simple_question.py:27: Server with URL containing 10.39.0.6 not found</skipped></testcase><testcase classname="tests.test_integration_simple_question" name="test_simple_question_prompt_manager_integration" time="0.571"><skipped type="pytest.skip" message="Server with URL containing 10.39.0.6 not found">C:\work\AARD\backend\tests\test_integration_simple_question.py:27: Server with URL containing 10.39.0.6 not found</skipped></testcase><testcase classname="tests.test_interpretation_llm_integration" name="test_interpretation_with_ollama_if_available" time="21.261" /><testcase classname="tests.test_interpretation_llm_integration" name="test_interpretation_handles_ollama_failure_gracefully" time="0.840" /><testcase classname="tests.test_memory_service_integration" name="test_memory_service_with_execution_context" time="0.001" /><testcase classname="tests.test_memory_service_integration" name="test_memory_service_backward_compatibility" time="0.000" /><testcase classname="tests.test_memory_service_integration" name="test_memory_service_save_memory_with_context" time="0.017" /><testcase classname="tests.test_memory_vector_search" name="test_search_memories_vector_no_embeddings" time="0.013" /><testcase classname="tests.test_memory_vector_search" name="test_search_memories_vector_with_embeddings" time="0.004" /><testcase classname="tests.test_memory_vector_search" name="test_search_memories_vector_error_handling" time="0.010" /><testcase classname="tests.test_memory_vector_search" name="test_search_memories_vector_filters" time="0.003" /><testcase classname="tests.test_meta_learning_service_integration" name="test_meta_learning_service_with_execution_context" time="0.002" /><testcase classname="tests.test_meta_learning_service_integration" name="test_meta_learning_service_backward_compatibility" time="0.003" /><testcase classname="tests.test_meta_learning_service_integration" name="test_meta_learning_service_analyze_patterns_with_context" time="0.006" /><testcase classname="tests.test_ollama_client" name="test_model_selection" time="0.001" /><testcase classname="tests.test_ollama_client" name="test_cache_key_generation" time="0.000" /><testcase classname="tests.test_ollama_client" name="test_health_check" time="0.231" /><testcase classname="tests.test_phase1_critical_fixes.TestCriticalBugs" name="test_execute_decision_step_exists" time="0.001" /><testcase classname="tests.test_phase1_critical_fixes.TestCriticalBugs" name="test_execute_validation_step_exists" time="0.000" /><testcase classname="tests.test_phase1_critical_fixes.TestCriticalBugs" name="test_execute_with_team_exists" time="0.000" /><testcase classname="tests.test_phase1_critical_fixes.TestCriticalBugs" name="test_web_search_tool_integration" time="0.001" /><testcase classname="tests.test_phase1_critical_fixes.TestComponentUnification" name="test_workflow_engine_in_execution_context" time="0.000" /><testcase classname="tests.test_phase1_critical_fixes.TestComponentUnification" name="test_prompt_manager_in_execution_context" time="0.000" /><testcase classname="tests.test_phase1_critical_fixes.TestComponentUnification" name="test_planning_service_uses_workflow_engine" time="0.001" /><testcase classname="tests.test_phase1_critical_fixes.TestComponentUnification" name="test_execution_service_uses_workflow_engine" time="0.000" /><testcase classname="tests.test_phase1_critical_fixes.TestWebSearchIntegration" name="test_web_search_requires_approval" time="0.000" /><testcase classname="tests.test_phase2_dual_model.TestPlannerAgent" name="test_planner_agent_creation" time="0.017" /><testcase classname="tests.test_phase2_dual_model.TestPlannerAgent" name="test_planner_agent_analyze_task" time="0.016" /><testcase classname="tests.test_phase2_dual_model.TestCoderAgent" name="test_coder_agent_creation" time="0.013" /><testcase classname="tests.test_phase2_dual_model.TestDualModelIntegration" name="test_planning_service_has_planner_agent" time="0.001" /><testcase classname="tests.test_phase2_dual_model.TestDualModelIntegration" name="test_execution_service_has_coder_agent" time="0.001" /><testcase classname="tests.test_phase2_dual_model.TestDualModelIntegration" name="test_planner_agent_creates_function_call" time="0.017" /><testcase classname="tests.test_phase2_dual_model.TestDualModelIntegration" name="test_function_call_protocol" time="0.000" /><testcase classname="tests.test_phase3_autonomy_levels.TestAutonomyLevels" name="test_task_has_autonomy_level" time="0.006" /><testcase classname="tests.test_phase3_autonomy_levels.TestAutonomyLevels" name="test_adaptive_approval_considers_autonomy_level" time="0.016" /><testcase classname="tests.test_phase3_autonomy_levels.TestAgentApprovalAgent" name="test_aaa_creation" time="0.004" /><testcase classname="tests.test_phase3_autonomy_levels.TestAgentApprovalAgent" name="test_aaa_validates_agent_creation" time="0.010" /><testcase classname="tests.test_phase3_autonomy_levels.TestTaskLifecycleManager" name="test_lifecycle_manager_creation" time="0.000" /><testcase classname="tests.test_phase3_autonomy_levels.TestTaskLifecycleManager" name="test_lifecycle_transitions" time="0.046" /><testcase classname="tests.test_phase3_autonomy_levels.TestTaskLifecycleManager" name="test_lifecycle_forbidden_transition" time="0.006" /><testcase classname="tests.test_phase3_autonomy_levels.TestTaskLifecycleManager" name="test_lifecycle_role_permissions" time="0.005" /><testcase classname="tests.test_phase4_workflow_engine.TestTaskLifecycleIntegration" name="test_planning_service_uses_lifecycle_manager" time="0.001" /><testcase classname="tests.test_phase4_workflow_engine.TestTaskLifecycleIntegration" name="test_lifecycle_manager_in_planning" time="0.018" /><testcase classname="tests.test_phase4_workflow_engine.TestReplanning" name="test_planning_service_has_replan_method" time="0.001" /><testcase classname="tests.test_phase4_workflow_engine.TestReplanning" name="test_planning_service_has_auto_replan_on_error" time="0.001" /><testcase classname="tests.test_phase4_workflow_engine.TestReplanning" name="test_replanning_uses_memory" time="0.002" /><testcase classname="tests.test_phase4_workflow_engine.TestMemoryIntegration" name="test_execution_saves_to_memory" time="0.013" /><testcase classname="tests.test_plan_evaluation" name="test_evaluate_plan_basic" time="0.015" /><testcase classname="tests.test_plan_evaluation" name="test_evaluate_execution_time" time="0.018" /><testcase classname="tests.test_plan_evaluation" name="test_evaluate_efficiency" time="0.031" /><testcase classname="tests.test_plan_evaluation" name="test_evaluate_risk_level" time="0.027" /><testcase classname="tests.test_plan_evaluation" name="test_evaluate_approval_points" time="0.013" /><testcase classname="tests.test_plan_evaluation" name="test_evaluate_plans_ranking" time="0.035" /><testcase classname="tests.test_plan_evaluation" name="test_evaluate_plans_custom_weights" time="0.025" /><testcase classname="tests.test_plan_evaluation" name="test_compare_plans" time="0.026" /><testcase classname="tests.test_plan_evaluation" name="test_generate_recommendations" time="0.013" /><testcase classname="tests.test_plan_evaluation" name="test_evaluate_plan_no_duration" time="0.013" /><testcase classname="tests.test_plan_evaluation" name="test_evaluate_plan_empty_steps" time="0.013" /><testcase classname="tests.test_plan_execution.TestStepExecutor" name="test_execute_step_success" time="0.013" /><testcase classname="tests.test_plan_execution.TestStepExecutor" name="test_execute_step_failure" time="0.009" /><testcase classname="tests.test_plan_execution.TestStepExecutor" name="test_execute_step_approval_required" time="0.011" /><testcase classname="tests.test_plan_execution.TestStepExecutor" name="test_execute_step_unknown_type" time="0.011" /><testcase classname="tests.test_plan_execution.TestExecutionService" name="test_execute_plan_not_found" time="0.006" /><testcase classname="tests.test_plan_execution.TestExecutionService" name="test_execute_plan_not_approved" time="0.003" /><testcase classname="tests.test_plan_execution.TestExecutionService" name="test_execute_plan_no_steps" time="38.465" /><testcase classname="tests.test_plan_execution.TestExecutionService" name="test_execute_plan_success" time="0.007" /><testcase classname="tests.test_plan_execution.TestExecutionService" name="test_execute_plan_dependency_error" time="40.039" /><testcase classname="tests.test_plan_execution.TestExecutionService" name="test_execute_plan_step_failure" time="0.007" /><testcase classname="tests.test_plan_execution.TestExecutionService" name="test_get_execution_status" time="0.001" /><testcase classname="tests.test_plan_template_extraction.TestPlanTemplateExtraction" name="test_extract_template_on_plan_completion" time="0.004"><failure message="assert None is not None">self = &lt;tests.test_plan_template_extraction.TestPlanTemplateExtraction object at 0x00000200B0712330&gt;
+db_session = &lt;Mock id='2202061123520'&gt;
+sample_completed_plan = &lt;Mock name='mock.filter().first()' spec='Plan' id='2202061113536'&gt;
+sample_task = &lt;Mock name='mock.filter().first()' spec='Task' id='2202030092176'&gt;
+
+    def test_extract_template_on_plan_completion(self, db_session, sample_completed_plan, sample_task):
+        """Test that template is extracted when plan completes"""
+        # Setup mocks
+        plan_query = Mock()
+        plan_query.filter.return_value.first.return_value = sample_completed_plan
+        task_query = Mock()
+        task_query.filter.return_value.first.return_value = sample_task
+        template_query = Mock()
+        template_query.limit.return_value.all.return_value = []
+    
+        db_session.query.side_effect = [plan_query, task_query, template_query]
+    
+        # Create template service
+        template_service = PlanTemplateService(db_session)
+        template_service.embedding_service = None  # Disable embedding for tests
+    
+        # Extract template
+        template = template_service.extract_template_from_plan(plan_id=sample_completed_plan.id)
+    
+        # Assertions
+&gt;       assert template is not None
+E       assert None is not None
+
+tests\test_plan_template_extraction.py:86: AssertionError</failure></testcase><testcase classname="tests.test_plan_template_extraction.TestPlanTemplateExtraction" name="test_extract_template_quality_criteria_min_steps" time="0.002" /><testcase classname="tests.test_plan_template_extraction.TestPlanTemplateExtraction" name="test_extract_template_quality_criteria_duration" time="0.001" /><testcase classname="tests.test_plan_template_extraction.TestPlanTemplateExtraction" name="test_extract_template_skips_if_already_extracted" time="0.003" /><testcase classname="tests.test_plan_template_extraction.TestPlanTemplateExtraction" name="test_extract_template_disabled" time="0.002" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_extract_template_from_plan_success" time="0.004"><failure message="assert None is not None">self = &lt;tests.test_plan_template_service.TestPlanTemplateService object at 0x00000200B0710980&gt;
+template_service = &lt;app.services.plan_template_service.PlanTemplateService object at 0x00000200B4F8F7A0&gt;
+db_session = &lt;Mock id='2202059943872'&gt;
+sample_plan = &lt;Mock name='mock.query().filter().first()' spec='Plan' id='2202060155568'&gt;
+sample_task = &lt;Mock name='mock.filter().first()' spec='Task' id='2202060149568'&gt;
+
+    def test_extract_template_from_plan_success(self, template_service, db_session, sample_plan, sample_task):
+        """Test successful template extraction"""
+        # Setup mocks
+        db_session.query.return_value.filter.return_value.first.side_effect = [sample_plan, sample_task]
+        db_session.query.return_value.filter.return_value.first.return_value = sample_plan
+    
+        # Mock query chain
+        plan_query = Mock()
+        plan_query.filter.return_value.first.return_value = sample_plan
+        task_query = Mock()
+        task_query.filter.return_value.first.return_value = sample_task
+        db_session.query.side_effect = [plan_query, task_query]
+    
+        # Extract template
+        template = template_service.extract_template_from_plan(
+            plan_id=sample_plan.id,
+            template_name="Test Template"
+        )
+    
+        # Assertions
+&gt;       assert template is not None
+E       assert None is not None
+
+tests\test_plan_template_service.py:92: AssertionError</failure></testcase><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_extract_template_from_non_completed_plan" time="0.002" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_extract_template_plan_not_found" time="0.002" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_abstract_text" time="0.001" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_infer_category" time="0.001" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_infer_tags" time="0.001" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_find_matching_templates_text_search" time="0.002" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_find_matching_templates_with_category_filter" time="0.002" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_rank_templates" time="0.001" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_get_template" time="0.001"><failure message="TypeError: 'Mock' object is not subscriptable">self = &lt;tests.test_plan_template_service.TestPlanTemplateService object at 0x00000200B07303E0&gt;
+template_service = &lt;app.services.plan_template_service.PlanTemplateService object at 0x00000200B5036EA0&gt;
+db_session = &lt;Mock id='2202060147744'&gt;
+
+    def test_get_template(self, template_service, db_session):
+        """Test getting template by ID"""
+        template_id = uuid4()
+        template = Mock(spec=PlanTemplate)
+        template.id = template_id
+    
+        query_mock = Mock()
+        query_mock.filter.return_value.first.return_value = template
+        db_session.query.return_value = query_mock
+    
+&gt;       result = template_service.get_template(template_id)
+
+tests\test_plan_template_service.py:252: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;app.services.plan_template_service.PlanTemplateService object at 0x00000200B5036EA0&gt;
+template_id = UUID('66745efe-8d42-448e-8b70-40b10298a3d0')
+
+    def get_template(self, template_id: UUID) -&gt; Optional[PlanTemplate]:
+        """Get a template by ID (excluding embedding field to avoid vector type issues)"""
+        # Use raw SQL to avoid SQLAlchemy vector type issues
+        from sqlalchemy import text
+        sql = text("""
+            SELECT id, name, description, category, tags, goal_pattern,
+                   strategy_template, steps_template, alternatives_template,
+                   status, version, success_rate, avg_execution_time, usage_count,
+                   source_plan_ids, source_task_descriptions,
+                   created_at, updated_at, last_used_at
+            FROM plan_templates
+            WHERE id = CAST(:id AS uuid)
+        """)
+        result = self.db.execute(sql, {"id": str(template_id)})
+        try:
+            row = result.fetchone()
+        except Exception:
+            # Fallback for unit tests where db is a Mock: try ORM query
+            try:
+                if hasattr(self.db, "query"):
+                    row_obj = self.db.query(PlanTemplate).filter().first()
+                    if not row_obj:
+                        return None
+                    row = (
+                        getattr(row_obj, "id", None),
+                        getattr(row_obj, "name", None),
+                        getattr(row_obj, "description", None),
+                        getattr(row_obj, "category", None),
+                        getattr(row_obj, "tags", None),
+                        getattr(row_obj, "goal_pattern", None),
+                        getattr(row_obj, "strategy_template", None),
+                        getattr(row_obj, "steps_template", None),
+                        getattr(row_obj, "alternatives_template", None),
+                        getattr(row_obj, "status", None),
+                        getattr(row_obj, "version", None),
+                        getattr(row_obj, "success_rate", None),
+                        getattr(row_obj, "avg_execution_time", None),
+                        getattr(row_obj, "usage_count", None),
+                        getattr(row_obj, "source_plan_ids", None),
+                        getattr(row_obj, "source_task_descriptions", None),
+                        getattr(row_obj, "created_at", None),
+                        getattr(row_obj, "updated_at", None),
+                        getattr(row_obj, "last_used_at", None),
+                    )
+                else:
+                    row = None
+            except Exception:
+                row = None
+    
+        if not row:
+            return None
+    
+        # Reconstruct PlanTemplate object from row
+        template = PlanTemplate()
+&gt;       template.id = row[0]
+E       TypeError: 'Mock' object is not subscriptable
+
+app\services\plan_template_service.py:883: TypeError</failure></testcase><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_list_templates" time="0.003" /><testcase classname="tests.test_plan_template_service.TestPlanTemplateService" name="test_update_template_usage" time="0.002"><failure message="TypeError: 'Mock' object is not subscriptable">self = &lt;tests.test_plan_template_service.TestPlanTemplateService object at 0x00000200B07306E0&gt;
+template_service = &lt;app.services.plan_template_service.PlanTemplateService object at 0x00000200B50352E0&gt;
+db_session = &lt;Mock id='2202060147360'&gt;
+
+    def test_update_template_usage(self, template_service, db_session):
+        """Test updating template usage statistics"""
+        template_id = uuid4()
+        template = Mock(spec=PlanTemplate)
+        template.id = template_id
+        template.usage_count = 5
+        template.last_used_at = None
+    
+        query_mock = Mock()
+        query_mock.filter.return_value.first.return_value = template
+        db_session.query.return_value = query_mock
+    
+&gt;       template_service.update_template_usage(template_id)
+
+tests\test_plan_template_service.py:282: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+app\services\plan_template_service.py:1065: in update_template_usage
+    template = self.get_template(template_id)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;app.services.plan_template_service.PlanTemplateService object at 0x00000200B50352E0&gt;
+template_id = UUID('6cc7a4d8-3037-4d86-a3ec-32d8ebf30b48')
+
+    def get_template(self, template_id: UUID) -&gt; Optional[PlanTemplate]:
+        """Get a template by ID (excluding embedding field to avoid vector type issues)"""
+        # Use raw SQL to avoid SQLAlchemy vector type issues
+        from sqlalchemy import text
+        sql = text("""
+            SELECT id, name, description, category, tags, goal_pattern,
+                   strategy_template, steps_template, alternatives_template,
+                   status, version, success_rate, avg_execution_time, usage_count,
+                   source_plan_ids, source_task_descriptions,
+                   created_at, updated_at, last_used_at
+            FROM plan_templates
+            WHERE id = CAST(:id AS uuid)
+        """)
+        result = self.db.execute(sql, {"id": str(template_id)})
+        try:
+            row = result.fetchone()
+        except Exception:
+            # Fallback for unit tests where db is a Mock: try ORM query
+            try:
+                if hasattr(self.db, "query"):
+                    row_obj = self.db.query(PlanTemplate).filter().first()
+                    if not row_obj:
+                        return None
+                    row = (
+                        getattr(row_obj, "id", None),
+                        getattr(row_obj, "name", None),
+                        getattr(row_obj, "description", None),
+                        getattr(row_obj, "category", None),
+                        getattr(row_obj, "tags", None),
+                        getattr(row_obj, "goal_pattern", None),
+                        getattr(row_obj, "strategy_template", None),
+                        getattr(row_obj, "steps_template", None),
+                        getattr(row_obj, "alternatives_template", None),
+                        getattr(row_obj, "status", None),
+                        getattr(row_obj, "version", None),
+                        getattr(row_obj, "success_rate", None),
+                        getattr(row_obj, "avg_execution_time", None),
+                        getattr(row_obj, "usage_count", None),
+                        getattr(row_obj, "source_plan_ids", None),
+                        getattr(row_obj, "source_task_descriptions", None),
+                        getattr(row_obj, "created_at", None),
+                        getattr(row_obj, "updated_at", None),
+                        getattr(row_obj, "last_used_at", None),
+                    )
+                else:
+                    row = None
+            except Exception:
+                row = None
+    
+        if not row:
+            return None
+    
+        # Reconstruct PlanTemplate object from row
+        template = PlanTemplate()
+&gt;       template.id = row[0]
+E       TypeError: 'Mock' object is not subscriptable
+
+app\services\plan_template_service.py:883: TypeError</failure></testcase><testcase classname="tests.test_plan_tree_api.TestPlanTreeAPI" name="test_get_plan_tree_success" time="0.022" /><testcase classname="tests.test_plan_tree_api.TestPlanTreeAPI" name="test_get_plan_tree_not_found" time="0.008" /><testcase classname="tests.test_plan_tree_api.TestPlanTreeAPI" name="test_get_plan_tree_with_metadata" time="0.018" /><testcase classname="tests.test_plan_tree_api.TestPlanTreeAPI" name="test_get_plan_tree_without_metadata" time="0.018" /><testcase classname="tests.test_plan_tree_api.TestPlanTreeAPI" name="test_get_plan_tree_empty_steps" time="0.017" /><testcase classname="tests.test_plan_tree_api.TestPlanTreeAPI" name="test_get_plan_tree_hierarchy_structure" time="0.017" /><testcase classname="tests.test_plan_tree_api.TestPlanTreeAPI" name="test_get_plan_tree_includes_plan_info" time="0.019" /><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_empty_steps" time="0.000"><failure message="KeyError: 'has_hierarchy'">self = &lt;tests.test_plan_tree_service.TestPlanTreeService object at 0x00000200B22C6B10&gt;
+
+    def test_empty_steps(self):
+        """Test building tree from empty steps"""
+        tree = PlanTreeService.build_tree([])
+    
+        assert tree["nodes"] == []
+        assert tree["root_nodes"] == []
+        assert tree["total_steps"] == 0
+        assert tree["total_levels"] == 0
+&gt;       assert tree["has_hierarchy"] is False
+E       KeyError: 'has_hierarchy'
+
+tests\test_plan_tree_service.py:19: KeyError</failure></testcase><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_single_step" time="0.001" /><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_linear_steps" time="0.000" /><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_branched_steps" time="0.000" /><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_multiple_roots" time="0.000" /><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_complex_hierarchy" time="0.000" /><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_include_metadata" time="0.000" /><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_exclude_metadata" time="0.000" /><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_build_flat_tree" time="0.000" /><testcase classname="tests.test_plan_tree_service.TestPlanTreeService" name="test_level_calculation" time="0.000" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_estimate_duration_empty_steps" time="0.001" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_estimate_duration_with_default_timeout" time="0.001" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_estimate_duration_with_custom_timeout" time="0.000" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_parse_and_validate_json_valid" time="0.001" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_parse_and_validate_json_with_code_block" time="0.000" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_parse_and_validate_json_with_markdown" time="0.000" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_parse_and_validate_json_array" time="0.001" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_parse_and_validate_json_invalid" time="0.001" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_parse_json_from_response" time="0.001" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_get_plan_found" time="0.022" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_get_plan_not_found" time="0.002" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_get_plans_for_task" time="0.002" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_approve_plan_success" time="0.004" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_approve_plan_not_found" time="0.002" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_start_execution_success" time="0.002" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_start_execution_not_approved" time="0.002" /><testcase classname="tests.test_planning_service_unit.TestPlanningServiceUnit" name="test_start_execution_not_found" time="0.002" /><testcase classname="tests.test_planning_with_teams" name="test_plan_with_team" time="0.681"><failure message="AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?">db = &lt;sqlalchemy.orm.session.Session object at 0x00000200B3ACE1B0&gt;
+
+    @pytest.mark.asyncio
+    async def test_plan_with_team(db):
+        """Test creating a plan with a team"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team
+        team = team_service.create_team(
+            name=f"Planning Team {uuid4()}",
+            coordination_strategy=CoordinationStrategy.COLLABORATIVE.value
+        )
+        team_service.activate_team(team.id)
+    
+        # Create agents
+        agent1 = Agent(name=f"Agent 1 {uuid4()}", status=AgentStatus.ACTIVE.value)
+        agent2 = Agent(name=f"Agent 2 {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent1)
+        db.add(agent2)
+        db.commit()
+    
+        # Add agents to team
+        team_service.add_agent_to_team(team.id, agent1.id)
+        team_service.add_agent_to_team(team.id, agent2.id)
+    
+        # Create plan with team
+&gt;       plan = await planning_service.create_plan(
+            task_description="Test task with team",
+            context={"team_id": str(team.id)}
+        )
+E       AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?
+
+tests\test_planning_with_teams.py:38: AttributeError</failure></testcase><testcase classname="tests.test_planning_with_teams" name="test_plan_with_team_and_role" time="0.684"><failure message="assert ('team' in &quot;'planningservice' object has no attribute 'create_plan'&quot; or 'llm' in &quot;'planningservice' object has no attribute 'create_plan'&quot; or 'model' in &quot;'planningservice' object has no attribute 'create_plan'&quot;)&#10; +  where &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x00000200B5242E50&gt;()&#10; +    where &lt;built-in method lower of str object at 0x00000200B5242E50&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))&#10; +  and   &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x00000200B5242E50&gt;()&#10; +    where &lt;built-in method lower of str object at 0x00000200B5242E50&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))&#10; +  and   &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x00000200B5242E50&gt;()&#10; +    where &lt;built-in method lower of str object at 0x00000200B5242E50&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))">db = &lt;sqlalchemy.orm.session.Session object at 0x00000200B32FF5F0&gt;
+
+    @pytest.mark.asyncio
+    async def test_plan_with_team_and_role(db):
+        """Test creating a plan with team and role assignment"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team with roles
+        team = team_service.create_team(
+            name=f"Role Team {uuid4()}",
+            roles={"developer": "Writes code", "reviewer": "Reviews code"}
+        )
+        team_service.activate_team(team.id)
+    
+        # Create agents with roles
+        agent1 = Agent(name=f"Developer {uuid4()}", status=AgentStatus.ACTIVE.value)
+        agent2 = Agent(name=f"Reviewer {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent1)
+        db.add(agent2)
+        db.commit()
+    
+        team_service.add_agent_to_team(team.id, agent1.id, role="developer")
+        team_service.add_agent_to_team(team.id, agent2.id, role="reviewer")
+    
+        # Create plan with team
+        try:
+&gt;           plan = await planning_service.create_plan(
+                task_description="Test task with team roles",
+                context={"team_id": str(team.id)}
+            )
+E           AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?
+
+tests\test_planning_with_teams.py:76: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+db = &lt;sqlalchemy.orm.session.Session object at 0x00000200B32FF5F0&gt;
+
+    @pytest.mark.asyncio
+    async def test_plan_with_team_and_role(db):
+        """Test creating a plan with team and role assignment"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team with roles
+        team = team_service.create_team(
+            name=f"Role Team {uuid4()}",
+            roles={"developer": "Writes code", "reviewer": "Reviews code"}
+        )
+        team_service.activate_team(team.id)
+    
+        # Create agents with roles
+        agent1 = Agent(name=f"Developer {uuid4()}", status=AgentStatus.ACTIVE.value)
+        agent2 = Agent(name=f"Reviewer {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent1)
+        db.add(agent2)
+        db.commit()
+    
+        team_service.add_agent_to_team(team.id, agent1.id, role="developer")
+        team_service.add_agent_to_team(team.id, agent2.id, role="reviewer")
+    
+        # Create plan with team
+        try:
+            plan = await planning_service.create_plan(
+                task_description="Test task with team roles",
+                context={"team_id": str(team.id)}
+            )
+    
+            assert plan is not None
+    
+            # Check that steps have team_id
+            if plan.steps:
+                steps_with_team = [s for s in plan.steps if s.get("team_id") == str(team.id)]
+                # At least some steps should have team_id, or steps might have specific agents assigned
+                assert len(steps_with_team) &gt; 0 or any(s.get("agent") for s in plan.steps)
+        except Exception as e:
+            # If LLM is not available, verify that team_id processing doesn't crash
+&gt;           assert "team" in str(e).lower() or "llm" in str(e).lower() or "model" in str(e).lower()
+E           assert ('team' in "'planningservice' object has no attribute 'create_plan'" or 'llm' in "'planningservice' object has no attribute 'create_plan'" or 'model' in "'planningservice' object has no attribute 'create_plan'")
+E            +  where "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x00000200B5242E50&gt;()
+E            +    where &lt;built-in method lower of str object at 0x00000200B5242E50&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+E            +  and   "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x00000200B5242E50&gt;()
+E            +    where &lt;built-in method lower of str object at 0x00000200B5242E50&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+E            +  and   "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x00000200B5242E50&gt;()
+E            +    where &lt;built-in method lower of str object at 0x00000200B5242E50&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+
+tests\test_planning_with_teams.py:90: AssertionError</failure></testcase><testcase classname="tests.test_planning_with_teams" name="test_plan_team_takes_precedence_over_agent" time="0.657"><failure message="assert ('team' in &quot;'planningservice' object has no attribute 'create_plan'&quot; or 'llm' in &quot;'planningservice' object has no attribute 'create_plan'&quot; or 'model' in &quot;'planningservice' object has no attribute 'create_plan'&quot;)&#10; +  where &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x00000200B526D3B0&gt;()&#10; +    where &lt;built-in method lower of str object at 0x00000200B526D3B0&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))&#10; +  and   &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x00000200B526D3B0&gt;()&#10; +    where &lt;built-in method lower of str object at 0x00000200B526D3B0&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))&#10; +  and   &quot;'planningservice' object has no attribute 'create_plan'&quot; = &lt;built-in method lower of str object at 0x00000200B526D3B0&gt;()&#10; +    where &lt;built-in method lower of str object at 0x00000200B526D3B0&gt; = &quot;'PlanningService' object has no attribute 'create_plan'&quot;.lower&#10; +      where &quot;'PlanningService' object has no attribute 'create_plan'&quot; = str(AttributeError(&quot;'PlanningService' object has no attribute 'create_plan'&quot;))">db = &lt;sqlalchemy.orm.session.Session object at 0x00000200B6A92210&gt;
+
+    def test_plan_team_takes_precedence_over_agent(db):
+        """Test that team_id takes precedence over agent_id in context"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team
+        team = team_service.create_team(name=f"Precedence Team {uuid4()}")
+        team_service.activate_team(team.id)
+    
+        # Create agent
+        agent = Agent(name=f"Agent {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent)
+        db.commit()
+    
+        # Both team_id and agent_id in context - team should take precedence
+        import asyncio
+        try:
+&gt;           plan = asyncio.run(planning_service.create_plan(
+                task_description="Test precedence",
+                context={"team_id": str(team.id), "agent_id": str(agent.id)}
+            ))
+E           AttributeError: 'PlanningService' object has no attribute 'create_plan'. Did you mean: 'generate_plan'?
+
+tests\test_planning_with_teams.py:110: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+db = &lt;sqlalchemy.orm.session.Session object at 0x00000200B6A92210&gt;
+
+    def test_plan_team_takes_precedence_over_agent(db):
+        """Test that team_id takes precedence over agent_id in context"""
+        planning_service = PlanningService(db)
+        team_service = AgentTeamService(db)
+    
+        # Create team
+        team = team_service.create_team(name=f"Precedence Team {uuid4()}")
+        team_service.activate_team(team.id)
+    
+        # Create agent
+        agent = Agent(name=f"Agent {uuid4()}", status=AgentStatus.ACTIVE.value)
+        db.add(agent)
+        db.commit()
+    
+        # Both team_id and agent_id in context - team should take precedence
+        import asyncio
+        try:
+            plan = asyncio.run(planning_service.create_plan(
+                task_description="Test precedence",
+                context={"team_id": str(team.id), "agent_id": str(agent.id)}
+            ))
+    
+            assert plan is not None
+            # Steps should have team_id, not agent_id from context
+            if plan.steps:
+                steps_with_team = [s for s in plan.steps if s.get("team_id") == str(team.id)]
+                # Team should be used (steps have team_id or agents from team)
+                assert len(steps_with_team) &gt; 0 or any(s.get("agent") for s in plan.steps)
+        except Exception as e:
+            # If LLM is not available, verify that team precedence logic doesn't crash
+&gt;           assert "team" in str(e).lower() or "llm" in str(e).lower() or "model" in str(e).lower()
+E           assert ('team' in "'planningservice' object has no attribute 'create_plan'" or 'llm' in "'planningservice' object has no attribute 'create_plan'" or 'model' in "'planningservice' object has no attribute 'create_plan'")
+E            +  where "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x00000200B526D3B0&gt;()
+E            +    where &lt;built-in method lower of str object at 0x00000200B526D3B0&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+E            +  and   "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x00000200B526D3B0&gt;()
+E            +    where &lt;built-in method lower of str object at 0x00000200B526D3B0&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+E            +  and   "'planningservice' object has no attribute 'create_plan'" = &lt;built-in method lower of str object at 0x00000200B526D3B0&gt;()
+E            +    where &lt;built-in method lower of str object at 0x00000200B526D3B0&gt; = "'PlanningService' object has no attribute 'create_plan'".lower
+E            +      where "'PlanningService' object has no attribute 'create_plan'" = str(AttributeError("'PlanningService' object has no attribute 'create_plan'"))
+
+tests\test_planning_with_teams.py:123: AssertionError</failure></testcase><testcase classname="tests.test_project_metrics_api" name="test_project_metrics_router_exists" time="0.001" /><testcase classname="tests.test_project_metrics_api" name="test_project_metrics_router_routes" time="0.000" /><testcase classname="tests.test_project_metrics_api" name="test_get_project_overview_service" time="0.108" /><testcase classname="tests.test_project_metrics_api" name="test_get_metric_trends_service" time="0.048" /><testcase classname="tests.test_project_metrics_api" name="test_compare_periods_service" time="0.135" /><testcase classname="tests.test_project_metrics_service" name="test_record_metric" time="0.499" /><testcase classname="tests.test_project_metrics_service" name="test_record_metric_update_existing" time="0.068" /><testcase classname="tests.test_project_metrics_service" name="test_collect_performance_metrics" time="0.092" /><testcase classname="tests.test_project_metrics_service" name="test_collect_task_distribution" time="0.071" /><testcase classname="tests.test_project_metrics_service" name="test_get_overview" time="0.108" /><testcase classname="tests.test_project_metrics_service" name="test_get_trends" time="0.118" /><testcase classname="tests.test_project_metrics_service" name="test_compare_periods" time="0.370" /><testcase classname="tests.test_prompt_assignments" name="test_create_prompt_assignment" time="0.636" /><testcase classname="tests.test_prompt_assignments" name="test_list_assignments_filters" time="0.658" /><testcase classname="tests.test_prompt_improvement_suggestions.TestPromptImprovementSuggestions" name="test_suggest_improvements_low_success_rate" time="0.334" /><testcase classname="tests.test_prompt_improvement_suggestions.TestPromptImprovementSuggestions" name="test_suggest_improvements_high_execution_time" time="0.729" /><testcase classname="tests.test_prompt_improvement_suggestions.TestPromptImprovementSuggestions" name="test_suggest_improvements_nonexistent" time="0.615" /><testcase classname="tests.test_prompt_improvement_suggestions.TestPromptImprovementSuggestions" name="test_suggestions_saved_to_history" time="0.591" /><testcase classname="tests.test_prompt_improvement_suggestions.TestPromptImprovementSuggestions" name="test_analyze_metrics" time="0.769" /><testcase classname="tests.test_prompt_improvement_suggestions.TestPromptImprovementSuggestions" name="test_analyze_improvement_history" time="41.183" /><testcase classname="tests.test_prompt_manager" name="test_prompt_manager_initialization" time="0.520" /><testcase classname="tests.test_prompt_manager" name="test_get_prompt_for_stage" time="0.619" /><testcase classname="tests.test_prompt_manager" name="test_record_prompt_usage" time="0.572" /><testcase classname="tests.test_prompt_manager" name="test_prompt_usage_creation" time="0.000" /><testcase classname="tests.test_prompt_manager" name="test_get_usage_summary" time="0.597" /><testcase classname="tests.test_prompt_metrics.TestPromptMetrics" name="test_record_usage_increments_count" time="0.170" /><testcase classname="tests.test_prompt_metrics.TestPromptMetrics" name="test_record_usage_with_execution_time" time="0.600" /><testcase classname="tests.test_prompt_metrics.TestPromptMetrics" name="test_record_usage_calculates_moving_average" time="0.626" /><testcase classname="tests.test_prompt_metrics.TestPromptMetrics" name="test_record_usage_without_execution_time" time="0.658" /><testcase classname="tests.test_prompt_metrics.TestPromptMetrics" name="test_record_usage_nonexistent_prompt" time="0.586" /><testcase classname="tests.test_prompt_metrics.TestPromptMetrics" name="test_multiple_usage_records" time="0.704" /><testcase classname="tests.test_prompt_reflection.TestPromptReflection" name="test_analyze_prompt_performance_success" time="0.683" /><testcase classname="tests.test_prompt_reflection.TestPromptReflection" name="test_analyze_prompt_performance_failure" time="20.954" /><testcase classname="tests.test_prompt_reflection.TestPromptReflection" name="test_analyze_prompt_performance_nonexistent" time="0.639" /><testcase classname="tests.test_prompt_reflection.TestPromptReflection" name="test_analysis_history_limit" time="1.099" /><testcase classname="tests.test_prompt_runtime_selector" name="test_prompt_runtime_selector_precedence" time="0.822" /><testcase classname="tests.test_prompt_runtime_selector_edges" name="test_experiment_over_agent_precedence" time="0.693" /><testcase classname="tests.test_prompt_runtime_selector_edges" name="test_model_server_filtering" time="0.637" /><testcase classname="tests.test_prompt_runtime_selector_edges" name="test_invalid_experiment_id_handling_returns_fallback" time="0.639" /><testcase classname="tests.test_prompt_runtime_selector_edges" name="test_no_component_role_returns_none" time="0.637" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_create_prompt" time="0.167" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_get_prompt" time="0.598" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_get_prompt_not_found" time="0.748" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_get_active_prompt" time="0.673" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_get_active_prompt_with_level" time="0.609" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_list_prompts" time="0.658" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_update_prompt" time="0.652" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_create_version" time="0.582" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_get_prompt_versions" time="0.696" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_deprecate_prompt" time="0.736" /><testcase classname="tests.test_prompt_service.TestPromptService" name="test_get_latest_version" time="0.749" /><testcase classname="tests.test_prompt_success_rate.TestPromptSuccessRate" name="test_record_success_updates_rate" time="0.684" /><testcase classname="tests.test_prompt_success_rate.TestPromptSuccessRate" name="test_record_failure_updates_rate" time="0.613" /><testcase classname="tests.test_prompt_success_rate.TestPromptSuccessRate" name="test_success_rate_calculation" time="0.659" /><testcase classname="tests.test_prompt_success_rate.TestPromptSuccessRate" name="test_sliding_window" time="2.144" /><testcase classname="tests.test_prompt_success_rate.TestPromptSuccessRate" name="test_success_rate_stored_in_history" time="0.617" /><testcase classname="tests.test_prompt_success_rate.TestPromptSuccessRate" name="test_record_result_nonexistent_prompt" time="0.505" /><testcase classname="tests.test_prompt_version_creation.TestPromptVersionCreation" name="test_create_improved_version_with_suggestions" time="0.572" /><testcase classname="tests.test_prompt_version_creation.TestPromptVersionCreation" name="test_create_improved_version_auto_suggestions" time="0.727" /><testcase classname="tests.test_prompt_version_creation.TestPromptVersionCreation" name="test_auto_create_improved_version_if_needed_low_success" time="0.728" /><testcase classname="tests.test_prompt_version_creation.TestPromptVersionCreation" name="test_auto_create_improved_version_if_needed_high_time" time="0.587" /><testcase classname="tests.test_prompt_version_creation.TestPromptVersionCreation" name="test_auto_create_improved_version_not_needed" time="0.852" /><testcase classname="tests.test_prompt_version_creation.TestPromptVersionCreation" name="test_create_improved_version_nonexistent" time="0.727" /><testcase classname="tests.test_prompts_api" name="test_prompt_assign_and_unassign_api" time="0.756" /><testcase classname="tests.test_reflection_service_integration" name="test_reflection_service_with_execution_context" time="0.001" /><testcase classname="tests.test_reflection_service_integration" name="test_reflection_service_backward_compatibility" time="0.000" /><testcase classname="tests.test_reflection_service_integration" name="test_reflection_service_analyze_failure_with_context" time="20.178" /><testcase classname="tests.test_replan_config" name="test_replanning_config_defaults" time="0.003" /><testcase classname="tests.test_replan_config" name="test_replanning_config_custom_values" time="0.003" /><testcase classname="tests.test_replan_config" name="test_replanning_config_validation" time="0.004" /><testcase classname="tests.test_replan_config" name="test_replanning_config_bounds" time="0.003" /><testcase classname="tests.test_request_orchestrator" name="test_orchestration_result_creation" time="0.000" /><testcase classname="tests.test_request_orchestrator" name="test_request_orchestrator_initialization" time="0.000"><failure message="AttributeError: 'RequestOrchestrator' object has no attribute 'workflow_tracker'">def test_request_orchestrator_initialization():
+        """Test RequestOrchestrator initialization"""
+        orchestrator = RequestOrchestrator()
+    
+        assert orchestrator.registry is not None
+&gt;       assert orchestrator.workflow_tracker is not None
+E       AttributeError: 'RequestOrchestrator' object has no attribute 'workflow_tracker'
+
+tests\test_request_orchestrator.py:34: AttributeError</failure></testcase><testcase classname="tests.test_request_orchestrator" name="test_request_orchestrator_simple_question" time="21.609" /><testcase classname="tests.test_request_orchestrator" name="test_request_orchestrator_extract_plan_results" time="0.002" /><testcase time="0.630" /></testsuite></testsuites>

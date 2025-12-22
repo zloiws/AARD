@@ -5,8 +5,8 @@ Revises: 007_add_task_queues
 Create Date: 2025-01-02 12:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create checkpoints table
-    op.create_table(
-        'checkpoints',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.checkpoints')")).scalar():
+        op.create_table('checkpoints',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('entity_type', sa.String(50), nullable=False),
         sa.Column('entity_id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -34,10 +35,10 @@ def upgrade():
     )
     
     # Create indexes
-    op.create_index('idx_checkpoints_entity', 'checkpoints', ['entity_type', 'entity_id'])
-    op.create_index('idx_checkpoints_created', 'checkpoints', ['created_at'])
-    op.create_index('idx_checkpoints_hash', 'checkpoints', ['state_hash'])
-    op.create_index('idx_checkpoints_trace', 'checkpoints', ['trace_id'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_entity ON checkpoints (entity_type, entity_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_created ON checkpoints (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_hash ON checkpoints (state_hash);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_trace ON checkpoints (trace_id);")
 
 
 def downgrade():

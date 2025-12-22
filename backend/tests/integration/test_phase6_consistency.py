@@ -1,17 +1,17 @@
 """
 Integration tests for Phase 6 (A/B Testing) consistency with other modules
 """
-import pytest
 import asyncio
 from uuid import uuid4
 
+import pytest
 from app.core.database import SessionLocal
-from app.models.task import Task, TaskStatus
 from app.models.plan import Plan, PlanStatus
-from app.services.planning_service import PlanningService
-from app.services.execution_service import ExecutionService
+from app.models.task import Task, TaskStatus
 from app.services.decision_pipeline import DecisionPipeline
+from app.services.execution_service import ExecutionService
 from app.services.plan_evaluation_service import PlanEvaluationService
+from app.services.planning_service import PlanningService
 
 
 @pytest.fixture

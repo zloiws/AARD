@@ -5,8 +5,8 @@ Revises: 012_add_agent_experiments
 Create Date: 2025-12-03 15:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create agent_tests table
-    op.create_table(
-        'agent_tests',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_tests')")).scalar():
+        op.create_table('agent_tests',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
@@ -37,12 +38,13 @@ def upgrade():
         sa.Column('tags', postgresql.JSONB(), nullable=True),
         sa.ForeignKeyConstraint(['agent_id'], ['agents.id'], ondelete='CASCADE'),
     )
-    op.create_index('ix_agent_tests_agent_id', 'agent_tests', ['agent_id'])
-    op.create_index('ix_agent_tests_test_type', 'agent_tests', ['test_type'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_tests_agent_id ON agent_tests (agent_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_tests_test_type ON agent_tests (test_type);")
     
     # Create agent_test_runs table
-    op.create_table(
-        'agent_test_runs',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_test_runs')")).scalar():
+        op.create_table('agent_test_runs',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('test_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('agent_id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -68,14 +70,15 @@ def upgrade():
         sa.ForeignKeyConstraint(['test_id'], ['agent_tests.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['agent_id'], ['agents.id'], ondelete='CASCADE'),
     )
-    op.create_index('ix_agent_test_runs_test_id', 'agent_test_runs', ['test_id'])
-    op.create_index('ix_agent_test_runs_agent_id', 'agent_test_runs', ['agent_id'])
-    op.create_index('ix_agent_test_runs_status', 'agent_test_runs', ['status'])
-    op.create_index('ix_agent_test_runs_started_at', 'agent_test_runs', ['started_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_test_runs_test_id ON agent_test_runs (test_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_test_runs_agent_id ON agent_test_runs (agent_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_test_runs_status ON agent_test_runs (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_test_runs_started_at ON agent_test_runs (started_at);")
     
     # Create agent_benchmarks table
-    op.create_table(
-        'agent_benchmarks',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_benchmarks')")).scalar():
+        op.create_table('agent_benchmarks',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
@@ -91,11 +94,12 @@ def upgrade():
         sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.Column('tags', postgresql.JSONB(), nullable=True),
     )
-    op.create_index('ix_agent_benchmarks_benchmark_type', 'agent_benchmarks', ['benchmark_type'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_benchmarks_benchmark_type ON agent_benchmarks (benchmark_type);")
     
     # Create agent_benchmark_runs table
-    op.create_table(
-        'agent_benchmark_runs',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_benchmark_runs')")).scalar():
+        op.create_table('agent_benchmark_runs',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('benchmark_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('status', sa.String(50), nullable=False),
@@ -110,9 +114,9 @@ def upgrade():
         sa.Column('notes', sa.Text(), nullable=True),
         sa.ForeignKeyConstraint(['benchmark_id'], ['agent_benchmarks.id'], ondelete='CASCADE'),
     )
-    op.create_index('ix_agent_benchmark_runs_benchmark_id', 'agent_benchmark_runs', ['benchmark_id'])
-    op.create_index('ix_agent_benchmark_runs_status', 'agent_benchmark_runs', ['status'])
-    op.create_index('ix_agent_benchmark_runs_started_at', 'agent_benchmark_runs', ['started_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_benchmark_runs_benchmark_id ON agent_benchmark_runs (benchmark_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_benchmark_runs_status ON agent_benchmark_runs (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_benchmark_runs_started_at ON agent_benchmark_runs (started_at);")
 
 
 def downgrade():

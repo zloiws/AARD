@@ -1,13 +1,12 @@
 """
 Page routes for benchmark web interface
 """
-from fastapi import APIRouter, Request, Depends, Query
+from app.core.database import get_db
+from app.core.templates import templates
+from app.services.benchmark_service import BenchmarkService
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-
-from app.core.templates import templates
-from app.core.database import get_db
-from app.services.benchmark_service import BenchmarkService
 
 router = APIRouter(tags=["benchmarks_pages"])
 

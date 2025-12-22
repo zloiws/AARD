@@ -1,16 +1,18 @@
 """
 Artifact model (agents and tools)
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Enum as SQLEnum, Float, JSON
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, ARRAY
-from sqlalchemy.orm import relationship
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import JSON, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import Float, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class ArtifactType(str, Enum):
@@ -41,7 +43,7 @@ class Artifact(Base):
     status = Column(String(50), nullable=False, default="draft")  # Use String to match DB constraint (lowercase)
     test_results = Column(JSON, nullable=True)  # Test results as JSON
     security_rating = Column(Float, nullable=True)  # Security rating 0.0-1.0
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     created_by = Column(String(255), nullable=True)
     
     def __repr__(self):

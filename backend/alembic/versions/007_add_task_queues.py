@@ -5,8 +5,8 @@ Revises: 006_add_request_logs
 Create Date: 2025-01-02 12:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create task_queues table
-    op.create_table(
-        'task_queues',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.task_queues')")).scalar():
+        op.create_table('task_queues',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('name', sa.String(255), nullable=False, unique=True),
         sa.Column('description', sa.Text(), nullable=True),
@@ -31,13 +32,14 @@ def upgrade():
     )
     
     # Create indexes for task_queues
-    op.create_index('idx_task_queues_name', 'task_queues', ['name'])
-    op.create_index('idx_task_queues_active', 'task_queues', ['is_active'])
-    op.create_index('idx_task_queues_priority', 'task_queues', ['priority'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_task_queues_name ON task_queues (name);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_task_queues_active ON task_queues (is_active);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_task_queues_priority ON task_queues (priority);")
     
     # Create queue_tasks table
-    op.create_table(
-        'queue_tasks',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.queue_tasks')")).scalar():
+        op.create_table('queue_tasks',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('queue_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('task_type', sa.String(50), nullable=False),
@@ -59,13 +61,13 @@ def upgrade():
     )
     
     # Create indexes for queue_tasks
-    op.create_index('idx_queue_tasks_status', 'queue_tasks', ['status'])
-    op.create_index('idx_queue_tasks_priority', 'queue_tasks', ['priority'])
-    op.create_index('idx_queue_tasks_next_retry', 'queue_tasks', ['next_retry_at'])
-    op.create_index('idx_queue_tasks_queue', 'queue_tasks', ['queue_id'])
-    op.create_index('idx_queue_tasks_type', 'queue_tasks', ['task_type'])
-    op.create_index('idx_queue_tasks_worker', 'queue_tasks', ['assigned_worker'])
-    op.create_index('idx_queue_tasks_created', 'queue_tasks', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_queue_tasks_status ON queue_tasks (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_queue_tasks_priority ON queue_tasks (priority);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_queue_tasks_next_retry ON queue_tasks (next_retry_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_queue_tasks_queue ON queue_tasks (queue_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_queue_tasks_type ON queue_tasks (task_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_queue_tasks_worker ON queue_tasks (assigned_worker);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_queue_tasks_created ON queue_tasks (created_at);")
 
 
 def downgrade():

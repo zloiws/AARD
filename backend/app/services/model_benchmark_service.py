@@ -4,17 +4,17 @@ Service for benchmarking and testing LLM models
 """
 import asyncio
 import time
-from typing import Dict, List, Optional, Any
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime
-from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
+from app.core.logging_config import LoggingConfig
 from app.core.ollama_client import OllamaClient, TaskType
 from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
 from app.services.ollama_service import OllamaService
-from app.core.logging_config import LoggingConfig
-from app.core.config import get_settings
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 settings = get_settings()
@@ -251,12 +251,12 @@ class ModelBenchmarkService:
             if "benchmarks" not in model.details:
                 model.details["benchmarks"] = {}
             
-            benchmark_key = f"{task_type.value}_{datetime.utcnow().strftime('%Y%m%d')}"
+            benchmark_key = f"{task_type.value}_{datetime.now(timezone.utc).strftime('%Y%m%d')}"
             model.details["benchmarks"][benchmark_key] = {
                 "success": result["success"],
                 "response_time": result["response_time"],
                 "quality_score": result["quality_score"],
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             
             # Обновить средние показатели

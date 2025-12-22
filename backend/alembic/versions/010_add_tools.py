@@ -5,8 +5,8 @@ Revises: 009_add_agents
 Create Date: 2025-12-03 13:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create tools table
-    op.create_table(
-        'tools',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.tools')")).scalar():
+        op.create_table('tools',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False, unique=True),
         sa.Column('description', sa.Text(), nullable=True),
@@ -84,11 +85,11 @@ def upgrade():
     )
     
     # Create indexes
-    op.create_index('ix_tools_name', 'tools', ['name'], unique=True)
-    op.create_index('ix_tools_status', 'tools', ['status'])
-    op.create_index('ix_tools_category', 'tools', ['category'])
-    op.create_index('ix_tools_created_at', 'tools', ['created_at'])
-    op.create_index('ix_tools_tags', 'tools', ['tags'], postgresql_using='gin')
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_tools_name ON tools (name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_tools_status ON tools (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_tools_category ON tools (category);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_tools_created_at ON tools (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_tools_tags ON tools (tags);")
 
 
 def downgrade():

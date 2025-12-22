@@ -2,11 +2,10 @@
 Integration test for complete prompt improvement cycle
 """
 import pytest
-from sqlalchemy.orm import Session
-
+from app.core.database import Base, SessionLocal, engine
+from app.models.prompt import Prompt, PromptStatus, PromptType
 from app.services.prompt_service import PromptService
-from app.models.prompt import Prompt, PromptType, PromptStatus
-from app.core.database import SessionLocal, Base, engine
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

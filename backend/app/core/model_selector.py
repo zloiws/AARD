@@ -2,14 +2,14 @@
 Model Selector for Dual-Model Architecture
 Separates planning models (reasoning) from code generation models
 """
-from typing import Optional, List
-from sqlalchemy.orm import Session
+from typing import List, Optional
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
 from app.models.ollama_model import OllamaModel
 from app.models.ollama_server import OllamaServer
 from app.services.ollama_service import OllamaService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -46,10 +46,24 @@ class ModelSelector:
         Returns:
             Filtered list without embedding models
         """
-        return [
-            m for m in models 
-            if m.model_name and not ("embedding" in m.model_name.lower() or "embed" in m.model_name.lower())
-        ]
+        filtered = []
+        for m in models:
+            if not m.model_name:
+                continue
+            
+            # Check by name
+            model_name_lower = m.model_name.lower()
+            if "embedding" in model_name_lower or "embed" in model_name_lower:
+                continue
+            
+            # Check by capabilities
+            if m.capabilities:
+                if any(cap.lower() in ['embedding', 'embed'] for cap in m.capabilities):
+                    continue
+            
+            filtered.append(m)
+        
+        return filtered
     
     def _get_best_model_from_benchmark(
         self,
@@ -144,8 +158,10 @@ class ModelSelector:
             
             # Filter out embedding models (they don't support chat API)
             models = self._filter_embedding_models(models)
+            # Also filter by active status
+            models = [m for m in models if m.is_active]
             if not models:
-                logger.warning("No non-embedding models found for planning")
+                logger.warning("No non-embedding active models found for planning")
                 return None
             
             # First, try to find model with "planning" capability
@@ -233,8 +249,10 @@ class ModelSelector:
             
             # Filter out embedding models (they don't support chat API)
             models = self._filter_embedding_models(models)
+            # Also filter by active status
+            models = [m for m in models if m.is_active]
             if not models:
-                logger.warning("No non-embedding models found for code generation")
+                logger.warning("No non-embedding active models found for code generation")
                 return None
             
             # First, try to find model with code generation capabilities
@@ -307,8 +325,10 @@ class ModelSelector:
             
             # Filter out embedding models (they don't support chat API)
             models = self._filter_embedding_models(models)
+            # Also filter by active status
+            models = [m for m in models if m.is_active]
             if not models:
-                logger.warning("No non-embedding models found")
+                logger.warning("No non-embedding active models found")
                 return None
             
             capability_lower = capability.lower()

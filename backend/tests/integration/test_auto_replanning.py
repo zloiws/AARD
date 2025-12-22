@@ -1,16 +1,16 @@
 """
 Integration tests for automatic replanning on failure
 """
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskStatus
+import pytest
 from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
 from app.services.execution_service import ExecutionService
 from app.services.planning_service import PlanningService
 from app.services.reflection_service import ReflectionService
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.asyncio

@@ -5,8 +5,8 @@ Revises: 013_add_agent_gym
 Create Date: 2025-12-03 18:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create agent_memories table (long-term memory)
-    op.create_table(
-        'agent_memories',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.agent_memories')")).scalar():
+        op.create_table('agent_memories',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('agent_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('memory_type', sa.String(50), nullable=False),
@@ -34,18 +35,19 @@ def upgrade():
         sa.Column('expires_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['agent_id'], ['agents.id'], ondelete='CASCADE'),
     )
-    op.create_index('ix_agent_memories_agent_id', 'agent_memories', ['agent_id'])
-    op.create_index('ix_agent_memories_memory_type', 'agent_memories', ['memory_type'])
-    op.create_index('ix_agent_memories_importance', 'agent_memories', ['importance'])
-    op.create_index('ix_agent_memories_last_accessed_at', 'agent_memories', ['last_accessed_at'])
-    op.create_index('ix_agent_memories_expires_at', 'agent_memories', ['expires_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_memories_agent_id ON agent_memories (agent_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_memories_memory_type ON agent_memories (memory_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_memories_importance ON agent_memories (importance);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_memories_last_accessed_at ON agent_memories (last_accessed_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_memories_expires_at ON agent_memories (expires_at);")
     # GIN index for JSONB content search
     op.execute('CREATE INDEX ix_agent_memories_content ON agent_memories USING GIN (content)')
     op.execute('CREATE INDEX ix_agent_memories_tags ON agent_memories USING GIN (tags)')
     
     # Create memory_entries table (short-term memory)
-    op.create_table(
-        'memory_entries',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.memory_entries')")).scalar():
+        op.create_table('memory_entries',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('agent_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('session_id', sa.String(255), nullable=True),
@@ -56,18 +58,19 @@ def upgrade():
         sa.Column('expires_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['agent_id'], ['agents.id'], ondelete='CASCADE'),
     )
-    op.create_index('ix_memory_entries_agent_id', 'memory_entries', ['agent_id'])
-    op.create_index('ix_memory_entries_session_id', 'memory_entries', ['session_id'])
-    op.create_index('ix_memory_entries_context_key', 'memory_entries', ['context_key'])
-    op.create_index('ix_memory_entries_expires_at', 'memory_entries', ['expires_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_memory_entries_agent_id ON memory_entries (agent_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_memory_entries_session_id ON memory_entries (session_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_memory_entries_context_key ON memory_entries (context_key);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_memory_entries_expires_at ON memory_entries (expires_at);")
     # Composite index for common queries
-    op.create_index('ix_memory_entries_agent_session', 'memory_entries', ['agent_id', 'session_id'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_memory_entries_agent_session ON memory_entries (agent_id, session_id);")
     # GIN index for JSONB content
     op.execute('CREATE INDEX ix_memory_entries_content ON memory_entries USING GIN (content)')
     
     # Create memory_associations table
-    op.create_table(
-        'memory_associations',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.memory_associations')")).scalar():
+        op.create_table('memory_associations',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('memory_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('related_memory_id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -79,9 +82,9 @@ def upgrade():
         sa.ForeignKeyConstraint(['related_memory_id'], ['agent_memories.id'], ondelete='CASCADE'),
         sa.UniqueConstraint('memory_id', 'related_memory_id', name='uq_memory_associations_pair'),
     )
-    op.create_index('ix_memory_associations_memory_id', 'memory_associations', ['memory_id'])
-    op.create_index('ix_memory_associations_related_id', 'memory_associations', ['related_memory_id'])
-    op.create_index('ix_memory_associations_type', 'memory_associations', ['association_type'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_memory_associations_memory_id ON memory_associations (memory_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_memory_associations_related_id ON memory_associations (related_memory_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_memory_associations_type ON memory_associations (association_type);")
 
 
 def downgrade():

@@ -1,12 +1,12 @@
 """
 Integration tests for Agent Teams (Phase 7.1)
 """
-import pytest
 from uuid import uuid4
 
-from app.services.agent_team_service import AgentTeamService
-from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus
+import pytest
 from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus
+from app.services.agent_team_service import AgentTeamService
 
 
 def test_create_team_with_agents(db):

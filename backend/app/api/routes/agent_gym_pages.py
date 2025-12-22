@@ -3,18 +3,18 @@ Web pages for Agent Gym
 """
 from typing import Optional
 from uuid import UUID
+
+from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.core.templates import templates
+from app.models.agent_test import AgentTest, AgentTestRun
+from app.services.agent_gym_service import AgentGymService
+from app.services.agent_service import AgentService
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.services.agent_gym_service import AgentGymService
-from app.services.agent_service import AgentService
-from app.models.agent_test import AgentTest, AgentTestRun
-from app.core.logging_config import LoggingConfig
-from app.core.templates import templates
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

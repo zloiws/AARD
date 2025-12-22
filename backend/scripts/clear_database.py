@@ -10,18 +10,18 @@ This script requires explicit confirmation:
 2. Type 'YES' (final confirmation)
 Or use --yes flag (still requires manual execution)
 """
-import sys
 import argparse
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from app.core.database import SessionLocal, engine, Base
-from sqlalchemy import text
+from app.core.database import Base, SessionLocal, engine
 from app.core.logging_config import LoggingConfig
+from sqlalchemy import text
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -83,7 +83,8 @@ def clear_database():
             if restore_choice == "RESTORE":
                 print("\nRestoring database (tables, servers, initial prompts)...")
                 try:
-                    from scripts.restore_after_clear import main as restore_main
+                    from scripts.restore_after_clear import \
+                        main as restore_main
                     restore_main()
                 except Exception as e:
                     print(f"⚠️  Warning: Failed to restore database: {e}")
@@ -107,8 +108,9 @@ def clear_database():
 if __name__ == "__main__":
     # Safety check: prevent accidental execution
     import os
+
     from app.core.config import get_settings
-    
+
     # Check environment
     try:
         settings = get_settings()

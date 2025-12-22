@@ -1,8 +1,8 @@
 """
 Setup database and run Phase 6 real tests
 """
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add backend to path
@@ -10,8 +10,8 @@ backend_path = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_path))
 
 from app.core.database import SessionLocal, engine
-from sqlalchemy import inspect, text
 from app.core.logging_config import LoggingConfig
+from sqlalchemy import inspect, text
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -44,9 +44,9 @@ def check_tables():
 def apply_migrations():
     """Apply Alembic migrations"""
     try:
-        from alembic.config import Config
         from alembic import command
-        
+        from alembic.config import Config
+
         # Change to backend directory for alembic.ini
         os.chdir(backend_path)
         
@@ -115,6 +115,7 @@ def main():
     # Import and run test script
     try:
         import asyncio
+
         from scripts.test_phase6_complete_real import main as test_main
         
         success = asyncio.run(test_main())

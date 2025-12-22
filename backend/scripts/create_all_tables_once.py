@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-from app.core.database import Base, engine
+
 import app.models  # register all models with Base metadata
+from app.core.database import Base, engine
+
 
 def main():
     print("Creating all tables from models...")

@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from app.core.database import SessionLocal
 from app.services.planning_service import PlanningService
 
+
 def test_artifact_generation():
     """Test the new artifact auto-generation functionality"""
     db = SessionLocal()

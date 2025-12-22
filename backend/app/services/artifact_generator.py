@@ -1,15 +1,20 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: artifact generation uses purpose-specific local prompts; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Artifact generator service for creating agents and tools
 """
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Session
-
-from app.models.artifact import Artifact, ArtifactType, ArtifactStatus
-from app.models.approval import ApprovalRequestType
-from app.services.approval_service import ApprovalService
 from app.core.ollama_client import OllamaClient, TaskType
+from app.models.approval import ApprovalRequestType
+from app.models.artifact import Artifact, ArtifactStatus, ArtifactType
+from app.services.agent_approval_agent import AgentApprovalAgent
+from app.services.approval_service import ApprovalService
+from app.services.artifact_version_service import ArtifactVersionService
+from sqlalchemy.orm import Session
 
 
 class ArtifactGenerator:
@@ -19,6 +24,8 @@ class ArtifactGenerator:
         self.db = db
         self.ollama_client = ollama_client
         self.approval_service = ApprovalService(db)
+        self.agent_approval_agent = AgentApprovalAgent(db)  # Validate-Then-Build механизм
+        self.version_service = ArtifactVersionService(db)  # Version control
     
     async def generate_artifact(
         self,
@@ -39,6 +46,32 @@ class ArtifactGenerator:
         Returns:
             Created artifact in WAITING_APPROVAL status
         """
+        
+        # 0. Validate-Then-Build: Проверить необходимость создания агента через AAA
+        if artifact_type == ArtifactType.AGENT:
+            validation_result = await self.agent_approval_agent.validate_agent_creation(
+                proposed_agent={
+                    "name": description.split()[0] if description else "NewAgent",  # Временное имя
+                    "description": description,
+                    "capabilities": context.get("capabilities", []) if context else [],
+                    "tools": context.get("tools", []) if context else [],
+                    "expected_benefit": context.get("expected_benefit", "") if context else "",
+                    "risks": context.get("risks", []) if context else []
+                },
+                task_description=context.get("task_description") if context else None,
+                context=context
+            )
+            
+            # Если не нужен или требуется утверждение, вернуть информацию
+            if not validation_result.get("is_needed"):
+                raise ValueError(
+                    f"Agent creation not needed. {validation_result.get('recommendation', 'Use existing agents.')}"
+                )
+            
+            # Если требуется утверждение, создать артефакт в статусе waiting_approval
+            if validation_result.get("requires_approval"):
+                # Продолжить создание, но артефакт будет в статусе waiting_approval
+                pass
         
         # 1. Analyze requirements
         requirements = await self._analyze_requirements(description, artifact_type, context)
@@ -77,7 +110,21 @@ class ArtifactGenerator:
         self.db.commit()
         self.db.refresh(artifact)
         
-        # 7. Create approval request
+        # 7. Create initial version snapshot
+        changelog = f"Initial version of {artifact.name}. {description[:200]}"
+        metrics = {
+            "success_rate": 0.0,  # Will be updated after testing
+            "avg_execution_time": 0.0,
+            "error_rate": 0.0
+        }
+        self.version_service.create_version(
+            artifact=artifact,
+            changelog=changelog,
+            metrics=metrics,
+            created_by=created_by or "system"
+        )
+        
+        # 8. Create approval request
         approval = self.approval_service.create_approval_request(
             request_type=ApprovalRequestType.NEW_ARTIFACT,  # Will be converted to lowercase in service
             request_data={

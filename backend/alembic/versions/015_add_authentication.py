@@ -5,8 +5,8 @@ Revises: 014_add_agent_memory
 Create Date: 2025-01-03 12:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,7 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create users table
-    op.create_table('users',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.users')")).scalar():
+        op.create_table('users',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('username', sa.String(length=255), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
@@ -29,11 +31,14 @@ def upgrade():
     sa.Column('last_login', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
-    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+    # Create unique indexes if not exists
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_username ON users (username);")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email);")
     
     # Create sessions table
-    op.create_table('sessions',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.sessions')")).scalar():
+        op.create_table('sessions',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('token', sa.String(length=255), nullable=False),
@@ -43,17 +48,18 @@ def upgrade():
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_sessions_user_id'), 'sessions', ['user_id'], unique=False)
-    op.create_index(op.f('ix_sessions_token'), 'sessions', ['token'], unique=True)
-    op.create_index(op.f('ix_sessions_expires_at'), 'sessions', ['expires_at'], unique=False)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_sessions_user_id ON sessions (user_id);")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_sessions_token ON sessions (token);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_sessions_expires_at ON sessions (expires_at);")
 
 
 def downgrade():
-    op.drop_index(op.f('ix_sessions_expires_at'), table_name='sessions')
-    op.drop_index(op.f('ix_sessions_token'), table_name='sessions')
-    op.drop_index(op.f('ix_sessions_user_id'), table_name='sessions')
-    op.drop_table('sessions')
-    op.drop_index(op.f('ix_users_email'), table_name='users')
-    op.drop_index(op.f('ix_users_username'), table_name='users')
-    op.drop_table('users')
+    # Drop indexes and tables if exist (idempotent)
+    op.execute("DROP INDEX IF EXISTS ix_sessions_expires_at;")
+    op.execute("DROP INDEX IF EXISTS ix_sessions_token;")
+    op.execute("DROP INDEX IF EXISTS ix_sessions_user_id;")
+    op.execute("DROP TABLE IF EXISTS sessions;")
+    op.execute("DROP INDEX IF EXISTS ix_users_email;")
+    op.execute("DROP INDEX IF EXISTS ix_users_username;")
+    op.execute("DROP TABLE IF EXISTS users;")
 

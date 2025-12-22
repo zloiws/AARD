@@ -1,13 +1,13 @@
 """
 Service for logging requests and calculating rankings
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from app.models.request_log import RequestLog, RequestConsequence
 from app.core.logging_config import LoggingConfig
+from app.models.request_log import RequestConsequence, RequestLog
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

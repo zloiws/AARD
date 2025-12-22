@@ -1,14 +1,15 @@
 """
 Integration tests for vector search functionality
 """
-import pytest
 import asyncio
 from uuid import uuid4
-from app.services.memory_service import MemoryService
-from app.services.embedding_service import EmbeddingService
-from app.models.agent_memory import AgentMemory
+
+import pytest
+from app.core.database import Base, SessionLocal, engine
 from app.models.agent import Agent, AgentStatus
-from app.core.database import SessionLocal, Base, engine
+from app.models.agent_memory import AgentMemory
+from app.services.embedding_service import EmbeddingService
+from app.services.memory_service import MemoryService
 
 
 @pytest.fixture(scope="function")

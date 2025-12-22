@@ -1,15 +1,15 @@
 """
 API routes for Agent Gym (testing and benchmarking)
 """
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
 
 from app.core.database import get_db
-from app.services.agent_gym_service import AgentGymService
 from app.core.logging_config import LoggingConfig
+from app.services.agent_gym_service import AgentGymService
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

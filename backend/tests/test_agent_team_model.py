@@ -1,12 +1,12 @@
 """
 Tests for AgentTeam model
 """
-import pytest
-from uuid import uuid4
 from datetime import datetime
+from uuid import uuid4
 
-from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus
+import pytest
 from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import AgentTeam, CoordinationStrategy, TeamStatus
 
 
 def test_agent_team_creation(db):

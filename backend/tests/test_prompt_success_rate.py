@@ -1,13 +1,13 @@
 """
 Unit tests for prompt success_rate calculation
 """
-import pytest
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
+import pytest
+from app.core.database import Base, SessionLocal, engine
+from app.models.prompt import Prompt, PromptStatus, PromptType
 from app.services.prompt_service import PromptService
-from app.models.prompt import Prompt, PromptType, PromptStatus
-from app.core.database import SessionLocal, Base, engine
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

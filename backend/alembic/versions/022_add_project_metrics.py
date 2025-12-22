@@ -5,13 +5,12 @@ Revises: 021_add_benchmark_system
 Create Date: 2025-12-06
 
 """
+import uuid
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
-import uuid
-
 
 # revision identifiers, used by Alembic.
 revision: str = '022_add_project_metrics'
@@ -22,8 +21,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create project_metrics table
-    op.create_table(
-        'project_metrics',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.project_metrics')")).scalar():
+        op.create_table('project_metrics',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4),
         sa.Column('metric_type', sa.Enum('PERFORMANCE', 'TASK_SUCCESS', 'EXECUTION_TIME', 'TASK_DISTRIBUTION', 'TREND', 'AGGREGATE', name='metrictype'), nullable=False),
         sa.Column('metric_name', sa.String(length=255), nullable=False),
@@ -42,11 +42,11 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('ix_project_metrics_metric_type', 'project_metrics', ['metric_type'])
-    op.create_index('ix_project_metrics_metric_name', 'project_metrics', ['metric_name'])
-    op.create_index('ix_project_metrics_period', 'project_metrics', ['period'])
-    op.create_index('ix_project_metrics_period_start', 'project_metrics', ['period_start'])
-    op.create_index('idx_project_metrics_type_name_period', 'project_metrics', ['metric_type', 'metric_name', 'period'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_metrics_metric_type ON project_metrics (metric_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_metrics_metric_name ON project_metrics (metric_name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_metrics_period ON project_metrics (period);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_project_metrics_period_start ON project_metrics (period_start);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_project_metrics_type_name_period ON project_metrics (metric_type, metric_name, period);")
 
 
 def downgrade() -> None:

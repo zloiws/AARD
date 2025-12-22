@@ -2,13 +2,13 @@
 Background task for agent heartbeat monitoring
 """
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from app.core.logging_config import LoggingConfig
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.models.agent import Agent, AgentHealthStatus, AgentStatus
 from app.services.agent_heartbeat_service import AgentHeartbeatService
-from app.models.agent import Agent, AgentStatus, AgentHealthStatus
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -78,7 +78,7 @@ class AgentHeartbeatMonitor:
                     agent.health_status = AgentHealthStatus.UNKNOWN.value
                     unhealthy_count += 1
                 else:
-                    time_since_heartbeat = datetime.utcnow() - agent.last_heartbeat
+                    time_since_heartbeat = datetime.now(timezone.utc) - agent.last_heartbeat
                     
                     if time_since_heartbeat.total_seconds() > self.heartbeat_timeout:
                         # No heartbeat for too long

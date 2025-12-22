@@ -1,15 +1,15 @@
 """
 API routes for workflow tracking - current execution process
 """
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from app.core.workflow_tracker import get_workflow_tracker, WorkflowStage
 from app.core.database import get_db
+from app.core.workflow_tracker import WorkflowStage, get_workflow_tracker
 from app.models.task import Task, TaskStatus
 from app.services.workflow_event_service import WorkflowEventService
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/workflow", tags=["workflow"])
@@ -65,7 +65,7 @@ async def get_current_workflow(
                 stage=event.get("stage", "execution"),
                 message=event.get("message", ""),
                 details=event.get("details", {}),
-                timestamp=event.get("timestamp", datetime.utcnow().isoformat())
+                timestamp=event.get("timestamp", datetime.now(timezone.utc).isoformat())
             ))
             tracker_event_timestamps.add(event.get("timestamp", ""))
     
@@ -78,7 +78,7 @@ async def get_current_workflow(
             
             # Convert DB events to response format
             for db_event in db_events:
-                event_timestamp = db_event.timestamp.isoformat() if db_event.timestamp else datetime.utcnow().isoformat()
+                event_timestamp = db_event.timestamp.isoformat() if db_event.timestamp else datetime.now(timezone.utc).isoformat()
                 
                 # Skip if already in tracker events (avoid duplicates)
                 if event_timestamp not in tracker_event_timestamps:
@@ -193,7 +193,7 @@ async def get_current_workflow(
                     workflow_stage = WorkflowStage.EXECUTION.value
                     message = readable_content or "Выполнение"
                 
-                log_timestamp = log.get("timestamp", datetime.utcnow().isoformat())
+                log_timestamp = log.get("timestamp", datetime.now(timezone.utc).isoformat())
                 
                 # Only add if not already in tracker events (avoid duplicates)
                 if log_timestamp not in tracker_event_timestamps:
@@ -263,7 +263,7 @@ async def get_recent_workflow_events(
     
     # Add DB events first (they are persistent)
     for db_event in db_events:
-        event_timestamp = db_event.timestamp.isoformat() if db_event.timestamp else datetime.utcnow().isoformat()
+        event_timestamp = db_event.timestamp.isoformat() if db_event.timestamp else datetime.now(timezone.utc).isoformat()
         if event_timestamp not in seen_timestamps:
             details = {}
             if db_event.event_data:
@@ -282,7 +282,7 @@ async def get_recent_workflow_events(
     # Add tracker events (newest real-time events)
     for event in tracker_events:
         if isinstance(event, dict):
-            event_timestamp = event.get("timestamp", datetime.utcnow().isoformat())
+            event_timestamp = event.get("timestamp", datetime.now(timezone.utc).isoformat())
             if event_timestamp not in seen_timestamps:
                 all_events.append(WorkflowEventResponse(
                     stage=event.get("stage", "execution"),
@@ -321,7 +321,7 @@ async def get_workflow_events(
             stage=db_event.stage,
             message=db_event.message,
             details=details,
-            timestamp=db_event.timestamp.isoformat() if db_event.timestamp else datetime.utcnow().isoformat()
+            timestamp=db_event.timestamp.isoformat() if db_event.timestamp else datetime.now(timezone.utc).isoformat()
         ))
     
     return events

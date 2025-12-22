@@ -2,16 +2,16 @@
 Feedback Learning Service for learning from human feedback
 Extracts patterns from approval/rejection feedback and applies them to future decisions
 """
-from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
 from app.models.approval import ApprovalRequest
 from app.models.learning_pattern import LearningPattern, PatternType
 from app.services.meta_learning_service import MetaLearningService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -373,7 +373,7 @@ class FeedbackLearningService:
             Dictionary with feedback statistics
         """
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=time_range_days)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
             
             query = self.db.query(ApprovalRequest).filter(
                 ApprovalRequest.created_at >= cutoff_date

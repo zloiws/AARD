@@ -1,0 +1,76 @@
+This repository implements AARD.
+
+AARD is a personal human–AI interaction environment.
+
+AARD is NOT:
+- an AGI project
+- an autonomous agent
+- a self-learning or self-improving system
+- a machine learning or reinforcement learning system
+- a research project in artificial intelligence
+
+The human is the foundation of the system.
+Without a human, AARD has no purpose.
+
+The system exists to interpret human language and intent
+into concrete actions or results.
+
+The LLM:
+- acts only as a semantic interpreter
+- has no goals
+- has no agency
+- does not learn
+- does not reason independently
+
+The LLM must not be treated as a decision-maker.
+
+Code in AARD:
+- mediates between human intent and execution
+- enforces structure, traceability, and responsibility
+- does not contain intelligence
+
+Behavior in AARD is shaped by:
+- explicit examples
+- explicit decisions
+- explicit configuration
+
+Behavior must NOT be shaped by:
+- implicit adaptation
+- hidden state evolution
+- abstract optimization
+
+If intent is unclear:
+- do not infer
+- do not generalize
+- request a concrete example
+
+If behavior cannot be explained clearly:
+- demonstrate it with an example instead of an explanation
+
+Misunderstanding is an expected state.
+Unacknowledged misunderstanding is a system failure.
+
+All system behavior must be:
+- observable
+- attributable
+- reversible
+
+Prefer:
+- explicit data structures over implicit logic
+- decision objects over fluent responses
+- clarification over confidence
+- controllability over autonomy
+
+Do not introduce:
+- AGI terminology or concepts
+- cognitive or consciousness metaphors
+- autonomous goal-setting
+- self-modifying architectures
+- learning loops or reward signals
+
+When working on architecture, dialogue, or decisions:
+- follow the documents in /docs/context/
+
+If a proposal cannot be grounded in
+human examples or observable behavior,
+it is invalid for this project.

@@ -1,15 +1,19 @@
+# LEGACY_PROMPT_EXEMPT
+# reason: contains hard-coded system_prompt literals used for prompt improvement flows; awaiting prompt assignment migration
+# phase: Phase 2 inventory freeze
+
 """
 Prompt Service for managing prompts with versioning and metrics
 """
-from typing import Optional, List, Dict, Any
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
 
-from app.models.prompt import Prompt, PromptType, PromptStatus
-from app.services.project_metrics_service import ProjectMetricsService
 from app.core.logging_config import LoggingConfig
+from app.models.prompt import Prompt, PromptStatus, PromptType
+from app.services.project_metrics_service import ProjectMetricsService
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -321,6 +325,72 @@ class PromptService:
         ).order_by(Prompt.version.asc()).all()
         
         return versions
+
+    # --- Assignments ---
+    def assign_prompt_to_model_or_server(
+        self,
+        prompt_id: UUID,
+        model_id: Optional[UUID] = None,
+        server_id: Optional[UUID] = None,
+        task_type: Optional[str] = None,
+        component_role: Optional[str] = None,
+        stage: Optional[str] = None,
+        scope: str = "global",
+        agent_id: Optional[UUID] = None,
+        experiment_id: Optional[UUID] = None,
+        created_by: Optional[str] = None,
+    ):
+        """Assign a prompt to a model/server/task_type/component_role/stage with scope"""
+        from app.models.prompt_assignment import PromptAssignment
+
+        if not component_role or not stage:
+            raise ValueError("component_role and stage are required for prompt assignments")
+
+        # Create assignment
+        assignment = PromptAssignment(
+            prompt_id=prompt_id,
+            model_id=model_id,
+            server_id=server_id,
+            task_type=task_type,
+            component_role=component_role,
+            stage=stage,
+            scope=scope,
+            agent_id=agent_id,
+            experiment_id=experiment_id,
+            created_by=created_by or "system",
+        )
+        try:
+            self.db.add(assignment)
+            self.db.commit()
+            self.db.refresh(assignment)
+            logger.info(f"Created prompt assignment: {assignment.to_dict()}")
+            return assignment
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error creating prompt assignment: {e}", exc_info=True)
+            raise
+
+    def list_assignments(self, prompt_id: Optional[UUID] = None, model_id: Optional[UUID] = None, server_id: Optional[UUID] = None, component_role: Optional[str] = None, stage: Optional[str] = None, scope: Optional[str] = None, agent_id: Optional[UUID] = None, experiment_id: Optional[UUID] = None):
+        from app.models.prompt_assignment import PromptAssignment
+        q = self.db.query(PromptAssignment)
+        if prompt_id:
+            q = q.filter(PromptAssignment.prompt_id == prompt_id)
+        if model_id:
+            q = q.filter(PromptAssignment.model_id == model_id)
+        if server_id:
+            q = q.filter(PromptAssignment.server_id == server_id)
+        if component_role:
+            q = q.filter(PromptAssignment.component_role == component_role)
+        if stage:
+            q = q.filter(PromptAssignment.stage == stage)
+        if scope:
+            q = q.filter(PromptAssignment.scope == scope)
+        if agent_id:
+            q = q.filter(PromptAssignment.agent_id == agent_id)
+        if experiment_id:
+            q = q.filter(PromptAssignment.experiment_id == experiment_id)
+        return q.order_by(PromptAssignment.created_at.desc()).all()
+
     
     def get_latest_version(self, name: str, prompt_type: Optional[PromptType] = None) -> Optional[Prompt]:
         """Get the latest version of a prompt by name
@@ -391,9 +461,10 @@ class PromptService:
             # Record project metrics for prompt usage
             try:
                 from datetime import timedelta
-                from app.models.project_metric import MetricType, MetricPeriod
+
+                from app.models.project_metric import MetricPeriod, MetricType
                 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 # Round to hour for consistent period boundaries
                 period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
                 period_end = now.replace(minute=0, second=0, microsecond=0)
@@ -473,7 +544,7 @@ class PromptService:
             
             # Add new result
             history.append({
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "success": success,
                 "type": "usage_result"
             })
@@ -517,9 +588,10 @@ class PromptService:
             # Record project metrics for prompt success/failure
             try:
                 from datetime import timedelta
-                from app.models.project_metric import MetricType, MetricPeriod
+
+                from app.models.project_metric import MetricPeriod, MetricType
                 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 # Round to hour for consistent period boundaries
                 period_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
                 period_end = now.replace(minute=0, second=0, microsecond=0)
@@ -577,7 +649,7 @@ class PromptService:
         try:
             from app.services.reflection_service import ReflectionService
             
-            reflection_service = ReflectionService(db=self.db)
+            reflection_service = ReflectionService(self.db)
             
             # Analyze based on success/failure
             if success:
@@ -612,7 +684,7 @@ class PromptService:
             import copy
             history = copy.deepcopy(prompt.improvement_history) if prompt.improvement_history else []
             history.append({
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "type": "performance_analysis",
                 "success": success,
                 "task_description": task_description[:500],  # Truncate long descriptions
@@ -628,7 +700,7 @@ class PromptService:
                 history = other_entries + analyses[-50:]
             
             prompt.improvement_history = history
-            prompt.last_improved_at = datetime.utcnow()
+            prompt.last_improved_at = datetime.now(timezone.utc)
             
             self.db.commit()
             self.db.refresh(prompt)
@@ -714,13 +786,13 @@ class PromptService:
                     "metrics": metrics_analysis,
                     "history": history_analysis
                 },
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             
             # Save suggestions to improvement_history
             history = prompt.improvement_history or []
             history.append({
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "type": "improvement_suggestions",
                 "suggestions": result
             })
@@ -854,9 +926,9 @@ class PromptService:
     ) -> Optional[List[str]]:
         """Use LLM to generate improvement suggestions"""
         try:
-            from app.core.ollama_client import OllamaClient, TaskType
             from app.core.model_selector import ModelSelector
-            
+            from app.core.ollama_client import OllamaClient, TaskType
+
             # Get planning model for suggestions
             model_selector = ModelSelector(self.db)
             planning_model = model_selector.get_planning_model()
@@ -1014,7 +1086,7 @@ Provide 3-5 specific, actionable suggestions for improving this prompt. Return a
                 # Save improvement metadata
                 history = new_version.improvement_history or []
                 history.append({
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "type": "version_creation",
                     "parent_version": prompt.version,
                     "suggestions_used": suggestions,
@@ -1046,9 +1118,9 @@ Provide 3-5 specific, actionable suggestions for improving this prompt. Return a
     ) -> Optional[str]:
         """Use LLM to generate improved prompt text based on suggestions"""
         try:
-            from app.core.ollama_client import OllamaClient, TaskType
             from app.core.model_selector import ModelSelector
-            
+            from app.core.ollama_client import OllamaClient, TaskType
+
             # Get planning model
             model_selector = ModelSelector(self.db)
             planning_model = model_selector.get_planning_model()

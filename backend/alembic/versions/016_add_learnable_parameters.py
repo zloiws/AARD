@@ -1,0 +1,72 @@
+"""Add system_parameters and uncertainty_parameters tables
+
+Revision ID: 016_add_learnable_parameters
+Revises: 015_add_system_settings
+Create Date: 2025-12-10 20:45:00.000000
+
+"""
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import postgresql
+
+# revision identifiers, used by Alembic.
+revision: str = '016'
+down_revision: str = '029'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # Create uncertainty_parameters table
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.uncertainty_parameters')")).scalar():
+        op.create_table('uncertainty_parameters',
+        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column('parameter_name', sa.String(255), nullable=False, unique=True),
+        sa.Column('parameter_type', sa.Enum('weight', 'threshold', 'keyword_list', 'count_threshold', 'similarity_threshold', name='parametertype'), nullable=False),
+        sa.Column('numeric_value', sa.Float(), nullable=True),
+        sa.Column('text_value', sa.Text(), nullable=True),
+        sa.Column('json_value', postgresql.JSONB(), nullable=True),
+        sa.Column('version', sa.Integer(), nullable=False, server_default='1'),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('learning_history', postgresql.JSONB(), nullable=True),
+        sa.Column('performance_metrics', postgresql.JSONB(), nullable=True),
+        sa.Column('last_improved_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('improvement_count', sa.Integer(), nullable=False, server_default='0'),
+        sa.Column('description', sa.Text(), nullable=True),
+    )
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_uncertainty_parameters_parameter_name ON uncertainty_parameters (parameter_name);")
+    
+    # Create system_parameters table
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.system_parameters')")).scalar():
+        op.create_table('system_parameters',
+        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column('parameter_name', sa.String(255), nullable=False),
+        sa.Column('category', sa.Enum('uncertainty', 'approval', 'critic', 'conflict_resolution', 'quota', 'planning', 'memory', 'execution', 'meta_learning', name='parametercategory'), nullable=False),
+        sa.Column('parameter_type', sa.Enum('weight', 'threshold', 'keyword_list', 'count_threshold', 'similarity_threshold', 'penalty', 'bonus', name='systemparametertype'), nullable=False),
+        sa.Column('numeric_value', sa.Float(), nullable=True),
+        sa.Column('text_value', sa.Text(), nullable=True),
+        sa.Column('json_value', postgresql.JSONB(), nullable=True),
+        sa.Column('version', sa.Integer(), nullable=False, server_default='1'),
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('learning_history', postgresql.JSONB(), nullable=True),
+        sa.Column('performance_metrics', postgresql.JSONB(), nullable=True),
+        sa.Column('last_improved_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('improvement_count', sa.Integer(), nullable=False, server_default='0'),
+        sa.Column('description', sa.Text(), nullable=True),
+        sa.Column('extra_metadata', postgresql.JSONB(), nullable=True),
+    )
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_system_parameters_parameter_name ON system_parameters (parameter_name);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_system_parameters_category ON system_parameters (category);")
+
+
+def downgrade():
+    op.drop_index('ix_system_parameters_category', table_name='system_parameters')
+    op.drop_index('ix_system_parameters_parameter_name', table_name='system_parameters')
+    op.drop_table('system_parameters')
+    op.drop_index('ix_uncertainty_parameters_parameter_name', table_name='uncertainty_parameters')
+    op.drop_table('uncertainty_parameters')
+

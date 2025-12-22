@@ -1,15 +1,16 @@
 """
 Reflection Service for analyzing failures and generating fixes
 """
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
-from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.core.execution_context import ExecutionContext
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
 from app.core.ollama_client import OllamaClient
+from app.core.tracing import add_span_attributes, get_tracer
 from app.services.memory_service import MemoryService
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -42,7 +43,7 @@ class ReflectionService:
     
     def __init__(
         self,
-        db: Session = None,
+        db_or_context: Union[Session, ExecutionContext] = None,
         ollama_client: Optional[OllamaClient] = None,
         memory_service: Optional[MemoryService] = None
     ):
@@ -50,13 +51,28 @@ class ReflectionService:
         Initialize Reflection Service
         
         Args:
-            db: Database session (optional)
-            ollama_client: OllamaClient for generating fixes (optional)
-            memory_service: MemoryService for searching similar situations (optional)
+            db_or_context: Either a Session (for backward compatibility) or ExecutionContext
+            ollama_client: Ollama client (optional, will create if not provided)
+            memory_service: Memory service (optional, will create if not provided)
         """
-        self.db = db or SessionLocal()
+        # Support both ExecutionContext and Session for backward compatibility
+        if isinstance(db_or_context, ExecutionContext):
+            self.context = db_or_context
+            self.db = db_or_context.db
+            self.workflow_id = db_or_context.workflow_id
+        elif db_or_context is not None:
+            # Backward compatibility: create minimal context from Session
+            self.db = db_or_context
+            self.context = ExecutionContext.from_db_session(db_or_context)
+            self.workflow_id = self.context.workflow_id
+        else:
+            # Create new session and context if nothing provided
+            self.db = SessionLocal()
+            self.context = ExecutionContext.from_db_session(self.db)
+            self.workflow_id = self.context.workflow_id
+        
         self.ollama_client = ollama_client or OllamaClient()
-        self.memory_service = memory_service or MemoryService(self.db)
+        self.memory_service = memory_service or MemoryService(self.context)
         self.tracer = get_tracer(__name__)
     
     async def analyze_failure(
@@ -213,7 +229,22 @@ class ReflectionService:
         similar_situations: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Use LLM to analyze failure"""
-        prompt = f"""Analyze this failure:
+        import json
+        import re
+        import time
+
+        # Get prompt from PromptManager if available
+        prompt_used = None
+        system_prompt = None
+        if hasattr(self, 'context') and self.context.prompt_manager:
+            try:
+                prompt_used = await self.context.prompt_manager.get_prompt_for_stage("reflection", "reflection")
+                if prompt_used:
+                    system_prompt = prompt_used.content
+            except Exception as e:
+                logger.debug(f"Could not get prompt from PromptManager: {e}")
+        
+        user_prompt = f"""Analyze this failure:
 
 Task: {task_description}
 Error: {error}
@@ -222,11 +253,11 @@ Context: {context or {}}
 """
         
         if similar_situations:
-            prompt += f"\nSimilar past failures:\n"
+            user_prompt += f"\nSimilar past failures:\n"
             for i, situation in enumerate(similar_situations[:3], 1):
-                prompt += f"{i}. {situation.get('summary', 'N/A')}\n"
+                user_prompt += f"{i}. {situation.get('summary', 'N/A')}\n"
         
-        prompt += """
+        user_prompt += """
 Provide analysis in JSON format:
 {
     "root_cause": "explanation",
@@ -235,18 +266,32 @@ Provide analysis in JSON format:
     "preventable": true/false
 }"""
         
+        start_time = time.time()
         try:
             response = await self.ollama_client.generate(
-                prompt=prompt,
+                prompt=user_prompt,
+                system_prompt=system_prompt,
                 task_type=None,
                 temperature=0.3
             )
             
+            duration_ms = int((time.time() - start_time) * 1000)
+            
+            # Record prompt usage metrics through PromptManager if available
+            if prompt_used and hasattr(self, 'context') and self.context.prompt_manager:
+                try:
+                    await self.context.prompt_manager.record_prompt_usage(
+                        prompt_id=prompt_used.id,
+                        success=True,
+                        execution_time_ms=duration_ms,
+                        stage="reflection_analysis"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to record prompt usage through PromptManager: {e}", exc_info=True)
+            
             response_text = response.response if hasattr(response, "response") else str(response)
             
             # Try to extract JSON
-            import json
-            import re
             json_match = re.search(r'\{[^}]+\}', response_text, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
@@ -258,6 +303,20 @@ Provide analysis in JSON format:
                 "preventable": True
             }
         except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            
+            # Record prompt failure through PromptManager if available
+            if prompt_used and hasattr(self, 'context') and self.context.prompt_manager:
+                try:
+                    await self.context.prompt_manager.record_prompt_usage(
+                        prompt_id=prompt_used.id,
+                        success=False,
+                        execution_time_ms=duration_ms,
+                        stage="reflection_analysis"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to record prompt failure through PromptManager: {e}", exc_info=True)
+            
             logger.warning(f"LLM analysis error: {e}")
             return {
                 "root_cause": f"LLM analysis failed: {e}",
@@ -318,7 +377,22 @@ Provide analysis in JSON format:
         similar_situations: Optional[List[Dict[str, Any]]]
     ) -> Dict[str, Any]:
         """Use LLM to generate fix"""
-        prompt = f"""Generate a fix for this failure:
+        import json
+        import re
+        import time
+
+        # Get prompt from PromptManager if available
+        prompt_used = None
+        system_prompt = None
+        if hasattr(self, 'context') and self.context.prompt_manager:
+            try:
+                prompt_used = await self.context.prompt_manager.get_prompt_for_stage("reflection", "reflection")
+                if prompt_used:
+                    system_prompt = prompt_used.content
+            except Exception as e:
+                logger.debug(f"Could not get prompt from PromptManager: {e}")
+        
+        user_prompt = f"""Generate a fix for this failure:
 
 Task: {task_description}
 Error: {error}
@@ -329,11 +403,11 @@ Context: {context or {}}
 """
         
         if similar_situations:
-            prompt += "\nHow similar failures were fixed:\n"
+            user_prompt += "\nHow similar failures were fixed:\n"
             for i, situation in enumerate(similar_situations[:2], 1):
-                prompt += f"{i}. {situation.get('summary', 'N/A')}\n"
+                user_prompt += f"{i}. {situation.get('summary', 'N/A')}\n"
         
-        prompt += """
+        user_prompt += """
 Provide fix in JSON format:
 {
     "status": "success",
@@ -344,18 +418,32 @@ Provide fix in JSON format:
     "alternative_approach": "description if applicable"
 }"""
         
+        start_time = time.time()
         try:
             response = await self.ollama_client.generate(
-                prompt=prompt,
+                prompt=user_prompt,
+                system_prompt=system_prompt,
                 task_type=None,
                 temperature=0.5
             )
             
+            duration_ms = int((time.time() - start_time) * 1000)
+            
+            # Record prompt usage metrics through PromptManager if available
+            if prompt_used and hasattr(self, 'context') and self.context.prompt_manager:
+                try:
+                    await self.context.prompt_manager.record_prompt_usage(
+                        prompt_id=prompt_used.id,
+                        success=True,
+                        execution_time_ms=duration_ms,
+                        stage="reflection_fix_generation"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to record prompt usage through PromptManager: {e}", exc_info=True)
+            
             response_text = response.response if hasattr(response, "response") else str(response)
             
             # Extract JSON
-            import json
-            import re
             json_match = re.search(r'\{[^}]+\}', response_text, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
@@ -366,6 +454,20 @@ Provide fix in JSON format:
                 "suggested_changes": []
             }
         except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            
+            # Record prompt failure through PromptManager if available
+            if prompt_used and hasattr(self, 'context') and self.context.prompt_manager:
+                try:
+                    await self.context.prompt_manager.record_prompt_usage(
+                        prompt_id=prompt_used.id,
+                        success=False,
+                        execution_time_ms=duration_ms,
+                        stage="reflection_fix_generation"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to record prompt failure through PromptManager: {e}", exc_info=True)
+            
             logger.warning(f"LLM fix generation error: {e}")
             return {
                 "status": "error",

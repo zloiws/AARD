@@ -5,8 +5,8 @@ Revises: 015_add_authentication
 Create Date: 2025-12-03 18:30:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade() -> None:
     # Create learning_patterns table
-    op.create_table(
-        'learning_patterns',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.learning_patterns')")).scalar():
+        op.create_table('learning_patterns',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('pattern_type', sa.String(50), nullable=False),
         sa.Column('name', sa.String(255), nullable=False),
@@ -38,10 +39,10 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('idx_learning_patterns_type', 'learning_patterns', ['pattern_type'])
-    op.create_index('idx_learning_patterns_agent_id', 'learning_patterns', ['agent_id'])
-    op.create_index('idx_learning_patterns_success_rate', 'learning_patterns', ['success_rate'])
-    op.create_index('idx_learning_patterns_task_category', 'learning_patterns', ['task_category'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_learning_patterns_type ON learning_patterns (pattern_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_learning_patterns_agent_id ON learning_patterns (agent_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_learning_patterns_success_rate ON learning_patterns (success_rate);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_learning_patterns_task_category ON learning_patterns (task_category);")
 
 
 def downgrade() -> None:

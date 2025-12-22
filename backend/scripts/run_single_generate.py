@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 import asyncio
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Ensure backend is on path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.database import SessionLocal
 from app.services.planning_service import PlanningService
+
 
 async def run():
     db = SessionLocal()

@@ -1,21 +1,21 @@
 """
 Health check endpoints
 """
-from typing import Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-import httpx
 import asyncio
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
 
-from app.core.database import get_db
+import httpx
 from app.core.config import get_settings
+from app.core.database import get_db
 from app.core.logging_config import LoggingConfig
-from app.services.ollama_service import OllamaService
-from app.models.task_queue import TaskQueue, QueueTask
 from app.models.checkpoint import Checkpoint
+from app.models.task_queue import QueueTask, TaskQueue
 from app.models.trace import ExecutionTrace
-from datetime import datetime, timedelta
+from app.services.ollama_service import OllamaService
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 router = APIRouter(tags=["health"])
@@ -31,7 +31,7 @@ async def health_check(db: Session = Depends(get_db)):
     """
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "AARD"
     }
 
@@ -47,7 +47,7 @@ async def detailed_health_check(db: Session = Depends(get_db)):
     settings = get_settings()
     health_status = {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": settings.app_name,
         "version": "0.1.0",
         "environment": settings.app_env,
@@ -204,7 +204,7 @@ async def detailed_health_check(db: Session = Depends(get_db)):
     
     # Check recent activity (traces in last 5 minutes)
     try:
-        five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
+        five_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=5)
         recent_traces = db.query(ExecutionTrace).filter(
             ExecutionTrace.start_time >= five_minutes_ago
         ).count()
@@ -266,7 +266,7 @@ async def readiness_check(db: Session = Depends(get_db)):
             return {
                 "status": "not_ready",
                 "message": "No Ollama servers configured",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
         
         # Check if at least one server is available
@@ -275,13 +275,13 @@ async def readiness_check(db: Session = Depends(get_db)):
             return {
                 "status": "not_ready",
                 "message": "No available Ollama servers",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
         
         return {
             "status": "ready",
             "message": "Service is ready to accept traffic",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "available_servers": len(available_servers)
         }
     except Exception as e:
@@ -289,7 +289,7 @@ async def readiness_check(db: Session = Depends(get_db)):
         return {
             "status": "not_ready",
             "message": f"Service is not ready: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "error": type(e).__name__
         }
 
@@ -304,6 +304,6 @@ async def liveness_check():
     """
     return {
         "status": "alive",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 

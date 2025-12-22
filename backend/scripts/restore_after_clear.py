@@ -13,15 +13,16 @@ backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from dotenv import load_dotenv
+
 BASE_DIR = backend_dir.parent
 ENV_FILE = BASE_DIR / ".env"
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE, override=True)
 
-from app.core.database import SessionLocal, Base, engine
+from app.core.database import Base, SessionLocal, engine
+from app.core.logging_config import LoggingConfig
 from app.models import *  # Import all models
 from sqlalchemy import inspect
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -109,8 +110,8 @@ def restore_initial_prompts():
     
     db = SessionLocal()
     try:
-        from app.services.prompt_service import PromptService
         from app.models.prompt import PromptType
+        from app.services.prompt_service import PromptService
         
         service = PromptService(db)
         

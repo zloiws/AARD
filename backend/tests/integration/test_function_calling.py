@@ -2,7 +2,7 @@
 Integration tests for Function Calling Protocol
 """
 import pytest
-from app.core.function_calling import FunctionCallProtocol, FunctionCall
+from app.core.function_calling import FunctionCall, FunctionCallProtocol
 
 
 def test_create_function_call():

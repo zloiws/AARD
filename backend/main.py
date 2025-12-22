@@ -2,6 +2,7 @@
 Main FastAPI application entry point
 """
 import warnings
+
 # Suppress pkg_resources deprecation warning from opentelemetry
 warnings.filterwarnings('ignore', message='.*pkg_resources is deprecated.*', category=UserWarning)
 # Suppress Pydantic protected namespace warnings
@@ -9,26 +10,31 @@ warnings.filterwarnings('ignore', message='.*has conflict with protected namespa
 # Suppress OpenTelemetry shutdown warnings (spans dropped after shutdown is normal)
 warnings.filterwarnings('ignore', message='.*Already shutdown.*', category=UserWarning)
 
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import traceback
-import sys
 import logging
+import sys
+import traceback
+from contextlib import asynccontextmanager
 
+from app.api.routes import (agent_dialogs, agent_gym, agent_gym_pages,
+                            agent_memory, agents, agents_pages,
+                            approvals_pages, artifacts_pages, audit_reports,
+                            audit_reports_pages, auth, auth_pages, benchmarks,
+                            chat, checkpoints, current_work, events, execution,
+                            execution_graph, experiments, health)
+from app.api.routes import logging as logging_routes
+from app.api.routes import (meta, metrics, model_logs, models,
+                            models_management, pages, plan_templates,
+                            plans_pages, project_metrics,
+                            project_metrics_pages, queues, registry, requests,
+                            servers, settings_pages, tools, tools_pages,
+                            traces, traces_pages, websocket_events, workflow)
 from app.core.config import get_settings
 from app.core.logging_config import LoggingConfig
 from app.core.middleware import LoggingContextMiddleware
 from app.core.tracing import configure_tracing, shutdown_tracing
-from app.api.routes import (
-    chat, pages, models, servers, approvals_pages, logging as logging_routes,
-    traces, traces_pages, requests, queues, checkpoints, metrics, health,
-    artifacts_pages, settings_pages, models_management, plans_pages, agents, tools, agents_pages, tools_pages,
-    experiments, agent_gym, agent_gym_pages, agent_memory, auth, auth_pages, model_logs, current_work, workflow,
-    websocket_events, benchmarks, project_metrics, project_metrics_pages, audit_reports, audit_reports_pages,
-    plan_templates, agent_dialogs
-)
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 # Configure logging first
 LoggingConfig.configure()
@@ -77,7 +83,7 @@ async def lifespan(app: FastAPI):
 _settings = get_settings()
 app = FastAPI(
     title=_settings.app_name,
-    description="Autonomous Agentic Recursive Development Platform",
+    description="Personal human-AI interaction environment (AARD)",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -88,6 +94,7 @@ app = FastAPI(
 app.add_middleware(LoggingContextMiddleware)
 # Add metrics middleware
 from app.core.middleware_metrics import MetricsMiddleware
+
 app.add_middleware(MetricsMiddleware)
 
 # Configure CORS
@@ -101,6 +108,7 @@ app.add_middleware(
 
 # Add exception handler for better error logging (only for unhandled exceptions)
 from fastapi.exceptions import HTTPException as FastAPIHTTPException
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -150,10 +158,13 @@ app.include_router(agent_dialogs.router)
 
 # A2A communication
 from app.api.routes import a2a
+
 app.include_router(a2a.router)
 
 # Evolution system routers
-from app.api.routes import approvals, artifacts, prompts, plans, model_logs, project_metrics
+from app.api.routes import (approvals, artifacts, model_logs, plans,
+                            project_metrics, prompts)
+
 app.include_router(approvals.router)
 app.include_router(artifacts.router)
 app.include_router(prompts.router)
@@ -161,16 +172,20 @@ app.include_router(plans.router)
 app.include_router(plan_templates.router)
 app.include_router(model_logs.router)
 app.include_router(project_metrics.router)
+app.include_router(registry.router)
 app.include_router(project_metrics_pages.router)
 app.include_router(audit_reports.router)
 app.include_router(audit_reports_pages.router)
 from app.api.routes import benchmarks
+
 app.include_router(benchmarks.router)
 from app.api.routes import benchmarks_pages
+
 app.include_router(benchmarks_pages.router)
 app.include_router(current_work.router)
 app.include_router(workflow.router)
 app.include_router(websocket_events.router)
+app.include_router(events.router)
 
 # Evolution system web pages
 app.include_router(approvals_pages.router)
@@ -184,6 +199,7 @@ app.include_router(traces_pages.router)
 
 # Dashboard
 from app.api.routes import dashboard, dashboard_pages
+
 app.include_router(dashboard.router)
 app.include_router(dashboard_pages.router)
 app.include_router(experiments.router)

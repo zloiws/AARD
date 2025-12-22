@@ -1,12 +1,12 @@
 """
 Integration tests for Dashboard API (Phase 1, Task 6.5)
 """
-import pytest
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskStatus
+import pytest
 from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from sqlalchemy.orm import Session
 
 
 def test_get_dashboard_tasks(db: Session, client):

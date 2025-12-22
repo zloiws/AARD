@@ -10,19 +10,20 @@ sys.path.insert(0, str(BASE_DIR))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 env_file = BASE_DIR / ".env"
 load_dotenv(env_file, override=True)
 
 # Set PYTHONPATH
 os.environ['PYTHONPATH'] = str(BASE_DIR / "backend")
 
-from sqlalchemy import create_engine, MetaData, Table
-from sqlalchemy.engine.reflection import Inspector
-
+from app.models.approval import ApprovalRequest
 # Import the missing models
 from app.models.checkpoint import Checkpoint
-from app.models.approval import ApprovalRequest
 from app.models.evolution import EvolutionHistory, Feedback
+from sqlalchemy import MetaData, Table, create_engine
+from sqlalchemy.engine.reflection import Inspector
+
 
 def create_missing_tables():
     """Create only the missing tables"""

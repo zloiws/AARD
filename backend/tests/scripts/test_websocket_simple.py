@@ -10,6 +10,7 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 import requests
 
+
 def test_websocket_endpoints_exist():
     """Test that WebSocket endpoints are accessible (HTTP check)"""
     print("=" * 80)

@@ -1,20 +1,20 @@
 """
 Service for managing checkpoints and rollback
 """
-from typing import Dict, Any, Optional, List
-from uuid import UUID
-from datetime import datetime
 import hashlib
 import json
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, desc
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
+from app.core.logging_config import LoggingConfig
+from app.core.tracing import get_current_trace_id
+from app.models.artifact import Artifact
 from app.models.checkpoint import Checkpoint
 from app.models.plan import Plan
 from app.models.task import Task
-from app.models.artifact import Artifact
-from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_current_trace_id
+from sqlalchemy import and_, desc
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

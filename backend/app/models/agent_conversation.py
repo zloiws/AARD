@@ -2,16 +2,17 @@
 Agent Conversation model for AARD platform
 Represents dialogs between agents for collaborative task solving
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, Dict, List, Any
-from uuid import uuid4, UUID
-
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Boolean, JSON
-from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
-from sqlalchemy.orm import relationship
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
 
 from app.core.database import Base
+from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
+                        String, Text)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import relationship
 
 
 class ConversationStatus(str, Enum):
@@ -77,8 +78,8 @@ class AgentConversation(Base):
     
     # Status and lifecycle
     status = Column(String(50), nullable=False, default=ConversationStatus.INITIATED.value)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     completed_at = Column(DateTime, nullable=True)  # When conversation was completed
     
     # Relationships
@@ -118,12 +119,12 @@ class AgentConversation(Base):
             "agent_id": str(agent_id),
             "role": role.value if isinstance(role, MessageRole) else role,
             "content": content,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "metadata": metadata or {}
         }
         
         self.messages.append(message)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
         
         # Update status to active if it was initiated
         if self.status == ConversationStatus.INITIATED.value:
@@ -158,13 +159,13 @@ class AgentConversation(Base):
         current_context = dict(self.context) if self.context else {}
         current_context.update(updates)
         self.context = current_context
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def complete(self, success: bool = True):
         """Mark conversation as completed"""
         self.status = ConversationStatus.COMPLETED.value if success else ConversationStatus.FAILED.value
-        self.completed_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
+        self.completed_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(timezone.utc)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert conversation to dictionary"""

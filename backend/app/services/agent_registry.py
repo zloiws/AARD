@@ -2,17 +2,16 @@
 Agent Registry Service
 Service discovery and lifecycle management for agents
 """
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
-
-from app.models.agent import Agent, AgentStatus, AgentHealthStatus
-from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
 from app.core.a2a_protocol import AgentIdentity
+from app.core.logging_config import LoggingConfig
+from app.core.tracing import add_span_attributes, get_tracer
+from app.models.agent import Agent, AgentHealthStatus, AgentStatus
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -69,10 +68,10 @@ class AgentRegistry:
                 # Set status to active if not already
                 if agent.status != AgentStatus.ACTIVE.value:
                     agent.status = AgentStatus.ACTIVE.value
-                    agent.activated_at = datetime.utcnow()
+                    agent.activated_at = datetime.now(timezone.utc)
                 
                 # Update heartbeat
-                agent.last_heartbeat = datetime.utcnow()
+                agent.last_heartbeat = datetime.now(timezone.utc)
                 agent.health_status = AgentHealthStatus.HEALTHY.value
                 
                 self.db.commit()
@@ -234,7 +233,7 @@ class AgentRegistry:
             Number of agents cleaned up
         """
         with self.tracer.start_as_current_span("agent_registry.cleanup") as span:
-            threshold = datetime.utcnow() - timedelta(minutes=self.removal_threshold)
+            threshold = datetime.now(timezone.utc) - timedelta(minutes=self.removal_threshold)
             
             unhealthy_agents = self.db.query(Agent).filter(
                 and_(

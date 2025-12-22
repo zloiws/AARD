@@ -14,6 +14,7 @@ from app.models.benchmark_task import BenchmarkTask
 from app.models.ollama_model import OllamaModel
 from sqlalchemy import and_
 
+
 def analyze_results():
     """Analyze benchmark results to understand failures"""
     db = SessionLocal()

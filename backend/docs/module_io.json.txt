@@ -1,0 +1,57 @@
+{
+  "generated_by": "assistant",
+  "modules": {
+    "app.core.config": {
+      "description": "Application settings loader (Pydantic BaseSettings).",
+      "inputs": ["environment variables", ".env"],
+      "outputs": ["Settings objects and config models"]
+    },
+    "app.core.database": {
+      "description": "SQLAlchemy engine/session setup and helpers.",
+      "inputs": ["DB URL from config", "model metadata (app.models)"],
+      "outputs": ["engine", "SessionLocal", database utilities"]
+    },
+    "app.api.routes.*": {
+      "description": "HTTP route handlers (FastAPI).",
+      "inputs": ["HTTP requests", "path/query/body", "auth context"],
+      "outputs": ["HTTP responses", "calls to services"]
+    },
+    "app.models.*": {
+      "description": "SQLAlchemy domain models.",
+      "inputs": ["ORM session", "service data"],
+      "outputs": ["persisted entities", "loaded domain objects"]
+    },
+    "app.services.*": {
+      "description": "Business logic services implementing domain operations.",
+      "inputs": ["API/service calls", "models", "tools results"],
+      "outputs": ["domain results", "DB changes", "events"]
+    },
+    "app.agents.*": {
+      "description": "Agent implementations (planner, coder, simple).",
+      "inputs": ["task descriptions", "memory/context", "tool responses"],
+      "outputs": ["plans", "actions", "messages"]
+    },
+    "app.components.*": {
+      "description": "Reusable components for planning/validation/interpretation.",
+      "inputs": ["intermediate outputs", "prompts", "requests"],
+      "outputs": ["validated decisions", "normalized prompts"]
+    },
+    "app.tools.*": {
+      "description": "Adapters to external tools and executors.",
+      "inputs": ["tool-specific requests", "payloads"],
+      "outputs": ["tool outputs", "execution artifacts", "errors"]
+    },
+    "app.registry.*": {
+      "description": "Service registry/lookup helpers.",
+      "inputs": ["service descriptors"],
+      "outputs": ["service instances"]
+    },
+    "app.memory.*": {
+      "description": "Memory and conversation storage helpers.",
+      "inputs": ["messages", "session ids"],
+      "outputs": ["memory records", "conversation contexts"]
+    }
+  }
+}
+
+

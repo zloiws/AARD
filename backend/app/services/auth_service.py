@@ -2,14 +2,15 @@
 Authentication service for user management and sessions
 """
 import secrets
-import bcrypt
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
 
-from app.models.user import User, Session as UserSession, UserRole
+import bcrypt
 from app.core.logging_config import LoggingConfig
+from app.models.user import Session as UserSession
+from app.models.user import User, UserRole
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -100,7 +101,7 @@ class AuthService:
             return None
         
         # Update last login
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now(timezone.utc)
         self.db.commit()
         
         logger.info(f"User '{username}' authenticated successfully")
@@ -122,7 +123,7 @@ class AuthService:
         
         # Calculate expiration
         duration = duration_hours or self.session_duration_hours
-        expires_at = datetime.utcnow() + timedelta(hours=duration)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=duration)
         
         # Create session
         session = UserSession(
@@ -156,14 +157,14 @@ class AuthService:
             return None
         
         # Check if session is expired
-        if session.expires_at < datetime.utcnow():
+        if session.expires_at < datetime.now(timezone.utc):
             logger.info(f"Session {session.id} expired")
             self.db.delete(session)
             self.db.commit()
             return None
         
         # Update last activity
-        session.last_activity = datetime.utcnow()
+        session.last_activity = datetime.now(timezone.utc)
         self.db.commit()
         
         # Get user
@@ -225,7 +226,7 @@ class AuthService:
             Number of sessions deleted
         """
         expired_sessions = self.db.query(UserSession).filter(
-            UserSession.expires_at < datetime.utcnow()
+            UserSession.expires_at < datetime.now(timezone.utc)
         ).all()
         
         count = len(expired_sessions)

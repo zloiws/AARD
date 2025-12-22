@@ -2,15 +2,15 @@
 Integration tests for Planning Service with Digital Twin integration
 Tests progress from simple to complex scenarios
 """
-import pytest
 import asyncio
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
+import pytest
 from app.core.database import SessionLocal
-from app.models.task import Task, TaskStatus
 from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
 from app.services.planning_service import PlanningService
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture

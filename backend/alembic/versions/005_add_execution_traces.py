@@ -5,8 +5,8 @@ Revises: 004_add_plan_id_to_approval_requests
 Create Date: 2025-01-02 12:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create execution_traces table
-    op.create_table(
-        'execution_traces',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.execution_traces')")).scalar():
+        op.create_table('execution_traces',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('trace_id', sa.String(255), nullable=False, unique=True),
         sa.Column('task_id', postgresql.UUID(as_uuid=True), nullable=True),
@@ -43,15 +44,15 @@ def upgrade():
     )
     
     # Create indexes
-    op.create_index('idx_traces_trace_id', 'execution_traces', ['trace_id'])
-    op.create_index('idx_traces_task_id', 'execution_traces', ['task_id'])
-    op.create_index('idx_traces_plan_id', 'execution_traces', ['plan_id'])
-    op.create_index('idx_traces_agent_id', 'execution_traces', ['agent_id'])
-    op.create_index('idx_traces_start_time', 'execution_traces', ['start_time'])
-    op.create_index('idx_traces_status', 'execution_traces', ['status'])
-    op.create_index('idx_traces_operation', 'execution_traces', ['operation_name'])
-    op.create_index('idx_traces_span_id', 'execution_traces', ['span_id'])
-    op.create_index('idx_traces_parent_span_id', 'execution_traces', ['parent_span_id'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_traces_trace_id ON execution_traces (trace_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_traces_task_id ON execution_traces (task_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_traces_plan_id ON execution_traces (plan_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_traces_agent_id ON execution_traces (agent_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_traces_start_time ON execution_traces (start_time);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_traces_status ON execution_traces (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_traces_operation ON execution_traces (operation_name);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_traces_span_id ON execution_traces (span_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_traces_parent_span_id ON execution_traces (parent_span_id);")
 
 
 def downgrade():

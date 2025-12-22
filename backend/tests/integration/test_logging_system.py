@@ -1,9 +1,9 @@
 """
 Comprehensive test script for unified logging system
 """
-import sys
-import os
 import json
+import os
+import sys
 import time
 from pathlib import Path
 
@@ -11,8 +11,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 import requests
-from app.core.logging_config import LoggingConfig
 from app.core.config import get_settings
+from app.core.logging_config import LoggingConfig
 
 
 def test_basic_logging():

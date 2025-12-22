@@ -7,8 +7,8 @@ Create Date: 2025-12-03 21:00:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -26,30 +26,17 @@ def upgrade() -> None:
     # - generated artifacts (prompts, code, tables)
     # - execution logs, errors, validation results
     # - interaction history (approvals, corrections)
-    op.add_column(
-        'tasks',
-        sa.Column(
-            'context',
-            postgresql.JSONB(astext_type=sa.Text()),
-            nullable=True,
-            comment='Digital Twin context: stores all task-related data including original request, todos, artifacts, logs, and interaction history'
-        )
-    )
-    
+    # Add context JSONB field if not exists
+    op.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS context JSONB;")
+    op.execute("COMMENT ON COLUMN tasks.context IS 'Digital Twin context: stores all task-related data including original request, todos, artifacts, logs, and interaction history';")
+
     # Create GIN index on context JSONB field for efficient queries
-    op.create_index(
-        'idx_tasks_context',
-        'tasks',
-        ['context'],
-        postgresql_using='gin',
-        unique=False
-    )
+    # Use a GIN index for JSONB to avoid btree size limits for large documents
+    op.execute("CREATE INDEX IF NOT EXISTS idx_tasks_context ON tasks USING gin (context);")
 
 
 def downgrade() -> None:
-    # Remove index
-    op.drop_index('idx_tasks_context', table_name='tasks')
-    
-    # Remove context column
-    op.drop_column('tasks', 'context')
+    # Remove index and column if exist
+    op.execute("DROP INDEX IF EXISTS idx_tasks_context;")
+    op.execute("ALTER TABLE tasks DROP COLUMN IF EXISTS context;")
 

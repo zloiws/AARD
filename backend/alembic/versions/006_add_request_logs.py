@@ -5,8 +5,8 @@ Revises: 005_add_execution_traces
 Create Date: 2025-01-02 12:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,8 +18,9 @@ depends_on = None
 
 def upgrade():
     # Create request_logs table
-    op.create_table(
-        'request_logs',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.request_logs')")).scalar():
+        op.create_table('request_logs',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('request_type', sa.String(50), nullable=False),
         sa.Column('request_data', postgresql.JSONB, nullable=False),
@@ -46,17 +47,18 @@ def upgrade():
     )
     
     # Create indexes for request_logs
-    op.create_index('idx_request_logs_status', 'request_logs', ['status'])
-    op.create_index('idx_request_logs_type', 'request_logs', ['request_type'])
-    op.create_index('idx_request_logs_rank', 'request_logs', ['overall_rank'])
-    op.create_index('idx_request_logs_created_at', 'request_logs', ['created_at'])
-    op.create_index('idx_request_logs_model', 'request_logs', ['model_used'])
-    op.create_index('idx_request_logs_trace_id', 'request_logs', ['trace_id'])
-    op.create_index('idx_request_logs_session_id', 'request_logs', ['session_id'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_status ON request_logs (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_type ON request_logs (request_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_rank ON request_logs (overall_rank);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs (created_at);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_model ON request_logs (model_used);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_trace_id ON request_logs (trace_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_request_logs_session_id ON request_logs (session_id);")
     
     # Create request_consequences table
-    op.create_table(
-        'request_consequences',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.request_consequences')")).scalar():
+        op.create_table('request_consequences',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
         sa.Column('request_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('consequence_type', sa.String(50), nullable=False),
@@ -70,8 +72,8 @@ def upgrade():
     )
     
     # Create indexes for request_consequences
-    op.create_index('idx_consequences_request', 'request_consequences', ['request_id'])
-    op.create_index('idx_consequences_entity', 'request_consequences', ['entity_type', 'entity_id'])
+    op.execute("CREATE INDEX IF NOT EXISTS idx_consequences_request ON request_consequences (request_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_consequences_entity ON request_consequences (entity_type, entity_id);")
 
 
 def downgrade():

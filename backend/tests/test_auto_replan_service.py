@@ -1,15 +1,15 @@
 """
 Tests for auto_replan_on_error method in PlanningService
 """
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
-from app.models.task import Task, TaskStatus
+import pytest
+from app.core.execution_error_types import ErrorCategory, ErrorSeverity
 from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
 from app.services.planning_service import PlanningService
-from app.core.execution_error_types import ErrorSeverity, ErrorCategory
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.asyncio

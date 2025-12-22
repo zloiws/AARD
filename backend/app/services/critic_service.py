@@ -1,15 +1,15 @@
 """
 Critic Service for validating and assessing execution results
 """
-from typing import Dict, Any, Optional, List
-from sqlalchemy.orm import Session
 import json
 import re
+from typing import Any, Dict, List, Optional
 
 from app.core.database import SessionLocal
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
 from app.core.ollama_client import OllamaClient
+from app.core.tracing import add_span_attributes, get_tracer
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 

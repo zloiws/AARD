@@ -2,20 +2,19 @@
 Real LLM tests for Agent Teams
 Tests agent teams with actual LLM calls
 """
-import pytest
 import asyncio
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
-from app.services.agent_team_service import AgentTeamService
-from app.services.agent_team_coordination import AgentTeamCoordination
-from app.services.planning_service import PlanningService
-from app.services.execution_service import ExecutionService
-from app.models.agent_team import CoordinationStrategy, TeamStatus
-from app.models.agent import Agent, AgentStatus
-from app.models.ollama_server import OllamaServer
-from app.models.ollama_model import OllamaModel
+import pytest
 from app.core.database import SessionLocal
-
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import CoordinationStrategy, TeamStatus
+from app.models.ollama_model import OllamaModel
+from app.models.ollama_server import OllamaServer
+from app.services.agent_team_coordination import AgentTeamCoordination
+from app.services.agent_team_service import AgentTeamService
+from app.services.execution_service import ExecutionService
+from app.services.planning_service import PlanningService
 
 # Use db fixture from conftest.py
 

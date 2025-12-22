@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import os, json
+
+import json
+import os
+
 from sqlalchemy import text
 
 os.environ.setdefault("PYTHONPATH", os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.core.database import SessionLocal
 from app.models.workflow_event import WorkflowEvent
+
 
 def main():
     session = SessionLocal()

@@ -9,13 +9,16 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 
 import asyncio
-import websockets
 import json
 from datetime import datetime
-from sqlalchemy.orm import Session
+
+import websockets
 from app.core.database import get_db
+from app.models.workflow_event import (EventSource, EventStatus, EventType,
+                                       WorkflowStage)
 from app.services.workflow_event_service import WorkflowEventService
-from app.models.workflow_event import EventSource, EventType, EventStatus, WorkflowStage
+from sqlalchemy.orm import Session
+
 
 async def test_websocket_events():
     """Test WebSocket real-time event streaming"""

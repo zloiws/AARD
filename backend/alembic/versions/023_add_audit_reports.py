@@ -5,13 +5,12 @@ Revises: 022_add_project_metrics
 Create Date: 2025-12-06
 
 """
+import uuid
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
-import uuid
-
 
 # revision identifiers, used by Alembic.
 revision: str = '023_add_audit_reports'
@@ -22,8 +21,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Create audit_reports table
-    op.create_table(
-        'audit_reports',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.audit_reports')")).scalar():
+        op.create_table('audit_reports',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False, default=uuid.uuid4),
         sa.Column('audit_type', sa.Enum('PERFORMANCE', 'QUALITY', 'PROMPTS', 'ERRORS', 'FULL', name='audittype'), nullable=False),
         sa.Column('status', sa.Enum('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', name='auditstatus'), nullable=False, server_default='PENDING'),
@@ -41,10 +41,10 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('ix_audit_reports_audit_type', 'audit_reports', ['audit_type'])
-    op.create_index('ix_audit_reports_status', 'audit_reports', ['status'])
-    op.create_index('ix_audit_reports_period_start', 'audit_reports', ['period_start'])
-    op.create_index('ix_audit_reports_created_at', 'audit_reports', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_audit_reports_audit_type ON audit_reports (audit_type);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_audit_reports_status ON audit_reports (status);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_audit_reports_period_start ON audit_reports (period_start);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_audit_reports_created_at ON audit_reports (created_at);")
 
 
 def downgrade() -> None:

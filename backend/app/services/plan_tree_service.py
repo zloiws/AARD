@@ -1,7 +1,7 @@
 """
 Service for building plan tree structure from steps
 """
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 

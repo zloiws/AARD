@@ -1,15 +1,15 @@
 """
 Tool Service for managing tools lifecycle
 """
-from typing import Dict, Any, Optional, List
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from datetime import datetime
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc
 
-from app.models.tool import Tool, ToolStatus, ToolCategory
 from app.core.logging_config import LoggingConfig
-from app.core.tracing import get_tracer, add_span_attributes
+from app.core.tracing import add_span_attributes, get_tracer
+from app.models.tool import Tool, ToolCategory, ToolStatus
+from sqlalchemy import and_, desc, or_
+from sqlalchemy.orm import Session
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -164,7 +164,7 @@ class ToolService:
             if field in allowed_fields:
                 setattr(tool, field, value)
         
-        tool.updated_at = datetime.utcnow()
+        tool.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(tool)
         
@@ -196,7 +196,7 @@ class ToolService:
             raise ValueError(f"Tool must be in 'waiting_approval' status to activate (current: {tool.status})")
         
         tool.status = ToolStatus.ACTIVE.value
-        tool.activated_at = datetime.utcnow()
+        tool.activated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(tool)
         
@@ -271,7 +271,7 @@ class ToolService:
             rate = tool.successful_executions / tool.total_executions
             tool.success_rate = f"{rate:.2%}"
         
-        tool.last_used_at = datetime.utcnow()
+        tool.last_used_at = datetime.now(timezone.utc)
         self.db.commit()
     
     def get_tool_metrics(self, tool_id: UUID) -> Dict[str, Any]:

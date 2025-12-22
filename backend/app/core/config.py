@@ -2,12 +2,13 @@
 Configuration management using Pydantic Settings
 """
 import os
-from pathlib import Path
 from functools import lru_cache
+from pathlib import Path
 from typing import List, Optional
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, field_validator
+
 from dotenv import load_dotenv
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load .env from project root
 # config.py is at: backend/app/core/config.py
@@ -62,7 +63,7 @@ class Settings(BaseSettings):
     log_uvicorn_access: bool = Field(default=False, description="Enable Uvicorn access logging")
     log_module_levels: Optional[str] = Field(
         default=None,
-        description="Module-specific log levels (JSON string, e.g., '{\"app.api\": \"DEBUG\"}')"
+        description='Module-specific log levels (JSON string, e.g., {"app.api": "DEBUG"})'
     )
     log_format: str = Field(
         default="json",
@@ -112,6 +113,7 @@ class Settings(BaseSettings):
     enable_agent_ops: bool = Field(default=False, description="Enable Agent Ops features")
     enable_a2a: bool = Field(default=False, description="Enable A2A communication")
     enable_planning: bool = Field(default=False, description="Enable planning system")
+    interpretation_use_llm: bool = Field(default=True, description="Enable LLM-assisted interpretation (platform default)")
     enable_tracing: bool = Field(default=True, description="Enable OpenTelemetry tracing")
     tracing_service_name: str = Field(default="aard", description="Service name for tracing")
     tracing_exporter: str = Field(

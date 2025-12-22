@@ -2,22 +2,22 @@
 Real LLM Full Workflow Test
 Tests all modules with real LLM models and shows all errors
 """
-import pytest
 import asyncio
-from uuid import uuid4
-from datetime import datetime
 import json
 import traceback
+from datetime import datetime
+from uuid import uuid4
 
-from app.services.planning_service import PlanningService
-from app.services.execution_service import ExecutionService
-from app.services.agent_team_service import AgentTeamService
-from app.services.ollama_service import OllamaService
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan, PlanStatus
-from app.models.agent_team import CoordinationStrategy
-from app.models.agent import Agent, AgentStatus
+import pytest
 from app.core.ollama_client import OllamaClient, TaskType
+from app.models.agent import Agent, AgentStatus
+from app.models.agent_team import CoordinationStrategy
+from app.models.plan import Plan, PlanStatus
+from app.models.task import Task, TaskStatus
+from app.services.agent_team_service import AgentTeamService
+from app.services.execution_service import ExecutionService
+from app.services.ollama_service import OllamaService
+from app.services.planning_service import PlanningService
 
 
 def print_header(title: str):

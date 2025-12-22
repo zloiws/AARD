@@ -2,12 +2,12 @@
 Unit tests for PlanningService
 Tests individual methods without requiring database or external services
 """
-import pytest
 import json
-from unittest.mock import Mock, patch, AsyncMock
-from uuid import uuid4
 from datetime import datetime
+from unittest.mock import AsyncMock, Mock, patch
+from uuid import uuid4
 
+import pytest
 from app.services.planning_service import PlanningService
 
 

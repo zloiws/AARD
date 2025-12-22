@@ -4,6 +4,7 @@ Idempotent: safe to run multiple times.
 """
 import sys
 from pathlib import Path
+
 from sqlalchemy import text
 
 # ensure backend on path
@@ -11,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import get_settings
 from app.core.database import get_engine
+
 
 def ensure_vector_extension(conn):
     try:

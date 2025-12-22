@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Check presence of required tables in DATABASE_URL"""
 from __future__ import annotations
+
 import os
+
 from sqlalchemy import create_engine, inspect
+
 
 def main():
     db_url = os.environ.get("DATABASE_URL")

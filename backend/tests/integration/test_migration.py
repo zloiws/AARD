@@ -6,8 +6,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from app.core.database import engine, get_db
-from sqlalchemy import inspect, text
 from app.models import *
+from sqlalchemy import inspect, text
+
 
 def test_migration():
     """Test that migration was applied successfully"""
@@ -48,10 +49,12 @@ def test_models():
     print("=" * 60)
     
     try:
-        from app.models.prompt import Prompt, PromptType, PromptStatus
-        from app.models.approval import ApprovalRequest, ApprovalRequestType, ApprovalRequestStatus
-        from app.models.evolution import EvolutionHistory, Feedback, EntityType
+        from app.models.approval import (ApprovalRequest,
+                                         ApprovalRequestStatus,
+                                         ApprovalRequestType)
+        from app.models.evolution import EntityType, EvolutionHistory, Feedback
         from app.models.plan import Plan, PlanStatus
+        from app.models.prompt import Prompt, PromptStatus, PromptType
         
         print("✅ All models imported successfully")
         
@@ -75,9 +78,9 @@ def test_services():
     
     try:
         db = next(get_db())
+        from app.core.ollama_client import OllamaClient
         from app.services.approval_service import ApprovalService
         from app.services.artifact_generator import ArtifactGenerator
-        from app.core.ollama_client import OllamaClient
         
         approval_service = ApprovalService(db)
         print("✅ ApprovalService created")

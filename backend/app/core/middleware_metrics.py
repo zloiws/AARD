@@ -2,16 +2,13 @@
 Middleware for collecting HTTP request metrics
 """
 import time
+
+from app.core.logging_config import LoggingConfig
+from app.core.metrics import (http_errors_total, http_request_duration_seconds,
+                              http_requests_total)
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
-
-from app.core.metrics import (
-    http_requests_total,
-    http_request_duration_seconds,
-    http_errors_total
-)
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

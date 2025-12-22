@@ -1,12 +1,13 @@
 import sys
 from pathlib import Path
+
 from sqlalchemy import text
 
 # ensure backend dir on path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.core.database import get_engine
-from app.core.database import Base
+from app.core.database import Base, get_engine
+
 
 def main():
     engine = get_engine()

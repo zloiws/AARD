@@ -6,10 +6,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.core.database import SessionLocal
-from app.services.planning_service import PlanningService
-from app.models.task import Task
 import asyncio
+
+from app.core.database import SessionLocal
+from app.models.task import Task
+from app.services.planning_service import PlanningService
+
 
 async def check_artifacts():
     """Check artifact creation in planning"""

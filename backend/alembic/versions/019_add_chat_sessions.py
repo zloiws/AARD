@@ -7,8 +7,8 @@ Create Date: 2025-01-03
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -20,8 +20,9 @@ depends_on = None
 
 def upgrade() -> None:
     # Create chat_sessions table
-    op.create_table(
-        'chat_sessions',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.chat_sessions')")).scalar():
+        op.create_table('chat_sessions',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
@@ -32,8 +33,9 @@ def upgrade() -> None:
     )
     
     # Create chat_messages table
-    op.create_table(
-        'chat_messages',
+    conn = op.get_bind()
+    if not conn.execute(sa.text("select to_regclass('public.chat_messages')")).scalar():
+        op.create_table('chat_messages',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('session_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('role', sa.String(length=50), nullable=False),
@@ -46,8 +48,8 @@ def upgrade() -> None:
     )
     
     # Create indexes
-    op.create_index('ix_chat_messages_session_id', 'chat_messages', ['session_id'])
-    op.create_index('ix_chat_messages_created_at', 'chat_messages', ['created_at'])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_chat_messages_session_id ON chat_messages (session_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_chat_messages_created_at ON chat_messages (created_at);")
 
 
 def downgrade() -> None:

@@ -2,14 +2,14 @@
 Background scheduler for regular audit reports
 """
 import asyncio
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from datetime import datetime, timedelta, timezone
 from enum import Enum
+from typing import Any, Dict, Optional
 
-from app.core.logging_config import LoggingConfig
 from app.core.database import get_db
+from app.core.logging_config import LoggingConfig
+from app.models.audit_report import AuditStatus, AuditType
 from app.services.self_audit_service import SelfAuditService
-from app.models.audit_report import AuditType, AuditStatus
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -82,7 +82,7 @@ class AuditScheduler:
     
     async def _check_and_run_scheduled_audits(self):
         """Check if any scheduled audits should run"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Check daily audit
         if self.schedules[AuditSchedule.DAILY]["enabled"]:
@@ -196,7 +196,7 @@ class AuditScheduler:
             if report.audit_metadata is None:
                 report.audit_metadata = {}
             report.audit_metadata["schedule_type"] = schedule_type.value
-            report.audit_metadata["scheduled_at"] = datetime.utcnow().isoformat()
+            report.audit_metadata["scheduled_at"] = datetime.now(timezone.utc).isoformat()
             
             db.commit()
             db.close()
@@ -259,7 +259,7 @@ class AuditScheduler:
         period_days = schedule["period_days"]
         audit_type = schedule["audit_type"]
         
-        period_end = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        period_end = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         period_start = period_end - timedelta(days=period_days)
         
         await self._run_audit(schedule_type, period_start, period_end)

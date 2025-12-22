@@ -8,8 +8,9 @@ backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from app.core.database import SessionLocal
-from app.services.ollama_service import OllamaService
 from app.core.model_selector import ModelSelector
+from app.services.ollama_service import OllamaService
+
 
 def main():
     db = SessionLocal()

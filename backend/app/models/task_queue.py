@@ -1,13 +1,14 @@
 """
 SQLAlchemy models for task queues
 """
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, CheckConstraint, Index, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-from datetime import datetime
 import uuid
+from datetime import datetime, timezone
 
 from app.core.database import Base
+from sqlalchemy import (Boolean, CheckConstraint, Column, DateTime, ForeignKey,
+                        Index, Integer, String, Text)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
 
 
 class TaskQueue(Base):
@@ -22,8 +23,8 @@ class TaskQueue(Base):
     max_concurrent = Column(Integer, default=1, nullable=False)
     priority = Column(Integer, default=5, nullable=False)  # 0-9, where 9 is highest
     is_active = Column(Boolean, default=True, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     tasks = relationship("QueueTask", back_populates="queue", cascade="all, delete-orphan")
@@ -75,8 +76,8 @@ class QueueTask(Base):
     assigned_worker = Column(String(255), nullable=True, index=True)  # Worker ID
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     queue = relationship("TaskQueue", back_populates="tasks")

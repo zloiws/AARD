@@ -1,13 +1,14 @@
 """
 SQLAlchemy model for execution traces
 """
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, CheckConstraint, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-from datetime import datetime
 import uuid
+from datetime import datetime, timezone
 
 from app.core.database import Base
+from sqlalchemy import (CheckConstraint, Column, DateTime, ForeignKey, Index,
+                        Integer, String)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
 
 
 class ExecutionTrace(Base):
@@ -17,7 +18,7 @@ class ExecutionTrace(Base):
     __tablename__ = "execution_traces"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    trace_id = Column(String(255), unique=True, nullable=False, index=True)  # OpenTelemetry trace ID
+    trace_id = Column(String(255), nullable=False, index=True)  # OpenTelemetry trace ID
     task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
     plan_id = Column(UUID(as_uuid=True), ForeignKey("plans.id", ondelete="SET NULL"), nullable=True, index=True)
     span_id = Column(String(255), nullable=True, index=True)
@@ -37,7 +38,7 @@ class ExecutionTrace(Base):
     tool_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     error_message = Column(String(1000), nullable=True)
     error_type = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships (using strings to avoid circular imports)
     task = relationship("Task", foreign_keys=[task_id], overlaps="traces")

@@ -1,13 +1,13 @@
 """
 Tests for benchmark API endpoints
 """
-import pytest
 from uuid import uuid4
 
-from app.core.database import SessionLocal
-from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
-from app.models.benchmark_result import BenchmarkResult
+import pytest
 from app.api.routes import benchmarks
+from app.core.database import SessionLocal
+from app.models.benchmark_result import BenchmarkResult
+from app.models.benchmark_task import BenchmarkTask, BenchmarkTaskType
 
 
 def test_benchmark_router_exists():

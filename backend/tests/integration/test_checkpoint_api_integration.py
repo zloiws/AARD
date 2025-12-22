@@ -1,15 +1,15 @@
 """
 Integration tests for checkpoint API with execution service
 """
-import pytest
-from fastapi.testclient import TestClient
 from uuid import uuid4
-from sqlalchemy.orm import Session
 
+import pytest
+from app.core.database import SessionLocal
 from app.main import app
 from app.models.plan import Plan
 from app.models.task import Task, TaskStatus
-from app.core.database import SessionLocal
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 client = TestClient(app)
 
@@ -88,7 +88,7 @@ class TestCheckpointAPIIntegration:
     def test_list_checkpoints_for_plan(self, db: Session, sample_plan: Plan):
         """Test listing checkpoints for a plan"""
         from app.services.checkpoint_service import CheckpointService
-        
+
         # Create a checkpoint first
         service = CheckpointService(db)
         checkpoint = service.create_plan_checkpoint(
@@ -116,7 +116,7 @@ class TestCheckpointAPIIntegration:
     def test_get_checkpoint_by_id(self, db: Session, sample_plan: Plan):
         """Test getting checkpoint by ID"""
         from app.services.checkpoint_service import CheckpointService
-        
+
         # Create a checkpoint
         service = CheckpointService(db)
         checkpoint = service.create_plan_checkpoint(
@@ -137,7 +137,7 @@ class TestCheckpointAPIIntegration:
     def test_restore_checkpoint_via_api(self, db: Session, sample_plan: Plan):
         """Test restoring checkpoint via API"""
         from app.services.checkpoint_service import CheckpointService
-        
+
         # Create a checkpoint
         service = CheckpointService(db)
         checkpoint = service.create_plan_checkpoint(
@@ -158,7 +158,7 @@ class TestCheckpointAPIIntegration:
     def test_get_latest_checkpoint(self, db: Session, sample_plan: Plan):
         """Test getting latest checkpoint for an entity"""
         from app.services.checkpoint_service import CheckpointService
-        
+
         # Create multiple checkpoints
         service = CheckpointService(db)
         checkpoint1 = service.create_plan_checkpoint(

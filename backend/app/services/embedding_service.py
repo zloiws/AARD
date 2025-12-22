@@ -1,17 +1,18 @@
 """
 Service for generating text embeddings for vector search
 """
-from typing import List, Optional, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
     from app.models.ollama_server import OllamaServer
+
 import asyncio
 import json
-import httpx
 from functools import lru_cache
 
-from app.core.logging_config import LoggingConfig
+import httpx
 from app.core.config import get_settings
+from app.core.logging_config import LoggingConfig
 from app.services.ollama_service import OllamaService
 from sqlalchemy.orm import Session
 
@@ -59,8 +60,8 @@ class EmbeddingService:
         """
         if not text or not text.strip():
             logger.warning("Empty text provided for embedding generation")
-            # Return minimal embedding - actual dimension will be determined by model
-            return [0.0] * 768  # Common minimum dimension
+            # Return zero vector matching DEFAULT_EMBEDDING_DIM
+            return [0.0] * self.DEFAULT_EMBEDDING_DIM
         
         # Check cache first
         if use_cache and text in self._embedding_cache:
@@ -77,6 +78,14 @@ class EmbeddingService:
             
             # Normalize embedding
             normalized = self._normalize_vector(embedding)
+            # Ensure embedding dimension matches expected DEFAULT_EMBEDDING_DIM
+            if len(normalized) != self.DEFAULT_EMBEDDING_DIM:
+                if len(normalized) < self.DEFAULT_EMBEDDING_DIM:
+                    # pad with zeros
+                    normalized = normalized + [0.0] * (self.DEFAULT_EMBEDDING_DIM - len(normalized))
+                else:
+                    # truncate
+                    normalized = normalized[: self.DEFAULT_EMBEDDING_DIM]
             
             # Cache the result
             if use_cache:
@@ -87,8 +96,8 @@ class EmbeddingService:
             
         except Exception as e:
             logger.error(f"Error generating embedding: {e}", exc_info=True)
-            # Return zero vector on error (minimal dimension)
-            return [0.0] * 768
+            # Return zero vector with default embedding dimension on error
+            return [0.0] * self.DEFAULT_EMBEDDING_DIM
     
     async def generate_embeddings_batch(
         self,
@@ -229,7 +238,8 @@ class EmbeddingService:
         norm = sum(x * x for x in vector) ** 0.5
         
         if norm == 0:
-            # Zero vector - return as is
+            # Zero vector - return the original vector (preserve dimension).
+            # Upstream callers (generate_embedding) will pad/truncate to DEFAULT_EMBEDDING_DIM as needed.
             return vector
         
         # Normalize

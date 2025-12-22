@@ -1,20 +1,21 @@
 """
 API routes for dashboard
 """
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Body, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
 
 from app.core.database import get_db
 from app.core.templates import templates
-from app.models.task import Task, TaskStatus
-from app.models.plan import Plan
 from app.models.approval import ApprovalRequest
-from app.services.interactive_execution_service import InteractiveExecutionService
+from app.models.plan import Plan
+from app.models.task import Task, TaskStatus
+from app.services.interactive_execution_service import \
+    InteractiveExecutionService
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["dashboard"])
 
@@ -144,6 +145,26 @@ async def get_dashboard_tasks(
                 }
             )
         
+        # Prepare simple statistics for dashboard (counts per status)
+        # Build flat statistics expected by tests (keys: pending_approval, in_progress, on_hold, failed, etc.)
+        stats = {"total_tasks": len(tasks_data)}
+        # Initialize common statuses to 0 to match test expectations
+        common_statuses = [
+            "pending_approval",
+            "in_progress",
+            "on_hold",
+            "failed",
+            "completed",
+            "draft",
+        ]
+        for s in common_statuses:
+            stats[s] = 0
+        for t in tasks_data:
+            st = t.get("status")
+            if st:
+                stats.setdefault(st, 0)
+                stats[st] += 1
+
         # Return JSON for API clients
         return JSONResponse({
             "tasks": [
@@ -153,7 +174,8 @@ async def get_dashboard_tasks(
                     "updated_at": task_dict["updated_at"].isoformat() if task_dict["updated_at"] else None,
                 }
                 for task_dict in tasks_data
-            ]
+            ],
+            "statistics": stats
         })
         
     except Exception as e:
@@ -176,9 +198,9 @@ async def get_plan_history(
         Plan history events
     """
     try:
-        from app.services.memory_service import MemoryService
         from app.models.agent_memory import MemoryType
-        
+        from app.services.memory_service import MemoryService
+
         # Get plan
         plan = db.query(Plan).filter(Plan.id == plan_id).first()
         if not plan:

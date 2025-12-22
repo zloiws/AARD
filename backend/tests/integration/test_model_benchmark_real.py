@@ -2,19 +2,20 @@
 Реальные тесты бенчмарка моделей
 Проводит реальное тестирование всех моделей на сервере
 """
-import pytest
 import asyncio
 import sys
 from pathlib import Path
+
+import pytest
 
 # Настройка кодировки
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
+from app.core.logging_config import LoggingConfig
+from app.core.ollama_client import TaskType
 from app.services.model_benchmark_service import ModelBenchmarkService
 from app.services.ollama_service import OllamaService
-from app.core.ollama_client import TaskType
-from app.core.logging_config import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

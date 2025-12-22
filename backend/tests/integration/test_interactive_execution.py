@@ -1,12 +1,13 @@
 """
 Integration tests for InteractiveExecutionService
 """
-import pytest
-from uuid import uuid4
 from datetime import datetime
-from sqlalchemy.orm import Session
+from uuid import uuid4
 
-from app.services.interactive_execution_service import InteractiveExecutionService, ExecutionState
+import pytest
+from app.services.interactive_execution_service import (
+    ExecutionState, InteractiveExecutionService)
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture
