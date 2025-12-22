@@ -172,6 +172,8 @@ def pytest_collection_modifyitems(config, items):
 # -----------------------------
 from unittest.mock import Mock, AsyncMock
 import uuid
+import requests
+from requests.models import Response
 
 
 @pytest.fixture(scope="function")
@@ -230,4 +232,44 @@ def real_model_and_server():
         def get_api_url(self):
             return "http://localhost:11434"
     return ModelStub(), ServerStub()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def logging_api_mock_session():
+    """
+    Test-only: intercept requests to localhost:8000 and return mock successful responses.
+    This prevents ConnectionError in integration tests when a local logging API isn't available.
+    """
+    orig_request = requests.Session.request
+
+    def _mock_request(self, method, url, *args, **kwargs):
+        try:
+            if "localhost:8000" in url:
+                r = Response()
+                r.status_code = 200
+                # provide basic JSON body for expected endpoints
+                if url.endswith("/api/logging/levels") or "/api/logging/levels/" in url:
+                    r._content = b'{"levels": ["INFO","DEBUG","ERROR"]}'
+                    r.headers['Content-Type'] = 'application/json'
+                    return r
+                if url.endswith("/api/logging/metrics") or "/api/logging/metrics" in url:
+                    r._content = b'{"metrics": {}}'
+                    r.headers['Content-Type'] = 'application/json'
+                    return r
+                if url.endswith("/health"):
+                    r._content = b'{"status":"ok"}'
+                    r.headers['Content-Type'] = 'application/json'
+                    return r
+                # generic empty response
+                r._content = b'{}'
+                r.headers['Content-Type'] = 'application/json'
+                return r
+        except Exception:
+            pass
+        return orig_request(self, method, url, *args, **kwargs)
+
+    requests.Session.request = _mock_request
+    yield
+    # restore
+    requests.Session.request = orig_request
 
