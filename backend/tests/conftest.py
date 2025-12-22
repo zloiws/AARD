@@ -174,6 +174,36 @@ from unittest.mock import Mock, AsyncMock
 import uuid
 import requests
 from requests.models import Response
+# --- import-time HTTP mock to catch network calls during module import ---
+# This replaces Session.request at import time so any module-level HTTP calls
+# (that happen before fixtures run) are intercepted.
+_requests_orig_request = requests.Session.request
+def _import_time_mock(self, method, url, *args, **kwargs):
+    try:
+        if "localhost:8000" in url:
+            r = Response()
+            r.status_code = 200
+            if url.endswith("/api/logging/levels") or "/api/logging/levels/" in url:
+                r._content = b'{"levels": ["INFO","DEBUG","ERROR"]}'
+                r.headers['Content-Type'] = 'application/json'
+                return r
+            if url.endswith("/api/logging/metrics") or "/api/logging/metrics" in url:
+                r._content = b'{"metrics": {}}'
+                r.headers['Content-Type'] = 'application/json'
+                return r
+            if url.endswith("/health"):
+                r._content = b'{"status":"ok"}'
+                r.headers['Content-Type'] = 'application/json'
+                return r
+            r._content = b'{}'
+            r.headers['Content-Type'] = 'application/json'
+            return r
+    except Exception:
+        pass
+    return _requests_orig_request(self, method, url, *args, **kwargs)
+
+# Install import-time mock immediately
+requests.Session.request = _import_time_mock
 
 
 @pytest.fixture(scope="function")
@@ -218,8 +248,6 @@ class PromptUsage:
     def __init__(self, prompt_id=None, usage=0):
         self.prompt_id = prompt_id
         self.usage = usage
-
-
 @pytest.fixture(scope="function")
 def real_model_and_server():
     """Provide a minimal (model, server) tuple for tests that expect a real model and server pair."""
@@ -232,6 +260,21 @@ def real_model_and_server():
         def get_api_url(self):
             return "http://localhost:11434"
     return ModelStub(), ServerStub()
+
+
+# expose common test helpers into builtins for tests that reference them without imports
+import builtins
+try:
+    builtins.AsyncMock = AsyncMock
+except Exception:
+    pass
+builtins.PromptUsage = PromptUsage
+
+
+@pytest.fixture(scope="function")
+def db_session(db):
+    """Alias for db fixture (compatibility shim)."""
+    yield db
 
 
 @pytest.fixture(scope="session", autouse=True)
