@@ -40,7 +40,7 @@ pip install -r requirements.txt
    - `POSTGRES_HOST=10.39.0.101`
    - `POSTGRES_DB=aard`
    - `POSTGRES_USER=postgres`
-   - `POSTGRES_PASSWORD=Cdthrf12`
+   - `POSTGRES_PASSWORD=password`
    - `POSTGRES_PORT=5432`
 
 3. Сгенерируйте `SECRET_KEY`:
